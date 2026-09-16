@@ -15,6 +15,7 @@ with app.setup:
     from rekep.logs import Stage, configure
     from rekep.tasks import Task
     from rekep.text import Message
+    from rekep.times import window_of, within
 
     TARGET = "logs.messages"
 
@@ -24,7 +25,8 @@ def _():
     mo.md("""
     # Parse messages
 
-    Read physical text records into raw message rows.
+    Read physical text records into raw message rows, for one window of the
+    capture clock.
     """)
 
 
@@ -35,8 +37,10 @@ def parameters():
     _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
     filesystem = _defaults["filesystem"]
     rowheader = _defaults["rowheader"]
+    start = _defaults["start"]
+    end = _defaults["end"]
     catalog = _defaults["catalog"]
-    return catalog, filesystem, rowheader
+    return catalog, end, filesystem, rowheader, start
 
 
 @app.cell
@@ -46,9 +50,14 @@ def _():
 
 
 @app.cell
-def _(catalog, filesystem, records, rowheader):
+def _(catalog, end, filesystem, records, rowheader, start):
     _ = records
     with ExitStack() as opened:
+        # The window a run covers, `[start, end)`: the last day when the
+        # document names neither bound, and exactly the scheduler's interval
+        # when it names both. Read before anything is opened, so a bound that
+        # is not an instant is refused before a capture is.
+        window = window_of(start, end)
         source = IOBase.from_uri(filesystem)
         opened.callback(source.close)
         source_location = source.masked_uri or str(source.url)
@@ -58,6 +67,7 @@ def _(catalog, filesystem, records, rowheader):
             "parse_messages",
             sources={"capture": source_location},
             targets={"messages": TARGET},
+            window=window,
         )
         field = Message.into_field()
         # A bridge writing these same facts in a layout of its own is read by
@@ -77,16 +87,23 @@ def _(catalog, filesystem, records, rowheader):
         opened.callback(reader.close)
 
         def _batches():
+            # Every line is read and counted; the ones the window covers go
+            # on. `timepartition` carries the capture clock and is the column
+            # the table is laid out by, and a line with no clock is in every
+            # window, so a header that did not match never loses a line.
             for batch in reader:
                 counts["read"] += batch.num_rows
-                yield batch
+                yield batch.filter(within(batch.column("timepartition"), window))
 
         parsed = pyarrow.RecordBatchReader.from_batches(
             field.into_arrow_schema(),
             _batches(),
         )
         opened.callback(parsed.close)
-        written = messages.append_arrow_reader(parsed, field, merge_by=True)
+        # What the window carries replaces what the table held for the same
+        # `(sourceurl, rownum)`: a replay of the window lands the same rows
+        # again, so the table holds each line once however often it runs.
+        written = messages.overwrite_arrow_reader(parsed, field, merge_by=True)
         _outcome = stage.finished(read=counts["read"], written=written)
     outcome = _outcome
     return (outcome,)

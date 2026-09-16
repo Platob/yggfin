@@ -38,12 +38,12 @@ dependencies = [
 [project.optional-dependencies]
 # The Iceberg dataset, with the SQLite catalog that makes it fully local and
 # the Rust core every partition transform but `identity` is written through.
-iceberg = ["pyiceberg[pyiceberg-core,sql-sqlite]>=0.11.1"]
+iceberg = ["pyiceberg[pyiceberg-core,sql-sqlite]>=0.12"]
 # AWS Glue as the catalog. pyiceberg reaches Glue through boto3, which the
 # Iceberg extra does not pull, so `type: glue` raises `NotInstalledError`
 # without this -- and it is the one thing a full S3 run needs that the code
 # itself does not provide.
-glue = ["pyiceberg[glue]>=0.11.1"]
+glue = ["pyiceberg[glue]>=0.12"]
 polars = ["polars>=1.36"]
 all = ["rekep[glue,iceberg,polars]"]
 

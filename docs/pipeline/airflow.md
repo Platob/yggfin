@@ -9,10 +9,14 @@ parse_messages -> parse_fix
 logs.messages     fix.messages
 ```
 
-The DAG exposes the union of both adjacent task documents as Params. A manual
-run can therefore replace `filesystem`, `rowheader`, `catalog`, `registry` or `lifecycle`
-without creating another DAG. There is no `version` Param: what a message was
-read at is what its own `beginstring` said.
+It runs daily, and each run covers its own data interval: the operator hands
+the interval to both tasks as their `start` and `end`, so a day's run reads
+the day's lines under `filesystem` and replaces them in both tables. The DAG
+exposes the union of both adjacent task documents as Params. A manual run can
+therefore replace `filesystem`, `rowheader`, `start`, `end`, `catalog`,
+`registry` or `lifecycle` without creating another DAG, and a bound the run's
+conf names wins over the interval. There is no `version` Param: what a message
+was read at is what its own `beginstring` said.
 
 ## How a task runs
 
@@ -52,7 +56,10 @@ variable without putting it in Params or in task JSON.
 Parameters merge in one order, later winning: task document defaults, then the
 operator's `parameters`, then the DAG run's Params, then the data interval —
 and only for a name the task document already declares, so a task that does
-not take `registry` is never handed the scheduler's.
+not take `start` is never handed the scheduler's. Two exceptions keep a
+person's intent: an interval with no width, which Airflow infers for a manual
+run of an unscheduled DAG, fills nothing, and a bound the run's own conf names
+is left as named.
 
 ### Assets and what a run returns
 
@@ -93,9 +100,10 @@ The DAG sets no `retries`, so every task is `retries=0` and one transient S3
 or catalog error fails the run. Raising it is safe and is the recommended
 configuration: each attempt writes into its own private directory keyed on the
 try number, that directory is removed whether the attempt lands or raises, and
-both writers merge on their field-declared key — `(sourceurl, rownum)` for
+both writers replace on their field-declared key — `(sourceurl, rownum)` for
 `logs.messages` and `(sourceurl, rownum, msghash)` for `fix.messages` — so a
-retry re-reads the same rows, reports them as skipped and commits nothing.
+retry re-reads the same window and lands the same rows over whatever the
+failed attempt left.
 
 ## Install a worker checkout
 
@@ -136,10 +144,12 @@ uv run --project "$REKEP_ROOT/python" rekep iceberg deploy \
 
 uv run --project "$REKEP_ROOT/python" --group airflow airflow dags trigger \
   rekep_ingestion \
-  --conf '{"filesystem":"file:///srv/capture/2026-08-14"}'
+  --conf '{"filesystem":"file:///srv/capture/2026-08-14","start":"2026-08-14","end":"2026-08-14"}'
 ```
 
-The `cd` matters: the checked-in document's `uri` and `warehouse` are both
+A manual trigger of the daily DAG covers the last complete day unless its
+conf names the window, which is what the `start` and `end` above do for a
+dated capture. The `cd` matters: the checked-in document's `uri` and `warehouse` are both
 relative, and the operator runs its child with the checkout as the working
 directory. Deploying from anywhere else creates a second catalog next to
 wherever the command was typed, and the DAG then writes to an empty one. Pass
@@ -167,6 +177,8 @@ uv run --project "$REKEP_ROOT/python" --group airflow airflow dags trigger \
   rekep_ingestion \
   --conf '{
     "filesystem":"s3://market-capture/ulbridge/2026/08/14?region=eu-west-1",
+    "start":"2026-08-14",
+    "end":"2026-08-14",
     "catalog":{
       "name":"rekep",
       "properties":{
@@ -203,6 +215,8 @@ uv run --project "$REKEP_ROOT/python" --group airflow airflow dags trigger \
   rekep_ingestion \
   --conf '{
     "filesystem":"s3://market-capture/ulbridge/2026/08/14?region=eu-west-1",
+    "start":"2026-08-14",
+    "end":"2026-08-14",
     "catalog":{
       "name":"rekep",
       "properties":{
@@ -225,8 +239,10 @@ EKS web identity, or the worker's standard AWS credential chain.
 3. Deploy both tables and rerun deploy to see `present`.
 4. Confirm the worker can list/read capture objects and read/write the
    warehouse prefix.
-5. Trigger one immutable capture manually and compare stage counts.
-6. Replay it and require zero writes and zero new snapshots.
+5. Trigger one immutable capture manually, naming its day, and compare stage
+   counts.
+6. Replay it and require the same counts and unchanged table row counts: a
+   replay lands the same rows once.
 7. Inspect `fixentries` for entries of tag 0 before enabling a recurring
    schedule: those are the pairs no dictionary explained, and `nofixentries`
    is how many the message carried.

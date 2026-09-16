@@ -16,10 +16,11 @@ with app.setup:
         fix_message_field,
         fix_registry,
     )
-    from rekep.iceberg import IcebergCatalog
+    from rekep.iceberg import IcebergCatalog, window_filter
     from rekep.logs import Stage, configure
     from rekep.tasks import Task
     from rekep.text import Message
+    from rekep.times import window_of
 
     SOURCE = "logs.messages"
     TARGET = "fix.messages"
@@ -30,8 +31,9 @@ def _():
     mo.md("""
     # Parse FIX
 
-    Read stored capture lines into settled FIX rows: parse every frame a line
-    carried, enrich what a message implied, and name the chains it belongs to.
+    Read one window of stored capture lines into settled FIX rows: parse every
+    frame a line carried, enrich what a message implied, and name the chains
+    it belongs to.
     """)
 
 
@@ -42,8 +44,10 @@ def parameters():
     _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
     registry = _defaults["registry"]
     lifecycle = _defaults["lifecycle"]
+    start = _defaults["start"]
+    end = _defaults["end"]
     catalog = _defaults["catalog"]
-    return catalog, lifecycle, registry
+    return catalog, end, lifecycle, registry, start
 
 
 @app.cell
@@ -53,20 +57,27 @@ def _():
 
 
 @app.cell
-def _(catalog, lifecycle, records, registry):
+def _(catalog, end, lifecycle, records, registry, start):
     _ = records
     with ExitStack() as opened:
+        # The same window `parse_messages` wrote, read back off the stored
+        # capture: `[start, end)` over `timepartition`, which prunes to the
+        # hours it covers, with the lines that carry no clock beside them.
+        window = window_of(start, end)
         stage = Stage(
             "parse_fix",
             sources={"messages": SOURCE},
             targets={"fix": TARGET},
+            window=window,
         )
         store = IcebergCatalog.from_dict(catalog)
         opened.callback(store.close)
         carrier = Message.into_field()
         messages = store.dataset(SOURCE, field=carrier)
         opened.callback(messages.close)
-        source = messages.read_arrow_reader(carrier)
+        source = messages.read_arrow_reader(
+            carrier, row_filter=window_filter("timepartition", window)
+        )
         opened.callback(source.close)
         counts = {"read": 0, "messages": 0}
 
@@ -115,11 +126,14 @@ def _(catalog, lifecycle, records, registry):
         opened.callback(applied.close)
         fixes = store.dataset(TARGET, field=field, merge_schema=True)
         opened.callback(fixes.close)
-        written = fixes.append_arrow_reader(applied, field, merge_by=True)
+        # What the window answers replaces what the table held for the same
+        # `(sourceurl, rownum, msghash)`, so a replay lands the same messages
+        # again and a dictionary change lands their new reading.
+        written = fixes.overwrite_arrow_reader(applied, field, merge_by=True)
         # A row is a message, not a line: one line carrying two frames answers
-        # two and one carrying none answers nothing, so what the read skipped
-        # is counted against the messages the codec answered rather than
-        # against the lines it was handed.
+        # two and one carrying none answers nothing, so what the write left
+        # out -- a second message of one identity -- is counted against the
+        # messages the codec answered rather than against the lines read.
         _outcome = stage.finished(
             read=counts["read"],
             written=written,

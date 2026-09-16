@@ -22,7 +22,11 @@ if TYPE_CHECKING:
 GROUP = "runner"
 
 #: Interval bounds, and the parameter each fills. A task that declares neither
-#: name is scheduled the same and is handed nothing extra.
+#: name is scheduled the same and is handed nothing extra. An interval with no
+#: width -- what Airflow infers for a manual run of an unscheduled DAG -- is
+#: no interval, and the task falls back to its own default window. A bound the
+#: run's own conf names wins over the interval: a person triggering a run for
+#: one day means that day, whatever the schedule would have covered.
 INTERVAL = (("start", "data_interval_start"), ("end", "data_interval_end"))
 
 #: Everything but these becomes `_` in the name of an attempt directory, so a
@@ -119,7 +123,9 @@ class MarimoOperator(BaseOperator):
         """The task's defaults, under the DAG's Params, under its interval.
 
         Later wins, and only a name the document already declares is set: a
-        task that does not take `books` is not handed the scheduler's.
+        task that does not take `books` is not handed the scheduler's. The one
+        exception is a bound the run's own conf names, which the interval
+        leaves alone.
         """
         parameters = dict(defaults)
         undeclared = sorted(set(self.parameters) - set(defaults))
@@ -129,10 +135,13 @@ class MarimoOperator(BaseOperator):
         for name, value in (context.get("params") or {}).items():
             if name in defaults:
                 parameters[name] = value
-        for name, key in INTERVAL:
-            moment = context.get(key)
-            if name in defaults and isinstance(moment, datetime.datetime):
-                parameters[name] = moment.isoformat()
+        conf = getattr(context.get("dag_run"), "conf", None) or {}
+        bounds = [context.get(key) for _, key in INTERVAL]
+        dated = all(isinstance(moment, datetime.datetime) for moment in bounds)
+        if dated and bounds[0] < bounds[1]:
+            for (name, _), moment in zip(INTERVAL, bounds, strict=True):
+                if name in defaults and name not in conf:
+                    parameters[name] = moment.isoformat()
         return parameters
 
     def _argv(self, repository: Path, document: Path, parameters: Path, result: Path) -> list[str]:

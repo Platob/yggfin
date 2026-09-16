@@ -42,10 +42,12 @@ Iceberg without rereading the original files.
 
 ## Replays are ordinary runs
 
-`logs.messages` merges on `(sourceurl, rownum)`; `fix.messages` merges on
+`logs.messages` replaces on `(sourceurl, rownum)`; `fix.messages` replaces on
 `(sourceurl, rownum, msghash)`, because a line can carry more than one message.
-Reprocessing the same capture reads the rows, writes zero new rows, and does
-not create an empty snapshot.
+A run parses one window, `[start, end)` -- the last day up to now when a task
+is given neither bound -- and reprocessing the same window reads the same rows
+and lands them over the ones it landed before: the table holds each key once,
+and the run reports what it carried.
 
 ## Documentation names contracts
 

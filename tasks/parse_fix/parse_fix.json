@@ -4,6 +4,8 @@
   "parameters": {
     "registry": null,
     "lifecycle": true,
+    "start": null,
+    "end": null,
     "catalog": {
       "name": "rekep",
       "properties": {

@@ -1,7 +1,7 @@
 # parse_fix
 
-`parse_fix` streams every stored raw row through the FIX codec and publishes
-the complete fixed projection to `fix.messages`.
+`parse_fix` streams one window of the stored raw rows through the FIX codec
+and publishes the complete fixed projection to `fix.messages`.
 
 ## Task document
 
@@ -12,6 +12,8 @@ the complete fixed projection to `fix.messages`.
   "parameters": {
     "registry": null,
     "lifecycle": true,
+    "start": null,
+    "end": null,
     "catalog": {
       "name": "rekep",
       "properties": {
@@ -28,6 +30,7 @@ the complete fixed projection to `fix.messages`.
 | --- | --- | --- |
 | `registry` | `null` | use the 6,314-definition bundled dictionary; an explicit path/URI overrides it |
 | `lifecycle` | `true` | name the event chains after enrichment; `false` publishes parsed and enriched rows only |
+| `start`, `end` | `null` | the window of `logs.messages` to read, over `timepartition`; `null` is the last day, as [`parse_messages`](parse-messages.md#the-window) reads it |
 | `catalog` | local SQL | same catalog and warehouse that hold `logs.messages` |
 
 A dictionary is not a parameter: the registry is one namespace, so a field is
@@ -113,8 +116,9 @@ from rekep.fix import (
     fix_message_field,
     fix_registry,
 )
-from rekep.iceberg import IcebergCatalog
+from rekep.iceberg import IcebergCatalog, window_filter
 from rekep.text import Message
+from rekep.times import window_of
 
 registry, lifecycle = None, True
 catalog = {
@@ -126,18 +130,25 @@ catalog = {
     },
 }
 
+window = window_of("2026-08-14", "2026-08-14")
 carrier = Message.into_field()
 codec = fix_codec(fix_registry(registry))
 field = fix_message_field(codec, carrier)
 
 store = IcebergCatalog.from_dict(catalog)
-counted = store.dataset("logs.messages", field=carrier).read_arrow_reader(carrier)
+counted = store.dataset("logs.messages", field=carrier).read_arrow_reader(
+    carrier, row_filter=window_filter("timepartition", window)
+)
 parsed = fix_arrow_reader(codec, counted, lifecycle=lifecycle)
 applied = field.apply_arrow_reader(parsed, safe=False, nullability="strict")
-written = store.dataset("fix.messages", field=field, merge_schema=True).append_arrow_reader(
+written = store.dataset("fix.messages", field=field, merge_schema=True).overwrite_arrow_reader(
     applied, field, merge_by=True
 )
 ```
+
+`window_filter` is the stored half of the window rule: the rows whose
+`timepartition` falls in `[start, end)` and the rows carrying none, pruned to
+the hours the table is laid out by.
 
 `fix_arrow_reader` is the batch door end to end: `dated_arrow_reader`, then
 `parse_text_arrow_reader`, then `messages`, then `enrich_messages`, then
@@ -179,7 +190,7 @@ match carries no clock of its own either, and a null would hand that message
 back to the run-wide floor rather than to anything the capture recorded — so
 those rows state `UNDATED`, which is the same instant the floor would have
 given them. A message that carried its own clock keeps it, replay recomputes
-the same identity either way, and the merge on `(sourceurl, rownum, msghash)`
+the same identity either way, and the replace on `(sourceurl, rownum, msghash)`
 is idempotent for every capture rather than only for one whose every line the
 header matched.
 
@@ -220,24 +231,29 @@ creating a narrow table.
   named after itself, under the counter that counts it.
 - A conversion failure leaves the typed column null and preserves its arrival.
 - The source message wins over a same-field source-column fill.
-- The writer merges on `(sourceurl, rownum, msghash)` and can create a missing
-  table.
+- The writer replaces on `(sourceurl, rownum, msghash)` and can create a
+  missing table: a replay of a window lands the same messages once, and a
+  dictionary change lands their new reading over the old.
 - `msghash` is stored as `fixed_size_binary[16]` and nothing else: an
   extension type carries no compute kernel, so a column of one could appear in
-  no predicate — including the one a merge deletes by. A merge key of an
-  extension type is refused by name, which is also why `iceberg_fix_field`
-  drops the semantic extension name a URL, an ISIN, a MIC or a currency
-  crosses Arrow under.
+  no predicate — including the bounds a replace plans its stored files by. A
+  key that reaches the writer under an extension name is compared as the bytes
+  it holds, and `iceberg_fix_field` drops the semantic extension name a URL,
+  an ISIN, a MIC or a currency crosses Arrow under for the same reason.
 
 ## Run
 
 ```bash
-uv run --project python rekep task run tasks/parse_fix/parse_fix.json
+uv run --project python rekep task run tasks/parse_fix/parse_fix.json \
+  --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
 ```
 
-Run `parse_messages` first: `parse_fix` reads the stored raw product, never
-source files. A `logs.messages` that is not there yet reads as zero rows and
-succeeds, so a first interval against a fresh catalog is a run rather than a
-failure — it is an empty capture that publishes nothing, not a missing
-dependency the task can detect. An invalid registry, an incompatible existing
-target schema, or a failed Iceberg commit fails the task.
+Run `parse_messages` first, over the same window: `parse_fix` reads the stored
+raw product, never source files, and reads the rows whose `timepartition`
+falls in `[start, end)` — the last day up to now when the document names
+neither bound, which is why a run over the sample capture names its day. A
+`logs.messages` that is not there yet reads as zero rows and succeeds, so a
+first window against a fresh catalog is a run rather than a failure — it is
+an empty capture that publishes nothing, not a missing dependency the task can
+detect. An invalid registry, an incompatible existing target schema, or a
+failed Iceberg commit fails the task.

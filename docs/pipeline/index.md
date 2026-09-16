@@ -23,8 +23,8 @@ did not carry, and lifecycle names the chains it belongs to.
 
 | task | reads | writes | key | default behavior |
 | --- | --- | --- | --- | --- |
-| [`parse_messages`](tasks/parse-messages.md) | every physical line under `filesystem` | `logs.messages` | `(sourceurl, rownum)` | header capture, exact body retention |
-| [`parse_fix`](tasks/parse-fix.md) | every row of `logs.messages` | `fix.messages` | `(sourceurl, rownum, msghash)` | bundled dictionary, one row per message, chains named |
+| [`parse_messages`](tasks/parse-messages.md) | every physical line under `filesystem`, keeping the window's | `logs.messages` | `(sourceurl, rownum)` | header capture, exact body retention, the last day |
+| [`parse_fix`](tasks/parse-fix.md) | the window's rows of `logs.messages` | `fix.messages` | `(sourceurl, rownum, msghash)` | bundled dictionary, one row per message, chains named, the last day |
 | [`build_dbt`](tasks/build-dbt.md) | every row of `fix.messages` | `orders.events`, `orders.current`, `executions.fills` | one key per product | the dbt project under `data/dbt`, committed through the same datasets |
 
 Each task is a Marimo application beside a JSON document that owns its
@@ -38,14 +38,18 @@ uv sync --project python --all-extras --dev
 uv run --project python rekep iceberg deploy \
   tasks/parse_messages/parse_messages.json
 uv run --project python rekep task run \
-  tasks/parse_messages/parse_messages.json
+  tasks/parse_messages/parse_messages.json \
+  --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
 uv run --project python rekep task run \
-  tasks/parse_fix/parse_fix.json
+  tasks/parse_fix/parse_fix.json \
+  --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
 uv run --project python rekep task run \
   tasks/build_dbt/build_dbt.json
 ```
 
-Default locations are:
+The two ingestion tasks cover one window of the capture clock, the last day
+unless `start` and `end` say otherwise; the sample under `data/capture` is
+dated, so the quick start names its day. Default locations are:
 
 ```text
 input       file:data/capture
@@ -64,6 +68,8 @@ the command line.
 | --- | --- | --- | --- |
 | `filesystem` | messages | `file:data/capture` | local object/file tree or object-store prefix |
 | `rowheader` | messages | `null` | the row header each line is framed with; `null` is the bridge's own |
+| `start` | messages, FIX | `null` | the window's inclusive start; `null` is one day before `end` |
+| `end` | messages, FIX | `null` | the window's exclusive end; `null` is the instant the run starts, and a whole day is the end of that day |
 | `catalog.name` | every | `rekep` | PyIceberg catalog name |
 | `catalog.properties.type` | every | `sql` | `sql`, `glue`, or another installed PyIceberg catalog |
 | `catalog.properties.uri` | every | local SQLite | SQL catalog URI; not used by Glue |
@@ -79,14 +85,17 @@ the command line.
 
 ## Run semantics
 
-Every writer merges on its field-declared primary key. The first run inserts
-new source positions. A replay reads them, reports them as skipped, writes no
-rows, and creates no empty snapshot. `parse_fix` always reads the stored raw
-product, so dictionary and parsing changes can be replayed without touching
-capture storage. `build_dbt` reads that stored product in turn: its models
-append on their own keys, so a replay of the same capture commits no row, and
-`orders.current` is overwritten on `orderkey` so a rebuild leaves one row per
-order.
+Every ingestion task covers one window, `[start, end)`, over the capture
+clock: the last day when its document names neither bound, and exactly the
+scheduler's data interval under Airflow. A line with no clock is in every
+window. Each writer replaces what its window carries on its field-declared
+primary key: the first run lands the window's rows, and a replay of the same
+window reads the same rows, writes them again, and leaves the table holding
+each once. `parse_fix` always reads the stored raw product, so dictionary and
+parsing changes are replayed by running the window again without touching
+capture storage. `build_dbt` reads that stored product in turn: every model is
+committed on its own key, so a rebuild carries every row it built and each
+table holds one row per key.
 
 Every successful task returns the same small result contract:
 
@@ -98,10 +107,12 @@ Every successful task returns the same small result contract:
   "skipped": 0,
   "sources": {"capture": "file:///data/capture"},
   "targets": {"messages": "logs.messages"},
-  "window": {"start": null, "end": null},
+  "window": {"start": 1786665600000000000, "end": 1786752000000000000},
   "elapsed_ms": 92
 }
 ```
+
+`window` is the interval the run covered, in epoch nanoseconds.
 
 ## Deployment choices
 

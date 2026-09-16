@@ -1,7 +1,7 @@
 {{
     config(
         table='orders.events',
-        mode='append',
+        mode='overwrite',
         primary_key=['eventkey'],
         not_null=[
             'orderkey',
@@ -36,6 +36,8 @@
 --
 -- The event is immutable: a replace, a cancel and a reject are each an event,
 -- and `orders.current` is the fold over them rather than a row rewritten here.
+-- It is committed on its key, so a rebuild lands each event once however many
+-- times the capture is read.
 
 select
     msgphash as orderkey,

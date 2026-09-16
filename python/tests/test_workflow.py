@@ -28,6 +28,11 @@ FIX_CONTRACT = ROOT / "schemas" / "rekep" / "fix-message.json"
 WORKFLOW = (("parse_messages", {}), ("parse_fix", {}))
 EPOCH = datetime.datetime(1970, 1, 1, tzinfo=UTC)
 
+#: The day the bridge fixture was captured on. A task covers the last day
+#: unless its document names a window, and the fixture is dated, so every
+#: run here names its day -- `end: 2026-08-14` is the exclusive end of it.
+WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
+
 #: What the bridge fixture's 111 physical rows produce, first run. A FIX row
 #: is a message and not a line: prose answers none, and the wildcard Jolokia
 #: response answers one per plugin it named, so 111 lines carry 71 messages.
@@ -36,15 +41,12 @@ FIRST = {
     "parse_fix": {"read": 111, "written": 71, "skipped": 0},
 }
 
-#: What a replay of the same input produces: the same reads, no writes. What
-#: a stage skips is counted against what it answered, which for `parse_fix`
-#: is its messages rather than the lines it read.
-REPLAY = {
-    name: {"read": counts["read"], "written": 0, "skipped": counts["written"]}
-    for name, counts in FIRST.items()
-}
+#: What a replay of the same window produces: the same reads and the same
+#: writes, because a run replaces what its window carries -- the table holds
+#: each row once however often the window runs.
+REPLAY = FIRST
 
-#: Stored rows, and the one snapshot each table holds after both runs.
+#: Stored rows after both runs, and the two snapshots each table then holds.
 STORED = {
     "logs.messages": 111,
     "fix.messages": 71,
@@ -86,9 +88,9 @@ class Ran:
         results = {}
         for name, held in WORKFLOW:
             if name == "parse_messages":
-                first = {"filesystem": FIXTURE.as_uri()}
+                first = {"filesystem": FIXTURE.as_uri(), **WINDOW}
             else:
-                first = {}
+                first = dict(WINDOW)
             result = self.task(name, **first, **held, **overrides)
             results[result["task"]] = result
         return results
@@ -164,16 +166,52 @@ def test_the_workflow_publishes_ulbridge_and_a_replay_writes_nothing(ran: Ran) -
     replay = ran.workflow()
     assert {name: counted(result) for name, result in replay.items()} == REPLAY
     assert ran.rows() == STORED, "an idempotent replay adds no row"
-    assert ran.snapshots() == {name: int(bool(rows)) for name, rows in STORED.items()}
+    assert ran.snapshots() == {name: 2 for name in STORED}, "and each replay is one commit"
 
 
 def test_every_result_is_the_shape_a_route_reads(ran: Ran) -> None:
     from rekep.logs import Stage
+    from rekep.times import unix_of
 
     for name, result in ran.workflow().items():
         assert Stage.validated(result) == result
         assert result["task"] == name
+        assert result["window"] == {
+            "start": unix_of("2026-08-14"),
+            "end": unix_of("2026-08-15"),
+        }, "the window a run covered is what its result reports"
         assert len(json.dumps(result)) < 4096, "XCom carries a summary, never a payload"
+
+
+def test_a_window_the_capture_falls_outside_reads_every_line_and_writes_none(ran: Ran) -> None:
+    """The default window is the last day, and the fixture is not in it."""
+    result = ran.task("parse_messages", filesystem=FIXTURE.as_uri())
+
+    assert counted(result) == {"read": 111, "written": 0, "skipped": 111}
+    assert ran.rows() == {"logs.messages": 0}, "the table is created and holds nothing"
+
+    fixes = ran.task("parse_fix")
+    assert counted(fixes) == {"read": 0, "written": 0, "skipped": 0}
+
+
+def test_a_window_replaces_only_the_lines_it_covers(ran: Ran) -> None:
+    """A run over the whole day and then one over its first part leave every
+    line once: the second run replaces the lines its window covers and no
+    other. The fixture's lines straddle one second, which is where it cuts."""
+    ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
+    stored = ran.table("logs.messages")
+    cut = datetime.datetime(2026, 8, 14, 14, 46, 40, tzinfo=UTC)
+    earlier = stored.filter(pyarrow.compute.less(stored.column("timestamp"), cut)).num_rows
+    assert 0 < earlier < 111, "the fixture spans the boundary this test cuts at"
+
+    first = ran.task(
+        "parse_messages",
+        filesystem=FIXTURE.as_uri(),
+        start="2026-08-14",
+        end="2026-08-14T14:46:40",
+    )
+    assert counted(first) == {"read": 111, "written": earlier, "skipped": 111 - earlier}
+    assert ran.rows() == {"logs.messages": 111}, "the later lines were not the run's to touch"
 
 
 def test_an_empty_capture_is_read_and_produces_nothing(ran: Ran, tmp_path: Path) -> None:
@@ -182,7 +220,7 @@ def test_an_empty_capture_is_read_and_produces_nothing(ran: Ran, tmp_path: Path)
     empty.mkdir()
     (empty / "quiet.log").write_text("", encoding="utf-8")
 
-    result = ran.task("parse_messages", filesystem=empty.as_uri())
+    result = ran.task("parse_messages", filesystem=empty.as_uri(), **WINDOW)
 
     assert counted(result) == {"read": 0, "written": 0, "skipped": 0}
     assert result["targets"] == {"messages": "logs.messages"}
@@ -211,7 +249,7 @@ def test_parse_fix_narrows_a_nanosecond_clock_iceberg_cannot_store(
     ran: Ran, tmp_path: Path
 ) -> None:
     """A venue stamps nanoseconds; Iceberg v2 holds microseconds."""
-    ran.task("parse_messages", filesystem=FIXTURE.as_uri())
+    ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
     registry = tmp_path / "nanosecond-fix-registry"
     registry.mkdir()
     sending_time = Field("sendingtime", pyarrow.timestamp("ns", tz="UTC"), nullable=True)
@@ -223,11 +261,11 @@ def test_parse_fix_narrows_a_nanosecond_clock_iceberg_cannot_store(
     symbol.fix.tag = 55
     FixRegistry.from_fields([sending_time, symbol]).write_into(registry)
 
-    result = ran.task("parse_fix", registry=registry.as_uri())
+    result = ran.task("parse_fix", registry=registry.as_uri(), **WINDOW)
 
     # A message's identity is over the content a dictionary named, so the two
     # configurations of the wildcard response are one identity to a dictionary
-    # that types neither of them and the merge keeps the first.
+    # that types neither of them and the replace keeps the first.
     assert counted(result) == {"read": 111, "written": 70, "skipped": 1}
     fixes = ran.table("fix.messages")
     # The dictionary's own clock and the crate's derived one alike.
@@ -265,7 +303,7 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
     store = IcebergCatalog.from_dict(ran.catalog)
     fixes = store.dataset("fix.messages", field=field)
     try:
-        assert fixes.append_arrow_reader(source, field, merge_by=True) == 1
+        assert fixes.overwrite_arrow_reader(source, field, merge_by=True) == 1
         stored = fixes.read_arrow_table(field)
         assert stored.num_rows == 1
         assert stored.num_columns == 128
@@ -304,7 +342,7 @@ def test_several_files_are_one_capture(ran: Ran, tmp_path: Path) -> None:
     (capture / "a.log").write_bytes(b"\n".join(lines[:middle]) + b"\n")
     (capture / "b.log").write_bytes(b"\n".join(lines[middle:]))
 
-    result = ran.task("parse_messages", filesystem=capture.as_uri())
+    result = ran.task("parse_messages", filesystem=capture.as_uri(), **WINDOW)
 
     assert counted(result) == {"read": 111, "written": 111, "skipped": 0}
     assert ran.rows() == {"logs.messages": 111}
@@ -323,9 +361,9 @@ def test_messages_stream_through_hour_partitions(
     (capture / "15.log").write_bytes(line.replace(b"2026-08-14 14:", b"2026-08-14 15:", 1))
 
     handed_to_iceberg: list[pyarrow.Schema] = []
-    append = IcebergDataset.append_arrow_reader
+    replace = IcebergDataset.overwrite_arrow_reader
 
-    def observed_append(
+    def observed_replace(
         dataset: IcebergDataset,
         source: pyarrow.RecordBatchReader,
         *args: Any,
@@ -333,10 +371,10 @@ def test_messages_stream_through_hour_partitions(
     ) -> int:
         assert isinstance(source, pyarrow.RecordBatchReader)
         handed_to_iceberg.append(source.schema)
-        return append(dataset, source, *args, **kwargs)
+        return replace(dataset, source, *args, **kwargs)
 
-    monkeypatch.setattr(IcebergDataset, "append_arrow_reader", observed_append)
-    result = ran.task("parse_messages", filesystem=capture.as_uri())
+    monkeypatch.setattr(IcebergDataset, "overwrite_arrow_reader", observed_replace)
+    result = ran.task("parse_messages", filesystem=capture.as_uri(), **WINDOW)
 
     assert counted(result) == {"read": 2, "written": 2, "skipped": 0}
     assert handed_to_iceberg == [Message.into_field().into_arrow_schema()]
@@ -380,9 +418,9 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
 ) -> None:
     handed_to_iceberg: list[pyarrow.Schema] = []
     schema_modes: dict[str, bool] = {}
-    append = IcebergDataset.append_arrow_reader
+    replace = IcebergDataset.overwrite_arrow_reader
 
-    def observed_append(
+    def observed_replace(
         dataset: IcebergDataset,
         source: pyarrow.RecordBatchReader,
         *args: Any,
@@ -392,9 +430,9 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
         schema_modes[dataset.identifier] = dataset.merge_schema
         if dataset.identifier == "fix.messages":
             handed_to_iceberg.append(source.schema)
-        return append(dataset, source, *args, **kwargs)
+        return replace(dataset, source, *args, **kwargs)
 
-    monkeypatch.setattr(IcebergDataset, "append_arrow_reader", observed_append)
+    monkeypatch.setattr(IcebergDataset, "overwrite_arrow_reader", observed_replace)
     ran.workflow()
 
     fixes = ran.table("fix.messages")

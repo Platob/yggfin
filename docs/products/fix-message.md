@@ -221,7 +221,7 @@ damaged messages share one strict table without losing source position.
 Those ten columns are also the replay bundle. A projection that drops any of
 `updatedat`, `createdat`, `msghash`, `msgphash`, `code`, `sendingtime` or
 `beginstring` is not a replayable FIX row: what is left cannot be dated, named
-or identified again from its own bytes, and there is no key left to merge it
+or identified again from its own bytes, and there is no key left to replace it
 on.
 
 ## Why an identity is stored as bytes
@@ -231,7 +231,7 @@ An identity here is sixteen ordered bytes and nothing else: `msghash` is signed
 content, and `msgphash` is the XXH3-128 of `code`. They reach Arrow as
 `fixed_size_binary[16]` and Iceberg as `fixed[16]`, so the same bytes name
 themselves in every predicate a row filter is lowered to — a read filter, an
-ordering, and the predicate a merge deletes by — which is what lets this table
+ordering, and the keys a replace takes stored rows out by — which is what lets this table
 be filtered, overwritten, compacted and deleted from on its own key.
 
 What the storage boundary strips is elsewhere. A semantic datatype — a URL, an

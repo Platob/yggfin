@@ -84,51 +84,41 @@ class MemoryDataset(Dataset):
         self,
         source: pyarrow.RecordBatchReader,
         schema: Any = None,
-        merge_by: bool | Sequence[str] = True,
+        merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
-    ) -> None:
-        if not self.merge_columns(merge_by):
+    ) -> int:
+        join = self.merge_columns(merge_by)
+        if not join:
             raise ValueError(f"merge_by={merge_by!r} names nothing to match on")
-        # The commits are kept as they arrive rather than actually replaced:
-        # what the tests below pin is the streaming, chunking and casting the
-        # contract owes every store, not how one store finds a matching row.
-        self._commit(source, schema, commit_row_size)
+        target = self.target_field(schema)
+        reader = target.apply_arrow_reader(source, safe=False, nullability="strict")
+        self.get_or_create()
+        written = 0
+        for chunk in arrow_chunks(reader, commit_row_size):
+            for name in join:
+                if chunk.column(name).null_count:
+                    raise ValueError(f"column {name!r} is a merge key and cannot be null")
+            chunk = first_rows(normalised_keys(chunk, join), join)
+            # What the chunk carries replaces what the commits held under the
+            # same key: each stored commit loses those rows, and the chunk
+            # lands whole as a commit of its own.
+            self.commits = [
+                kept
+                for kept in (anti_join(commit, chunk, join) for commit in self.commits)
+                if kept.num_rows
+            ]
+            self.commits.append(chunk)
+            written += chunk.num_rows
+        return written
 
     def append_arrow_reader(
         self,
         source: pyarrow.RecordBatchReader,
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = None,
         commit_row_size: int | None = None,
         **kwargs: Any,
     ) -> int:
-        join = self.merge_columns(merge_by)
-        target = self.target_field(schema)
-        reader = target.apply_arrow_reader(source, safe=False, nullability="strict")
-        if not join:
-            return self._commit(reader, target, commit_row_size)
-        key_field = field_of(
-            pyarrow.schema([target.field(name).into_arrow() for name in join]), target.name
-        )
-        seen = (
-            self.read_arrow_table(key_field)
-            if self.exists
-            else key_field.into_arrow_schema().empty_table()
-        )
-        seen = normalised_keys(seen, join)
-        inserted = 0
-        for chunk in arrow_chunks(reader, commit_row_size):
-            for name in join:
-                if chunk.column(name).null_count:
-                    raise ValueError(f"column {name!r} is a merge key and cannot be null")
-            fresh = first_rows(normalised_keys(chunk, join), join)
-            if seen.num_rows:
-                fresh = anti_join(fresh, seen, join)
-            if not fresh.num_rows:
-                continue
-            inserted += self._commit(fresh.to_reader(), target, None)
-            seen = pyarrow.concat_tables([seen, fresh.select(list(join))])
-        return inserted
+        return self._commit(source, schema, commit_row_size)
 
     def _commit(
         self,
@@ -277,19 +267,19 @@ def test_a_write_uses_yggdryls_native_array_cast() -> None:
         names=["values"],
     )
 
-    assert dataset.append_arrow_reader(reader_of(batch), merge_by=False) == 2
+    assert dataset.append_arrow_reader(reader_of(batch)) == 2
     stored = dataset.commits[0]
     assert stored.schema == ArrayRow.into_field().into_arrow_schema()
     assert stored.column("values").to_pylist() == [[1, 2], []]
 
 
 def test_commit_row_size_bounds_what_one_commit_carries(dataset: MemoryDataset) -> None:
-    dataset.overwrite_arrow_reader(reader_of(*(rows(1) for _ in range(5))), commit_row_size=2)
+    dataset.append_arrow_reader(reader_of(*(rows(1) for _ in range(5))), commit_row_size=2)
     assert [commit.num_rows for commit in dataset.commits] == [2, 2, 1]
 
 
 def test_no_commit_row_size_writes_the_stream_as_one(dataset: MemoryDataset) -> None:
-    dataset.overwrite_arrow_reader(reader_of(*(rows(1) for _ in range(5))))
+    dataset.append_arrow_reader(reader_of(*(rows(1) for _ in range(5))))
     assert [commit.num_rows for commit in dataset.commits] == [5]
 
 
@@ -315,7 +305,7 @@ def test_polars_batches_stream_from_the_arrow_reader(
     dataset: MemoryDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     polars = pytest.importorskip("polars")
-    dataset.overwrite_arrow_reader(reader_of(rows(1), rows(1)), commit_row_size=1)
+    dataset.append_arrow_reader(reader_of(rows(1), rows(1)), commit_row_size=1)
     monkeypatch.setattr(
         MemoryDataset,
         "read_arrow_table",
@@ -461,69 +451,79 @@ def stored_rows(dataset: MemoryDataset) -> dict[str, int]:
     return dict(zip(*(table.column(name).to_pylist() for name in ("symbol", "size")), strict=True))
 
 
-def test_append_without_merge_by_is_a_plain_write(keyed: MemoryDataset) -> None:
+def test_append_is_a_plain_write(keyed: MemoryDataset) -> None:
     assert keyed.append_arrow(keyed_batch(["A"], [1])) == 1
     assert keyed.append_arrow(keyed_batch(["A"], [2])) == 1
-    assert keyed.read_arrow_table().num_rows == 2, "falsy merge_by appends, same as a write"
+    assert keyed.read_arrow_table().num_rows == 2, "an append adds every row, keyed or not"
 
 
-def test_append_merge_by_skips_stored_keys_and_never_rewrites(keyed: MemoryDataset) -> None:
+def test_overwrite_replaces_stored_keys_and_adds_the_rest(keyed: MemoryDataset) -> None:
     keyed.overwrite_arrow(keyed_batch(["A", "B"], [1, 2]))
-    assert keyed.append_arrow(keyed_batch(["B", "C"], [20, 3]), merge_by=True) == 1
-    assert stored_rows(keyed) == {"A": 1, "B": 2, "C": 3}, "B keeps its stored value"
+    assert keyed.overwrite_arrow(keyed_batch(["B", "C"], [20, 3]), merge_by=True) == 2
+    assert stored_rows(keyed) == {"A": 1, "B": 20, "C": 3}, "B carries the value it was handed"
 
 
-def test_append_polars_skips_a_stored_key(keyed: MemoryDataset) -> None:
+def test_overwrite_polars_replaces_a_stored_key(keyed: MemoryDataset) -> None:
     polars = pytest.importorskip("polars")
     keyed.overwrite_arrow(keyed_batch(["A"], [1]))
     assert (
-        keyed.append_polars(polars.DataFrame({"symbol": ["A", "B"], "size": [9, 2]}), merge_by=True)
-        == 1
+        keyed.overwrite_polars(
+            polars.DataFrame({"symbol": ["A", "B"], "size": [9, 2]}), merge_by=True
+        )
+        == 2
     )
-    assert stored_rows(keyed) == {"A": 1, "B": 2}
+    assert stored_rows(keyed) == {"A": 9, "B": 2}
 
 
-def test_replaying_a_stream_appends_nothing(keyed: MemoryDataset) -> None:
+def test_replaying_a_stream_leaves_the_same_rows(keyed: MemoryDataset) -> None:
     batch = keyed_batch(["A", "B"], [1, 2])
-    assert keyed.append_arrow(batch, merge_by=True) == 2
-    commits = len(keyed.commits)
-    assert keyed.append_arrow(batch, merge_by=True) == 0
+    assert keyed.overwrite_arrow(batch, merge_by=True) == 2
+    assert keyed.overwrite_arrow(batch, merge_by=True) == 2, "carried again, and said so"
     assert stored_rows(keyed) == {"A": 1, "B": 2}
-    assert len(keyed.commits) == commits, "a replay is not even a commit"
+    assert keyed.read_arrow_table().num_rows == 2, "a replay holds each key once"
 
 
-def test_duplicate_keys_inside_the_stream_collapse_to_the_first(keyed: MemoryDataset) -> None:
-    keyed.append_arrow_reader(
+def test_duplicate_keys_inside_a_chunk_collapse_to_the_first(keyed: MemoryDataset) -> None:
+    keyed.overwrite_arrow_reader(
         reader_of(keyed_batch(["A", "A"], [1, 9]), keyed_batch(["A"], [8])),
         merge_by=True,
     )
     assert stored_rows(keyed) == {"A": 1}
 
 
-def test_append_merge_by_a_list_names_the_columns(keyed: MemoryDataset) -> None:
-    keyed.append_arrow(keyed_batch(["A"], [1]), merge_by=["symbol"])
-    keyed.append_arrow(keyed_batch(["A"], [9]), merge_by=["symbol"])
-    assert stored_rows(keyed) == {"A": 1}
+def test_a_key_repeated_in_a_later_chunk_replaces_the_earlier(keyed: MemoryDataset) -> None:
+    keyed.overwrite_arrow_reader(
+        reader_of(keyed_batch(["A"], [1]), keyed_batch(["A"], [8])),
+        merge_by=True,
+        commit_row_size=1,
+    )
+    assert stored_rows(keyed) == {"A": 8}
+
+
+def test_overwrite_by_a_list_names_the_columns(keyed: MemoryDataset) -> None:
+    keyed.overwrite_arrow(keyed_batch(["A"], [1]), merge_by=["symbol"])
+    keyed.overwrite_arrow(keyed_batch(["A"], [9]), merge_by=["symbol"])
+    assert stored_rows(keyed) == {"A": 9}
 
 
 def test_a_null_merge_key_is_refused(dataset: MemoryDataset) -> None:
     batch = batch_of(symbol=["A"], day=[datetime.date(2026, 8, 14)], size=[None])
     with pytest.raises(ValueError, match="merge key and cannot be null"):
-        dataset.append_arrow(batch, merge_by=["size"])
+        dataset.overwrite_arrow(batch, merge_by=["size"])
 
 
-def test_append_creates_what_is_not_there(keyed: MemoryDataset) -> None:
+def test_overwrite_creates_what_is_not_there(keyed: MemoryDataset) -> None:
     assert not keyed.exists
-    keyed.append_arrow(keyed_batch(["A"], [1]), merge_by=True)
+    keyed.overwrite_arrow(keyed_batch(["A"], [1]), merge_by=True)
     assert keyed.exists and stored_rows(keyed) == {"A": 1}
 
 
 def test_append_arrow_picks_the_method_by_what_it_is(keyed: MemoryDataset) -> None:
     batch = keyed_batch(["A"], [1])
-    keyed.append_arrow(batch, merge_by=True)
-    keyed.append_arrow(pyarrow.Table.from_batches([batch]), merge_by=True)
-    keyed.append_arrow(reader_of(batch), merge_by=True)
-    assert stored_rows(keyed) == {"A": 1}
+    keyed.append_arrow(batch)
+    keyed.append_arrow(pyarrow.Table.from_batches([batch]))
+    keyed.append_arrow(reader_of(batch))
+    assert keyed.read_arrow_table().num_rows == 3
 
 
 # -- chunking ---------------------------------------------------------------
@@ -611,10 +611,10 @@ def test_get_or_create_is_idempotent(dataset: MemoryDataset) -> None:
 
 def test_overwrite_arrow_picks_the_method_by_what_it_is(dataset: MemoryDataset) -> None:
     batch = rows(1)
-    dataset.overwrite_arrow(batch)
-    dataset.overwrite_arrow(pyarrow.Table.from_batches([batch]))
-    dataset.overwrite_arrow(reader_of(batch))
-    assert [commit.num_rows for commit in dataset.commits] == [1, 1, 1]
+    assert dataset.overwrite_arrow(batch) == 1
+    assert dataset.overwrite_arrow(pyarrow.Table.from_batches([batch])) == 1
+    assert dataset.overwrite_arrow(reader_of(batch)) == 1
+    assert [commit.num_rows for commit in dataset.commits] == [1], "one key, replaced twice"
 
 
 def test_read_arrow_picks_the_method_by_the_type_asked_for(dataset: MemoryDataset) -> None:
@@ -707,15 +707,18 @@ def test_an_anti_join_hands_the_rows_back_in_the_order_they_came() -> None:
     assert fresh.column("payload")[0].as_py() == "row-1", "and the right rows in it"
 
 
-def test_a_semi_join_hands_the_rows_back_in_the_order_they_came() -> None:
-    from rekep.dataset import semi_join
+def test_an_anti_join_brings_the_keys_it_is_handed_onto_the_rows_types() -> None:
+    """A scan hands a stored `string` back as `large_string`, and Acero
+    refuses to join the two; the keys are cast, the rows are not."""
+    stored = pyarrow.table(
+        {"at": pyarrow.array(["a", "b", "c"], pyarrow.large_string()), "payload": [1, 2, 3]}
+    )
+    chunk = pyarrow.table({"at": pyarrow.array(["b"], pyarrow.string())})
 
-    count = 70_000
-    stored = joinable(range(count))
-    chunk = joinable(range(1, count))
-    kept = semi_join(stored, chunk, ["at"])
-    assert kept.num_rows == count - 1
-    assert descents(kept, "at") == 0
+    kept = anti_join(stored, chunk, ["at"])
+
+    assert kept.column("at").to_pylist() == ["a", "c"]
+    assert kept.schema.field("at").type == pyarrow.large_string(), "the rows keep their types"
 
 
 def test_a_join_that_drops_nothing_is_the_table_itself() -> None:

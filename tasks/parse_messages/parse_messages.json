@@ -4,6 +4,8 @@
   "parameters": {
     "filesystem": "file:data/capture",
     "rowheader": null,
+    "start": null,
+    "end": null,
     "catalog": {
       "name": "rekep",
       "properties": {

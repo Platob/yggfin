@@ -35,8 +35,13 @@ def _task(name: str, target: str) -> MarimoOperator:
 
 @dag(
     dag_id="rekep_ingestion",
-    description="Parse captured text into raw messages, then native FIX rows.",
-    schedule=None,
+    description="Parse one day of captured text into raw messages, then native FIX rows.",
+    # One run a day, covering its own data interval: the operator hands the
+    # interval to both tasks as their `start` and `end`, and a manual trigger
+    # of the DAG covers the last complete day the same way. Triggered on an
+    # unscheduled DAG, the interval has no width and each task covers the day
+    # before the instant it ran instead.
+    schedule="@daily",
     catchup=False,
     max_active_runs=1,
     render_template_as_native_obj=True,

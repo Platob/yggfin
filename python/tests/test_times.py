@@ -1,4 +1,4 @@
-"""`unix_of` and `datetime_of`: one reading of "an instant", whatever spelled it."""
+"""`unix_of`, `datetime_of` and `window_of`: one reading of an instant, and of a window."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep.times import ULBRIDGE_ROWHEADER, UTC, datetime_of, unix_of
+from rekep.times import ULBRIDGE_ROWHEADER, UTC, WINDOW, datetime_of, unix_of, window_of, within
 
 #: Where the core states the same expression, when its checkout is beside
 #: this one. The constant reaches Rust but not yet the Python extension, so
@@ -175,4 +175,79 @@ def test_every_bridge_capture_is_named_for_the_column_it_fills() -> None:
         "msgseqnum",
         "pluginid",
         "level",
+    ]
+
+
+# -- the window a run covers -------------------------------------------------
+
+
+def test_a_window_named_nowhere_is_the_last_day_ending_now() -> None:
+    before = datetime.datetime.now(UTC)
+    lower, upper = window_of()
+    after = datetime.datetime.now(UTC)
+
+    assert WINDOW == datetime.timedelta(days=1)
+    assert before <= upper <= after, "the end is the instant the window was read"
+    assert upper - lower == WINDOW
+
+
+def test_a_window_named_in_full_is_exactly_what_it_names() -> None:
+    lower, upper = window_of("2026-08-14T09:30:00", "2026-08-14T10:30:00Z")
+    assert lower == datetime.datetime(2026, 8, 14, 9, 30, tzinfo=UTC)
+    assert upper == datetime.datetime(2026, 8, 14, 10, 30, tzinfo=UTC)
+
+
+def test_a_whole_day_end_is_the_exclusive_end_of_that_day() -> None:
+    """`end: 2026-08-14` covers all of the 14th, and a one-day default before it."""
+    lower, upper = window_of(None, "2026-08-14")
+    assert upper == datetime.datetime(2026, 8, 15, tzinfo=UTC)
+    assert lower == datetime.datetime(2026, 8, 14, tzinfo=UTC)
+
+
+def test_a_start_alone_reaches_forward_to_now() -> None:
+    lower, upper = window_of("2026-08-14")
+    assert lower == datetime.datetime(2026, 8, 14, tzinfo=UTC)
+    assert upper > lower and upper.tzinfo is UTC
+
+
+@pytest.mark.parametrize(
+    ("start", "end", "said"),
+    [
+        ("garbage", None, "start='garbage' is not an instant"),
+        (None, "2026-13-45", "end='2026-13-45' is not an instant"),
+        ("2026-08-15", "2026-08-14", "is empty"),
+        ("2026-08-14T10:00", "2026-08-14T10:00", "is empty"),
+    ],
+)
+def test_a_window_that_names_no_interval_is_refused(start: str, end: str, said: str) -> None:
+    """A run that would read nothing by construction is a configuration mistake."""
+    with pytest.raises(ValueError, match=said):
+        window_of(start, end)
+
+
+def test_within_covers_the_half_open_interval_and_every_row_with_no_clock() -> None:
+    # `end: 2026-08-14` is the exclusive end of the 14th, so this is the 14th alone.
+    window = window_of("2026-08-14", "2026-08-14")
+    assert window == (
+        datetime.datetime(2026, 8, 14, tzinfo=UTC),
+        datetime.datetime(2026, 8, 15, tzinfo=UTC),
+    )
+    values = pyarrow.array(
+        [
+            datetime.datetime(2026, 8, 13, 23, 59, 59, tzinfo=UTC),
+            datetime.datetime(2026, 8, 14, tzinfo=UTC),
+            datetime.datetime(2026, 8, 14, 12, tzinfo=UTC),
+            datetime.datetime(2026, 8, 15, tzinfo=UTC),
+            None,
+        ],
+        pyarrow.timestamp("us", tz="UTC"),
+    )
+
+    assert within(values, window).to_pylist() == [False, True, True, False, True]
+    assert within(pyarrow.chunked_array([values]), window).to_pylist() == [
+        False,
+        True,
+        True,
+        False,
+        True,
     ]

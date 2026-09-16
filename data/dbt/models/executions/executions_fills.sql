@@ -1,7 +1,7 @@
 {{
     config(
         table='executions.fills',
-        mode='append',
+        mode='overwrite',
         primary_key=['executionkey'],
         not_null=[
             'eventkey',
@@ -38,7 +38,8 @@
 -- copy it received beside the copy it sent, so an execution id alone names
 -- several rows; scoped by the chain, each order sees its own occurrence once.
 -- The earliest source position wins, so which copy is kept does not depend on
--- the order the rows were merged in.
+-- the order the rows were read in, and the row is committed on its key so a
+-- rebuild lands each occurrence once.
 --
 -- `exectype` says whether the occurrence is a trade, a correction or a cancel.
 -- Corrections and cancels are rows of their own, and the settled quantity is

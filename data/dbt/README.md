@@ -13,9 +13,9 @@ fix.messages -> stg_fix_messages -> orders.events   -> orders.current
 
 | model | table | grain | key | mode |
 | --- | --- | --- | --- | --- |
-| `orders_events` | `orders.events` | one normalized order event | `eventkey` | append |
+| `orders_events` | `orders.events` | one normalized order event | `eventkey` | overwrite |
 | `orders_current` | `orders.current` | latest settled state per order | `orderkey` | overwrite |
-| `executions_fills` | `executions.fills` | one economic execution occurrence | `executionkey` | append |
+| `executions_fills` | `executions.fills` | one economic execution occurrence | `executionkey` | overwrite |
 
 `stg_fix_messages` is a view: it narrows the source and settles the two
 readings both products share — the event's time and the session it was seen
