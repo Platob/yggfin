@@ -5,7 +5,7 @@ Both checked files are Iceberg table contracts, serialized by PyIceberg:
 | file | runtime owner | product | columns |
 | --- | --- | --- | ---: |
 | `rekep/message.json` | `rekep.Message.into_field()` | `logs.messages` | 12 |
-| `rekep/fix-message.json` | `rekep.fix.fix_message_field()` | `fix.messages` | 130 |
+| `rekep/fix-message.json` | `rekep.fix.fix_message_field()` | `fix.messages` | 129 |
 
 They are review artifacts, not alternate implementations. Runtime fields
 remain authoritative and tests require byte-for-byte agreement.
@@ -21,16 +21,26 @@ in front of it, and yggfin defines neither:
 fix_schema_carrying(fix_carrier(Message.into_field()), fix_schema(registry, "fixmsg"))
 ```
 
-123 columns come from the dictionary and 7 are the carrier's — `rownum`,
-`timestamp`, `timepartition`, `threadId`, `level`, `bodyhash`, `body`. The
-carrier's other five are named for the fields they fill, so `sourceurl`,
-`msgsessionid`, `msgctxid`, `msgseqnum` and `pluginid` fold onto the row's own
-columns instead of riding in front of it.
+That expression is the row the *parse* answers: 123 columns from the dictionary
+and 7 from the carrier — `rownum`, `timestamp`, `timepartition`, `threadId`,
+`level`, `bodyhash`, `body`. The carrier's other five are named for the fields
+they fill, so `sourceurl`, `msgsessionid`, `msgctxid`, `msgseqnum` and
+`pluginid` fold onto the row's own columns instead of riding in front of it.
 
-What yggfin adds is the three things a table is, and nothing else: the primary
-key `curruuid`, the hour partition over `unix`, and the sort order
-`unix, seqnum, curruuid`. `iceberg_fix_field` then narrows what a table
-stores — see [the product page](../docs/products/fix-message.md).
+The row the *table stores* is that minus `body`, so 129. `body` is the column
+the codec reads each message out of, and `logs.messages` already holds those
+bytes keyed on the digest of them: the fixed row references the text by
+`bodyhash` rather than repeating it, because a row here is an event and those
+bytes are one line's. A digest holder whose source the table does not store is
+unmarked with it — `bodyhash` is a carried reference here, not a digest this
+shape computes, and a holder left pointing at an absent column refuses the
+whole apply rather than falling back.
+
+So what yggfin adds is the three things a table is — the primary key
+`curruuid`, the hour partition over `unix`, the sort order
+`unix, seqnum, curruuid` — one column dropped, and the storage narrowing.
+`iceberg_fix_field` does all of it; see
+[the product page](../docs/products/fix-message.md).
 
 The dictionary this was generated against is the one bundled under
 `python/src/rekep/_data/fix`, taken from the core's own `config/fix` at

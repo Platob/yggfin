@@ -77,14 +77,14 @@
         "name": "bodyhash",
         "type": "fixed[16]",
         "required": true,
-        "doc": "XXH3-128 digest of the exact *body* bytes, filled during field apply. The key of `logs.messages`, and a digest of the bytes alone: identical bytes are one row whatever session carried them, whichever object they were read from and however often a capture is re-read. It is not the message's `hashcode`, which covers the settled event -- its facts, its text, its metadata and its entry tree -- and answers the same code for two different lines that state the same message. The bytes and the message are two questions, so they are two columns and neither stands in for the other."
+        "doc": "XXH3-128 digest of the exact *body* bytes, computed beside them on the read. The key of `logs.messages`, and a digest of the bytes alone: identical bytes are one row whatever session carried them, whichever object they were read from and however often a capture is re-read. It is not the message's `hashcode`, which covers the settled event -- its facts, its text, its metadata and its entry tree -- and answers the same code for two different lines that state the same message. The bytes and the message are two questions, so they are two columns and neither stands in for the other."
       },
       {
         "id": 12,
         "name": "body",
         "type": "binary",
         "required": true,
-        "doc": "Exact bytes after the matched line-header prefix."
+        "doc": "Exact bytes after the matched line-header prefix. `logs.messages` is where they live and the only place: `fix.messages` references them by `bodyhash` rather than repeating them, because a row there is an event and these bytes are one line's."
       }
     ],
     "schema-id": 0,

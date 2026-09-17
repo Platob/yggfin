@@ -11,11 +11,13 @@ import pytest
 from yggdryl import IOBase
 from yggdryl.fix import fix_schema, fix_schema_carrying
 
+from rekep.fields import Field
 from rekep.fix import (
     CHAIN_STEP,
     EVENT_CLOCK,
     FIXMSG,
     MESSAGE_KEY,
+    PAYLOAD,
     SORT_COLUMNS,
     UNDATED,
     fix_arrow_messages,
@@ -246,9 +248,56 @@ def test_the_storage_boundary_narrows_what_a_row_filter_cannot_be_lowered_to() -
     # fills all of it, so the column says so rather than overflowing a commit.
     for code in ("hashcode", "crosshashcode", "seqnum"):
         assert schema.field(code).type == pyarrow.int64(), code
-    assert len(schema) == 130
+    assert len(schema) == 129
     assert schema.field(MESSAGE_KEY).metadata[b"fix:tag"] == b"65039"
     assert schema.field(MESSAGE_KEY).metadata[b"iceberg:primary_key"] == b"true"
+
+
+def test_the_stored_row_references_the_text_instead_of_repeating_it(tracked) -> None:
+    """The bytes are the line's and the row is the event's.
+
+    A message logged at four hops is four lines with four different bodies and
+    one row, so a copy of any one of them would be one arrival's bytes
+    presented as the event's. `logs.messages` holds all four, keyed on the
+    digest of each; the row carries that digest and nothing else of the text.
+    """
+    assert PAYLOAD not in tracked.column_names
+    assert PAYLOAD not in fix_message_field().into_arrow_schema().names
+    # The parse still reads its payload -- only the stored row drops it.
+    assert PAYLOAD in fix_parse_field().into_arrow_schema().names
+    assert tracked.column("bodyhash").null_count == 0
+    assert all(len(digest) == 16 for digest in tracked.column("bodyhash").to_pylist())
+    # And what the row is re-emitted from is the arrival record, which is on
+    # it: dropping the payload takes nothing the wire is rebuilt from.
+    assert tracked.column("nofixentries").null_count == 0
+    assert all(count > 0 for count in tracked.column("nofixentries").to_pylist())
+
+
+def test_the_digest_of_bytes_this_table_does_not_store_is_carried_not_computed() -> None:
+    """A holder is a statement that this shape computes the digest, and it is
+    checked when the field is applied: a source the shape does not name
+    refuses the apply outright rather than falling back to the value it was
+    handed. So `bodyhash` is unmarked where `body` is dropped."""
+    carried = fix_message_field()["bodyhash"]
+
+    assert not carried.digest.is_holder()
+    assert carried.digest.sources is None
+    assert carried.digest.algorithm is None
+    # The line's own contract still computes it, beside the bytes it read.
+    logged = Message.into_field()["bodyhash"]
+    assert logged.digest.is_holder()
+    assert logged.digest.sources == [PAYLOAD]
+
+    # Left marked, the whole apply raises before a single batch is pulled.
+    still = pyarrow.schema(
+        [member for member in fix_parse_field().into_arrow_schema() if member.name != PAYLOAD]
+    )
+    with pytest.raises(ValueError, match="does not name a field"):
+        Field.from_arrow_schema(still, name="Unstripped").apply_arrow_reader(
+            pyarrow.RecordBatchReader.from_batches(still, []),
+            safe=False,
+            nullability="strict",
+        )
 
 
 def test_the_narrowing_walks_into_a_nested_type() -> None:

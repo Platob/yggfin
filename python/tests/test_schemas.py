@@ -3,11 +3,19 @@
 import json
 from pathlib import Path
 
+import pyarrow
 from yggdryl.fix import fix_schema, fix_schema_carrying
 
 from rekep import Message
 from rekep.fields import Field
-from rekep.fix import FIXMSG, fix_carrier, fix_message_field, fix_parse_field, fix_registry
+from rekep.fix import (
+    FIXMSG,
+    PAYLOAD,
+    fix_carrier,
+    fix_message_field,
+    fix_parse_field,
+    fix_registry,
+)
 from rekep.iceberg import (
     CONTRACT_KEYS,
     derived_keys,
@@ -124,8 +132,33 @@ def test_the_fix_contract_is_what_the_current_dictionary_answers() -> None:
     # own columns in front through the one supported seam.
     declared = fix_schema_carrying(fix_carrier(), fix_schema(fix_registry(), FIXMSG))
     assert [member.name for member in fix_parse_field()] == [member.name for member in declared]
-    assert [member.name for member in fixed] == [member.name for member in declared]
-    assert len(fixed) == 130 == len(fix_schema(fix_registry(), FIXMSG)) + 7
+    # The stored row is that row minus the payload the parse read it out of:
+    # `logs.messages` holds those bytes and `bodyhash` is the handle into them.
+    assert [member.name for member in fixed] == [
+        member.name for member in declared if member.name != PAYLOAD
+    ]
+    assert len(fixed) == 129 == len(fix_schema(fix_registry(), FIXMSG)) + 6
+    assert len(fix_parse_field()) == 130 == len(fixed) + 1
+
+
+def test_the_stored_row_does_not_repeat_the_bytes_it_was_read_from() -> None:
+    """`fix.messages` references the text; `logs.messages` holds it."""
+    stored = fix_message_field().into_arrow_schema()
+
+    assert PAYLOAD == "body"
+    assert PAYLOAD not in stored.names
+    assert PAYLOAD in fix_parse_field().into_arrow_schema().names, "the parse still reads it"
+    assert PAYLOAD in Message.into_field().into_arrow_schema().names, "and the log still holds it"
+    # The handle stays, non-null, and is the key of the table that has the bytes.
+    assert stored.field("bodyhash").type == pyarrow.binary(16)
+    assert stored.field("bodyhash").nullable is False
+    assert primary_keys(Message.into_field()) == ["bodyhash"]
+    # And it is a carried value here, not a digest this shape computes: a
+    # holder whose source column the table does not store refuses the apply
+    # outright, on the write and on every read back through the declaration.
+    assert Message.into_field()["bodyhash"].digest.is_holder()
+    assert not fix_message_field()["bodyhash"].digest.is_holder()
+    assert fix_message_field()["bodyhash"].digest.sources is None
 
 
 def test_the_fix_table_is_laid_out_by_the_event_and_keyed_by_its_identity() -> None:
@@ -138,7 +171,7 @@ def test_the_fix_table_is_laid_out_by_the_event_and_keyed_by_its_identity() -> N
     assert partition_keys(fixed) == {"unix": "hour"}
     assert list(sort_keys(fixed)) == ["unix", "seqnum", "curruuid"]
     assert document["partition-spec"]["fields"] == [
-        {"source-id": 8, "field-id": 1000, "transform": "hour", "name": "unix_hour"}
+        {"source-id": 7, "field-id": 1000, "transform": "hour", "name": "unix_hour"}
     ]
     assert [field["direction"] for field in document["sort-order"]["fields"]] == ["asc"] * 3
 
@@ -150,14 +183,13 @@ def test_the_fix_table_is_laid_out_by_the_event_and_keyed_by_its_identity() -> N
     # The capture's own columns lead, the crate's clocks open the dictionary's
     # half, and the arrival record closes the row under the counter that
     # counts it.
-    assert schema.names[:8] == [
+    assert schema.names[:7] == [
         "rownum",
         "timestamp",
         "timepartition",
         "threadId",
         "level",
         "bodyhash",
-        "body",
         "unix",
     ]
     assert schema.names[-3:] == ["metadata", "nofixentries", "fixentries"]
@@ -170,7 +202,6 @@ def test_the_fix_table_is_laid_out_by_the_event_and_keyed_by_its_identity() -> N
     assert [member.name for member in fixed if not member.nullable] == [
         "rownum",
         "bodyhash",
-        "body",
         "unix",
         "creatunix",
         "curruuid",
@@ -191,7 +222,7 @@ def test_the_fix_declaration_keeps_its_registry_metadata() -> None:
     assert schema.field("px").metadata[b"fix:tag"] == b"65043"
     assert load_fix_contract().into_arrow_schema().field("msgtype").metadata == {
         b"description": schema.field("msgtype").metadata[b"description"],
-        b"iceberg:field_id": b"30",
+        b"iceberg:field_id": b"29",
     }
 
 

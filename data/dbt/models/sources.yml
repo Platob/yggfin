@@ -3,7 +3,7 @@ version: 2
 # The two tables ingestion publishes. Each is read through the `rekep` plugin,
 # which is one Iceberg read per source: `table` names the Iceberg table and
 # `columns` is the projection pushed into scan planning, so DuckDB holds the
-# columns the products read and not the 130 a FIX row has.
+# columns the products read and not the 129 a FIX row has.
 #
 # Both are declared here because both are the repository's published contract;
 # only `fix.messages` is read by a model today.

@@ -10,7 +10,7 @@ flowchart LR
     M --> F["parse_fix<br/>parse"]
     R[["bundled dictionary<br/>7,787 definitions"]] -.types.-> F
     F --> L["lifecycle"]
-    L --> X[("fix.messages<br/>130 columns")]
+    L --> X[("fix.messages<br/>129 columns")]
     X --> B["build_dbt"]
     B --> O[("orders.events<br/>orders.current")]
     B --> C[("executions.fills")]

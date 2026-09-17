@@ -82,7 +82,7 @@ class Message(Convertible):
         digest_key(["body"], dtype=pyarrow.binary(16)),
         primary_key(),
     ] = b""
-    """XXH3-128 digest of the exact *body* bytes, filled during field apply.
+    """XXH3-128 digest of the exact *body* bytes, computed beside them on the read.
 
     The key of `logs.messages`, and a digest of the bytes alone: identical
     bytes are one row whatever session carried them, whichever object they
@@ -94,7 +94,12 @@ class Message(Convertible):
     """
 
     body: bytes = b""
-    """Exact bytes after the matched line-header prefix."""
+    """Exact bytes after the matched line-header prefix.
+
+    `logs.messages` is where they live and the only place: `fix.messages`
+    references them by `bodyhash` rather than repeating them, because a row
+    there is an event and these bytes are one line's.
+    """
 
     def __post_init__(self) -> None:
         """Normalize the raw scalar values once."""

@@ -324,7 +324,6 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
                 "sourceurl": "file:///mock/fix.log",
                 "rownum": 1,
                 "bodyhash": uuid.UUID(int=3).bytes,
-                "body": b"8=FIX.4.4|35=D|10=0|",
                 "beginstring": "FIX.4.4",
                 "timestamp": EPOCH,
                 # The settled bundle a replayable row always carries. Only a
@@ -346,13 +345,14 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
         assert fixes.overwrite_arrow_reader(source, field, merge_by=True) == 1
         stored = fixes.read_arrow_table(field)
         assert stored.num_rows == 1
-        assert stored.num_columns == 130
+        assert stored.num_columns == 129
+        assert "body" not in stored.column_names, "the row references the text, it does not hold it"
         assert stored.schema.field("timestamp").type == pyarrow.timestamp("us", tz="UTC")
-        assert stored.select(("sourceurl", "rownum", "body")).to_pylist() == [
+        assert stored.select(("sourceurl", "rownum", "bodyhash")).to_pylist() == [
             {
                 "sourceurl": "file:///mock/fix.log",
                 "rownum": 1,
-                "body": b"8=FIX.4.4|35=D|10=0|",
+                "bodyhash": uuid.UUID(int=3).bytes,
             }
         ]
     finally:
@@ -480,24 +480,29 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
     assert len(handed_to_iceberg) == 1
     assert handed_to_iceberg[0].names == fixes.schema.names
     assert fixes.num_rows == STORED["fix.messages"]
-    assert fixes.num_columns == 130
+    assert fixes.num_columns == 129
     # The capture's own columns lead the row, the dictionary's follow. A
     # capture named after a field fills that field instead of leading, so
     # `sourceurl`, `msgsessionid`, `msgctxid`, `msgseqnum` and `pluginid` are
     # the message's own columns and `bodyhash` is the line's exact-byte
     # digest. The event's own clocks open the dictionary's half.
-    assert fixes.column_names[:10] == [
+    assert fixes.column_names[:9] == [
         "rownum",
         "timestamp",
         "timepartition",
         "threadId",
         "level",
         "bodyhash",
-        "body",
         "unix",
         "creatunix",
         "prevunix",
     ]
+    # The bytes are the line's and this row is the event's, so the row
+    # references the text by its digest and `logs.messages` holds it.
+    assert "body" not in fixes.column_names
+    assert fixes.column("bodyhash").null_count == 0
+    stored_lines = set(ran.table("logs.messages").column("bodyhash").to_pylist())
+    assert set(fixes.column("bodyhash").to_pylist()) <= stored_lines
     assert {"msgtype", "msgseqnum", "curruuid", "crosscode", "sourceurl"} <= set(fixes.column_names)
     # One fact, one column: tags 44, 38 and 53 are read and written through
     # the crate's own `px` and `qty`, and no column repeats them.
