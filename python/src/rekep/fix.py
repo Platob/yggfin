@@ -503,10 +503,23 @@ def fix_parse_field(
     without. So they are inputs to the parse and no part of its answer, which
     is why this row and `fix_message_field`'s hold the same columns and differ
     only by the table's own layout and the storage narrowing.
+
+    A codec reading its messages out of a column the carrier does not hold is
+    refused by name. The parse refuses that source too -- there is nothing to
+    read each message out of -- so the only thing a row described for it could
+    be is a row nothing can answer, with the payload still on it because the
+    drop went looking under the other name.
     """
     registry = codec.registry if codec is not None else fix_registry()
-    carried = fix_schema_carrying(fix_carrier(carrier), fix_schema(registry, FIXMSG))
-    return _without(carried.into_arrow_schema(), _text_of(codec), name=carried.name)
+    held = fix_carrier(carrier)
+    payload, digest = _text_of(codec)
+    if payload not in [member.name for member in held]:
+        raise ValueError(
+            f"the codec reads its messages out of {payload}, which {held.name} does not hold; "
+            f"it holds {', '.join(member.name for member in held)}"
+        )
+    carried = fix_schema_carrying(held, fix_schema(registry, FIXMSG))
+    return _without(carried.into_arrow_schema(), (payload, digest), name=carried.name)
 
 
 def fix_message_field(

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pyarrow
 import pytest
-from yggdryl import IOBase
+from yggdryl import Field, IOBase
 from yggdryl.fix import fix_schema, fix_schema_carrying
 
 from rekep.fix import (
@@ -163,6 +163,29 @@ def test_the_published_row_is_the_dictionarys_with_the_capture_in_front() -> Non
     for folded in ("sourceurl", "msgsessionid", "msgctxid", "msgseqnum", "pluginid"):
         assert [member.name for member in declared].count(folded) == 1, folded
     assert len(declared) == len(fix_schema(registry, FIXMSG)) + len(seam)
+
+
+def test_a_payload_column_the_carrier_does_not_hold_is_refused_by_name() -> None:
+    """The drop follows the codec, so the two have to be talking about one row.
+
+    A codec reading its messages out of a column the carrier never declares
+    describes a row nothing can answer -- the parse refuses that source for
+    want of anything to read -- and the drop would go looking under the other
+    name and leave the payload on the published row.
+    """
+    with pytest.raises(ValueError, match="which Message does not hold"):
+        fix_parse_field(fix_codec(fix_registry(), payload_column="message"))
+
+    # A carrier that does name it is the same row under another spelling.
+    held = Message.into_field().into_arrow_schema()
+    renamed = Field.from_arrow_schema(
+        pyarrow.schema([m.with_name("message") if m.name == PAYLOAD else m for m in held]),
+        name="Message",
+    )
+    answered = fix_parse_field(fix_codec(fix_registry(), payload_column="message"), renamed)
+
+    assert len(answered) == len(fix_parse_field()) == 128
+    assert [member.name for member in answered if member.name in ("message", PAYLOAD)] == []
 
 
 def test_the_capture_has_no_layout_of_its_own_in_this_table() -> None:
