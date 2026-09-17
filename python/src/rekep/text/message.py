@@ -96,9 +96,10 @@ class Message(Convertible):
     body: bytes = b""
     """Exact bytes after the matched line-header prefix.
 
-    `logs.messages` is where they live and the only place: `fix.messages`
-    references them by `bodyhash` rather than repeating them, because a row
-    there is an event and these bytes are one line's.
+    `logs.messages` is where they live and the only place, and so is the
+    `bodyhash` beside them: `fix.messages` holds neither, because a row there
+    is an event and both of these are one line's. It names the line it was
+    read from instead, with `sourceurl` and `rownum`.
     """
 
     def __post_init__(self) -> None:

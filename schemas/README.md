@@ -5,7 +5,7 @@ Both checked files are Iceberg table contracts, serialized by PyIceberg:
 | file | runtime owner | product | columns |
 | --- | --- | --- | ---: |
 | `rekep/message.json` | `rekep.Message.into_field()` | `logs.messages` | 12 |
-| `rekep/fix-message.json` | `rekep.fix.fix_message_field()` | `fix.messages` | 129 |
+| `rekep/fix-message.json` | `rekep.fix.fix_message_field()` | `fix.messages` | 128 |
 
 They are review artifacts, not alternate implementations. Runtime fields
 remain authoritative and tests require byte-for-byte agreement.
@@ -27,18 +27,17 @@ and 7 from the carrier — `rownum`, `timestamp`, `timepartition`, `threadId`,
 they fill, so `sourceurl`, `msgsessionid`, `msgctxid`, `msgseqnum` and
 `pluginid` fold onto the row's own columns instead of riding in front of it.
 
-The row the *table stores* is that minus `body`, so 129. `body` is the column
-the codec reads each message out of, and `logs.messages` already holds those
-bytes keyed on the digest of them: the fixed row references the text by
-`bodyhash` rather than repeating it, because a row here is an event and those
-bytes are one line's. A digest holder whose source the table does not store is
-unmarked with it — `bodyhash` is a carried reference here, not a digest this
-shape computes, and a holder left pointing at an absent column refuses the
-whole apply rather than falling back.
+The row the *table stores* is that minus the capture's own text columns, so
+128. `body` is what the codec reads each message out of and `bodyhash` is the
+digest of those bytes, and both are facts about one *line* while a row there is
+an *event*: a message logged at four hops is four lines and one row, so either
+column would be one arrival's answer standing in for the event's.
+`logs.messages` holds all of them, and the row names the line it was read from
+with `sourceurl` and `rownum`.
 
 So what yggfin adds is the three things a table is — the primary key
 `curruuid`, the hour partition over `unix`, the sort order
-`unix, seqnum, curruuid` — one column dropped, and the storage narrowing.
+`unix, seqnum, curruuid` — the two columns dropped, and the storage narrowing.
 `iceberg_fix_field` does all of it; see
 [the product page](../docs/products/fix-message.md).
 

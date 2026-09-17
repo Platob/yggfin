@@ -11,7 +11,6 @@ import pytest
 from yggdryl import IOBase
 from yggdryl.fix import fix_schema, fix_schema_carrying
 
-from rekep.fields import Field
 from rekep.fix import (
     CHAIN_STEP,
     EVENT_CLOCK,
@@ -19,7 +18,9 @@ from rekep.fix import (
     MESSAGE_KEY,
     PAYLOAD,
     SORT_COLUMNS,
+    TEXT_DIGEST,
     UNDATED,
+    UNSTORED,
     fix_arrow_messages,
     fix_arrow_reader,
     fix_carrier,
@@ -248,56 +249,37 @@ def test_the_storage_boundary_narrows_what_a_row_filter_cannot_be_lowered_to() -
     # fills all of it, so the column says so rather than overflowing a commit.
     for code in ("hashcode", "crosshashcode", "seqnum"):
         assert schema.field(code).type == pyarrow.int64(), code
-    assert len(schema) == 129
+    assert len(schema) == 128
     assert schema.field(MESSAGE_KEY).metadata[b"fix:tag"] == b"65039"
     assert schema.field(MESSAGE_KEY).metadata[b"iceberg:primary_key"] == b"true"
 
 
-def test_the_stored_row_references_the_text_instead_of_repeating_it(tracked) -> None:
-    """The bytes are the line's and the row is the event's.
+def test_the_stored_row_holds_none_of_the_text_it_was_read_from(tracked) -> None:
+    """The bytes are a line's, the digest of them is a line's, and this row is
+    an event's.
 
-    A message logged at four hops is four lines with four different bodies and
-    one row, so a copy of any one of them would be one arrival's bytes
-    presented as the event's. `logs.messages` holds all four, keyed on the
-    digest of each; the row carries that digest and nothing else of the text.
+    A message logged at four hops is four lines -- four different bodies, four
+    different digests -- and one row, so either column would be one arrival's
+    answer standing in for the event's. `logs.messages` holds all four; the row
+    names the line it was read from and is re-emitted from its own arrival
+    record.
     """
-    assert PAYLOAD not in tracked.column_names
-    assert PAYLOAD not in fix_message_field().into_arrow_schema().names
-    # The parse still reads its payload -- only the stored row drops it.
-    assert PAYLOAD in fix_parse_field().into_arrow_schema().names
-    assert tracked.column("bodyhash").null_count == 0
-    assert all(len(digest) == 16 for digest in tracked.column("bodyhash").to_pylist())
-    # And what the row is re-emitted from is the arrival record, which is on
-    # it: dropping the payload takes nothing the wire is rebuilt from.
+    stored = fix_message_field().into_arrow_schema()
+    parsed = fix_parse_field().into_arrow_schema()
+
+    assert UNSTORED == (PAYLOAD, TEXT_DIGEST) == ("body", "bodyhash")
+    for column in UNSTORED:
+        assert column not in tracked.column_names, column
+        assert column not in stored.names, column
+        # The parse still reads its payload and still carries the digest -- it
+        # is the stored row that keeps neither.
+        assert column in parsed.names, column
+    # What names the line instead, filled on every row a capture read answers.
+    assert tracked.column("sourceurl").null_count == 0
+    assert tracked.column("rownum").null_count == 0
+    # And what the wire is rebuilt from is on the row.
     assert tracked.column("nofixentries").null_count == 0
     assert all(count > 0 for count in tracked.column("nofixentries").to_pylist())
-
-
-def test_the_digest_of_bytes_this_table_does_not_store_is_carried_not_computed() -> None:
-    """A holder is a statement that this shape computes the digest, and it is
-    checked when the field is applied: a source the shape does not name
-    refuses the apply outright rather than falling back to the value it was
-    handed. So `bodyhash` is unmarked where `body` is dropped."""
-    carried = fix_message_field()["bodyhash"]
-
-    assert not carried.digest.is_holder()
-    assert carried.digest.sources is None
-    assert carried.digest.algorithm is None
-    # The line's own contract still computes it, beside the bytes it read.
-    logged = Message.into_field()["bodyhash"]
-    assert logged.digest.is_holder()
-    assert logged.digest.sources == [PAYLOAD]
-
-    # Left marked, the whole apply raises before a single batch is pulled.
-    still = pyarrow.schema(
-        [member for member in fix_parse_field().into_arrow_schema() if member.name != PAYLOAD]
-    )
-    with pytest.raises(ValueError, match="does not name a field"):
-        Field.from_arrow_schema(still, name="Unstripped").apply_arrow_reader(
-            pyarrow.RecordBatchReader.from_batches(still, []),
-            safe=False,
-            nullability="strict",
-        )
 
 
 def test_the_narrowing_walks_into_a_nested_type() -> None:
@@ -400,23 +382,23 @@ def test_the_walk_reads_the_chains_the_capture_describes(tracked) -> None:
 
 def test_every_restatement_of_an_event_settles_on_one_identity(tracked) -> None:
     """The gap between a chain's messages and its events, row by row: the same
-    message logged at a second hop answers the identity the first one did."""
-    held: dict[bytes, set[bytes]] = defaultdict(set)
-    for identity, body in zip(
+    message logged at a second hop answers the identity the first one did, and
+    the rows it was read from are different lines."""
+    held: dict[bytes, set[int]] = defaultdict(set)
+    for identity, rownum in zip(
         tracked.column(MESSAGE_KEY).to_pylist(),
-        tracked.column("bodyhash").to_pylist(),
+        tracked.column("rownum").to_pylist(),
         strict=True,
     ):
-        held[identity].add(body)
-    restated = {identity: bodies for identity, bodies in held.items() if len(bodies) > 1}
+        held[identity].add(rownum)
+    restated = {identity: lines for identity, lines in held.items() if len(lines) > 1}
 
     assert restated, "the capture logs messages at several hops"
     assert len(held) == EVENTS
-    # A restatement arrives as different bytes -- a different bridge prefix,
-    # a different session pair -- and still answers one event, which is what
-    # makes `bodyhash` the wrong key for this table and `curruuid` the right
-    # one. The line's own digest stays on the row as what it is.
-    assert len(set(tracked.column("bodyhash").to_pylist())) > EVENTS
+    # Each restatement is its own line, so the arrivals of one event span
+    # several rows of `logs.messages` -- which is why the row cannot carry one
+    # line's bytes or one line's digest as if they were the event's.
+    assert sum(len(lines) for lines in restated.values()) > len(restated)
 
 
 def test_px_and_qty_are_filled_from_what_the_message_did_state(tmp_path) -> None:

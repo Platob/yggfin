@@ -224,7 +224,7 @@ on the row as `timestamp`, which is what it is.
 
 ## Schema and precision
 
-The bundled configuration yields [129 columns](../../products/fix-message.md#complete-schema).
+The bundled configuration yields [128 columns](../../products/fix-message.md#complete-schema).
 Venue clocks may parse at nanosecond precision, while Iceberg v2 stores
 microseconds. Every top-level and nested timestamp is narrowed once at the
 storage boundary. Original text remains in `fixentries`, so the wire value is

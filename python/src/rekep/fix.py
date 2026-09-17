@@ -53,9 +53,6 @@ from yggdryl.fix import (
 )
 
 from rekep.fields import (
-    DIGEST_ALGORITHM,
-    DIGEST_ROLE,
-    DIGEST_SOURCES,
     HOUR,
     PARTITION_KEY,
     PRIMARY_KEY,
@@ -82,18 +79,24 @@ MESSAGE_KEY = "curruuid"
 #: is what the message stated and never what a line was printed at.
 EVENT_CLOCK = "unix"
 
-#: The column the codec reads each message out of, and the one carried column
-#: `fix.messages` does not store. The default pin; a codec naming another
-#: payload column answers that one instead.
-#:
-#: `logs.messages` holds the exact bytes, keyed on the digest of them, and the
-#: fixed row references the text by that digest rather than repeating it. The
-#: bytes are the *line's* and the row is the *event's*: one message logged at
-#: four hops is four lines with four different bodies and one row, so a copy
-#: of any one of them would be one arrival's bytes presented as the event's.
-#: What the row is re-emitted from is `fixentries`, the arrival record, which
-#: rebuilds the message and never the line that carried it.
+#: The column the codec reads each message out of. The default pin; a codec
+#: naming another payload column answers that one instead.
 PAYLOAD = "body"
+
+#: The digest of those bytes, as the raw text row names it.
+TEXT_DIGEST = "bodyhash"
+
+#: The two capture columns `fix.messages` does not store: the bytes and the
+#: digest of them.
+#:
+#: Both are facts about one *line*, and a row here is an *event*. One message
+#: logged at four hops is four lines -- four different bodies, four different
+#: digests -- and one row, so either column would be one arrival's answer
+#: standing in for the event's. `logs.messages` holds every one of them; a row
+#: here names the line it was read from with `sourceurl` and `rownum`, and what
+#: it is re-emitted from is `fixentries`, the arrival record, which rebuilds
+#: the message and never the line that carried it.
+UNSTORED = (PAYLOAD, TEXT_DIGEST)
 
 #: What the lifecycle walk filled for a message's place in its chain. A chain
 #: read in `unix, seqnum` order is the order the venue described.
@@ -299,9 +302,9 @@ def fix_arrow_reader(
     The shape is the parse's own -- the capture's columns in front, the
     dictionary's after, which is what `fix_parse_field` states -- so nothing
     crosses back through the message shape to be written again. That shape
-    still carries the payload column the parse read each message out of;
-    dropping it, and narrowing the rest to what a table stores, is the storage
-    boundary's job and `fix_stored_reader` is where that happens, not here.
+    still carries the capture's own text columns; dropping them, and narrowing
+    the rest to what a table stores, is the storage boundary's job and
+    `fix_stored_reader` is where that happens, not here.
     """
     parsed = codec.parse_text_arrow_reader(source)
     return _walked(codec, parsed) if lifecycle else parsed
@@ -401,9 +404,9 @@ def fix_stored_reader(
     """The parse's rows as the table stores them, ready for the write.
 
     The data half of `iceberg_fix_field`. Projecting onto `field` is most of
-    it, and the field apply does that for free: the payload column the parse
-    carried is not declared, so it is dropped here rather than written, and
-    `logs.messages` stays the one place the bytes live.
+    it, and the field apply does that for free: the text columns the parse
+    carried are not declared, so they are dropped here rather than written, and
+    `logs.messages` stays the one place the bytes and their digest live.
 
     The rest exists for one column type.
     A content code is an unsigned sixty-four-bit integer and Iceberg's only
@@ -471,9 +474,10 @@ def fix_carrier(carrier: Field | None = None) -> Field:
     only `rownum`, `timestamp`, `timepartition`, `threadId`, `level`,
     `bodyhash` and `body` ride in front.
 
-    Seven here and six in the table: `PAYLOAD` rides through the parse, which
-    reads every message out of it, and `fix_message_field` drops it at the
-    storage boundary.
+    Seven here and five in the table: `UNSTORED` -- the payload the parse reads
+    every message out of, and the digest of it -- rides through the parse and
+    is dropped at the storage boundary, because both are a line's and a stored
+    row is an event's.
     """
     if carrier is None:
         from rekep.text import Message
@@ -521,36 +525,30 @@ def fix_message_field(
 
     What yggfin adds to the row is the three things a table is -- which column
     names one, which lays it out, and where a row sits inside a partition --
-    the narrowing a stored column needs, and the one carried column a stored
-    row does not repeat. Nothing else: a column yggdryl named is not renamed,
-    retyped or duplicated here, and the one that is dropped is the capture's
-    own payload rather than any of the dictionary's.
+    the narrowing a stored column needs, and the two carried columns a stored
+    row does not hold. Nothing else: a column yggdryl named is not renamed,
+    retyped or duplicated here, and the two that are dropped are the capture's
+    own text rather than any of the dictionary's.
     """
     return iceberg_fix_field(
         fix_parse_field(codec, carrier, name=name).into_arrow_schema(),
         name,
-        codec.payload_column if codec is not None else PAYLOAD,
+        UNSTORED if codec is None else (codec.payload_column, TEXT_DIGEST),
     )
 
 
 def iceberg_fix_field(
     schema: pyarrow.Schema,
     name: str = "FixMessage",
-    payload: str | None = PAYLOAD,
+    unstored: Iterable[str] = UNSTORED,
 ) -> Field:
     """A parsed schema narrowed to what Iceberg v2 stores, and declared as a table.
 
-    `payload` is the column the parse read each message out of, and it is the
-    one column dropped rather than narrowed: `logs.messages` already holds
-    those bytes under the digest of them, so the row references the text by
-    `bodyhash` instead of repeating it. A digest holder whose sources named
-    the dropped column is unmarked with it -- the digest of bytes this table
-    does not store is not computed here, it is carried, and a holder left
-    pointing at an absent source refuses the whole apply rather than falling
-    back to the value it was handed. Unmarking it makes `bodyhash` an ordinary
-    carried column, which is what a reference is; it also makes it visible to
-    a future holder declared without explicit sources, so declare one with
-    them.
+    `unstored` names the capture's own text columns, and they are dropped
+    rather than narrowed: the bytes the parse read each message out of and the
+    digest of them are the line's, and a row here is the event's. A row names
+    the line it was read from with `sourceurl` and `rownum`; `logs.messages`
+    holds the bytes, the digest and every other arrival of the same event.
 
     Three narrowings after that, and each is about what a row filter can be
     lowered to.
@@ -570,11 +568,11 @@ def iceberg_fix_field(
     keyed, ordered and merged on an identity needs the bytes it can lower a
     predicate to. The value is the same value either way.
     """
-    kept = [member for member in schema if member.name != payload]
-    held = {member.name for member in kept}
+    dropped = set(unstored)
     members = [
-        _declared(_plain(_carried_digest(member, held).with_type(_stored(member.type))))
-        for member in kept
+        _declared(_plain(member.with_type(_stored(member.type))))
+        for member in schema
+        if member.name not in dropped
     ]
     sorted_by = json.dumps([[column, "asc"] for column in SORT_COLUMNS], separators=(",", ":"))
     return Field.from_arrow_schema(
@@ -596,30 +594,6 @@ def _declared(member: pyarrow.Field) -> pyarrow.Field:
         return member
     held = {key.decode(): value.decode() for key, value in (member.metadata or {}).items()}
     return member.with_metadata({**held, **marked})
-
-
-def _carried_digest(member: pyarrow.Field, held: set[str]) -> pyarrow.Field:
-    """`member` unmarked as a digest holder where its sources are not stored.
-
-    A holder is a statement that this shape computes the digest, and it is
-    checked when the field is applied: a source the shape does not name
-    refuses the apply outright, on the write and on every read back through
-    the declaration. Here the value arrives already computed -- `logs.messages`
-    filled it beside the bytes it read -- so the column is what it is, a
-    digest carried over, and saying so is the difference between a table that
-    writes and one that raises before its first batch.
-    """
-    spelled = member.metadata or {}
-    sources = spelled.get(DIGEST_SOURCES.encode())
-    if sources is None or all(name in held for name in json.loads(sources)):
-        return member
-    return member.with_metadata(
-        {
-            key: value
-            for key, value in spelled.items()
-            if key not in (DIGEST_ROLE.encode(), DIGEST_ALGORITHM.encode(), DIGEST_SOURCES.encode())
-        }
-    )
 
 
 def _plain(member: pyarrow.Field) -> pyarrow.Field:
@@ -660,6 +634,8 @@ __all__ = [
     "FIXMSG",
     "MESSAGE_KEY",
     "PAYLOAD",
+    "TEXT_DIGEST",
+    "UNSTORED",
     "SORT_COLUMNS",
     "UNDATED",
     "FixCodec",
