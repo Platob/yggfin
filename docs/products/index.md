@@ -21,13 +21,15 @@ the two products below have and the gate the roadmap still holds them to.
 
 | product | row grain | key | purpose |
 | --- | --- | --- | --- |
-| [`logs.messages`](message.md) | one physical source line | `(sourceurl, rownum)` | exact replayable capture record |
+| [`logs.messages`](message.md) | one physical source line | `bodyhash` | exact replayable capture record |
 | [`fix.messages`](fix-message.md) | one settled event, however many lines stated it | `curruuid` | typed protocol record plus its lossless arrival record |
 
-Both tables are partitioned by the UTC hour derived from the capture
-timestamp. Both keep the raw `body` and `bodyhash`; the FIX table additionally
-has `curruuid`, normalized identifiers, message direction, and every parsed or
-unmapped pair.
+`logs.messages` is partitioned by the UTC hour of the capture clock and
+`fix.messages` by the hour the event happened in. Only `logs.messages` keeps
+the raw `body` and its `bodyhash`: both are a line's, and a FIX row is an
+event's, so it names the line it was read from with `sourceurl` and `rownum`
+and carries `curruuid`, normalized identifiers, message direction, and every
+parsed or unmapped pair.
 
 ## Read products
 
@@ -52,13 +54,17 @@ store.close()
 ## Join and audit
 
 ```python
-audit = fixed.select(["sourceurl", "rownum", "curruuid", "bodyhash"])
-joined = audit.join(messages, keys=["sourceurl", "rownum"], right_suffix="_raw")
-assert joined.column("bodyhash").equals(joined.column("bodyhash_raw"))
+audit = fixed.select(["sourceurl", "rownum", "curruuid"])
+joined = audit.join(messages, keys=["sourceurl", "rownum"])
+assert joined.column("bodyhash").null_count == 0
 ```
 
 The audit projects before it joins: a join carries no map or list column, and
-a FIX row has both.
+a FIX row has both. `(sourceurl, rownum)` is what a FIX row names its line
+with -- the bytes and their digest are `logs.messages`' -- and it resolves to
+one stored line. An event restated at several hops keeps the first arrival's
+position, so the join reaches that line and the others stay in
+`logs.messages`.
 
 `bodyhash` is an exact-byte identity and `curruuid` is a settled-event
 identity: sixteen ordered bytes over the message's settled instant and its

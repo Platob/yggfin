@@ -20,7 +20,7 @@ directory, so the same relative defaults land here.
 bundled protocol registry; the FIX dictionary `parse_fix` types against ships
 inside the package.
 
-The larger 111-line fixture the test suite and every documented count use is
+The larger 144-line fixture the test suite and every documented count use is
 `python/tests/data/ulbridge.log`, not this sample.
 
 `dbt/` is the exception to the rule above: it is not local data but the project
