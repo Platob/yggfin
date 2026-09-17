@@ -32,14 +32,14 @@ small enough for Airflow XCom because it contains no rows or schemas.
 ```json
 {
   "task": "parse_fix",
-  "read": 111,
-  "written": 71,
-  "skipped": 0,
+  "read": 121,
+  "written": 53,
+  "skipped": 23,
   "sources": {"messages": "logs.messages"},
   "targets": {"fix": "fix.messages"},
   "window": {"start": 1786665600000000000, "end": 1786752000000000000},
   "elapsed_ms": 208,
-  "messages": 71
+  "messages": 76
 }
 ```
 

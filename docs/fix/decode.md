@@ -249,9 +249,12 @@ Version affects code spelling, not column identity.
 
 ## Message ordering and derived values
 
-Resolved children are ordered as FIX header, body, trailer, then the crate's
-own fields, and the row ends `msgdirection`, `nofixentries`, `fixentries`: the
-arrival record is a group named after itself, under the counter that counts it.
+The row is band-ordered, not source-ordered: when it happened, which event it
+is, which message and session carried it, which instrument and what the market
+says about trading it, which order, what it states, how it went, the groups
+kept whole, then every standard tag no band claimed. It ends `metadata`,
+`nofixentries`, `fixentries`: the arrival record is a group named after itself,
+under the counter that counts it.
 `beginstring` is supplied when the input did not state one. A message that
 stated no `TransactTime(60)` and no `SendingTime(52)` of its own takes the
 codec's `UNDATED` floor — never the capture's own clock, which stamps nothing,

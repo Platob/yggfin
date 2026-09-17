@@ -101,9 +101,9 @@ Every successful task returns the same small result contract:
 ```json
 {
   "task": "parse_messages",
-  "read": 111,
-  "written": 111,
-  "skipped": 0,
+  "read": 144,
+  "written": 122,
+  "skipped": 22,
   "sources": {"capture": "file:///data/capture"},
   "targets": {"messages": "logs.messages"},
   "window": {"start": 1786665600000000000, "end": 1786752000000000000},

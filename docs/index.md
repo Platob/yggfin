@@ -31,8 +31,8 @@ rekep task run tasks/parse_fix/parse_fix.json
 The checked ULBridge fixture demonstrates the complete contract:
 
 ```text
-parse_messages  111 read, 111 written, 0 skipped  → logs.messages
-parse_fix        111 read,  71 written, 0 skipped  → fix.messages
+parse_messages  144 read, 122 written, 22 skipped  → logs.messages
+parse_fix        121 read,  53 written, 23 skipped  → fix.messages
 ```
 
 ```mermaid
@@ -45,12 +45,12 @@ flowchart LR
 
 The text reader emits the exact `Message` schema: header captures are typed,
 `timepartition` is derived, and `bodyhash` is filled before the first Iceberg
-boundary. The FIX codec consumes that reader directly, through three stages
-over one codec: parse reads every frame a line carried, enrich fills what a
-message implied but did not carry, and lifecycle names the chains it belongs
-to. A row is a message and not a line, so the fixture's 111 lines settle as 71
-messages: a line carrying prose answers none, and a line carrying many frames
-answers one row per frame.
+boundary. The FIX codec consumes that reader directly, through two stages
+over one codec: parse reads every frame a line carried, and lifecycle names
+the chain each one belongs to. A row is an event and not a line, so the
+fixture's 122 stored lines answer 76 messages and settle as 53 events: a line
+carrying prose answers none, a line carrying many frames answers one message
+per frame, and a message logged again at every hop it passed is one event.
 
 ```python
 from rekep import Message
