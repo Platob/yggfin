@@ -39,7 +39,7 @@ parse_fix        111 read,  71 written, 0 skipped  → fix.messages
 flowchart LR
     S["capture URI<br/>file · directory · s3://"] --> T["native text reader<br/>Message field"]
     T --> M[("logs.messages<br/>12 columns")]
-    M --> F["native FIX codec<br/>parse · enrich · lifecycle"]
+    M --> F["native FIX codec<br/>parse · lifecycle"]
     F --> O[("fix.messages<br/>128 columns")]
 ```
 

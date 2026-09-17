@@ -28,9 +28,9 @@ and publishes the complete fixed projection to `fix.messages`.
 
 | parameter | default | meaning |
 | --- | --- | --- |
-| `registry` | `null` | use the 6,314-definition bundled dictionary; an explicit path/URI overrides it |
-| `lifecycle` | `true` | name the event chains after enrichment; `false` publishes parsed and enriched rows only |
-| `start`, `end` | `null` | the window of `logs.messages` to read, over `timepartition`; `null` is the last day, as [`parse_messages`](parse-messages.md#the-window) reads it |
+| `registry` | `null` | use the 7,787-definition bundled dictionary; an explicit path/URI overrides it |
+| `lifecycle` | `true` | walk the event chains after the parse; `false` publishes the parsed rows alone |
+| `start`, `end` | `null` | the window of `logs.messages` to read, over its capture clock; `null` is the last day, as [`parse_messages`](parse-messages.md#the-window) reads it |
 | `catalog` | local SQL | same catalog and warehouse that hold `logs.messages` |
 
 A dictionary is not a parameter: the registry is one namespace, so a field is
@@ -42,48 +42,52 @@ A version is not a parameter either: what a message was read at is what its own
 a `version=` that no longer means anything fails the call rather than being
 carried silently into the parse.
 
-## Parse, enrich, lifecycle
+## Parse, then walk the chains
 
-The capture pipeline is three native stages over one codec, in this order and
+The capture pipeline is two native stages over one codec, in this order and
 no other:
 
 ```text
-parse -> enrich -> lifecycle
+parse -> lifecycle
 ```
 
-- **parse** reads every frame a line carried. `parse_text_lines` is the form
-  for a reader holding lines; `parse_text_arrow_reader` is its twin for a
-  stored capture's batches. One frame is one row, and a line carrying no
-  message answers none.
-- **enrich** — `enrich_messages`, the stream form — fills what a message
-  implied but did not carry, and remembers the bridge configurations the
-  stream passed, so a later message naming a plugin takes that plugin's
-  `SenderCompID` and `TargetCompID`. It also fills `altids` with the
-  identifiers the message declares at its own level. Only the stream form
-  carries that memory, which is why there is no per-message form of it.
-- **lifecycle** names the chains: a non-empty `code`, an `updatedat` floored
-  to the one-second snapshot grid while `createdat` and `snapshotat` keep the
-  real instant, the `createdat` its chain opened at, and the
-  `prevupdatedat`/`prevmsghash` pair linking a message to the one before it.
-  `lifecycle` set to `false` stops the task after enrichment.
+- **parse** reads every frame a line carried and settles it where it is read:
+  a parsed message already carries what it implied — its typed facts lifted,
+  its deprecated fields restated to their latest spellings, the dictionary's
+  own derivations run, the identifiers its message component declares filled,
+  its side's lane filled, and its instant and identity settled. There is no
+  enriching stage between the two. `parse_text_lines` is the form for a reader
+  holding lines; `parse_text_arrow_reader` is its twin for a stored capture's
+  batches. One frame is one row, and a line carrying no message answers none.
+- **lifecycle** reads those messages as the chains they belong to: the
+  `prevuuid` a message follows, the `seqnum` it stands at, the `prevpx` and
+  `prevqty` the step before it settled on, the predecessor among its
+  `parentuuids` and the `creatunix` its chain opened at. `lifecycle` set to
+  `false` stops the task after the parse.
 
-Two doors run those same three stages and the native core requires them to
-agree row for row. `fix_line_messages(codec, lines)` is the line door, for a
-capture read straight through without a table in between.
-`fix_arrow_messages(codec, source)` and `fix_arrow_reader(codec, source)` are
-the batch door, which is what this task takes because it holds a table.
+Two doors run those same stages and the native core requires them to agree row
+for row. `fix_line_messages(codec, lines)` is the line door, for a capture read
+straight through without a table in between. `fix_arrow_messages(codec, source)`
+and `fix_arrow_reader(codec, source)` are the batch door, which is what this
+task takes because it holds a table.
+
+The walk reads the row the dictionary defines and nothing beside it. A capture's
+own column — a line number, a line clock — is not content, and a walk that read
+one would give every hop that logged a message its own identity: the bridge
+logs one message at several hops, so the table would hold every arrival rather
+than every event. `fix_arrow_reader` holds those columns back across the walk
+and puts them in front again afterwards, which it can because the walk answers
+one row per row in the order it read them.
 
 ## Read, parse, apply, write
 
 ```mermaid
 flowchart LR
     M[("logs.messages")] --> R["RecordBatchReader"]
-    R --> T["dated_arrow_reader"]
-    T --> P["parse_text_arrow_reader"]
+    R --> P["parse_text_arrow_reader"]
     D[["fix_codec(fix_registry())"]] --> P
-    P --> E["enrich_messages"]
-    E --> L["lifecycle"]
-    L --> A["Field.apply_arrow_reader"]
+    P --> L["lifecycle_arrow_reader"]
+    L --> A["fix_stored_reader"]
     N[["fix_message_field"]] --> A
     A --> F[("fix.messages")]
 ```
@@ -100,14 +104,14 @@ now takes as a parameter. `body` is the payload column the codec reads by
 default, text or bytes alike. Source columns lead the result unless a fixed
 field owns the same folded name.
 
-The published field is read from the carrier and the dictionary alone, before
-the first batch: `fix_message_field(codec, carrier)` runs the whole pipeline
-over an empty reader of the carrier's schema and narrows what comes back with
-`iceberg_fix_field` — sixteen-byte identities, timestamps recursively narrowed
-to Iceberg-supported microseconds, no semantic extension name left on a column
-a predicate has to be lowered onto, and the carrier's own key members restored
-beside `msghash`. So an empty capture creates the same table a full one does,
-and the published contract is the field the task actually writes.
+The published field is read from the dictionary alone, before the first batch.
+`fix_schema(registry, "fixmsg")` is the row the dictionary publishes and
+`fix_schema_carrying` is the supported way to put a capture's own columns in
+front of it, so `fix_parse_field(codec, carrier)` is what the codec writes and
+`fix_message_field(codec, carrier)` is that row as a table stores it —
+`iceberg_fix_field` narrows the second from the first. So an empty capture
+creates the same table a full one does, and the published contract is the field
+the task actually writes.
 
 ```python
 from rekep.fix import (
@@ -115,6 +119,7 @@ from rekep.fix import (
     fix_codec,
     fix_message_field,
     fix_registry,
+    fix_stored_reader,
 )
 from rekep.iceberg import IcebergCatalog, window_filter
 from rekep.text import Message
@@ -137,67 +142,85 @@ field = fix_message_field(codec, carrier)
 
 store = IcebergCatalog.from_dict(catalog)
 counted = store.dataset("logs.messages", field=carrier).read_arrow_reader(
-    carrier, row_filter=window_filter("timepartition", window)
+    carrier, row_filter=window_filter("timestamp", window)
 )
 parsed = fix_arrow_reader(codec, counted, lifecycle=lifecycle)
-applied = field.apply_arrow_reader(parsed, safe=False, nullability="strict")
+applied = fix_stored_reader(parsed, field)
 written = store.dataset("fix.messages", field=field, merge_schema=True).overwrite_arrow_reader(
     applied, field, merge_by=True
 )
 ```
 
-`window_filter` is the stored half of the window rule: the rows whose
-`timepartition` falls in `[start, end)` and the rows carrying none, pruned to
-the hours the table is laid out by.
+`window_filter` is the stored half of the window rule: the rows whose capture
+clock falls in `[start, end)` and the rows carrying none, which belong to every
+window. It is read off `timestamp` rather than off `timepartition` — a file
+holds one hour of that clock, so its own stored bounds prune the scan without
+the predicate naming the partition column, which it must not: a capture line
+with no clock lands in the null partition and PyIceberg 0.12 cannot plan a
+comparison against one.
 
-`fix_arrow_reader` is the batch door end to end: `dated_arrow_reader`, then
-`parse_text_arrow_reader`, then `messages`, then `enrich_messages`, then
-`lifecycle`. The rows land in the parse's own shape — the carrier's columns
-first, the dictionary's after — and narrowing that shape to what a table stores
-belongs to the storage boundary, which is `field` and the strict apply.
+`fix_arrow_reader` is the batch door end to end: `parse_text_arrow_reader`,
+then `lifecycle_arrow_reader` over the fixed row. The rows land in the parse's
+own shape — the carrier's columns first, the dictionary's after — and narrowing
+that shape to what a table stores belongs to the storage boundary, which is
+`fix_stored_reader`: the content codes read as the signed integers Iceberg
+stores, then `field.apply_arrow_reader(safe=False, nullability="strict")` in
+its native order.
 
 See [Decode rules](../../fix/decode.md) for numeric FIX, ULLINK, packed groups,
 configuration JSON, FIXML, registry translation, source-column fill, and
 content-level failures.
 
-## A row is a message, not a line
+## A row is an event, not a line
 
 A source row is read for every message it carries. One frame is one row, a
 line carrying two frames is two, and a bulk configuration answer is one row
-per configuration it names — so the Jolokia wildcard response in the tracked
-corpus publishes one `pluginconfig` row per plugin it returned. A line that
-carries no message at all publishes no row, which is why `read` counts lines
-and the result's own `messages` key counts what the codec answered.
+per configuration it names. A line that carries no message at all publishes no
+row, which is why `read` counts lines and the result's own `messages` key
+counts what the codec answered.
 
-That is also why `fix.messages` is keyed on `(sourceurl, rownum, msghash)`
-where `logs.messages` is keyed on `(sourceurl, rownum)`: two messages of one
-line share the line's identity and differ only in their own.
+A message is then logged again at every hop it passes, and each of those
+arrivals is a restatement of one event rather than a second one: they settle on
+one `curruuid`, which is a UUIDv7 over the instant the event settled on and the
+code of its content. The bundled capture makes the gap visible — its
+`00026877711XOEA0` chain is stated 49 times and those statements are 31 events.
 
-## A capture clock dates a message that states none
+That is why `fix.messages` is keyed on `curruuid` alone. Keying on where a line
+was read from is what made one message three rows.
 
-A message carrying no `SendingTime(52)` would otherwise be dated by the instant
-the parse ran, and the `msghash` computed from that clock is a different one on
-every read — so a replay would insert every such message again. The codec's
-`default_sending_time` is the floor under that, pinned to `UNDATED`, the epoch
-instant that means no clock was read. It is one instant for the whole run,
-though, so the batch door offers the per-row clock beside it:
-`dated_arrow_reader` hands the stored capture `timestamp` over as a
-`sendingtime` column, which outranks the codec's default. The column clashes
-with the FIX column of that name, so it lands there rather than beside it.
+`logs.messages` is keyed on `bodyhash`, the digest of the exact body bytes, so
+identical bytes are one row whatever session carried them. The two digests
+answer two questions and neither stands in for the other: `bodyhash` is of the
+bytes, and the row's own `hashcode` is of the settled event — its facts, its
+text, its metadata and its entry tree — so two different lines stating the same
+message share a `hashcode` and not a `bodyhash`.
 
-The column is filled, never merely cast. A line whose header the reader did not
-match carries no clock of its own either, and a null would hand that message
-back to the run-wide floor rather than to anything the capture recorded — so
-those rows state `UNDATED`, which is the same instant the floor would have
-given them. A message that carried its own clock keeps it, replay recomputes
-the same identity either way, and the replace on `(sourceurl, rownum, msghash)`
-is idempotent for every capture rather than only for one whose every line the
-header matched.
+## A key is scoped to its partition
 
-The line door has no such column. A bridge spells a line's capture clock the
-way a log spells one and not the way `SendingTime` is spelled, so
-`fix_line_messages` dates an undated message with the codec's `UNDATED` floor
-instead. Both doors are replayable; neither reads the instant the parse ran.
+`fix.messages` is laid out by the hour of `unix`, the instant the event
+happened at, and a key is scoped to the partition it lands in. Every
+restatement of one event carries that same instant, so they meet in one
+partition and the write folds them.
+
+What that leaves is an event whose `unix` *moves* between two runs — a
+dictionary that reads its clock differently, say. The second run lands it in a
+second hour, where the first copy's key is not in scope and is not replaced, so
+the event is in the table twice. A dictionary change that moves an instant is
+therefore a rewrite of the windows it touches, not an incremental run.
+
+## An undated message takes the pin, not the clock of the run
+
+A message carrying no `SendingTime(52)` and no `TransactTime(60)` would
+otherwise be dated by the instant the parse ran, and the identity computed from
+that clock is a different one on every read — so a replay would insert every
+such message again. The codec's `default_sending_time` is the floor under that,
+pinned to `UNDATED`, the epoch instant that means no clock was read.
+
+A capture's own clock is context and stamps nothing, in either door. The bridge
+spells a line's clock the way a log spells one and not the way `SendingTime` is
+spelled, and the same message logged at three hops carries three of them, so a
+line clock that dated a message would make each hop a different event. It stays
+on the row as `timestamp`, which is what it is.
 
 ## Schema and precision
 
@@ -217,29 +240,41 @@ uv run --project python rekep task run \
   --parameter 'registry="file:/srv/rekep/fix-candidate"'
 ```
 
-The location must contain specification fields. Runtime and bridge fields are
-added automatically. The task refuses an empty external dictionary before
-creating a narrow table.
+The location must contain specification fields; every registry holds the
+crate's own columns and the two standard clocks from construction. The task
+refuses an empty external dictionary before creating a narrow table.
+
+A dictionary narrow enough to type no message type at all is a different
+matter: the codec's message-type filter is on by default — it refuses
+`Heartbeat(0)`, `TestRequest(1)` and the untyped line before it builds a frame
+— and every line is untyped to a dictionary that cannot resolve `MsgType(35)`.
+Such a run creates the table with the dictionary's shape and writes no row.
 
 ## Row behavior
 
 - Prose and unreadable content produce no row; a payload that was there and
   would not parse produces one row holding an empty message.
 - A pair no dictionary explains is an entry of tag 0 inside `fixentries`, so
-  one arrival record holds everything that arrived. The row ends
-  `msgdirection`, `nofixentries`, `fixentries`: the arrival record is a group
-  named after itself, under the counter that counts it.
+  one arrival record holds everything that arrived. The row ends `metadata`,
+  `nofixentries`, `fixentries`: the arrival record is a group named after
+  itself, under the counter that counts it.
 - A conversion failure leaves the typed column null and preserves its arrival.
 - The source message wins over a same-field source-column fill.
-- The writer replaces on `(sourceurl, rownum, msghash)` and can create a
-  missing table: a replay of a window lands the same messages once, and a
-  dictionary change lands their new reading over the old.
-- `msghash` is stored as `fixed_size_binary[16]` and nothing else: an
-  extension type carries no compute kernel, so a column of one could appear in
-  no predicate — including the bounds a replace plans its stored files by. A
-  key that reaches the writer under an extension name is compared as the bytes
-  it holds, and `iceberg_fix_field` drops the semantic extension name a URL,
-  an ISIN, a MIC or a currency crosses Arrow under for the same reason.
+- The writer replaces on `curruuid` and can create a missing table: a replay of
+  a window lands the same events once, and a dictionary change lands their new
+  reading over the old.
+- An identity is stored as `fixed_size_binary[16]` and nothing else. Arrow
+  sorts, compares and hashes those bytes and refuses the `arrow.uuid`
+  extension over them, so a table keyed, ordered and merged on an identity
+  needs the bytes a predicate can be lowered onto — including the bounds a
+  replace plans its stored files by. `iceberg_fix_field` drops the semantic
+  extension name a URL, an ISIN, a MIC or a currency crosses Arrow under for
+  the same reason.
+- A content code — `hashcode`, `crosshashcode` — is an unsigned 64-bit integer
+  and Iceberg's only 64-bit integer is signed. The same eight bytes read as
+  signed are the code, so the column says `int64` and `fix_stored_reader`
+  views rather than converts: half the codes read back negative and name the
+  same rows.
 
 ## Run
 
@@ -249,7 +284,7 @@ uv run --project python rekep task run tasks/parse_fix/parse_fix.json \
 ```
 
 Run `parse_messages` first, over the same window: `parse_fix` reads the stored
-raw product, never source files, and reads the rows whose `timepartition`
+raw product, never source files, and reads the rows whose capture clock
 falls in `[start, end)` — the last day up to now when the document names
 neither bound, which is why a run over the sample capture names its day. A
 `logs.messages` that is not there yet reads as zero rows and succeeds, so a

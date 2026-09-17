@@ -18,7 +18,12 @@ classifiers = [
 ]
 dependencies = [
     "pyarrow>=17.0",
-    "yggdryl>=0.1.6",
+    # The floor is the release that states the fixed `fixmsg` row: a typed
+    # market event with a content row, `px` and `qty` in place of tags 44, 38
+    # and 53, and `lifecycle` as the one stage after the parse. Nothing here
+    # reads the shape 0.1.6 published, so a resolution that lands on it fails
+    # at import rather than writing a table under the wrong contract.
+    "yggdryl>=0.1.7",
     # `Self` is 3.11's, and the return annotation of every builder here names
     # it. The dependency is the typing back-port rather than a second spelling
     # of every one of those signatures.

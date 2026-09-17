@@ -12,6 +12,41 @@ remain authoritative and tests require byte-for-byte agreement.
 `fix-message.json` is therefore reviewed as generated output, never edited as
 an independent schema definition.
 
+## Where the FIX row comes from
+
+`fix.messages` is the dictionary's own fixed row with the capture's own columns
+in front of it, and yggfin defines neither:
+
+```text
+fix_schema_carrying(fix_carrier(Message.into_field()), fix_schema(registry, "fixmsg"))
+```
+
+That expression is the row the *parse* answers: 123 columns from the dictionary
+and 7 from the carrier — `rownum`, `timestamp`, `timepartition`, `threadId`,
+`level`, `bodyhash`, `body`. The carrier's other five are named for the fields
+they fill, so `sourceurl`, `msgsessionid`, `msgctxid`, `msgseqnum` and
+`pluginid` fold onto the row's own columns instead of riding in front of it.
+
+The row the *table stores* is that minus the capture's own text columns, so
+128. `body` is what the codec reads each message out of and `bodyhash` is the
+digest of those bytes, and both are facts about one *line* while a row there is
+an *event*: a message logged at four hops is four lines and one row, so either
+column would be one arrival's answer standing in for the event's.
+`logs.messages` holds all of them, and the row names the line it was read from
+with `sourceurl` and `rownum`.
+
+So what yggfin adds is the three things a table is — the primary key
+`curruuid`, the hour partition over `unix`, the sort order
+`unix, seqnum, curruuid` — the two columns dropped, and the storage narrowing.
+`iceberg_fix_field` does all of it; see
+[the product page](../docs/products/fix-message.md).
+
+The dictionary this was generated against is the one bundled under
+`python/src/rekep/_data/fix`, taken from the core's own `config/fix` at
+`f3a4bd0e27345c6e99226709d248c7b2174b011a`. Regenerating the contract against a
+different dictionary is a failing `python/tests/test_schemas.py`, not a silent
+schema evolution.
+
 ## What a contract holds
 
 Three keys, each named for the PyIceberg model whose own serialization it
@@ -38,32 +73,27 @@ from the runtime declaration instead:
 | --- | --- |
 | a digest's algorithm and sources | `Message.into_field()`, `python/tests/test_message.py` |
 | a derived column's source columns | `Message.into_field()`, `python/tests/test_message.py` |
-| a FIX tag, alias or display name | the registry under `python/src/rekep/_data/fix`, and the `tag` column of the [FIX product page](../docs/products/fix-message.md) |
+| a FIX tag, alternate spelling or display name | the registry under `python/src/rekep/_data/fix`, and the `tag` column of the [FIX product page](../docs/products/fix-message.md) |
 | the struct's own description and `python:*` declaration keys | `Message.into_field()`, and the class docstring behind it |
 | the struct's own name | the table above, and `rekep.deploy.TABLES` |
 
 `python/tests/test_schemas.py` pins each loss as an assertion, so the cost of
 the format is code rather than prose.
 
-## Regenerate the raw contract
+## Regenerate either contract
 
 ```bash
 uv run --project python rekep fields dump \
   --pyclass rekep.text.message:Message \
   --target schemas/rekep/message.json
+uv run --project python rekep fields dump \
+  --pyclass rekep.fix:fix_message_field \
+  --target schemas/rekep/fix-message.json
 ```
 
-## Regenerate the registry-dependent FIX contract
-
-```python
-from pathlib import Path
-
-from rekep.fix import fix_message_field
-from rekep.iceberg import iceberg_contract
-
-target = Path("schemas/rekep/fix-message.json")
-target.write_text(f"{iceberg_contract(fix_message_field())}\n", encoding="utf-8")
-```
+`--pyclass` names a class, a field, or a function that builds one: no class
+declares the FIX row, because it is the dictionary's row and not a Python
+declaration.
 
 ## Validate either document
 
@@ -74,15 +104,6 @@ uv run --project python rekep fields load --target schemas/rekep/fix-message.jso
 
 `load` reads a contract back through `rekep.iceberg.iceberg_contract_field`
 and names the shape after the file, since a contract names no struct.
-
-The FIX snapshot uses the registry bundled at
-`python/src/rekep/_data/fix`, includes the bridge vocabulary, carries the raw
-`Message` schema, and narrows all nested and top-level nanosecond timestamps to
-the microsecond precision Iceberg v2 stores. It also drops the semantic
-extension name a datatype crossed Arrow on, since a table stores the storage
-type, and restores the carrier's own key members beside `msghash`: a FIX row
-is a message and not a line, so the shape is identified by
-`(sourceurl, rownum, msghash)`.
 
 Dataset documents are unaffected: `IcebergDataset` embeds a `Field` mapping
 because `derived_columns()` reads the derived sources off it to prune a merge,

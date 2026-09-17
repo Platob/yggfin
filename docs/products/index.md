@@ -22,11 +22,11 @@ the two products below have and the gate the roadmap still holds them to.
 | product | row grain | key | purpose |
 | --- | --- | --- | --- |
 | [`logs.messages`](message.md) | one physical source line | `(sourceurl, rownum)` | exact replayable capture record |
-| [`fix.messages`](fix-message.md) | one message that line carried | `(sourceurl, rownum, msghash)` | typed protocol record plus its lossless arrival record |
+| [`fix.messages`](fix-message.md) | one settled event, however many lines stated it | `curruuid` | typed protocol record plus its lossless arrival record |
 
 Both tables are partitioned by the UTC hour derived from the capture
 timestamp. Both keep the raw `body` and `bodyhash`; the FIX table additionally
-has `msghash`, normalized identifiers, message direction, and every parsed or
+has `curruuid`, normalized identifiers, message direction, and every parsed or
 unmapped pair.
 
 ## Read products
@@ -52,7 +52,7 @@ store.close()
 ## Join and audit
 
 ```python
-audit = fixed.select(["sourceurl", "rownum", "msghash", "bodyhash"])
+audit = fixed.select(["sourceurl", "rownum", "curruuid", "bodyhash"])
 joined = audit.join(messages, keys=["sourceurl", "rownum"], right_suffix="_raw")
 assert joined.column("bodyhash").equals(joined.column("bodyhash_raw"))
 ```
@@ -60,7 +60,7 @@ assert joined.column("bodyhash").equals(joined.column("bodyhash_raw"))
 The audit projects before it joins: a join carries no map or list column, and
 a FIX row has both.
 
-`bodyhash` is an exact-byte identity and `msghash` is a parsed-message
+`bodyhash` is an exact-byte identity and `curruuid` is a settled-event
 identity: sixteen ordered bytes over the message's settled instant and its
 named content. The roadmap uses both: source corrections track the former;
 protocol deduplication and downstream event identity use the latter.

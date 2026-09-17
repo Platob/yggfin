@@ -12,7 +12,7 @@ from typing import Any
 import pyarrow
 
 from rekep import Field
-from rekep.fix import FixRegistry, fix_plugin_fields
+from rekep.fix import FixRegistry
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOL = ROOT / "tools" / "fix_registry.py"
@@ -32,7 +32,7 @@ def _field() -> Field:
     symbol = Field("symbol", "utf8")
     symbol.set_display("Symbol")
     symbol.fix.tag = 55
-    symbol.fix.aliases = ["ticker"]
+    symbol.fix.names = ["ticker"]
     symbol.fix.description = "Instrument identifier"
     # Both documents are the collection itself, in the order the
     # specification states it, rather than one named member of an object, and
@@ -69,13 +69,13 @@ def test_tool_opens_and_projects_a_native_registry(tmp_path: Path) -> None:
         "Arrow kind": "text",
         "FIX type": "string",
         "since": "2.7",
-        "aliases": "ticker",
+        "names": "ticker",
         "description": "Instrument identifier",
     }
-    # A bare registry is already the crate's own fields and the standard
-    # clocks seeded beside them, so the store contributes one row and the
-    # bridge vocabulary the rest.
-    assert len(rows) == 1 + len(FixRegistry()) + len(fix_plugin_fields())
+    # A bare registry is already the crate's own definitions and the standard
+    # clocks seeded beside them, so the store contributes the one row this
+    # fixture defines and the crate contributes the rest.
+    assert len(rows) == 1 + len(list(FixRegistry()))
     assert setup["metadata_records"](_field(), "codes") == [{"value": "AAPL", "name": "Apple"}]
 
 
@@ -130,7 +130,7 @@ def test_documentation_labels_the_standalone_tool_and_uv_entrypoint() -> None:
     assert "Standalone tool" in page
     assert "uv run --project python --group runner --frozen" in page
     assert "fix_registry" in page
-    assert "6,314" in page
+    assert "7,787" in page
     assert "Field.explode_fields()" in page
     assert "Field.into_json(indent=2)" in page
     assert "empty Arrow reader" in page

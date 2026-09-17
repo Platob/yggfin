@@ -16,7 +16,7 @@ behavior.
 
 - Yggdryl owns `Field`, scalar compilation, resource binding, filesystems,
   streams, codecs, decompression, text media, FIX registries, FIX batch
-  parsing, and the enrichment and lifecycle stages after it.
+  parsing, the fixed `fixmsg` row, and the lifecycle stage after the parse.
 - Arrow owns columnar shape conversions and kernels.
 - PyIceberg owns table conversion, ids, snapshots, scan planning, and commits.
 - Yggfin owns the raw `Message` contract and its narrow PyArrow/PyIceberg seam.
@@ -101,18 +101,25 @@ under the `rowheader` its document names, applies `Message.into_field()` to
 each batch, keeps the lines whose `timepartition` falls in the run's window,
 and writes one schema-bearing reader directly to Iceberg. The window is
 `[start, end)`; a task given neither takes the last day up to now, and a run
-over a window replaces what an earlier run of it landed. `parse_fix` reads the
-stored rows of the same window and passes them through the three stages one
-codec exposes, in this order and no other:
+over a window replaces what an earlier run of it landed. `logs.messages` is
+keyed on `bodyhash`, the digest of the exact body bytes, so identical bytes are
+one row whatever session carried them. `parse_fix` reads the stored rows of the
+same window and passes them through the two stages one codec exposes, in this
+order and no other:
 
 ```text
-parse -> enrich -> lifecycle
+parse -> lifecycle
 ```
 
-It writes the registry-defined schema without a yggfin FIX model. A FIX row is
-a message and not a line -- a line carrying two frames answers two rows and a
-line carrying none answers none -- so `fix.messages` is keyed on
-`(sourceurl, rownum, msghash)`.
+It writes `fix_schema_carrying(carrier, fix_schema(registry, "fixmsg"))` without
+a yggfin FIX model: the dictionary's row, the capture's own columns in front,
+and nothing else defined here. A FIX row is a message and not a line -- a line
+carrying two frames answers two and a line carrying none answers none -- and a
+message logged again at every hop it passes is one event, so `fix.messages` is
+keyed on `curruuid`, laid out by the hour of `unix`, and sorted within a
+partition by `unix, seqnum, curruuid`. The walk reads the fixed row alone: a
+capture's own column beside it would be read as content and give every arrival
+its own identity.
 
 The codec is the whole parse surface: the dictionary and the instant an undated
 message takes are pinned on it once, and each stage after it is a call rather

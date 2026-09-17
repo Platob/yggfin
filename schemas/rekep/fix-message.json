@@ -14,14 +14,14 @@
         "name": "timestamp",
         "type": "timestamptz",
         "required": false,
-        "doc": "UTC instant captured from the line header, at microsecond resolution. Capture context, and only that: it is the clock the bridge stamped the *line* with, so it dates no message on its own. What dates a message is stated by the FIX seam, which offers this instant as the `SendingTime` a message carrying none of its own takes."
+        "doc": "UTC instant captured from the line header, at microsecond resolution. Capture context, and only that: it is the clock the bridge stamped the *line* with, so it dates no message and never reaches one. What dates a message is what the message states -- its `TransactTime`, else its `SendingTime`, else the one instant the codec is pinned with -- so the same bytes logged at three hops settle on one instant however each line was stamped."
       },
       {
         "id": 3,
         "name": "timepartition",
         "type": "timestamptz",
         "required": false,
-        "doc": "Timestamp partitioned by its UTC hour in Iceberg."
+        "doc": "Timestamp partitioned by its UTC hour in Iceberg. `logs.messages` is laid out by it and `fix.messages` carries it as an ordinary column: a settled message is laid out by the instant it happened at, not by the instant a bridge printed the line."
       },
       {
         "id": 4,
@@ -39,891 +39,750 @@
       },
       {
         "id": 6,
-        "name": "bodyhash",
-        "type": "fixed[16]",
-        "required": false,
-        "doc": "XXH3-128 digest of the exact body bytes, filled during field apply."
+        "name": "unix",
+        "type": "timestamptz",
+        "required": true,
+        "doc": "When the message happened: the settled instant, UTC."
       },
       {
         "id": 7,
-        "name": "body",
-        "type": "binary",
+        "name": "creatunix",
+        "type": "timestamptz",
         "required": true,
-        "doc": "Exact bytes after the matched line-header prefix."
+        "doc": "When the message was created: what it states, else when the original was sent, else when it happened; the earliest its chain knows once followed."
       },
       {
         "id": 8,
-        "name": "updatedat",
+        "name": "prevunix",
         "type": "timestamptz",
-        "required": true,
-        "doc": "The settled message instant, truncated to the snapshot grid by the lifecycle."
+        "required": false,
+        "doc": "When the message this one follows happened, where it follows one."
       },
       {
         "id": 9,
-        "name": "prevupdatedat",
+        "name": "expirunix",
         "type": "timestamptz",
         "required": false,
-        "doc": "The preceding message's updatedat in the selected event chain."
+        "doc": "When the message stops being good: ExpireTime, else ValidUntilTime, else ExpireDate, else the instrument's MaturityDate."
       },
       {
         "id": 10,
-        "name": "createdat",
+        "name": "snapunix",
         "type": "timestamptz",
-        "required": true,
-        "doc": "The creation instant, preserved after initial materialization."
+        "required": false,
+        "doc": "The grid instant a walk read this message as the snapshot of; empty on every row no snapshot was taken of."
       },
       {
         "id": 11,
-        "name": "snapshotat",
-        "type": "timestamptz",
-        "required": false,
-        "doc": "The instant a reading of this chain was taken at, ungridded; empty on every row that is not a snapshot."
-      },
-      {
-        "id": 12,
         "name": "recordedat",
         "type": "timestamptz",
         "required": false,
         "doc": "The instant the capture recorded this line: the line's own text timestamp, else SendingTime."
       },
       {
-        "id": 13,
-        "name": "expiredat",
-        "type": "timestamptz",
-        "required": false,
-        "doc": "The instant the message stops being good: ExpireTime, else ValidUntilTime, else ExpireDate, else the instrument's MaturityDate."
-      },
-      {
-        "id": 14,
-        "name": "instuuid",
-        "type": "fixed[16]",
-        "required": false,
-        "doc": "The instrument's sixteen bytes: the big-endian xxh128 digest of its market, its classification, its ISIN - else its symbol - and its currency."
-      },
-      {
-        "id": 15,
-        "name": "msghash",
-        "type": "fixed[16]",
-        "required": true,
-        "doc": "The message's sixteen bytes: signed updatedat nanoseconds with the sign bit flipped, then all 64 bits of the canonical named message content's XXH64."
-      },
-      {
-        "id": 16,
-        "name": "msgphash",
-        "type": "fixed[16]",
-        "required": true,
-        "doc": "The event chain's sixteen bytes: the big-endian XXH3-128 of code alone."
-      },
-      {
-        "id": 17,
-        "name": "prevmsghash",
-        "type": "fixed[16]",
-        "required": false,
-        "doc": "The preceding message's sixteen identity bytes in the selected event chain."
-      },
-      {
-        "id": 18,
-        "name": "code",
-        "type": "string",
-        "required": true,
-        "doc": "The exact event-chain name; empty means unknown."
-      },
-      {
-        "id": 19,
-        "name": "version",
-        "type": "string",
-        "required": false,
-        "doc": "The FIX version the message was read at, which is not always the one its BeginString claims."
-      },
-      {
-        "id": 20,
-        "name": "symbolticker",
-        "type": "string",
-        "required": false,
-        "doc": "One instrument symbol that is the same across venues, qualified by its scheme and its exchange where the message states them."
-      },
-      {
-        "id": 21,
-        "name": "parentclordid",
-        "type": "string",
-        "required": false,
-        "doc": "The client order identifier this order descends from, which no standard tag names."
-      },
-      {
-        "id": 22,
-        "name": "parentorderid",
-        "type": "string",
-        "required": false,
-        "doc": "The venue order identifier this order descends from, which no standard tag names."
-      },
-      {
-        "id": 23,
-        "name": "sendersessionid",
-        "type": "string",
-        "required": false,
-        "doc": "The session a message came from, as the message states it."
-      },
-      {
-        "id": 24,
-        "name": "msgctxid",
-        "type": "string",
-        "required": false,
-        "doc": "The message context a bridge handled the message in, as its own log names it."
-      },
-      {
-        "id": 25,
-        "name": "pluginid",
-        "type": "string",
-        "required": false,
-        "doc": "The plugin that logged the line inside a bridge, as the bridge names it: the row's own pluginid column, never derived."
-      },
-      {
-        "id": 26,
-        "name": "prevpluginid",
-        "type": "string",
-        "required": false,
-        "doc": "The plugin the message came through before the one that logged it, as the bridge names it: the row's own prevpluginid column, never derived."
-      },
-      {
-        "id": 27,
-        "name": "sendersessionname",
-        "type": "string",
-        "required": false,
-        "doc": "The name of the session a message came from, as the bridge row states it."
-      },
-      {
-        "id": 28,
-        "name": "targetsessionname",
-        "type": "string",
-        "required": false,
-        "doc": "The name of the session a message went to, as the bridge row states it."
-      },
-      {
-        "id": 29,
-        "name": "isincode",
-        "type": "string",
-        "required": false,
-        "doc": "The instrument's ISIN: the message's own, else SecurityID or a SecurityAltID whose source is ISIN."
-      },
-      {
-        "id": 30,
-        "name": "miccode",
-        "type": "string",
-        "required": false,
-        "doc": "The market the message names, as an ISO 10383 MIC: the message's own, else SecurityExchange, ExDestination or LastMkt."
-      },
-      {
-        "id": 31,
-        "name": "state",
-        "type": "string",
-        "required": false,
-        "doc": "The state the order is in: OrdStatus, else ExecType, read as one lifecycle vocabulary."
-      },
-      {
-        "id": 32,
-        "name": "targetsessionid",
-        "type": "string",
-        "required": false,
-        "doc": "The session a message went to, as the message states it."
-      },
-      {
-        "id": 33,
-        "name": "altids",
-        "type": {
-          "type": "map",
-          "key-id": 129,
-          "key": "string",
-          "value-id": 130,
-          "value": "string",
-          "value-required": false
-        },
-        "required": false,
-        "doc": "The identifiers this message states at its own level, keyed by canonical field name in sorted order; repeating-group members are not flattened."
-      },
-      {
-        "id": 34,
-        "name": "sourceurl",
-        "type": "string",
-        "required": true,
-        "doc": "The object this message's line was read from."
-      },
-      {
-        "id": 35,
-        "name": "bidcurrency",
-        "type": "string",
-        "required": false,
-        "doc": "The currency the bid lane is denominated in: the message's own Currency, else SettlCurrency."
-      },
-      {
-        "id": 36,
-        "name": "offercurrency",
-        "type": "string",
-        "required": false,
-        "doc": "The currency the offer lane is denominated in: the message's own Currency, else SettlCurrency."
-      },
-      {
-        "id": 37,
-        "name": "bridgesessionid",
-        "type": "string",
-        "required": false,
-        "doc": "The session instance a bridge handled a line on, as its own row header brackets it - never what the message states about itself."
-      },
-      {
-        "id": 38,
-        "name": "bloombergcode",
-        "type": "string",
-        "required": false,
-        "doc": "The instrument's Bloomberg identifier: the message's own, else a SecurityID or SecurityAltID whose source is Bloomberg."
-      },
-      {
-        "id": 39,
-        "name": "cusipcode",
-        "type": "string",
-        "required": false,
-        "doc": "The instrument's CUSIP: the message's own, else a SecurityID or SecurityAltID whose source is CUSIP."
-      },
-      {
-        "id": 40,
-        "name": "sedolcode",
-        "type": "string",
-        "required": false,
-        "doc": "The instrument's SEDOL: the message's own, else a SecurityID or SecurityAltID whose source is SEDOL."
-      },
-      {
-        "id": 41,
-        "name": "instids",
-        "type": {
-          "type": "struct",
-          "fields": [
-            {
-              "id": 131,
-              "name": "cficode",
-              "type": "string",
-              "required": false
-            },
-            {
-              "id": 132,
-              "name": "isincode",
-              "type": "string",
-              "required": false
-            },
-            {
-              "id": 133,
-              "name": "bloombergcode",
-              "type": "string",
-              "required": false
-            },
-            {
-              "id": 134,
-              "name": "cusipcode",
-              "type": "string",
-              "required": false
-            },
-            {
-              "id": 135,
-              "name": "sedolcode",
-              "type": "string",
-              "required": false
-            }
-          ]
-        },
-        "required": false,
-        "doc": "Every identifier this instrument is known by, filled from the columns beside it."
-      },
-      {
-        "id": 42,
-        "name": "sessionmsgid",
-        "type": "string",
-        "required": false,
-        "doc": "The session and the message context that name one message within it, joined by a colon."
-      },
-      {
-        "id": 43,
-        "name": "sessionmsgseqid",
-        "type": "string",
-        "required": false,
-        "doc": "The session, the message context and the sequence number that name one occurrence of one message, joined by colons."
-      },
-      {
-        "id": 44,
-        "name": "beginstring",
-        "type": "string",
-        "required": true,
-        "doc": "Identifies beginning of new message and session protocol version by means of a session profile identifier (see FIX Session Layer for details). ALWAYS FIRST FIELD IN MESSAGE. (Always unencrypted)."
-      },
-      {
-        "id": 45,
-        "name": "bodylength",
-        "type": "int",
-        "required": false,
-        "doc": "Message length, in bytes, forward to the CheckSum field. ALWAYS SECOND FIELD IN MESSAGE. (Always unencrypted)"
-      },
-      {
-        "id": 46,
-        "name": "msgtype",
-        "type": "string",
-        "required": false,
-        "doc": "Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted)"
-      },
-      {
-        "id": 47,
-        "name": "sendercompid",
-        "type": "string",
-        "required": false,
-        "doc": "Assigned value used to identify firm sending message."
-      },
-      {
-        "id": 48,
-        "name": "targetcompid",
-        "type": "string",
-        "required": false,
-        "doc": "Assigned value used to identify receiving firm."
-      },
-      {
-        "id": 49,
-        "name": "onbehalfofcompid",
-        "type": "string",
-        "required": false,
-        "doc": "Assigned value used to identify firm originating message if the message was delivered by a third party i.e. the third party firm identifier would be delivered in the SenderCompID field and the firm originating the message in this field."
-      },
-      {
-        "id": 50,
-        "name": "delivertocompid",
-        "type": "string",
-        "required": false,
-        "doc": "Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID (56) field and the ultimate receiver firm ID in this field."
-      },
-      {
-        "id": 51,
-        "name": "securedatalen",
-        "type": "int",
-        "required": false,
-        "doc": "Length of encrypted message"
-      },
-      {
-        "id": 52,
-        "name": "securedata",
-        "type": "binary",
-        "required": false,
-        "doc": "Actual encrypted data stream"
-      },
-      {
-        "id": 53,
-        "name": "msgseqnum",
-        "type": "long",
-        "required": false,
-        "doc": "Integer message sequence number."
-      },
-      {
-        "id": 54,
-        "name": "sendersubid",
-        "type": "string",
-        "required": false,
-        "doc": "Assigned value used to identify specific message originator (desk, trader, etc.)"
-      },
-      {
-        "id": 55,
-        "name": "senderlocationid",
-        "type": "string",
-        "required": false,
-        "doc": "Assigned value used to identify specific message originator's location (i.e. geographic location and/or desk, trader)"
-      },
-      {
-        "id": 56,
-        "name": "targetsubid",
-        "type": "string",
-        "required": false,
-        "doc": "Assigned value used to identify specific individual or unit intended to receive message. \"ADMIN\" reserved for administrative messages not intended for a specific user."
-      },
-      {
-        "id": 57,
-        "name": "targetlocationid",
-        "type": "string",
-        "required": false,
-        "doc": "Assigned value used to identify specific message destination's location (i.e. geographic location and/or desk, trader)"
-      },
-      {
-        "id": 58,
-        "name": "onbehalfofsubid",
-        "type": "string",
-        "required": false,
-        "doc": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party"
-      },
-      {
-        "id": 59,
-        "name": "onbehalfoflocationid",
-        "type": "string",
-        "required": false,
-        "doc": "Assigned value used to identify specific message originator's location (i.e. geographic location and/or desk, trader) if the message was delivered by a third party"
-      },
-      {
-        "id": 60,
-        "name": "delivertosubid",
-        "type": "string",
-        "required": false,
-        "doc": "Assigned value used to identify specific message recipient (i.e. trader) if the message is delivered by a third party"
-      },
-      {
-        "id": 61,
-        "name": "delivertolocationid",
-        "type": "string",
-        "required": false,
-        "doc": "Assigned value used to identify specific message recipient's location (i.e. geographic location and/or desk, trader) if the message was delivered by a third party"
-      },
-      {
-        "id": 62,
-        "name": "possdupflag",
-        "type": "boolean",
-        "required": false,
-        "doc": "Indicates possible retransmission of message with this sequence number"
-      },
-      {
-        "id": 63,
-        "name": "possresend",
-        "type": "boolean",
-        "required": false,
-        "doc": "Indicates that message may contain information that has been sent under another sequence number."
-      },
-      {
-        "id": 64,
+        "id": 12,
         "name": "sendingtime",
         "type": "timestamptz",
-        "required": true,
+        "required": false,
         "doc": "Time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
       },
       {
-        "id": 65,
+        "id": 13,
         "name": "origsendingtime",
         "type": "timestamptz",
         "required": false,
         "doc": "Original time of message transmission (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\") when transmitting orders as the result of a resend request."
       },
       {
-        "id": 66,
-        "name": "xmldatalen",
-        "type": "int",
-        "required": false,
-        "doc": "Length of the XmlData data block."
-      },
-      {
-        "id": 67,
-        "name": "xmldata",
-        "type": "binary",
-        "required": false,
-        "doc": "Actual XML data stream (e.g. FIXML). See appropriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters."
-      },
-      {
-        "id": 68,
-        "name": "account",
-        "type": "string",
-        "required": false,
-        "doc": "Account mnemonic as agreed between buy and sell sides, e.g. broker and institution or investor/intermediary and fund manager."
-      },
-      {
-        "id": 69,
-        "name": "clordid",
-        "type": "string",
-        "required": false,
-        "doc": "Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID(49) or OnBehalfOfCompID(115) as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID(11) field."
-      },
-      {
-        "id": 70,
-        "name": "origclordid",
-        "type": "string",
-        "required": false,
-        "doc": "ClOrdID (11) of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests."
-      },
-      {
-        "id": 71,
-        "name": "secondaryclordid",
-        "type": "string",
-        "required": false,
-        "doc": "Assigned by the party which originates the order. Can be used to provide the ClOrdID (11) used by an exchange or executing system."
-      },
-      {
-        "id": 72,
-        "name": "orderid",
-        "type": "string",
-        "required": false,
-        "doc": "Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID field to assure uniqueness across days."
-      },
-      {
-        "id": 73,
-        "name": "secondaryorderid",
-        "type": "string",
-        "required": false,
-        "doc": "Assigned by the party which accepts the order. Can be used to provide the OrderID (37) used by an exchange or executing system."
-      },
-      {
-        "id": 74,
-        "name": "execid",
-        "type": "string",
-        "required": false,
-        "doc": "Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType (150)=I (Order Status))."
-      },
-      {
-        "id": 75,
-        "name": "tradeid",
-        "type": "string",
-        "required": false,
-        "doc": "The unique ID assigned to the trade entity once it is received or matched by the exchange or central counterparty."
-      },
-      {
-        "id": 76,
-        "name": "quotereqid",
-        "type": "string",
-        "required": false,
-        "doc": "Unique identifier for a QuoteRequest(35=R)."
-      },
-      {
-        "id": 77,
-        "name": "quoteid",
-        "type": "string",
-        "required": false,
-        "doc": "Unique identifier for quote"
-      },
-      {
-        "id": 78,
-        "name": "quoterespid",
-        "type": "string",
-        "required": false,
-        "doc": "Message reference for Quote Response"
-      },
-      {
-        "id": 79,
-        "name": "symbol",
-        "type": "string",
-        "required": false,
-        "doc": "Ticker symbol. Common, \"human understood\" representation of the security. SecurityID (48) value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles)"
-      },
-      {
-        "id": 80,
-        "name": "securityid",
-        "type": "string",
-        "required": false,
-        "doc": "Security identifier value of SecurityIDSource (22) type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource."
-      },
-      {
-        "id": 81,
-        "name": "securityidsource",
-        "type": "string",
-        "required": false,
-        "doc": "Identifies class or source of the SecurityID(48) value."
-      },
-      {
-        "id": 82,
-        "name": "securitytype",
-        "type": "string",
-        "required": false,
-        "doc": "Indicates type of security. Security type enumerations are grouped by Product(460) field value. NOTE: Additional values may be used by mutual agreement of the counterparties."
-      },
-      {
-        "id": 83,
-        "name": "securitysubtype",
-        "type": "string",
-        "required": false,
-        "doc": "Sub-type qualification/identification of the SecurityType. As an example for SecurityType(167)=\"REPO\", the SecuritySubType=\"General Collateral\" can be used to further specify the type of REPO."
-      },
-      {
-        "id": 84,
-        "name": "securityexchange",
-        "type": "string",
-        "required": false,
-        "doc": "Market used to help identify a security."
-      },
-      {
-        "id": 85,
-        "name": "cficode",
-        "type": "string",
-        "required": false,
-        "doc": "Indicates the type of security using ISO 10962 standard, Classification of Financial Instruments (CFI code) values. ISO 10962 is maintained by ANNA (Association of National Numbering Agencies) acting as Registration Authority. See \"Appendix 6-B FIX Fields Based Upon Other Standards\". See also the Product (460) and SecurityType (167) fields. It is recommended that CFICode be used instead of SecurityType (167) for non-Fixed Income instruments."
-      },
-      {
-        "id": 86,
-        "name": "maturitydate",
-        "type": "timestamp",
-        "required": false,
-        "doc": "Date of maturity."
-      },
-      {
-        "id": 87,
-        "name": "product",
-        "type": "int",
-        "required": false,
-        "doc": "Indicates the type of product the security is associated with. See also the CFICode (461) and SecurityType (167) fields."
-      },
-      {
-        "id": 88,
-        "name": "side",
-        "type": "string",
-        "required": false,
-        "doc": "Side of order (see Volume : \"Glossary\" for value definitions)"
-      },
-      {
-        "id": 89,
-        "name": "ordtype",
-        "type": "string",
-        "required": false,
-        "doc": "Order type."
-      },
-      {
-        "id": 90,
-        "name": "price",
-        "type": "double",
-        "required": false,
-        "doc": "Price per unit of quantity (e.g. per share)"
-      },
-      {
-        "id": 91,
-        "name": "orderqty",
-        "type": "double",
-        "required": false,
-        "doc": "Quantity ordered. This represents the number of shares for equities or par, face or nominal value for FI instruments."
-      },
-      {
-        "id": 92,
-        "name": "quantity",
-        "type": "double",
-        "required": false,
-        "doc": "Overall/total quantity (e.g. number of shares)"
-      },
-      {
-        "id": 93,
-        "name": "qtytype",
-        "type": "int",
-        "required": false,
-        "doc": "Type of quantity specified in quantity field. ContractMultiplier (tag 231) is required when QtyType = 1 (Contracts). UnitOfMeasure (tag 996) and TimeUnit (tag 997) are required when QtyType = 2 (Units of Measure per Time Unit)."
-      },
-      {
-        "id": 94,
-        "name": "currency",
-        "type": "string",
-        "required": false,
-        "doc": "Identifies currency used for price or quantity fields, depending on the asset class being traded. CurrencyCodeSource(2897) may be used to disambiguate the code source scheme used, and ISO 4217 is the default scheme if absent."
-      },
-      {
-        "id": 95,
-        "name": "settlcurrency",
-        "type": "string",
-        "required": false,
-        "doc": "Currency code of settlement denomination."
-      },
-      {
-        "id": 96,
-        "name": "bidpx",
-        "type": "double",
-        "required": false,
-        "doc": "Bid price/rate"
-      },
-      {
-        "id": 97,
-        "name": "offerpx",
-        "type": "double",
-        "required": false,
-        "doc": "Offer price/rate"
-      },
-      {
-        "id": 98,
-        "name": "bidsize",
-        "type": "double",
-        "required": false,
-        "doc": "Quantity of bid"
-      },
-      {
-        "id": 99,
-        "name": "offersize",
-        "type": "double",
-        "required": false,
-        "doc": "Quantity of offer"
-      },
-      {
-        "id": 100,
-        "name": "lastpx",
-        "type": "double",
-        "required": false,
-        "doc": "Price of this (last) fill."
-      },
-      {
-        "id": 101,
-        "name": "lastqty",
-        "type": "double",
-        "required": false,
-        "doc": "Quantity (e.g. shares) bought/sold on this (last) fill."
-      },
-      {
-        "id": 102,
-        "name": "avgpx",
-        "type": "double",
-        "required": false,
-        "doc": "Calculated average price of all fills on this order."
-      },
-      {
-        "id": 103,
-        "name": "cumqty",
-        "type": "double",
-        "required": false,
-        "doc": "Total quantity (e.g. number of shares) filled."
-      },
-      {
-        "id": 104,
-        "name": "leavesqty",
-        "type": "double",
-        "required": false,
-        "doc": "Quantity open for further execution. If the OrdStatus (39) is Canceled, DoneForTheDay, Expired, Calculated, or Rejected (in which case the order is no longer active) then LeavesQty could be 0, otherwise LeavesQty = OrderQty (38) - CumQty (14)."
-      },
-      {
-        "id": 105,
+        "id": 14,
         "name": "transacttime",
         "type": "timestamptz",
         "required": false,
         "doc": "Timestamp when the business transaction represented by the message occurred."
       },
       {
-        "id": 106,
+        "id": 15,
         "name": "settldate",
         "type": "timestamp",
         "required": false,
         "doc": "Specific date of trade settlement (SettlementDate) in YYYYMMDD format."
       },
       {
-        "id": 107,
+        "id": 16,
         "name": "tradedate",
         "type": "timestamp",
         "required": false,
         "doc": "Indicates date of trading day. Absence of this field indicates current day (expressed in local time at place of trade)."
       },
       {
-        "id": 108,
+        "id": 17,
         "name": "expiretime",
         "type": "timestamptz",
         "required": false,
         "doc": "Time/Date of order expiration (always expressed in UTC (Universal Time Coordinated, also known as \"GMT\")"
       },
       {
-        "id": 109,
+        "id": 18,
+        "name": "curruuid",
+        "type": "fixed[16]",
+        "required": true,
+        "doc": "The message's identity: the UUIDv7 its instant and its code derive."
+      },
+      {
+        "id": 19,
+        "name": "crossuuid",
+        "type": "fixed[16]",
+        "required": true,
+        "doc": "The identity every message of one lifecycle shares, derived from the identifier they share; the message's own where it names none."
+      },
+      {
+        "id": 20,
+        "name": "crosscode",
+        "type": "string",
+        "required": false,
+        "doc": "The identifier every message of one lifecycle shares: OrderID, else ClOrdID, OrigClOrdID, QuoteID, QuoteReqID or MDReqID, the first stated."
+      },
+      {
+        "id": 21,
+        "name": "hashcode",
+        "type": "long",
+        "required": true,
+        "doc": "The XXH3-64 of what the event states and the named FIX content behind it."
+      },
+      {
+        "id": 22,
+        "name": "crosshashcode",
+        "type": "long",
+        "required": true,
+        "doc": "The XXH3-64 of the cross code; zero where the message names none."
+      },
+      {
+        "id": 23,
+        "name": "prevuuid",
+        "type": "fixed[16]",
+        "required": false,
+        "doc": "The identity of the message this one follows, where it follows one."
+      },
+      {
+        "id": 24,
+        "name": "seqnum",
+        "type": "long",
+        "required": false,
+        "doc": "The message's place in its chain: how many came before it."
+      },
+      {
+        "id": 25,
+        "name": "parentuuids",
+        "type": {
+          "type": "list",
+          "element-id": 129,
+          "element": "fixed[16]",
+          "element-required": true
+        },
+        "required": false,
+        "doc": "The identities of the messages this one descends from, in the order it states them."
+      },
+      {
+        "id": 26,
+        "name": "identifiers",
+        "type": {
+          "type": "map",
+          "key-id": 130,
+          "key": "string",
+          "value-id": 131,
+          "value": "string",
+          "value-required": false
+        },
+        "required": false,
+        "doc": "The names this message goes by, each under the canonical name of the field that stated it, in sorted order; repeating-group members are not flattened."
+      },
+      {
+        "id": 27,
+        "name": "beginstring",
+        "type": "string",
+        "required": true,
+        "doc": "Identifies beginning of new message and session protocol version by means of a session profile identifier (see FIX Session Layer for details). ALWAYS FIRST FIELD IN MESSAGE. (Always unencrypted)."
+      },
+      {
+        "id": 28,
+        "name": "msgtype",
+        "type": "string",
+        "required": false,
+        "doc": "Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted)"
+      },
+      {
+        "id": 29,
+        "name": "msgseqnum",
+        "type": "long",
+        "required": false,
+        "doc": "Integer message sequence number."
+      },
+      {
+        "id": 30,
+        "name": "sendercompid",
+        "type": "string",
+        "required": false,
+        "doc": "Assigned value used to identify firm sending message."
+      },
+      {
+        "id": 31,
+        "name": "targetcompid",
+        "type": "string",
+        "required": false,
+        "doc": "Assigned value used to identify receiving firm."
+      },
+      {
+        "id": 32,
+        "name": "possdupflag",
+        "type": "boolean",
+        "required": false,
+        "doc": "Indicates possible retransmission of message with this sequence number"
+      },
+      {
+        "id": 33,
+        "name": "msgdirection",
+        "type": "string",
+        "required": false,
+        "doc": "Specifies the direction of the message."
+      },
+      {
+        "id": 34,
+        "name": "sourceurl",
+        "type": "string",
+        "required": false,
+        "doc": "The object this message's line was read from."
+      },
+      {
+        "id": 35,
+        "name": "pluginid",
+        "type": "string",
+        "required": false,
+        "doc": "The plugin that logged the line inside a bridge, as the bridge names it: the row's own pluginid column, never derived."
+      },
+      {
+        "id": 36,
+        "name": "msgctxid",
+        "type": "string",
+        "required": false,
+        "doc": "The message context a bridge handled the message in, as its own log names it."
+      },
+      {
+        "id": 37,
+        "name": "msgsessionid",
+        "type": "string",
+        "required": false,
+        "doc": "The session instance a bridge handled a line on, as its own row header brackets it - never what the message states about itself."
+      },
+      {
+        "id": 38,
+        "name": "symbol",
+        "type": "string",
+        "required": false,
+        "doc": "Ticker symbol. Common, \"human understood\" representation of the security. SecurityID (48) value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment Vehicles)"
+      },
+      {
+        "id": 39,
+        "name": "symbolticker",
+        "type": "string",
+        "required": false,
+        "doc": "The ticker the instrument is known by: what Symbol settles on, null where the message names none."
+      },
+      {
+        "id": 40,
+        "name": "securityid",
+        "type": "string",
+        "required": false,
+        "doc": "Security identifier value of SecurityIDSource (22) type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource."
+      },
+      {
+        "id": 41,
+        "name": "securityidsource",
+        "type": "string",
+        "required": false,
+        "doc": "Identifies class or source of the SecurityID(48) value."
+      },
+      {
+        "id": 42,
+        "name": "securitytype",
+        "type": "string",
+        "required": false,
+        "doc": "Indicates type of security. Security type enumerations are grouped by Product(460) field value. NOTE: Additional values may be used by mutual agreement of the counterparties."
+      },
+      {
+        "id": 43,
+        "name": "securitysubtype",
+        "type": "string",
+        "required": false,
+        "doc": "Sub-type qualification/identification of the SecurityType. As an example for SecurityType(167)=\"REPO\", the SecuritySubType=\"General Collateral\" can be used to further specify the type of REPO."
+      },
+      {
+        "id": 44,
+        "name": "securityexchange",
+        "type": "string",
+        "required": false,
+        "doc": "Market used to help identify a security."
+      },
+      {
+        "id": 45,
+        "name": "cficode",
+        "type": "string",
+        "required": false,
+        "doc": "Indicates the type of security using ISO 10962 standard, Classification of Financial Instruments (CFI code) values. ISO 10962 is maintained by ANNA (Association of National Numbering Agencies) acting as Registration Authority. See \"Appendix 6-B FIX Fields Based Upon Other Standards\". See also the Product (460) and SecurityType (167) fields. It is recommended that CFICode be used instead of SecurityType (167) for non-Fixed Income instruments."
+      },
+      {
+        "id": 46,
+        "name": "maturitydate",
+        "type": "timestamp",
+        "required": false,
+        "doc": "Date of maturity."
+      },
+      {
+        "id": 47,
+        "name": "product",
+        "type": "int",
+        "required": false,
+        "doc": "Indicates the type of product the security is associated with. See also the CFICode (461) and SecurityType (167) fields."
+      },
+      {
+        "id": 48,
+        "name": "isincode",
+        "type": "string",
+        "required": false,
+        "doc": "The instrument's ISIN: the message's own, else SecurityID or a SecurityAltID whose source is ISIN."
+      },
+      {
+        "id": 49,
+        "name": "cusipcode",
+        "type": "string",
+        "required": false,
+        "doc": "The instrument's CUSIP: the message's own, else a SecurityID or SecurityAltID whose source is CUSIP."
+      },
+      {
+        "id": 50,
+        "name": "sedolcode",
+        "type": "string",
+        "required": false,
+        "doc": "The instrument's SEDOL: the message's own, else a SecurityID or SecurityAltID whose source is SEDOL."
+      },
+      {
+        "id": 51,
+        "name": "bloombergcode",
+        "type": "string",
+        "required": false,
+        "doc": "The instrument's Bloomberg identifier: the message's own, else a SecurityID or SecurityAltID whose source is Bloomberg."
+      },
+      {
+        "id": 52,
+        "name": "miccode",
+        "type": "string",
+        "required": false,
+        "doc": "The market the message names, as an ISO 10383 MIC: the message's own, else SecurityExchange, ExDestination or LastMkt."
+      },
+      {
+        "id": 53,
+        "name": "securitytradingstatus",
+        "type": "int",
+        "required": false,
+        "doc": "Identifies the trading status applicable to the security."
+      },
+      {
+        "id": 54,
+        "name": "tradsesstatus",
+        "type": "int",
+        "required": false,
+        "doc": "State of the trading session."
+      },
+      {
+        "id": 55,
+        "name": "securitystatus",
+        "type": "string",
+        "required": false,
+        "doc": "Indicates the current state of the instrument."
+      },
+      {
+        "id": 56,
+        "name": "tradable",
+        "type": "boolean",
+        "required": false,
+        "doc": "Whether the instrument could be traded when the message was sent: SecurityTradingStatus, else TradSesStatus, else SecurityStatus; null where none of them says."
+      },
+      {
+        "id": 57,
+        "name": "account",
+        "type": "string",
+        "required": false,
+        "doc": "Account mnemonic as agreed between buy and sell sides, e.g. broker and institution or investor/intermediary and fund manager."
+      },
+      {
+        "id": 58,
+        "name": "clordid",
+        "type": "string",
+        "required": false,
+        "doc": "Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary etc.) (identified by SenderCompID(49) or OnBehalfOfCompID(115) as appropriate). Uniqueness must be guaranteed within a single trading day. Firms, particularly those which electronically submit multi-day orders, trade globally or throughout market close periods, should ensure uniqueness across days, for example by embedding a date within the ClOrdID(11) field."
+      },
+      {
+        "id": 59,
+        "name": "origclordid",
+        "type": "string",
+        "required": false,
+        "doc": "ClOrdID (11) of the previous order (NOT the initial order of the day) as assigned by the institution, used to identify the previous order in cancel and cancel/replace requests."
+      },
+      {
+        "id": 60,
+        "name": "secondaryclordid",
+        "type": "string",
+        "required": false,
+        "doc": "Assigned by the party which originates the order. Can be used to provide the ClOrdID (11) used by an exchange or executing system."
+      },
+      {
+        "id": 61,
+        "name": "orderid",
+        "type": "string",
+        "required": false,
+        "doc": "Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness must be guaranteed within a single trading day. Firms which accept multi-day orders should consider embedding a date within the OrderID field to assure uniqueness across days."
+      },
+      {
+        "id": 62,
+        "name": "secondaryorderid",
+        "type": "string",
+        "required": false,
+        "doc": "Assigned by the party which accepts the order. Can be used to provide the OrderID (37) used by an exchange or executing system."
+      },
+      {
+        "id": 63,
+        "name": "execid",
+        "type": "string",
+        "required": false,
+        "doc": "Unique identifier of execution message as assigned by sell-side (broker, exchange, ECN) (will be 0 (zero) for ExecType (150)=I (Order Status))."
+      },
+      {
+        "id": 64,
+        "name": "tradeid",
+        "type": "string",
+        "required": false,
+        "doc": "The unique ID assigned to the trade entity once it is received or matched by the exchange or central counterparty."
+      },
+      {
+        "id": 65,
+        "name": "quotereqid",
+        "type": "string",
+        "required": false,
+        "doc": "Unique identifier for a QuoteRequest(35=R)."
+      },
+      {
+        "id": 66,
+        "name": "quoteid",
+        "type": "string",
+        "required": false,
+        "doc": "Unique identifier for quote"
+      },
+      {
+        "id": 67,
+        "name": "quoterespid",
+        "type": "string",
+        "required": false,
+        "doc": "Message reference for Quote Response"
+      },
+      {
+        "id": 68,
+        "name": "side",
+        "type": "string",
+        "required": false,
+        "doc": "Side of order (see Volume : \"Glossary\" for value definitions)"
+      },
+      {
+        "id": 69,
+        "name": "px",
+        "type": "decimal(38, 18)",
+        "required": false,
+        "doc": "The price the message is about: Price, else LastPx, else AvgPx, else the price its own side's lane quotes."
+      },
+      {
+        "id": 70,
+        "name": "prevpx",
+        "type": "decimal(38, 18)",
+        "required": false,
+        "doc": "The price stated before this message: PrevClosePx where the message states one, else the price its predecessor in the chain stated."
+      },
+      {
+        "id": 71,
+        "name": "lastpx",
+        "type": "double",
+        "required": false,
+        "doc": "Price of this (last) fill."
+      },
+      {
+        "id": 72,
+        "name": "avgpx",
+        "type": "double",
+        "required": false,
+        "doc": "Calculated average price of all fills on this order."
+      },
+      {
+        "id": 73,
+        "name": "qty",
+        "type": "decimal(38, 18)",
+        "required": false,
+        "doc": "The quantity the message is about: OrderQty, else LastQty, else CumQty, else LeavesQty, else the size its own side's lane quotes."
+      },
+      {
+        "id": 74,
+        "name": "prevqty",
+        "type": "decimal(38, 18)",
+        "required": false,
+        "doc": "The quantity the message's predecessor in the chain stated."
+      },
+      {
+        "id": 75,
+        "name": "lastqty",
+        "type": "double",
+        "required": false,
+        "doc": "Quantity (e.g. shares) bought/sold on this (last) fill."
+      },
+      {
+        "id": 76,
+        "name": "cumqty",
+        "type": "double",
+        "required": false,
+        "doc": "Total quantity (e.g. number of shares) filled."
+      },
+      {
+        "id": 77,
+        "name": "leavesqty",
+        "type": "double",
+        "required": false,
+        "doc": "Quantity open for further execution. If the OrdStatus (39) is Canceled, DoneForTheDay, Expired, Calculated, or Rejected (in which case the order is no longer active) then LeavesQty could be 0, otherwise LeavesQty = OrderQty (38) - CumQty (14)."
+      },
+      {
+        "id": 78,
+        "name": "unit",
+        "type": "string",
+        "required": false,
+        "doc": "The unit the quantity is counted in: UnitOfMeasure."
+      },
+      {
+        "id": 79,
+        "name": "currency",
+        "type": "string",
+        "required": false,
+        "doc": "Identifies currency used for price or quantity fields, depending on the asset class being traded. CurrencyCodeSource(2897) may be used to disambiguate the code source scheme used, and ISO 4217 is the default scheme if absent."
+      },
+      {
+        "id": 80,
+        "name": "settlcurrency",
+        "type": "string",
+        "required": false,
+        "doc": "Currency code of settlement denomination."
+      },
+      {
+        "id": 81,
+        "name": "qtytype",
+        "type": "int",
+        "required": false,
+        "doc": "Type of quantity specified in quantity field. ContractMultiplier (tag 231) is required when QtyType = 1 (Contracts). UnitOfMeasure (tag 996) and TimeUnit (tag 997) are required when QtyType = 2 (Units of Measure per Time Unit)."
+      },
+      {
+        "id": 82,
+        "name": "ordtype",
+        "type": "string",
+        "required": false,
+        "doc": "Order type."
+      },
+      {
+        "id": 83,
+        "name": "timeinforce",
+        "type": "string",
+        "required": false,
+        "doc": "Specifies how long the order remains in effect. Absence of this field is interpreted as DAY. NOTE not applicable to CIV Orders."
+      },
+      {
+        "id": 84,
+        "name": "bidpx",
+        "type": "double",
+        "required": false,
+        "doc": "Bid price/rate"
+      },
+      {
+        "id": 85,
+        "name": "bidcurrency",
+        "type": "string",
+        "required": false,
+        "doc": "The currency the bid lane is quoted in: the message's own Currency, else SettlCurrency."
+      },
+      {
+        "id": 86,
+        "name": "bidunit",
+        "type": "string",
+        "required": false,
+        "doc": "The unit the bid lane's size is counted in, where the lane states it."
+      },
+      {
+        "id": 87,
+        "name": "bidsize",
+        "type": "double",
+        "required": false,
+        "doc": "Quantity of bid"
+      },
+      {
+        "id": 88,
+        "name": "offerpx",
+        "type": "double",
+        "required": false,
+        "doc": "Offer price/rate"
+      },
+      {
+        "id": 89,
+        "name": "askcurrency",
+        "type": "string",
+        "required": false,
+        "doc": "The currency the ask lane is quoted in: the message's own Currency, else SettlCurrency."
+      },
+      {
+        "id": 90,
+        "name": "askunit",
+        "type": "string",
+        "required": false,
+        "doc": "The unit the ask lane's size is counted in, where the lane states it."
+      },
+      {
+        "id": 91,
+        "name": "offersize",
+        "type": "double",
+        "required": false,
+        "doc": "Quantity of offer"
+      },
+      {
+        "id": 92,
+        "name": "state",
+        "type": "string",
+        "required": false,
+        "doc": "The state the order is in: OrdStatus, else ExecType, read as one lifecycle vocabulary."
+      },
+      {
+        "id": 93,
         "name": "ordstatus",
         "type": "string",
         "required": false,
         "doc": "Identifies current status of order. *** SOME VALUES HAVE BEEN REPLACED - See \"Replaced Features and Supported Approach\" *** (see Volume : \"Glossary\" for value definitions)"
       },
       {
-        "id": 110,
+        "id": 94,
         "name": "exectype",
         "type": "string",
         "required": false,
         "doc": "Describes the specific ExecutionRpt (e.g. Pending Cancel) while OrdStatus(39) will always identify the current order status (e.g. Partially Filled)."
       },
       {
-        "id": 111,
+        "id": 95,
         "name": "quotestatus",
         "type": "int",
         "required": false,
         "doc": "Identifies the status of the quote acknowledgement."
       },
       {
-        "id": 112,
+        "id": 96,
         "name": "quoteresponselevel",
         "type": "int",
         "required": false,
         "doc": "Level of Response requested from receiver of quote messages. A default value should be bilaterally agreed."
       },
       {
-        "id": 113,
+        "id": 97,
         "name": "quoteentryrejectreason",
         "type": "int",
         "required": false,
         "doc": "Reason Quote Entry was rejected:"
       },
       {
-        "id": 114,
+        "id": 98,
         "name": "ordrejreason",
         "type": "int",
         "required": false,
         "doc": "Code to identify reason for order rejection. Note: Values 3, 4, and 5 will be used when rejecting an order due to pre-allocation information errors."
       },
       {
-        "id": 115,
+        "id": 99,
         "name": "cxlrejreason",
         "type": "int",
         "required": false,
         "doc": "Code to identify reason for rejection of cancellation or modification."
       },
       {
-        "id": 116,
+        "id": 100,
         "name": "text",
         "type": "string",
         "required": false,
         "doc": "Free format text string"
       },
       {
-        "id": 117,
+        "id": 101,
         "name": "nopartyids",
         "type": "int",
         "required": false,
         "doc": "Number of PartyID (448), PartyIDSource (447), and PartyRole (452) entries"
       },
       {
-        "id": 118,
+        "id": 102,
         "name": "parties",
         "type": {
           "type": "list",
-          "element-id": 136,
+          "element-id": 132,
           "element": {
             "type": "struct",
             "fields": [
               {
-                "id": 137,
+                "id": 133,
                 "name": "partyid",
                 "type": "string",
                 "required": false,
                 "doc": "Party identifier/code. See PartyIDSource (447) and PartyRole (452)."
               },
               {
-                "id": 138,
+                "id": 134,
                 "name": "partyidsource",
                 "type": "string",
                 "required": false,
                 "doc": "Identifies class or source of the PartyID (448) value. Required if PartyID is specified. Note: applicable values depend upon PartyRole (452) specified."
               },
               {
-                "id": 139,
+                "id": 135,
                 "name": "partyrole",
                 "type": "int",
                 "required": false,
                 "doc": "Identifies the type or role of the PartyID (448) specified."
               },
               {
-                "id": 140,
+                "id": 136,
                 "name": "partyrolequalifier",
                 "type": "int",
                 "required": false,
                 "doc": "Used to further qualify the value of PartyRole(452)."
               },
               {
-                "id": 141,
+                "id": 137,
                 "name": "nopartysubids",
                 "type": "int",
                 "required": false,
                 "doc": "Number of PartySubID (523)and PartySubIDType (803) entries"
               },
               {
-                "id": 142,
+                "id": 138,
                 "name": "ptyssubgrp",
                 "type": {
                   "type": "list",
-                  "element-id": 143,
+                  "element-id": 139,
                   "element": {
                     "type": "struct",
                     "fields": [
                       {
-                        "id": 144,
+                        "id": 140,
                         "name": "partysubid",
                         "type": "string",
                         "required": false,
                         "doc": "Sub-identifier (e.g. Clearing Account for PartyRole (452)=Clearing Firm, Locate ID # for PartyRole=Locate/Lending Firm, etc). Not required when using PartyID (448), PartyIDSource (447), and PartyRole."
                       },
                       {
-                        "id": 145,
+                        "id": 141,
                         "name": "partysubidtype",
                         "type": "int",
                         "required": false,
@@ -943,37 +802,37 @@
         "doc": "Repeating group below should contain unique combinations of PartyID, PartyIDSource, and PartyRole"
       },
       {
-        "id": 119,
+        "id": 103,
         "name": "nosecurityaltid",
         "type": "int",
         "required": false,
         "doc": "Number of SecurityAltID (455) entries."
       },
       {
-        "id": 120,
+        "id": 104,
         "name": "secaltidgrp",
         "type": {
           "type": "list",
-          "element-id": 146,
+          "element-id": 142,
           "element": {
             "type": "struct",
             "fields": [
               {
-                "id": 147,
+                "id": 143,
                 "name": "securityaltid",
                 "type": "string",
                 "required": false,
                 "doc": "Alternate Security identifier value for this security of SecurityAltIDSource (456) type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityAltIDSource."
               },
               {
-                "id": 148,
+                "id": 144,
                 "name": "securityaltidsource",
                 "type": "string",
                 "required": false,
                 "doc": "Identifies class or source of the SecurityAltID(455) value."
               },
               {
-                "id": 149,
+                "id": 145,
                 "name": "symbolpositionnumber",
                 "type": "int",
                 "required": false,
@@ -986,100 +845,100 @@
         "required": false
       },
       {
-        "id": 121,
+        "id": 105,
         "name": "notrdregtimestamps",
         "type": "int",
         "required": false,
         "doc": "Number of timestamp entries."
       },
       {
-        "id": 122,
+        "id": 106,
         "name": "trdregtimestamps",
         "type": {
           "type": "list",
-          "element-id": 150,
+          "element-id": 146,
           "element": {
             "type": "struct",
             "fields": [
               {
-                "id": 151,
+                "id": 147,
                 "name": "trdregtimestamp",
                 "type": "timestamptz",
                 "required": false,
                 "doc": "Traded / Regulatory timestamp value."
               },
               {
-                "id": 152,
+                "id": 148,
                 "name": "trdregtimestamptype",
                 "type": "int",
                 "required": false,
                 "doc": "Trading / Regulatory timestamp type."
               },
               {
-                "id": 153,
+                "id": 149,
                 "name": "trdregtimestamporigin",
                 "type": "string",
                 "required": false,
                 "doc": "Text which identifies the \"origin\" (i.e. system which was used to generate the timestamp) for the Traded / Regulatory timestamp value."
               },
               {
-                "id": 154,
+                "id": 150,
                 "name": "trdregtimestampmanualindicator",
                 "type": "boolean",
                 "required": false,
                 "doc": "Indicates whether a given timestamp was manually captured."
               },
               {
-                "id": 155,
+                "id": 151,
                 "name": "desktype",
                 "type": "string",
                 "required": false,
                 "doc": "Identifies the type of Trading Desk."
               },
               {
-                "id": 156,
+                "id": 152,
                 "name": "desktypesource",
                 "type": "int",
                 "required": false,
                 "doc": "Identifies the class or source of DeskType(1033) values. Conditionally required when DeskType(1033) is specified."
               },
               {
-                "id": 157,
+                "id": 153,
                 "name": "deskorderhandlinginst",
                 "type": "string",
                 "required": false,
                 "doc": "Codes that apply special information that the broker-dealer needs to report."
               },
               {
-                "id": 158,
+                "id": 154,
                 "name": "informationbarrierid",
                 "type": "string",
                 "required": false,
                 "doc": "The identifier of the information barrier in place for a trading unit that will meet the criteria of the \"no-knowledge\" exception in FINRA Rule 5320.02."
               },
               {
-                "id": 159,
+                "id": 155,
                 "name": "nbboentrytype",
                 "type": "int",
                 "required": false,
                 "doc": "Type of NBBO information."
               },
               {
-                "id": 160,
+                "id": 156,
                 "name": "nbboprice",
                 "type": "double",
                 "required": false,
                 "doc": "Price related to NBBO. NBBOEntryType(2831) may be used to indicate entry type, e.g. bid or offer."
               },
               {
-                "id": 161,
+                "id": 157,
                 "name": "nbboqty",
                 "type": "double",
                 "required": false,
                 "doc": "Quantity related to NBBO. NBBOEntryType(2831) may be used to indicte entry type, e.g. bid or offer."
               },
               {
-                "id": 162,
+                "id": 158,
                 "name": "nbbosource",
                 "type": "int",
                 "required": false,
@@ -1091,6 +950,118 @@
         },
         "required": false,
         "doc": "Required if NoTrdRegTimestamps(768) > 0."
+      },
+      {
+        "id": 107,
+        "name": "bodylength",
+        "type": "int",
+        "required": false,
+        "doc": "Message length, in bytes, forward to the CheckSum field. ALWAYS SECOND FIELD IN MESSAGE. (Always unencrypted)"
+      },
+      {
+        "id": 108,
+        "name": "onbehalfofcompid",
+        "type": "string",
+        "required": false,
+        "doc": "Assigned value used to identify firm originating message if the message was delivered by a third party i.e. the third party firm identifier would be delivered in the SenderCompID field and the firm originating the message in this field."
+      },
+      {
+        "id": 109,
+        "name": "delivertocompid",
+        "type": "string",
+        "required": false,
+        "doc": "Assigned value used to identify the firm targeted to receive the message if the message is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID (56) field and the ultimate receiver firm ID in this field."
+      },
+      {
+        "id": 110,
+        "name": "securedatalen",
+        "type": "int",
+        "required": false,
+        "doc": "Length of encrypted message"
+      },
+      {
+        "id": 111,
+        "name": "securedata",
+        "type": "binary",
+        "required": false,
+        "doc": "Actual encrypted data stream"
+      },
+      {
+        "id": 112,
+        "name": "sendersubid",
+        "type": "string",
+        "required": false,
+        "doc": "Assigned value used to identify specific message originator (desk, trader, etc.)"
+      },
+      {
+        "id": 113,
+        "name": "senderlocationid",
+        "type": "string",
+        "required": false,
+        "doc": "Assigned value used to identify specific message originator's location (i.e. geographic location and/or desk, trader)"
+      },
+      {
+        "id": 114,
+        "name": "targetsubid",
+        "type": "string",
+        "required": false,
+        "doc": "Assigned value used to identify specific individual or unit intended to receive message. \"ADMIN\" reserved for administrative messages not intended for a specific user."
+      },
+      {
+        "id": 115,
+        "name": "targetlocationid",
+        "type": "string",
+        "required": false,
+        "doc": "Assigned value used to identify specific message destination's location (i.e. geographic location and/or desk, trader)"
+      },
+      {
+        "id": 116,
+        "name": "onbehalfofsubid",
+        "type": "string",
+        "required": false,
+        "doc": "Assigned value used to identify specific message originator (i.e. trader) if the message was delivered by a third party"
+      },
+      {
+        "id": 117,
+        "name": "onbehalfoflocationid",
+        "type": "string",
+        "required": false,
+        "doc": "Assigned value used to identify specific message originator's location (i.e. geographic location and/or desk, trader) if the message was delivered by a third party"
+      },
+      {
+        "id": 118,
+        "name": "delivertosubid",
+        "type": "string",
+        "required": false,
+        "doc": "Assigned value used to identify specific message recipient (i.e. trader) if the message is delivered by a third party"
+      },
+      {
+        "id": 119,
+        "name": "delivertolocationid",
+        "type": "string",
+        "required": false,
+        "doc": "Assigned value used to identify specific message recipient's location (i.e. geographic location and/or desk, trader) if the message was delivered by a third party"
+      },
+      {
+        "id": 120,
+        "name": "possresend",
+        "type": "boolean",
+        "required": false,
+        "doc": "Indicates that message may contain information that has been sent under another sequence number."
+      },
+      {
+        "id": 121,
+        "name": "xmldatalen",
+        "type": "int",
+        "required": false,
+        "doc": "Length of the XmlData data block."
+      },
+      {
+        "id": 122,
+        "name": "xmldata",
+        "type": "binary",
+        "required": false,
+        "doc": "Actual XML data stream (e.g. FIXML). See appropriate XML reference (e.g. FIXML). Note: may contain embedded SOH characters."
       },
       {
         "id": 123,
@@ -1115,10 +1086,17 @@
       },
       {
         "id": 126,
-        "name": "msgdirection",
-        "type": "string",
+        "name": "metadata",
+        "type": {
+          "type": "map",
+          "key-id": 159,
+          "key": "string",
+          "value-id": 160,
+          "value": "string",
+          "value-required": false
+        },
         "required": false,
-        "doc": "Specifies the direction of the message."
+        "doc": "What a bridge stated under its own namespaces - a `TECH.` or an `AMON.` key - each under the key as the bridge spelled it, folded, in sorted order."
       },
       {
         "id": 127,
@@ -1132,102 +1110,84 @@
         "name": "fixentries",
         "type": {
           "type": "list",
-          "element-id": 163,
+          "element-id": 161,
           "element": {
             "type": "struct",
             "fields": [
               {
-                "id": 164,
-                "name": "tagnum",
+                "id": 162,
+                "name": "tag",
                 "type": "int",
-                "required": false
+                "required": true
               },
               {
-                "id": 165,
-                "name": "tagname",
+                "id": 163,
+                "name": "name",
                 "type": "string",
                 "required": true
               },
               {
-                "id": 166,
-                "name": "tagvalue",
+                "id": 164,
+                "name": "value",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 167,
-                "name": "tagkey",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": 168,
+                "id": 165,
                 "name": "fixentries",
                 "type": {
                   "type": "list",
-                  "element-id": 169,
+                  "element-id": 166,
                   "element": {
                     "type": "struct",
                     "fields": [
                       {
-                        "id": 170,
-                        "name": "tagnum",
+                        "id": 167,
+                        "name": "tag",
                         "type": "int",
-                        "required": false
+                        "required": true
                       },
                       {
-                        "id": 171,
-                        "name": "tagname",
+                        "id": 168,
+                        "name": "name",
                         "type": "string",
                         "required": true
                       },
                       {
-                        "id": 172,
-                        "name": "tagvalue",
+                        "id": 169,
+                        "name": "value",
                         "type": "string",
                         "required": false
                       },
                       {
-                        "id": 173,
-                        "name": "tagkey",
-                        "type": "string",
-                        "required": false
-                      },
-                      {
-                        "id": 174,
+                        "id": 170,
                         "name": "fixentries",
                         "type": {
                           "type": "list",
-                          "element-id": 175,
+                          "element-id": 171,
                           "element": {
                             "type": "struct",
                             "fields": [
                               {
-                                "id": 176,
-                                "name": "tagnum",
+                                "id": 172,
+                                "name": "tag",
                                 "type": "int",
-                                "required": false
+                                "required": true
                               },
                               {
-                                "id": 177,
-                                "name": "tagname",
+                                "id": 173,
+                                "name": "name",
                                 "type": "string",
                                 "required": true
                               },
                               {
-                                "id": 178,
-                                "name": "tagvalue",
+                                "id": 174,
+                                "name": "value",
                                 "type": "string",
                                 "required": false
                               },
                               {
-                                "id": 179,
-                                "name": "tagkey",
-                                "type": "string",
-                                "required": false
-                              },
-                              {
-                                "id": 180,
+                                "id": 175,
                                 "name": "fixentries",
                                 "type": "string",
                                 "required": false
@@ -1254,24 +1214,41 @@
     ],
     "schema-id": 0,
     "identifier-field-ids": [
-      1,
-      15,
-      34
+      18
     ]
   },
   "partition-spec": {
     "spec-id": 0,
     "fields": [
       {
-        "source-id": 3,
+        "source-id": 6,
         "field-id": 1000,
         "transform": "hour",
-        "name": "timepartition_hour"
+        "name": "unix_hour"
       }
     ]
   },
   "sort-order": {
-    "order-id": 0,
-    "fields": []
+    "order-id": 1,
+    "fields": [
+      {
+        "source-id": 6,
+        "transform": "identity",
+        "direction": "asc",
+        "null-order": "nulls-last"
+      },
+      {
+        "source-id": 24,
+        "transform": "identity",
+        "direction": "asc",
+        "null-order": "nulls-last"
+      },
+      {
+        "source-id": 18,
+        "transform": "identity",
+        "direction": "asc",
+        "null-order": "nulls-last"
+      }
+    ]
   }
 }

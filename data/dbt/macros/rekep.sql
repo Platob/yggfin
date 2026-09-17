@@ -6,7 +6,7 @@
   Sixteen ordered bytes over the parts that scope one identity.
 
   `fix.messages` already carries the identities the parser could name --
-  `msghash` for a message and `msgphash` for the chain it belongs to -- so a
+  `curruuid` for an event and `crossuuid` for the chain it belongs to -- so a
   digest is written here only where SQL has to name something the parser had no
   word for. Every part is cast and coalesced before it is joined, so a null
   part and an empty one are the same identity and neither shifts the parts

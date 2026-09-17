@@ -75,16 +75,15 @@ row of nulls is not a row this would commit.
 | `executions_fills` | `executions.fills` | one economic execution occurrence | `executionkey` | overwrite |
 
 An identity the parser already named is reused rather than computed again:
-`orderkey` is `msgphash`, the sixteen bytes over the event chain `code`, which
-scopes a client order id by the session pair it was seen on. A digest is
-written only where SQL has to name something the parser had no word for —
-`eventkey` over the source position, `executionkey` over the chain and the
-venue execution id — and those are MD5, which is what DuckDB spells.
+`orderkey` is `crossuuid`, the identity over the chain the message states, and
+`eventkey` is `curruuid`, the event's own. A digest is written only where SQL
+has to name something the parser had no word for — `executionkey` over the
+chain and the venue execution id — and it is MD5, which is what DuckDB spells.
 
 - `orders.events` takes a message that carries an order identity and an order
   lifecycle fact. A message carrying one and not the other stays in
   `fix.messages` rather than being assigned a guessed order, and an unknown
-  chain — an empty `code` — is not an order.
+  chain — an empty `crosscode` — is not an order.
 - `orders.current` is folded from `orders.events` alone, never from FIX. The
   winning event is the latest `eventtime`, then the latest source position, so
   a late event changes the row only through that ordering and the same events
@@ -136,7 +135,7 @@ sources:
       - name: messages
         meta:
           table: fix.messages
-          columns: [sourceurl, rownum, msghash, code]
+          columns: [sourceurl, rownum, curruuid, crosscode]
 ```
 
 | key | meaning |

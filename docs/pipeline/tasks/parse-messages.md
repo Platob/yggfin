@@ -64,15 +64,15 @@ The row header is the bridge's own `ULBRIDGE_ROWHEADER`, stated by the native
 core and spelled once in `rekep.times` — pinned against the core's own text
 rather than respelled per reader — and every capture it declares is named for
 the column it fills: `timestamp`, `threadId`,
-`bridgesessionid`, `msgctxid`, `msgseqnum`, `pluginid` and `level`. `body`
+`msgsessionid`, `msgctxid`, `msgseqnum`, `pluginid` and `level`. `body`
 starts immediately after the matched header. `sourceurl` and `rownum` come from
 traversal, and `bodyhash` is computed from the exact body bytes during field
 application.
 
-`bridgesessionid` is the session *instance* the bridge handled the line on
-(65032) — never `sendersessionid` (65007), which is what a bridge row spells
-for the counterparty session a message names; two connections to one
-counterparty are two instances, so they are two facts. `msgctxid` fills 65008,
+`msgsessionid` is the session *instance* the bridge handled the line on
+(65032) — never what the message itself says about the counterparty session it
+names; two connections to one counterparty are two instances, so they are two
+facts. `msgctxid` fills 65008,
 `msgseqnum` fills `MsgSeqNum` (34) on a frame that stated none, and `sourceurl`
 fills 65026. A stored row therefore goes on through the FIX codec without one
 spelling being translated into another.
@@ -168,10 +168,12 @@ Under Airflow the operator hands each run its data interval as `start` and
 ## Write step
 
 The task opens `logs.messages` with `Message.into_field()` and replaces the
-reader's rows on `(sourceurl, rownum)`: a stored row carrying one of the
-window's keys is taken out and the window's row lands, in one commit per
-bounded chunk. A missing table is created. A replay of the window lands the
-same rows again and the table holds each line once.
+reader's rows on `bodyhash`, the digest of the exact body bytes: a stored row
+carrying one of the window's keys is taken out and the window's row lands, in
+one commit per bounded chunk. A missing table is created. A replay of the
+window lands the same rows again and the table holds each line once — and two
+lines the bridge logged under different sessions with identical bytes are one
+row, because the key is of the bytes and of nothing else.
 
 ## Run
 

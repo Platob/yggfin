@@ -2,40 +2,38 @@
 --
 -- Two readings are settled here so both products state the same thing. An
 -- event is dated by the transaction time the message carried, else by the
--- settled instant the parser gave it, which is never null. A session is the
--- counterparty session a message names, else the bridge session instance the
--- capture recorded it on.
+-- instant the parse settled on, which is never null. A session is the bridge
+-- session instance the capture recorded the line on.
 --
--- `eventindex` counts a message inside its own line: a line carrying two
--- frames answers two rows, so a source position alone does not name one.
+-- A row here is an event and not a line: the parse folds every hop that
+-- logged one message onto one `curruuid`, so a source position no longer
+-- names a row and the identity does.
 
 select
     sourceurl,
     rownum,
-    cast(
-        row_number() over (partition by sourceurl, rownum order by msghash) - 1 as integer
-    ) as eventindex,
-    msghash,
-    msgphash,
-    code,
-    coalesce(transacttime, sendingtime) as eventtime,
-    coalesce(sendersessionid, targetsessionid, bridgesessionid) as sessionid,
+    curruuid,
+    crossuuid,
+    crosscode,
+    prevuuid,
+    seqnum,
+    coalesce(transacttime, unix) as eventtime,
+    msgsessionid as sessionid,
     msgtype,
     msgdirection,
     account,
     clordid,
     origclordid,
     orderid,
-    parentclordid,
-    parentorderid,
+    symbol,
     symbolticker,
     isincode,
     miccode,
     side,
     ordtype,
     currency,
-    price,
-    orderqty,
+    px,
+    qty,
     cumqty,
     leavesqty,
     avgpx,

@@ -8,23 +8,22 @@ flowchart LR
     U["local file, directory, or S3 prefix"] --> T["parse_messages"]
     T --> M[("logs.messages<br/>12 columns")]
     M --> F["parse_fix<br/>parse"]
-    R[["bundled dictionary<br/>6,314 definitions"]] -.types.-> F
-    F --> E["enrich"]
-    E --> L["lifecycle"]
+    R[["bundled dictionary<br/>7,787 definitions"]] -.types.-> F
+    F --> L["lifecycle"]
     L --> X[("fix.messages<br/>128 columns")]
     X --> B["build_dbt"]
     B --> O[("orders.events<br/>orders.current")]
     B --> C[("executions.fills")]
 ```
 
-`parse_fix` is three native stages over one codec, in this order and no other:
-parse reads every frame a line carried, enrich fills what a message implied but
-did not carry, and lifecycle names the chains it belongs to.
+`parse_fix` is two native stages over one codec, in this order and no other:
+parse reads every frame a line carried and settles what it implied, and
+lifecycle reads those messages as the chains they belong to.
 
 | task | reads | writes | key | default behavior |
 | --- | --- | --- | --- | --- |
-| [`parse_messages`](tasks/parse-messages.md) | every physical line under `filesystem`, keeping the window's | `logs.messages` | `(sourceurl, rownum)` | header capture, exact body retention, the last day |
-| [`parse_fix`](tasks/parse-fix.md) | the window's rows of `logs.messages` | `fix.messages` | `(sourceurl, rownum, msghash)` | bundled dictionary, one row per message, chains named, the last day |
+| [`parse_messages`](tasks/parse-messages.md) | every physical line under `filesystem`, keeping the window's | `logs.messages` | `bodyhash` | header capture, exact body retention, the last day |
+| [`parse_fix`](tasks/parse-fix.md) | the window's rows of `logs.messages` | `fix.messages` | `curruuid` | bundled dictionary, one row per event, chains walked, the last day |
 | [`build_dbt`](tasks/build-dbt.md) | every row of `fix.messages` | `orders.events`, `orders.current`, `executions.fills` | one key per product | the dbt project under `data/dbt`, committed through the same datasets |
 
 Each task is a Marimo application beside a JSON document that owns its
@@ -75,7 +74,7 @@ the command line.
 | `catalog.properties.uri` | every | local SQLite | SQL catalog URI; not used by Glue |
 | `catalog.properties.warehouse` | every | `data/warehouse` | local path or `s3://` Iceberg root |
 | `registry` | FIX | `null` | bundled dictionary; explicit URI overrides it |
-| `lifecycle` | FIX | `true` | name the event chains; `false` stops after enrichment |
+| `lifecycle` | FIX | `true` | walk the event chains; `false` stops after the parse |
 | `project` | dbt | `data/dbt` | the dbt project directory |
 | `profiles` | dbt | `null` | where `profiles.yml` is; `null` is the project itself |
 | `target` | dbt | `null` | the profile target; `null` is the profile's own |

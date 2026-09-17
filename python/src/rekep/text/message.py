@@ -10,7 +10,7 @@ from yggdryl import TextOptions, scalar
 
 from rekep.annotations import Self
 from rekep.convert import Convertible
-from rekep.fields import derived_from, digest_key, partition_key, primary_key
+from rekep.fields import HOUR, derived_from, digest_key, partition_key, primary_key
 from rekep.times import ULBRIDGE_ROWHEADER, datetime_of
 
 
@@ -24,38 +24,45 @@ class Message(Convertible):
     without one spelling being translated into another.
     """
 
-    sourceurl: Annotated[str, primary_key()] = ""
+    sourceurl: str = ""
     """Canonical URI of the source text object, filling `sourceurl` (65026)."""
 
-    rownum: Annotated[int, primary_key()] = 0
+    rownum: int = 0
     """1-based physical line number within the source object."""
 
     timestamp: datetime.datetime | None = None
     """UTC instant captured from the line header, at microsecond resolution.
 
     Capture context, and only that: it is the clock the bridge stamped the
-    *line* with, so it dates no message on its own. What dates a message is
-    stated by the FIX seam, which offers this instant as the `SendingTime` a
-    message carrying none of its own takes.
+    *line* with, so it dates no message and never reaches one. What dates a
+    message is what the message states -- its `TransactTime`, else its
+    `SendingTime`, else the one instant the codec is pinned with -- so the
+    same bytes logged at three hops settle on one instant however each line
+    was stamped.
     """
 
     timepartition: Annotated[
         datetime.datetime | None,
-        partition_key("hour"),
+        partition_key(HOUR),
         derived_from("timestamp"),
     ] = None
-    """Timestamp partitioned by its UTC hour in Iceberg."""
+    """Timestamp partitioned by its UTC hour in Iceberg.
+
+    `logs.messages` is laid out by it and `fix.messages` carries it as an
+    ordinary column: a settled message is laid out by the instant it happened
+    at, not by the instant a bridge printed the line.
+    """
 
     threadId: int | None = None
     """Bridge thread identifier captured from the line header."""
 
-    bridgesessionid: str | None = None
-    """Bridge session instance the line was handled on, filling 65032.
+    msgsessionid: str | None = None
+    """Bridge session instance the line was handled on, filling `msgsessionid` (65032).
 
     The session *instance*, which is the bracket's own first part -- never
-    `sendersessionid` (65007), which is what a bridge row spells for the
-    counterparty session the message names. Two connections to one
-    counterparty are two instances, so they are two facts.
+    what the message says about the counterparty session it names. Two
+    connections to one counterparty are two instances, so they are two facts,
+    and the event's own capture record holds this one.
     """
 
     msgctxid: str | None = None
@@ -71,13 +78,29 @@ class Message(Convertible):
     """Severity spelling captured from the line header."""
 
     bodyhash: Annotated[
-        bytes | None,
+        bytes,
         digest_key(["body"], dtype=pyarrow.binary(16)),
-    ] = None
-    """XXH3-128 digest of the exact body bytes, filled during field apply."""
+        primary_key(),
+    ] = b""
+    """XXH3-128 digest of the exact *body* bytes, computed beside them on the read.
+
+    The key of `logs.messages`, and a digest of the bytes alone: identical
+    bytes are one row whatever session carried them, whichever object they
+    were read from and however often a capture is re-read. It is not the
+    message's `hashcode`, which covers the settled event -- its facts, its
+    text, its metadata and its entry tree -- and answers the same code for two
+    different lines that state the same message. The bytes and the message are
+    two questions, so they are two columns and neither stands in for the other.
+    """
 
     body: bytes = b""
-    """Exact bytes after the matched line-header prefix."""
+    """Exact bytes after the matched line-header prefix.
+
+    `logs.messages` is where they live and the only place, and so is the
+    `bodyhash` beside them: `fix.messages` holds neither, because a row there
+    is an event and both of these are one line's. It names the line it was
+    read from instead, with `sourceurl` and `rownum`.
+    """
 
     def __post_init__(self) -> None:
         """Normalize the raw scalar values once."""

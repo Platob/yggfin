@@ -11,7 +11,7 @@ models:
       - name: executionkey
         description: >
           Sixteen bytes over the event chain and the venue execution id, or
-          over the source position where the message named no execution id.
+          the event's own identity where the message named no execution id.
           The primary key.
         data_tests:
           - not_null
@@ -28,20 +28,8 @@ models:
           - not_null
       - name: sourceurl
         description: The capture object this occurrence was read from.
-        data_tests:
-          - not_null
       - name: rownum
         description: The physical line number inside that object.
-        data_tests:
-          - not_null
-      - name: eventindex
-        description: The message's position inside its line, from zero.
-        data_tests:
-          - not_null
-      - name: msghash
-        description: The parsed message's own sixteen identity bytes.
-        data_tests:
-          - not_null
       - name: executiontime
         description: The transaction time, else the settled message instant.
         data_tests:

@@ -6,6 +6,7 @@ import argparse
 import contextlib
 import importlib
 import importlib.util
+import inspect
 import json
 import os
 import pathlib
@@ -76,8 +77,14 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def dump(arguments: argparse.Namespace) -> int:
-    """Write a Python class's table contract as a document."""
-    shape = field_of(_imported(arguments.pyclass))
+    """Write a declared table contract as a document.
+
+    A contract is answered by a class's own field, or by a function that
+    builds one: the FIX row is the second, because no class declares it --
+    it is the dictionary's row with the capture's own columns in front.
+    """
+    held = _imported(arguments.pyclass)
+    shape = field_of(held() if inspect.isfunction(held) else held)
     payload = f"{iceberg_contract(shape)}\n"
     if arguments.target:
         output = resource(arguments.target)
@@ -380,7 +387,11 @@ def _parser() -> argparse.ArgumentParser:
         dest="action", required=True, title="commands", metavar="COMMAND"
     )
     dumping = actions.add_parser("dump", help="write a class's field as a table contract")
-    dumping.add_argument("--pyclass", required=True, help="class as module:Attribute")
+    dumping.add_argument(
+        "--pyclass",
+        required=True,
+        help="class, field, or field builder as module:Attribute",
+    )
     dumping.add_argument(
         "--target", default=None, help="contract JSON path or URI; stdout when omitted"
     )
