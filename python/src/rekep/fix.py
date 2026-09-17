@@ -295,11 +295,17 @@ def fix_arrow_messages(
     The batch door's message shape. `parse_text_arrow_reader` is the twin of
     `parse_text_lines` -- the capture's own columns lead each row, a column
     named after a field fills it, and one source row answers a row per message
-    it carried -- and `messages` crosses back from the row whole: a column no
-    tag and no counter names is the capture's own, so the message keeps it and
-    states it as no content of its own.
+    it carried -- and `messages` crosses back from the row: a column no tag and
+    no counter names is the capture's own, so the message keeps it and states
+    it as no content of its own.
+
+    Which is why the line's own text is taken off the row first. The line door
+    hands a message none of it, and a message that held the bytes it was read
+    out of would answer them to `get_by_name` through one door and nothing
+    through the other, for a column that is a line's fact and never the
+    event's.
     """
-    parsed = codec.parse_text_arrow_reader(source)
+    parsed = _parsed(codec, source)
     return fix_messages(codec, codec.messages(parsed), lifecycle=lifecycle)
 
 
@@ -313,13 +319,42 @@ def fix_arrow_reader(
 
     The shape is the parse's own -- the capture's columns in front, the
     dictionary's after, which is what `fix_parse_field` states -- so nothing
-    crosses back through the message shape to be written again. That shape
-    still carries the capture's own text columns; dropping them, and narrowing
-    the rest to what a table stores, is the storage boundary's job and
-    `fix_stored_reader` is where that happens, not here.
+    crosses back through the message shape to be written again. Narrowing that
+    shape to the types a table stores is still the storage boundary's job, and
+    `fix_stored_reader` is where that happens.
+
+    The line's bytes and their digest come off before the walk, not after it.
+    They are what the parse *reads*, not what it answers: the walk, the
+    identity, the entries and the re-emitted wire are the same without them,
+    so carrying them through would be carrying a line's fact along an event's
+    row to drop it one stage later. This is a projection and not a hold-back
+    -- two columns leave and nothing is put back -- so the walk stays free to
+    answer its rows in whatever order it reads them.
+    """
+    parsed = _parsed(codec, source)
+    return codec.lifecycle_arrow_reader(parsed) if lifecycle else parsed
+
+
+def _parsed(
+    codec: FixCodec,
+    source: pyarrow.RecordBatchReader,
+) -> pyarrow.RecordBatchReader:
+    """The parse, less the two columns a line owns.
+
+    Keyed off the codec rather than off `UNSTORED`, so a codec reading its
+    messages out of another column drops that one. A name the parse did not
+    answer is not an error: a caller whose capture never carried a digest has
+    nothing to take off.
     """
     parsed = codec.parse_text_arrow_reader(source)
-    return codec.lifecycle_arrow_reader(parsed) if lifecycle else parsed
+    taken = set(_text_of(codec))
+    kept = [name for name in parsed.schema.names if name not in taken]
+    if len(kept) == len(parsed.schema.names):
+        return parsed
+    schema = pyarrow.schema(
+        [parsed.schema.field(name) for name in kept], metadata=parsed.schema.metadata
+    )
+    return pyarrow.RecordBatchReader.from_batches(schema, (batch.select(kept) for batch in parsed))
 
 
 def fix_stored_reader(
@@ -328,12 +363,11 @@ def fix_stored_reader(
 ) -> pyarrow.RecordBatchReader:
     """The parse's rows as the table stores them, ready for the write.
 
-    The data half of `iceberg_fix_field`. Projecting onto `field` is most of
-    it, and the field apply does that for free: the text columns the parse
-    carried are not declared, so they are dropped here rather than written, and
-    `logs.messages` stays the one place the bytes and their digest live.
+    The data half of `iceberg_fix_field`. Projecting onto `field` aligns the
+    rows with the declaration and the field apply does that for free; the
+    line's own text is already gone, taken off where the parse door answers.
 
-    The rest exists for one column type.
+    What is left exists for one column type.
     A content code is an unsigned sixty-four-bit integer and Iceberg's only
     sixty-four-bit integer is signed, so a code above 2**63 has no `int64` to
     be cast to -- the native cast refuses it rather than wrapping, and
@@ -399,10 +433,11 @@ def fix_carrier(carrier: Field | None = None) -> Field:
     only `rownum`, `timestamp`, `timepartition`, `threadId`, `level`,
     `bodyhash` and `body` ride in front.
 
-    Seven here and five in the table: `UNSTORED` -- the payload the parse reads
-    every message out of, and the digest of it -- rides through the parse and
-    is dropped at the storage boundary, because both are a line's and a stored
-    row is an event's.
+    Seven here and five in either row: `UNSTORED` -- the payload each message
+    is read out of, and the digest of it -- is what the parse *reads*, and the
+    parse door answers neither, because both are a line's and a row after the
+    parse is an event's. The carrier is the whole raw contract; which of it
+    rides in front is `fix_parse_field`'s to say.
     """
     if carrier is None:
         from rekep.text import Message
@@ -422,22 +457,56 @@ def _carried(member: pyarrow.Field) -> pyarrow.Field:
     )
 
 
+def _without(schema: pyarrow.Schema, dropped: Iterable[str], *, name: str) -> Field:
+    """`schema` less the columns `dropped` names, as a declared field."""
+    taken = set(dropped)
+    return Field.from_arrow_schema(
+        pyarrow.schema(
+            [member for member in schema if member.name not in taken], metadata=schema.metadata
+        ),
+        name=name,
+    )
+
+
+def _text_of(codec: FixCodec | None) -> tuple[str, str]:
+    """The two columns a line owns, under the names this codec reads them by.
+
+    `UNSTORED` is the default spelling and a codec naming another payload
+    column answers that one instead, so every stage that drops them asks here
+    rather than reading the constant: a pinned `payload_column` that only some
+    of them honoured would leave a line's bytes on the row while the table
+    still refused to store them.
+    """
+    return UNSTORED if codec is None else (codec.payload_column, TEXT_DIGEST)
+
+
 def fix_parse_field(
     codec: FixCodec | None = None,
     carrier: Field | None = None,
     *,
     name: str = "FixMessage",
 ) -> Field:
-    """The row the codec writes: the fixed row behind the capture's own columns.
+    """The row this package's parse door answers: the fixed row behind the
+    capture's own columns, less the two a line owns.
 
     `fix_schema(registry, "fixmsg")` is the row yggdryl publishes and
     `fix_schema_carrying` is the supported way to put a capture's own columns
     in front of it, so no column here is spelled twice and none is yggfin's to
     define. It is answered from the dictionary alone, without consuming an
     input row, so an empty capture creates the same table a full one does.
+
+    The core's own door answers the carrier whole, because it reads each
+    message out of the payload column and carries every column it was given.
+    This one drops that column and its digest: they are a *line's*, a row here
+    is an *event's*, and nothing after the parse reads them -- the identity,
+    the entries and the re-emitted wire bytes are the same with them and
+    without. So they are inputs to the parse and no part of its answer, which
+    is why this row and `fix_message_field`'s hold the same columns and differ
+    only by the table's own layout and the storage narrowing.
     """
     registry = codec.registry if codec is not None else fix_registry()
-    return fix_schema_carrying(fix_carrier(carrier), fix_schema(registry, FIXMSG))
+    carried = fix_schema_carrying(fix_carrier(carrier), fix_schema(registry, FIXMSG))
+    return _without(carried.into_arrow_schema(), _text_of(codec), name=carried.name)
 
 
 def fix_message_field(
@@ -450,33 +519,21 @@ def fix_message_field(
 
     What yggfin adds to the row is the three things a table is -- which column
     names one, which lays it out, and where a row sits inside a partition --
-    the narrowing a stored column needs, and the two carried columns a stored
-    row does not hold. Nothing else: a column yggdryl named is not renamed,
-    retyped or duplicated here, and the two that are dropped are the capture's
-    own text rather than any of the dictionary's.
+    and the narrowing a stored column needs. Nothing else: a column yggdryl
+    named is not renamed, retyped or duplicated here, and the line's own text
+    is already gone, dropped where the parse door answers rather than held to
+    the storage boundary.
     """
-    return iceberg_fix_field(
-        fix_parse_field(codec, carrier, name=name).into_arrow_schema(),
-        name,
-        UNSTORED if codec is None else (codec.payload_column, TEXT_DIGEST),
-    )
+    return iceberg_fix_field(fix_parse_field(codec, carrier, name=name).into_arrow_schema(), name)
 
 
 def iceberg_fix_field(
     schema: pyarrow.Schema,
     name: str = "FixMessage",
-    unstored: Iterable[str] = UNSTORED,
 ) -> Field:
     """A parsed schema narrowed to what Iceberg v2 stores, and declared as a table.
 
-    `unstored` names the capture's own text columns, and they are dropped
-    rather than narrowed: the bytes the parse read each message out of and the
-    digest of them are the line's, and a row here is the event's. A row names
-    the line it was read from with `sourceurl` and `rownum`; `logs.messages`
-    holds the bytes, the digest and every other arrival of the same event.
-
-    Three narrowings after that, and each is about what a row filter can be
-    lowered to.
+    Three narrowings, and each is about what a row filter can be lowered to.
     A semantic datatype -- a URL, an ISIN, a MIC, a currency, a side -- crosses
     Arrow as its storage type under an extension name in the column's
     metadata, and a table that stored the storage type reads back a column
@@ -493,12 +550,7 @@ def iceberg_fix_field(
     keyed, ordered and merged on an identity needs the bytes it can lower a
     predicate to. The value is the same value either way.
     """
-    dropped = set(unstored)
-    members = [
-        _declared(_plain(member.with_type(_stored(member.type))))
-        for member in schema
-        if member.name not in dropped
-    ]
+    members = [_declared(_plain(member.with_type(_stored(member.type)))) for member in schema]
     sorted_by = json.dumps([[column, "asc"] for column in SORT_COLUMNS], separators=(",", ":"))
     return Field.from_arrow_schema(
         pyarrow.schema(members, metadata={SORT_ORDER: sorted_by}),

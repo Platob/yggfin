@@ -320,6 +320,13 @@ name. A capture named for the field it fills therefore folds onto it:
 than beside it. Message values always win over capture fills, and the capture's
 own `timestamp` fills nothing: it is context and dates no message.
 
+That is 130 because the core's door carries the capture whole: it reads each
+message out of the payload column and answers every column it was given.
+`fix_arrow_reader` below answers 128 — the same row less `body` and
+`bodyhash`, which are what the parse *reads* rather than columns of its answer.
+Both are a line's fact, a row after the parse is an event's, and `logs.messages`
+is where they live.
+
 ## Two doors onto the same messages
 
 `fix_line_messages` is the line door: `parse_text_lines`, then `lifecycle`,
@@ -348,7 +355,8 @@ source.close()
 That capture holds 144 lines and answers 79 messages, because a row is a
 message and not a line. `fix_arrow_messages` is the batch door over the same
 stages, and `fix_arrow_reader` runs it end to end: a stored capture in, settled
-rows out under the parse's own shape. One line carrying two frames answers two
+rows out under the shape `fix_parse_field` publishes — the parse's own, less
+the line's text. One line carrying two frames answers two
 rows under one `rownum`; one carrying none answers no row at all. The walk then
 folds every hop that logged one message onto one identity, so those 79 messages
 are 53 events.
@@ -392,7 +400,7 @@ table = settled.read_all()
 
 assert table.column("rownum").to_pylist() == [1, 3, 3]
 assert table.column("symbol").to_pylist() == ["AAPL", "AAPL", "HOLN"]
-assert table.num_columns == 130
+assert table.num_columns == 128
 
 settled.close()
 ```

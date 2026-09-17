@@ -21,25 +21,25 @@ in front of it, and yggfin defines neither:
 fix_schema_carrying(fix_carrier(Message.into_field()), fix_schema(registry, "fixmsg"))
 ```
 
-That expression is the row the *parse* answers: 123 columns from the dictionary
-and 7 from the carrier — `rownum`, `timestamp`, `timepartition`, `threadId`,
-`level`, `bodyhash`, `body`. The carrier's other five are named for the fields
-they fill, so `sourceurl`, `msgsessionid`, `msgctxid`, `msgseqnum` and
-`pluginid` fold onto the row's own columns instead of riding in front of it.
+That expression is the seam: 123 columns from the dictionary and 7 from the
+carrier — `rownum`, `timestamp`, `timepartition`, `threadId`, `level`,
+`bodyhash`, `body`. The carrier's other five are named for the fields they
+fill, so `sourceurl`, `msgsessionid`, `msgctxid`, `msgseqnum` and `pluginid`
+fold onto the row's own columns instead of riding in front of it.
 
-The row the *table stores* is that minus the capture's own text columns, so
-128. `body` is what the codec reads each message out of and `bodyhash` is the
-digest of those bytes, and both are facts about one *line* while a row there is
-an *event*: a message logged at four hops is four lines and one row, so either
-column would be one arrival's answer standing in for the event's.
-`logs.messages` holds all of them, and the row names the line it was read from
-with `sourceurl` and `rownum`.
+What the parse door *answers* is that seam less two, so 128. `body` is what
+each message is read out of and `bodyhash` is the digest of those bytes: they
+are what the parse reads, not columns of its answer. Both are facts about one
+*line* while a row after the parse is an *event*: a message logged at four hops
+is four lines and one row, so either column would be one arrival's answer
+standing in for the event's. `logs.messages` holds all of them, and the row
+names the line it was read from with `sourceurl` and `rownum`.
 
-So what yggfin adds is the three things a table is — the primary key
+The row the *table stores* holds the same 128 columns. So what yggfin adds on
+top of the parse's answer is the three things a table is — the primary key
 `curruuid`, the hour partition over `unix`, the sort order
-`unix, seqnum, curruuid` — the two columns dropped, and the storage narrowing.
-`iceberg_fix_field` does all of it; see
-[the product page](../docs/products/fix-message.md).
+`unix, seqnum, curruuid` — and the storage narrowing. `iceberg_fix_field` does
+that part; see [the product page](../docs/products/fix-message.md).
 
 The dictionary this was generated against is the one bundled under
 `python/src/rekep/_data/fix`, taken from the core's own `config/fix` at

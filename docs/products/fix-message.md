@@ -180,9 +180,10 @@ Iceberg schema carries no field metadata.
 
 ## Source-column folding
 
-Seven raw columns lead the parse row and five lead the stored table, because
-`body` and `bodyhash` are a line's and the storage boundary drops them. The
-other five captures do not appear a second time: a capture named after a field fills that field, so `sourceurl`,
+Five raw columns lead both the parse row and the stored table. `body` and
+`bodyhash` are a line's, and the parse door answers neither: the payload is
+what each message is *read out of*, not a column of the answer. The other five
+captures do not appear a second time: a capture named after a field fills that field, so `sourceurl`,
 `msgctxid`, `pluginid`, `msgsessionid` and `msgseqnum` land in the columns of
 those names -- tags 65026, 65008, 65009, 65032 and 34 -- instead of leading
 the row. `msgseqnum` fills `MsgSeqNum` only where the frame stated none, and a

@@ -133,22 +133,27 @@ def test_the_fix_contract_is_what_the_current_dictionary_answers() -> None:
     # And the row behind it is yggdryl's, field for field, with the capture's
     # own columns in front through the one supported seam.
     declared = fix_schema_carrying(fix_carrier(), fix_schema(fix_registry(), FIXMSG))
-    assert [member.name for member in fix_parse_field()] == [member.name for member in declared]
-    # The stored row is that row minus the capture's own text columns: the
-    # bytes the parse read each message out of, and the digest of them.
-    assert [member.name for member in fixed] == [
-        member.name for member in declared if member.name not in UNSTORED
-    ]
+    # What this package answers is that row less the two columns a line owns:
+    # the bytes each message is read out of, and the digest of them. The parse
+    # door drops them, so the row it answers and the row the table stores hold
+    # the same columns and differ only by layout and storage type.
+    answered = [member.name for member in declared if member.name not in UNSTORED]
+    assert [member.name for member in fix_parse_field()] == answered
+    assert [member.name for member in fixed] == answered
     assert len(fixed) == 128 == len(fix_schema(fix_registry(), FIXMSG)) + 5
-    assert len(fix_parse_field()) == 130 == len(fixed) + len(UNSTORED)
+    assert len(fix_parse_field()) == 128 == len(fixed)
+    # The seam itself still carries them: they are what the parse reads.
+    assert len(declared) == 130 == len(fixed) + len(UNSTORED)
 
 
-def test_the_stored_row_holds_none_of_the_text_it_was_read_from() -> None:
+def test_no_row_this_package_answers_holds_the_text_it_was_read_from() -> None:
     """`fix.messages` names the line; `logs.messages` holds it.
 
     The bytes and the digest of them are both the line's, and a row here is
     the event's: one message logged at four hops is four lines and one row, so
     either column would be one arrival's answer standing in for the event's.
+    So neither row holds them -- not the stored one and not the one the parse
+    door answers, which is where they come off.
     """
     stored = fix_message_field().into_arrow_schema()
     parsed = fix_parse_field().into_arrow_schema()
@@ -157,7 +162,7 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from() -> None:
     assert UNSTORED == ("body", "bodyhash") == (PAYLOAD, TEXT_DIGEST)
     for column in UNSTORED:
         assert column not in stored.names, column
-        assert column in parsed.names, f"the parse still carries {column}"
+        assert column not in parsed.names, f"the parse door still answers {column}"
         assert column in logged.names, f"and the raw row still holds {column}"
     # What is left to reach the line with: where it was read from, and where
     # in it. `rownum` is the carrier's and never absent; `sourceurl` is the

@@ -98,8 +98,9 @@ Path("schemas/rekep/fix-message.json").write_text(
 The 128 columns are 5 carried source columns and 123 the dictionary decides:
 the specification fields it selects, the crate's own runtime columns, and the
 arrival record that closes the row — `fixentries`, under the `nofixentries`
-that counts it. Seven lead the parse row; `body` and `bodyhash` are a line's
-and the storage boundary drops them. A capture column named after the
+that counts it. Five lead the parse row too: `body` and `bodyhash` are a
+line's, and the parse door answers neither, so the row it answers and the row
+the table stores hold the same columns. A capture column named after the
 field it fills folds onto that field, so `sourceurl` is carried and counted
 with the dictionary's own, not beside it.
 The runtime registry remains authoritative; a registry change must produce a

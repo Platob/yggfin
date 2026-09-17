@@ -130,19 +130,25 @@ def tracked() -> pyarrow.Table:
 
 
 def test_the_published_row_is_the_dictionarys_with_the_capture_in_front() -> None:
-    """Field for field: names, types, nullability and order, all yggdryl's."""
+    """Field for field: names, types, nullability and order, all yggdryl's.
+
+    The seam carries seven of the capture's columns; the door answers five.
+    Both are checked here, because the two-column gap between them is this
+    package's one decision about the shape and everything else is the
+    dictionary's.
+    """
     registry = fix_registry()
     declared = fix_schema_carrying(fix_carrier(), fix_schema(registry, FIXMSG))
-
-    assert (
-        fix_parse_field()
-        .into_arrow_schema()
-        .equals(declared.into_arrow_schema(), check_metadata=True)
+    answered = pyarrow.schema(
+        [member for member in declared.into_arrow_schema() if member.name not in UNSTORED],
+        metadata=declared.into_arrow_schema().metadata,
     )
+
+    assert fix_parse_field().into_arrow_schema().equals(answered, check_metadata=True)
     # The capture's own columns lead, the dictionary's follow, and a capture
     # column the row already spells is folded onto it rather than repeated.
-    carried = [member.name for member in declared][: len(fix_carrier()) - 5]
-    assert carried == [
+    seam = [member.name for member in declared][: len(fix_carrier()) - 5]
+    assert seam == [
         "rownum",
         "timestamp",
         "timepartition",
@@ -151,9 +157,12 @@ def test_the_published_row_is_the_dictionarys_with_the_capture_in_front() -> Non
         "bodyhash",
         "body",
     ]
+    assert [name for name in seam if name not in UNSTORED] == [
+        member.name for member in fix_parse_field()
+    ][: len(seam) - len(UNSTORED)]
     for folded in ("sourceurl", "msgsessionid", "msgctxid", "msgseqnum", "pluginid"):
         assert [member.name for member in declared].count(folded) == 1, folded
-    assert len(declared) == len(fix_schema(registry, FIXMSG)) + len(carried)
+    assert len(declared) == len(fix_schema(registry, FIXMSG)) + len(seam)
 
 
 def test_the_capture_has_no_layout_of_its_own_in_this_table() -> None:
@@ -170,6 +179,8 @@ def test_the_capture_has_no_layout_of_its_own_in_this_table() -> None:
         or b"iceberg:partition_key" in (member.metadata or {})
     ]
     # What a column *is* survives: the digest still names the bytes it reads.
+    # The carrier is the whole raw contract -- what the parse door answers is
+    # narrower, and that is the door's decision rather than the carrier's.
     assert fix_carrier()["bodyhash"].digest.sources == ["body"]
 
 
@@ -254,7 +265,7 @@ def test_the_storage_boundary_narrows_what_a_row_filter_cannot_be_lowered_to() -
     assert schema.field(MESSAGE_KEY).metadata[b"iceberg:primary_key"] == b"true"
 
 
-def test_the_stored_row_holds_none_of_the_text_it_was_read_from(tracked) -> None:
+def test_no_row_this_package_answers_holds_the_text_it_was_read_from(tracked) -> None:
     """The bytes are a line's, the digest of them is a line's, and this row is
     an event's.
 
@@ -263,6 +274,9 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from(tracked) -> None
     answer standing in for the event's. `logs.messages` holds all four; the row
     names the line it was read from and is re-emitted from its own arrival
     record.
+
+    The payload is still what the parse *reads*: it is an input column, and a
+    source without it is refused. It is no column of the answer.
     """
     stored = fix_message_field().into_arrow_schema()
     parsed = fix_parse_field().into_arrow_schema()
@@ -271,9 +285,7 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from(tracked) -> None
     for column in UNSTORED:
         assert column not in tracked.column_names, column
         assert column not in stored.names, column
-        # The parse still reads its payload and still carries the digest -- it
-        # is the stored row that keeps neither.
-        assert column in parsed.names, column
+        assert column not in parsed.names, column
     # What names the line instead, filled on every row a capture read answers.
     assert tracked.column("sourceurl").null_count == 0
     assert tracked.column("rownum").null_count == 0
@@ -612,7 +624,16 @@ def test_the_walk_reads_the_row_and_never_the_capture_beside_it() -> None:
     codec = _codec()
     handle = IOBase.from_uri(FIXTURE.as_uri())
     try:
-        walked = fix_arrow_reader(
+        # The core's own parse, walked directly. This package's door projects
+        # the payload off before the walk, and the payload is what tells a row
+        # apart from the line beside it: asked through the door, the check
+        # below would be left with `clordid` alone, which 27 of these rows do
+        # not state. So the property is checked where it lives.
+        parsed = codec.parse_text_arrow_reader(
+            handle.read_arrow_reader(options=Message.text_options())
+        )
+        walked = codec.lifecycle_arrow_reader(parsed).read_all()
+        answered = fix_arrow_reader(
             codec, handle.read_arrow_reader(options=Message.text_options())
         ).read_all()
     finally:
@@ -632,6 +653,11 @@ def test_the_walk_reads_the_row_and_never_the_capture_beside_it() -> None:
         assert body in lines[rownum - 1], f"row {index} carries bytes line {rownum} does not"
         if stated:
             assert stated.encode() in body, f"row {index} states {stated}, absent from its line"
+
+    # What the door answers is that walk without the line's own text, and with
+    # every row still on the line it was read from.
+    assert answered.column_names == [name for name in walked.column_names if name not in UNSTORED]
+    assert answered.select(answered.column_names).equals(walked.select(answered.column_names))
 
 
 def test_the_walk_settles_the_same_identities_however_often_it_runs() -> None:

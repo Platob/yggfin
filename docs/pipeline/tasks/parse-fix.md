@@ -90,6 +90,15 @@ caller that rejoined them by position would pair a row with whichever line sat
 at its index. `fix.messages` names the line each event was read from, and that
 is the line that states it.
 
+Two columns do come off, before the walk rather than after it: `body` and
+`bodyhash`. They are what the parse *reads* — the payload each message is read
+out of, and the digest of those bytes — and a line owns both, so no row after
+the parse carries them and no message answers them. Taking two columns away is
+not holding them back: nothing is put in front again, so the walk stays free to
+answer its rows in whatever order it reads them. Nothing downstream loses
+anything by it — the identity, the entries and the re-emitted wire bytes are
+the same either way.
+
 ## Read, parse, apply, write
 
 ```mermaid
@@ -189,12 +198,14 @@ with no clock lands in the null partition and PyIceberg 0.12 cannot plan a
 comparison against one.
 
 `fix_arrow_reader` is the batch door end to end: `parse_text_arrow_reader`,
-then `lifecycle_arrow_reader` over the row it answered. The rows land in the parse's
-own shape — the carrier's columns first, the dictionary's after — and narrowing
-that shape to what a table stores belongs to the storage boundary, which is
+the line's own text taken off, then `lifecycle_arrow_reader` over what is left.
+The rows land in the shape `fix_parse_field` publishes — the carrier's five
+columns first, the dictionary's 123 after — and narrowing that shape to the
+types a table stores belongs to the storage boundary, which is
 `fix_stored_reader`: the content codes read as the signed integers Iceberg
 stores, then `field.apply_arrow_reader(safe=False, nullability="strict")` in
-its native order.
+its native order. The two rows hold the same columns, so what crosses that
+boundary is types and layout and never shape.
 
 See [Decode rules](../../fix/decode.md) for numeric FIX, ULLINK, packed groups,
 configuration JSON, FIXML, registry translation, source-column fill, and
