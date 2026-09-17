@@ -566,11 +566,11 @@ FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
 #: day when nothing says otherwise. `end: 2026-08-14` is the exclusive end of it.
 WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
 
-#: What each stage returns the first time it sees those 111 physical rows, and
+#: What each stage returns the first time it sees those 144 physical rows, and
 #: what a replay of the same window returns: the same rows, replaced.
 LANDED = {
-    "parse_messages": {"read": 111, "written": 111, "skipped": 0},
-    "parse_fix": {"read": 111, "written": 71, "skipped": 0},
+    "parse_messages": {"read": 144, "written": 122, "skipped": 22},
+    "parse_fix": {"read": 122, "written": 53, "skipped": 23},
 }
 REPLAYED = LANDED
 
@@ -676,12 +676,12 @@ def test_the_scheduled_graph_publishes_the_bridge_fixture_and_replays_it(
         assert landed[name]["assets"] == {
             table: {"task": name, **LANDED[name]},
         }
-    assert _rows(catalog) == {"logs.messages": 111, "fix.messages": 71}
+    assert _rows(catalog) == {"logs.messages": 122, "fix.messages": 53}
 
     replayed = _pass(catalog)
 
     assert {name: counted(held["result"]) for name, held in replayed.items()} == REPLAYED
-    assert _rows(catalog) == {"logs.messages": 111, "fix.messages": 71}
+    assert _rows(catalog) == {"logs.messages": 122, "fix.messages": 53}
     assert _snapshots(catalog) == {"logs.messages": 2, "fix.messages": 2}, (
         "a replayed schedule replaces its window in one commit per table"
     )
@@ -851,4 +851,4 @@ def test_a_real_dag_run_publishes_both_tables_from_its_conf(
         }
     finally:
         store.close()
-    assert stored == {"logs.messages": 111, "fix.messages": 71}
+    assert stored == {"logs.messages": 122, "fix.messages": 53}

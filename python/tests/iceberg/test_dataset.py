@@ -2420,7 +2420,7 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
         rownum=7,
         timestamp="2026-08-14 09:30:00.123",
         threadId=250,
-        bridgesessionid="e7256476",
+        msgsessionid="e7256476",
         msgctxid="9effef3e6a",
         msgseqnum=72504,
         pluginid="ULBridge",
@@ -2428,9 +2428,21 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
         body=b"opaque",
     )
 
+    # The digest holder is derived on the way in, so what is handed over is
+    # the row without it: an empty default is not sixteen bytes and a literal
+    # one would be a second implementation of the digest.
+    declared = dataclasses.asdict(row)
+    declared.pop("bodyhash")
     target.append_arrow_table(
         pyarrow.Table.from_pylist(
-            [dataclasses.asdict(row)], schema=Message.into_field().into_arrow_schema()
+            [declared],
+            schema=pyarrow.schema(
+                [
+                    member
+                    for member in Message.into_field().into_arrow_schema()
+                    if member.name != "bodyhash"
+                ]
+            ),
         )
     )
 
@@ -2449,7 +2461,7 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
             "timestamp": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC),
             "timepartition": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC),
             "threadId": 250,
-            "bridgesessionid": "e7256476",
+            "msgsessionid": "e7256476",
             "msgctxid": "9effef3e6a",
             "msgseqnum": 72504,
             "pluginid": "ULBridge",

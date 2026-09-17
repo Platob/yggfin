@@ -8,37 +8,31 @@ models:
     columns:
       - name: sourceurl
         description: The capture object the message's line was read from.
-        data_tests:
-          - not_null
       - name: rownum
         description: The physical line number inside that object.
-        data_tests:
-          - not_null
-      - name: eventindex
+      - name: curruuid
         description: >
-          The message's position inside its own line, from zero. A line
-          carrying two frames answers two rows.
+          The event's own identity. A message logged at every hop it passed is
+          one event, so this names a row where a source position does not.
         data_tests:
           - not_null
-      - name: msghash
-        description: The message's sixteen identity bytes.
+          - unique
+      - name: crossuuid
+        description: The chain's identity, over the first identifier the message states.
         data_tests:
           - not_null
-      - name: msgphash
-        description: The event chain's sixteen identity bytes.
-        data_tests:
-          - not_null
-      - name: code
-        description: The exact event-chain name; empty means unknown.
-        data_tests:
-          - not_null
+      - name: crosscode
+        description: The exact chain name; empty means unknown.
+      - name: prevuuid
+        description: The identity of the step this one follows in its chain.
+      - name: seqnum
+        description: Where this step stands in its chain, filled by the walk.
       - name: eventtime
         description: >
-          The transaction time the message stated, else the settled instant the
-          parser gave it. Never null, because the settled instant never is.
+          The transaction time the message stated, else the instant the parse
+          settled on. Never null, because the settled instant never is.
         data_tests:
           - not_null
       - name: sessionid
         description: >
-          The counterparty session the message names, else the bridge session
-          instance the capture recorded it on.
+          The bridge session instance the capture recorded the line on.

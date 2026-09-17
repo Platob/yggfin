@@ -72,7 +72,7 @@ def main() -> int:
         }
         # Absent rather than empty: an index of six thousand rows pays for
         # every key it repeats.
-        for key, value in (("aliases", list(fix.aliases)), ("tags", list(fix.tags))):
+        for key, value in (("names", list(fix.names)), ("tags", list(fix.tags))):
             if value:
                 row[key] = value
         index.append(row)

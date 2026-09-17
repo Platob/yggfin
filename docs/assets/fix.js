@@ -502,7 +502,7 @@
           ["Arrow type", field.type],
           ["nullable", String(field.nullable)],
           ["alternate tags", field.tags.join(", ")],
-          ["aliases", field.aliases.join(", ")],
+          ["names", field.names.join(", ")],
         ].filter((row) => row[1] !== "" && row[1] !== null && row[1] !== undefined)
       )
     );
@@ -834,7 +834,7 @@
     const byTag = new Map();
     const byName = new Map();
     for (const field of payload.fields) {
-      field.aliases = field.aliases || [];
+      field.names = field.names || [];
       field.tags = field.tags || [];
       field.search = [
         String(field.tag),
@@ -843,12 +843,12 @@
         field.dialect,
         field.description,
       ]
-        .concat(field.aliases, field.tags.map(String))
+        .concat(field.names, field.tags.map(String))
         .join(" ")
         .toLowerCase();
       if (field.tag !== null) byTag.set(field.tag, field);
       byName.set(field.name.toLowerCase(), field);
-      for (const alias of field.aliases) byName.set(alias.toLowerCase(), field);
+      for (const spelling of field.names) byName.set(spelling.toLowerCase(), field);
       for (const tag of field.tags) if (!byTag.has(tag)) byTag.set(tag, field);
     }
     return { fields: payload.fields, dialects: payload.dialects, byTag: byTag, byName: byName };

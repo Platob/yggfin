@@ -48,7 +48,7 @@ latest as (
     from {{ ref('orders_events') }}
     qualify row_number() over (
         partition by orderkey
-        order by eventtime desc, sourceurl desc, rownum desc, eventindex desc
+        order by eventtime desc, sourceurl desc, rownum desc
     ) = 1
 
 )
@@ -64,13 +64,11 @@ select
     latest.clordid,
     latest.origclordid,
     latest.orderid,
-    latest.parentclordid,
-    latest.parentorderid,
     latest.symbolticker,
     latest.side,
     latest.ordtype,
-    latest.price,
-    latest.orderqty,
+    latest.px,
+    latest.qty,
     latest.cumqty,
     latest.leavesqty,
     latest.avgpx,

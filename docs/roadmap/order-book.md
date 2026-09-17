@@ -17,7 +17,7 @@ entry, addressed by source position and entry index.
 | `sourceurl` | `string` | no | source object |
 | `rownum` | `int64` | no | source line |
 | `entryindex` | `int32` | no | occurrence index in arrival order |
-| `msghash` | `fixed_size_binary[16]` | no | parsed message identity |
+| `curruuid` | `fixed_size_binary[16]` | no | settled event identity |
 | `eventtime` | `timestamp[us, UTC]` | no | exchange time, then market timestamp |
 | `timepartition` | `timestamp[us, UTC]` | no | Iceberg hour transform |
 | `sequence` | `int64` | yes | market-data sequence |

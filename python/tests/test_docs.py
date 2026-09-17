@@ -73,7 +73,7 @@ def test_docs_publish_the_native_message_contracts() -> None:
         "timestamp",
         "timepartition",
         "threadId",
-        "bridgesessionid",
+        "msgsessionid",
         "msgctxid",
         "msgseqnum",
         "pluginid",
@@ -115,7 +115,8 @@ def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
 
     assert "parse_text_arrow_reader" in task
     assert "iceberg_fix_field" in task
-    assert "dated_arrow_reader" in task
+    assert "fix_stored_reader" in task
+    assert "fix_schema_carrying" in task
     assert "not alternate implementations" in schemas
     assert "`fix-message.json`" in schemas
     assert "iceberg_contract" in schemas

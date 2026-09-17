@@ -101,7 +101,7 @@ or catalog error fails the run. Raising it is safe and is the recommended
 configuration: each attempt writes into its own private directory keyed on the
 try number, that directory is removed whether the attempt lands or raises, and
 both writers replace on their field-declared key — `(sourceurl, rownum)` for
-`logs.messages` and `(sourceurl, rownum, msghash)` for `fix.messages` — so a
+`bodyhash` for `logs.messages` and `curruuid` for `fix.messages` — so a
 retry re-reads the same window and lands the same rows over whatever the
 failed attempt left.
 

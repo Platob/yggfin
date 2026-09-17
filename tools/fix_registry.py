@@ -45,7 +45,7 @@ with app.setup:
     def _definition_row(field, category):
         """One display row over any definition the registry holds."""
         fix = field.fix
-        aliases = fix.aliases
+        names = fix.names
         name = field.display or field.name
         description = fix.description or field.comment or ""
         typed, since = _typing(field)
@@ -58,7 +58,7 @@ with app.setup:
                     *(str(tag) for tag in fix.tags),
                     name,
                     field.name,
-                    *aliases,
+                    *names,
                     description,
                 )
             ).casefold(),
@@ -70,7 +70,7 @@ with app.setup:
             "Arrow kind": field.dtype.kind,
             "FIX type": typed,
             "since": since,
-            "aliases": ", ".join(aliases),
+            "names": ", ".join(names),
             "description": description,
         }
 
@@ -78,30 +78,67 @@ with app.setup:
         """Small display rows over the native registry iterator."""
         return [_definition_row(field, "fields") for field in dictionary]
 
-    def into_definition_rows(dictionary, categories=CATEGORIES):
-        """The same rows over every category a dictionary stores.
+    def into_definitions(dictionary, categories=CATEGORIES):
+        """Every definition a dictionary stores, by the category it is filed under.
 
         A scalar field, a component and a repeating group are one kind of
         thing stored under three names, so a browser of a complete dictionary
-        reads them through one projection rather than three.
+        reads them through one projection rather than three. The dictionary's
+        own document is what enumerates them: iteration walks the scalars
+        alone, and a component is reached by name once its name is known.
         """
+        document = json.loads(dictionary.into_json())
+        return [
+            (category, Field.from_json(json.dumps(_stringly(held))))
+            for category in categories
+            for held in document.get(category, ())
+        ]
+
+    def _stringly(declaration):
+        """One declaration with every metadata value spelled as the string it is.
+
+        A dictionary writes `fix:codes` and `fix:lineage` as the arrays they
+        hold and reads them back as the strings a Field's metadata stores, so
+        the two ends of its own document disagree about one value shape. The
+        collection is re-encoded here rather than unwrapped, because that is
+        exactly what `metadata_records` reads back out of it.
+        """
+        metadata = declaration.get("metadata")
+        if not isinstance(metadata, dict):
+            return declaration
+        return {
+            **declaration,
+            "metadata": {
+                key: value if isinstance(value, str) else json.dumps(value, separators=(",", ":"))
+                for key, value in metadata.items()
+            },
+        }
+
+    def into_definition_rows(dictionary, categories=CATEGORIES):
+        """The same definitions as display rows."""
         return [
             _definition_row(field, category)
-            for category in categories
-            for field in dictionary.definitions(category)
+            for category, field in into_definitions(dictionary, categories)
         ]
 
     def into_msgtype_rows(dictionary):
-        """Every message type the dictionary defines, by its wire code."""
+        """Every message type the dictionary defines, by its wire code.
+
+        A message is a component carrying `fix:msgtype`, so the components are
+        where they are counted; `FixRegistry.msgtype` then resolves one by the
+        code or the name this row already holds.
+        """
         rows = []
-        for msgtype in dictionary.msgtypes():
-            field = msgtype.field
+        for _, field in into_definitions(dictionary, ("components",)):
+            code = field.fix.msgtype
+            if not code:
+                continue
             rows.append(
                 {
-                    "_search": f"{msgtype.value} {msgtype.name}".casefold(),
-                    "code": msgtype.value,
-                    "name": field.display or msgtype.name,
-                    "storage name": msgtype.name,
+                    "_search": f"{code} {field.name}".casefold(),
+                    "code": code,
+                    "name": field.display or field.name,
+                    "storage name": field.name,
                     "identifiers": ", ".join(field.fix.identifiers or ()),
                     "description": field.fix.description or field.comment or "",
                 }
@@ -333,10 +370,10 @@ def _(category, dialect, query, registry_rows):
             "Arrow kind",
             "FIX type",
             "since",
-            "aliases",
+            "names",
             "description",
         ],
-        wrapped_columns=["aliases", "description"],
+        wrapped_columns=["names", "description"],
         max_height=560,
         label=f"{len(visible_registry_rows):,} matching definitions",
     )

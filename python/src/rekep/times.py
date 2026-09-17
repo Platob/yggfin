@@ -240,7 +240,7 @@ SHAPES: tuple[Stamp, ...] = (ISO, FIX, COMPACT)
 ULBRIDGE_ROWHEADER = (
     r"^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) "
     r"\[(?P<threadId>[1-9]\d*)"
-    r"(?:-(?P<bridgesessionid>[0-9a-f]{8}):(?P<msgctxid>[0-9a-f]{10}):(?P<msgseqnum>\d+))?\] "
+    r"(?:-(?P<msgsessionid>[0-9a-f]{8}):(?P<msgctxid>[0-9a-f]{10}):(?P<msgseqnum>\d+))?\] "
     r"\[(?P<pluginid>[^\]]+)\] \((?P<level>[A-Z]+)\) "
 )
 """The ULBridge row-header expression for physical message records.
@@ -252,14 +252,14 @@ yet the Python extension; the day it does, this becomes one import and the
 pin becomes redundant.
 
 Every capture is named for the column it fills, which is the whole contract:
-`bridgesessionid`, `msgctxid`, `msgseqnum` and `pluginid` reach
-`bridgesessionid` (65032), `msgctxid` (65008), `MsgSeqNum` (34) and
-`pluginid` (65009) with nothing mapping a spelling onto a tag in between. The
-bridge writes the first three in camel case -- `senderSessionId`, `msgCtxId`,
-`seqNum` -- and they were captured that way, against a table that read
-`seqnum` as tag 34 and landed the session *instance* on `sendersessionid`
-(65007), which is what a bridge row spells for the counterparty session the
-message names. Naming the captures for the fields retires both mistakes.
+`msgsessionid`, `msgctxid`, `msgseqnum` and `pluginid` reach `msgsessionid`
+(65032), `msgctxid` (65008), `MsgSeqNum` (34) and `pluginid` (65009) with
+nothing mapping a spelling onto a tag in between. The bridge writes the first
+three in camel case -- `msgSessionId`, `msgCtxId`, `seqNum` -- and they were
+captured that way, against a table that read `seqnum` as tag 34 and landed
+the session *instance* on a column of its own. Naming the captures for the
+fields retires both mistakes, and `msgsessionid` is what the event calls the
+session instance, so the capture, the column and the fact are one word.
 """
 
 #: Spellings `datetime.fromisoformat` does not read, in the order they are

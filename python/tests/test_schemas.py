@@ -3,9 +3,11 @@
 import json
 from pathlib import Path
 
+from yggdryl.fix import fix_schema, fix_schema_carrying
+
 from rekep import Message
 from rekep.fields import Field
-from rekep.fix import fix_message_field
+from rekep.fix import FIXMSG, fix_carrier, fix_message_field, fix_parse_field, fix_registry
 from rekep.iceberg import (
     CONTRACT_KEYS,
     derived_keys,
@@ -14,6 +16,7 @@ from rekep.iceberg import (
     metrics_for,
     partition_keys,
     primary_keys,
+    sort_keys,
 )
 
 SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
@@ -46,7 +49,9 @@ def test_a_contract_is_the_three_things_iceberg_stores() -> None:
     assert [member["name"] for member in document["schema"]["fields"]] == [
         member.name for member in Message.into_field()
     ]
-    assert document["schema"]["identifier-field-ids"] == [1, 2]
+    # One row per body, whatever session carried it: `bodyhash` is the digest
+    # of the bytes and the whole key.
+    assert document["schema"]["identifier-field-ids"] == [11]
     assert document["partition-spec"]["fields"] == [
         {"source-id": 4, "field-id": 1000, "transform": "hour", "name": "timepartition_hour"}
     ]
@@ -73,7 +78,7 @@ def test_contract_matches_the_message_declaration() -> None:
     # the published shape loses `digest:*` and `partition:sources` and gains an
     # `iceberg:field_id` on every column. Types, names and nullability agree.
     assert published.into_arrow_schema().equals(declared.into_arrow_schema())
-    assert primary_keys(published) == primary_keys(declared) == ["sourceurl", "rownum"]
+    assert primary_keys(published) == primary_keys(declared) == ["bodyhash"]
     assert partition_keys(published) == partition_keys(declared) == {"timepartition": "hour"}
     assert metrics_for(published) == metrics_for(declared)
 
@@ -93,10 +98,7 @@ def test_a_contract_does_not_carry_what_only_arrow_metadata_states() -> None:
         "bodyhash"
     ]
     assert [member.name for member in published if member.digest.is_holder()] == []
-    assert published.into_arrow_schema().field("bodyhash").metadata == {
-        b"description": b"XXH3-128 digest of the exact body bytes, filled during field apply.",
-        b"iceberg:field_id": b"11",
-    }
+    assert published.into_arrow_schema().field("bodyhash").metadata[b"iceberg:field_id"] == b"11"
     # A column's description survives as Iceberg's `doc`; the struct's own does
     # not, and neither do the `python:*` keys naming the class that declared it.
     assert Message.into_field().metadata["description"].startswith("One ULBridge text line")
@@ -104,46 +106,80 @@ def test_a_contract_does_not_carry_what_only_arrow_metadata_states() -> None:
     assert dict(published.metadata) == {}
 
 
-def test_fix_contract_is_a_table_contract_for_iceberg_simulation() -> None:
+def test_the_fix_contract_is_what_the_current_dictionary_answers() -> None:
+    """Drift fails here rather than surfacing in a table.
+
+    The document is generated output -- `rekep fields dump --pyclass
+    rekep.fix:fix_message_field` writes it -- so this compares the committed
+    bytes with what the installed yggdryl produces today, column for column,
+    and a dictionary that moved under it is a failing test rather than a
+    schema evolution nobody asked for.
+    """
     document = FIX_CONTRACT.read_text(encoding="utf-8")
     fixed = load_fix_contract()
 
     assert document == f"{iceberg_contract(fix_message_field())}\n"
     assert document == f"{iceberg_contract(fixed)}\n"
-    assert len(fixed) == 128
-    # A capture line answers one row per message, so the line's own key is
-    # joined by the message's own identity.
-    assert primary_keys(fixed) == ["rownum", "msghash", "sourceurl"]
-    assert partition_keys(fixed) == {"timepartition": "hour"}
+    # And the row behind it is yggdryl's, field for field, with the capture's
+    # own columns in front through the one supported seam.
+    declared = fix_schema_carrying(fix_carrier(), fix_schema(fix_registry(), FIXMSG))
+    assert [member.name for member in fix_parse_field()] == [member.name for member in declared]
+    assert [member.name for member in fixed] == [member.name for member in declared]
+    assert len(fixed) == 130 == len(fix_schema(fix_registry(), FIXMSG)) + 7
+
+
+def test_the_fix_table_is_laid_out_by_the_event_and_keyed_by_its_identity() -> None:
+    fixed = load_fix_contract()
+    document = json.loads(FIX_CONTRACT.read_text(encoding="utf-8"))
+
+    # One message logged at three hops is one event with one identity, so the
+    # key is that identity and not where the line was read from.
+    assert primary_keys(fixed) == ["curruuid"]
+    assert partition_keys(fixed) == {"unix": "hour"}
+    assert list(sort_keys(fixed)) == ["unix", "seqnum", "curruuid"]
+    assert document["partition-spec"]["fields"] == [
+        {"source-id": 8, "field-id": 1000, "transform": "hour", "name": "unix_hour"}
+    ]
+    assert [field["direction"] for field in document["sort-order"]["fields"]] == ["asc"] * 3
+
     schema = fixed.into_arrow_schema()
     # Columns use the dictionary's folded names; their tags are metadata, so
     # the published contract states the name and the registry states the tag.
     assert "35" not in schema.names
     assert "msgtype" in schema.names
-    # A pair no dictionary explains is an entry of tag 0 inside the arrival
-    # record, so the record closes the row: one group named after itself,
-    # under the counter that counts it, and there is no second one.
-    assert schema.names[-3:] == ["msgdirection", "nofixentries", "fixentries"]
+    # The capture's own columns lead, the crate's clocks open the dictionary's
+    # half, and the arrival record closes the row under the counter that
+    # counts it.
+    assert schema.names[:8] == [
+        "rownum",
+        "timestamp",
+        "timepartition",
+        "threadId",
+        "level",
+        "bodyhash",
+        "body",
+        "unix",
+    ]
+    assert schema.names[-3:] == ["metadata", "nofixentries", "fixentries"]
     # Every timestamp is microseconds, which is what Iceberg v2 stores
-    # without a precision shim -- the codec's market clock included.
-    assert schema.field("sendingtime").type.unit == "us"
+    # without a precision shim -- the event's own clock included.
+    assert schema.field("unix").type.unit == "us"
     assert schema.field("timestamp").type.unit == "us"
-    # The settled bundle every replayable row carries, then the carrier's own
-    # keys and body; a capture `timestamp` is context and stays nullable, and
-    # so is `snapshotat`, because only a snapshot stamps it.
+    # What every message settles, and nothing more: a read is not a snapshot,
+    # and a capture `timestamp` is context.
     assert [member.name for member in fixed if not member.nullable] == [
         "rownum",
+        "bodyhash",
         "body",
-        "updatedat",
-        "createdat",
-        "msghash",
-        "msgphash",
-        "code",
-        "sourceurl",
+        "unix",
+        "creatunix",
+        "curruuid",
+        "crossuuid",
+        "hashcode",
+        "crosshashcode",
         "beginstring",
-        "sendingtime",
     ]
-    assert fixed["snapshotat"].nullable
+    assert fixed["snapunix"].nullable
 
 
 def test_the_fix_declaration_keeps_its_registry_metadata() -> None:
@@ -151,19 +187,21 @@ def test_the_fix_declaration_keeps_its_registry_metadata() -> None:
     schema = fix_message_field().into_arrow_schema()
 
     assert schema.field("msgtype").metadata[b"fix:tag"] == b"35"
+    assert schema.field("curruuid").metadata[b"fix:tag"] == b"65039"
+    assert schema.field("px").metadata[b"fix:tag"] == b"65043"
     assert load_fix_contract().into_arrow_schema().field("msgtype").metadata == {
         b"description": schema.field("msgtype").metadata[b"description"],
-        b"iceberg:field_id": b"46",
+        b"iceberg:field_id": b"30",
     }
 
 
-def test_raw_message_contract_keeps_source_keys() -> None:
+def test_raw_message_contract_keeps_the_captures_the_bridge_names() -> None:
     message = load_contract()
-    assert primary_keys(message) == ["sourceurl", "rownum"]
+    assert primary_keys(message) == ["bodyhash"]
     assert partition_keys(message) == {"timepartition": "hour"}
     assert [member.name for member in message][4:10] == [
         "threadId",
-        "bridgesessionid",
+        "msgsessionid",
         "msgctxid",
         "msgseqnum",
         "pluginid",

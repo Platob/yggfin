@@ -5,7 +5,7 @@ adapters only produce ordered key/value pairs; one builder performs registry
 resolution, code translation, typing, group construction, arrival recording,
 derived stamps, and schema projection.
 
-Parsing is the first of three stages over that one codec — parse, enrich,
+Parsing is the first of two stages over that one codec — parse, then
 lifecycle — and the two doors onto them answer the same messages from the same
 bytes: `fix_line_messages` reads lines one at a time, `fix_arrow_messages` and
 `fix_arrow_reader` read a stored capture in batches.
@@ -19,17 +19,17 @@ The text stage removes only the matched ULBridge header. For example:
 [OMS_X1_TradeCapture] (INFO) Receiving : 8=FIX.4.4|35=8|55=ABBN.S|...
 ```
 
-becomes one `Message` whose `timestamp`, `threadId`, `bridgesessionid`,
+becomes one `Message` whose `timestamp`, `threadId`, `msgsessionid`,
 `msgctxid`, `msgseqnum`, `pluginid`, and `level` come from the header and whose
 `body` starts at `Receiving :`. The exact body digest is computed before
 `logs.messages` is written.
 
 Every capture is named for the column it fills, and the row header is the one
 `ULBRIDGE_ROWHEADER` every reader takes, pinned against the native core's own
-text: `bridgesessionid`
+text: `msgsessionid`
 is the session *instance* the bridge handled the line on (65032) and not
-`sendersessionid` (65007), which is what a bridge row spells for the
-counterparty session the message names; `msgseqnum` fills `MsgSeqNum(34)`
+what the message itself says about the counterparty session
+it names; `msgseqnum` fills `MsgSeqNum(34)`
 where the frame stated none. Nothing maps a spelling onto a tag in between.
 
 ```python
@@ -70,7 +70,7 @@ are what answer messages:
 | method | accepted input | answers |
 | --- | --- | --- |
 | `parse_fix_line` | numeric tags | resolved pairs |
-| `parse_ullink_line` | names, aliases, `#` keys, and packed groups | resolved pairs |
+| `parse_ullink_line` | names, alternate spellings, `#` keys, and packed groups | resolved pairs |
 | `parse_plugin_line` | bridge configuration JSON | one message per `ObjectName` |
 | `parse_fixml_line` | XML attributes | resolved pairs |
 | `parse_pairs` | ordered pairs already split by the caller | resolved pairs |
@@ -103,15 +103,18 @@ message = next(
 assert message.field.name == "D"
 assert message.by_tag(11).as_py() == "ORD-1"
 assert message.by_name("orderqty").as_py() == 12.0
-assert message.into_bytes(ord("|")) == (
-    b"8=FIX.4.4|35=D|11=ORD-1|55=AAPL|54=1|38=12|10=000|"
-)
+# Tag 38 is read through the crate's own `qty`, exactly, and the message
+# re-emits the header and the event's own tags in front of what arrived.
+assert float(message.qty.as_py()) == 12.0
+assert message.into_bytes(ord("|")).startswith(b"8=FIX.4.4|35=D|")
+assert b"11=ORD-1" in message.into_bytes(ord("|"))
 ```
 
 ## ULLINK and bridge-row rules
 
 A row uses `|` when one is present, otherwise spaces. Each segment splits at
-its first `=`. Names resolve through case/separator folding, aliases, and code
+its first `=`. Names resolve through case/separator folding, the dictionary's
+alternate spellings, and code
 sets.
 
 ### Hash-prefixed keys
@@ -141,18 +144,21 @@ unknown value rather than failing the row.
 from rekep.fix import fix_codec, fix_registry
 
 codec = fix_codec(fix_registry())
-message = next(
-    iter(
-        codec.parse_line(
-            "#NOPARTYIDS=1|"
-            "#NOPARTYIDS[0]=PARTYID=BROKER••PARTYIDSOURCE=C••PARTYROLE=1••|".encode()
-        )
-    )
+member = "\x04\x03"
+row = (
+    "recv |MSGTYPE=D|SYMBOL=TTF|SIDE=1|ORDERQTY=1200|#NOPARTYIDS=1|"
+    f"#NOPARTYIDS[0]=PARTYID=BUYSIDE{member}PARTYIDSOURCE=D{member}PARTYROLE=1|"
 )
+message = next(iter(codec.parse_line(row.encode())))
 
-assert message.by_path("Parties[0].PartyID").as_py() == "BROKER"
+assert message.by_name("nopartyids").as_py() == 1
+assert message.by_path("Parties[0].PartyID").as_py() == "BUYSIDE"
 assert message.by_path("Parties[0].PartyRole").as_py() == 1
 ```
+
+A row that states a group and nothing else states no message: the counter and
+its occurrences are pairs like any others, so the line still has to be one the
+codec reads as a message.
 
 ## Registry transcription
 
@@ -166,9 +172,9 @@ MSGTYPE=executionreport|SYMBOL=HOLN|SIDE=buy|LASTSHARES=235|LASTPX=72.28|
 | --- | --- | --- |
 | `MSGTYPE=executionreport` | canonical `msgtype`, tag 35; code name → `8` | `msgtype = "8"` |
 | `SYMBOL=HOLN` | canonical `symbol`, tag 55 | `symbol = "HOLN"` |
-| `SIDE=buy` | canonical `side`, tag 54; code name → `1` | `side = "1"` |
-| `LASTSHARES=235` | alias of `lastqty`, tag 32 | `lastqty = 235.0` |
-| `LASTPX=72.28` | canonical `lastpx`, tag 31 | `lastpx = 72.28` |
+| `SIDE=buy` | canonical `side`, tag 54; the event's own spelling | `side = "BUY"` |
+| `LASTSHARES=235` | another spelling of `lastqty`, tag 32 | `lastqty = 235.0`, and `qty = 235` exactly |
+| `LASTPX=72.28` | canonical `lastpx`, tag 31 | `lastpx = 72.28`, and `px = 72.28` exactly |
 
 ```python
 from rekep.fix import fix_codec, fix_registry
@@ -178,17 +184,19 @@ message = next(iter(fix_codec(fix_registry()).parse_line(body)))
 
 assert message.by_tag(35).as_py() == "8"
 assert message.by_name("lastqty").as_py() == 235.0
-assert [(key, value) for _, key, value in message.entries()] == [
-    ("MSGTYPE", "executionreport"),
-    ("SYMBOL", "HOLN"),
-    ("SIDE", "buy"),
-    ("LASTSHARES", "235"),
-    ("LASTPX", "72.28"),
+assert message.by_name("side").as_py() == "BUY"
+# The price the message is about is what it last traded, exactly.
+assert float(message.px.as_py()) == 72.28
+# An entry is `(tag, name, value, entries)`, and what a typed column holds is
+# not repeated in it: the arrival record is what the columns did not take.
+assert [(tag, name) for tag, name, _, _ in message.entries()] == [
+    (55, "symbol"),
+    (381, "grosstradeamt"),
 ]
 ```
 
-The typed projection is normalized; `entries()` is the original
-transcription.
+The typed projection is normalized; `entries()` is what arrived and no column
+claimed, each pair carrying the tag and name the dictionary made of its key.
 
 ## JSON configuration and FIXML
 
@@ -203,14 +211,18 @@ FIXML contributes attributes in document order. Namespace prefixes are removed
 from attribute names, nested elements flatten into paths, and element names do
 not invent protocol fields.
 
+A FIXML row that names no message type is one the codec refuses before it
+builds a frame, because the untyped line is one of the three the message-type
+filter excludes by default, so a document worth a row names its own:
+
 ```python
 from rekep.fix import fix_codec
 
-xml = b'<FIXML><Order ClOrdID="A-1" Side="1" OrderQty="5"/></FIXML>'
+xml = b'<FIXML><Order MsgType="D" ClOrdID="A-1" Side="1" OrdQty="5"/></FIXML>'
 message = next(iter(fix_codec().parse_line(xml)))
 
+assert message.by_tag(35).as_py() == "D"
 assert message.by_name("clordid").as_py() == "A-1"
-assert message.by_name("orderqty").as_py() == 5.0
 ```
 
 ## Resolution, translation, and typing
@@ -240,24 +252,24 @@ Resolved children are ordered as FIX header, body, trailer, then the crate's
 own fields, and the row ends `msgdirection`, `nofixentries`, `fixentries`: the
 arrival record is a group named after itself, under the counter that counts it.
 `beginstring` is supplied when the input did not state one. A message that
-stated no `SendingTime(52)` of its own takes the capture clock the batch door
-offers as one, else the codec's `UNDATED` floor — never the instant the parse
-ran. `msghash` is sixteen ordered bytes over that settled instant and the
-message's canonical named content; no partition column is materialized beside
-them, because a FIX row has none of its own.
+stated no `TransactTime(60)` and no `SendingTime(52)` of its own takes the
+codec's `UNDATED` floor — never the capture's own clock, which stamps nothing,
+and never the instant the parse ran. `hashcode` is the content code over the
+event's facts, its text, its metadata, the stated header cells and the entry
+tree; `curruuid` is the identity over that code and the settled instant. No
+partition column is materialized beside them, because a FIX row has none of its
+own.
 
-Enrich and lifecycle are stages rather than options. **enrich** fills what a
-message implied but did not carry — normalized symbol, ISIN, MIC, parent ids,
-`altids`, the quantity another quantity states — and remembers the bridge
-configurations the stream passed, so a later message naming a plugin takes that
-plugin's `SenderCompID` and `TargetCompID`. A derived value is never silently
-presented as a stated wire pair: the arrival record is what the wire carried
-and is left alone. **lifecycle** names the chains — a non-empty `code`,
-`updatedat` floored to the one-second snapshot grid while `createdat` keeps the
-real instant, the chain's first `createdat`, and `prevupdatedat` and
-`prevmsghash` linking a message to the one before it. `snapshotat` is empty on
-every row that is not a snapshot, which is why it is the one settled stamp that
-is nullable. A door turns that last stage off with `lifecycle=False`.
+A parse fills what a message implied but did not carry — normalized symbol,
+ISIN, MIC, `identifiers`, the side's own quote lane, the quantity another
+quantity states — so there is no enriching stage after it. A derived value is
+never silently presented as a stated wire pair: the arrival record is what the
+wire carried and is left alone. **lifecycle** is the one stage that follows,
+and it reads the messages as the chains they belong to: `prevuuid` and
+`prevunix` naming the step before, `seqnum` where this one stands, `prevpx` and
+`prevqty` what that step settled on, and the chain's first `creatunix`.
+`snapunix` is empty on every row that is not a reading a walk took, which is
+why it is nullable. A door turns that stage off with `lifecycle=False`.
 
 ## Arrow parse step
 
@@ -265,7 +277,7 @@ is nullable. A door turns that last stage off with `lifecycle=False`.
 import pyarrow
 
 from rekep import Message
-from rekep.fix import dated_arrow_reader, fix_codec, fix_registry, fix_text_options
+from rekep.fix import fix_codec, fix_registry, fix_text_options
 
 schema = Message.into_field().into_arrow_schema()
 batch = pyarrow.RecordBatch.from_pylist(
@@ -276,12 +288,12 @@ batch = pyarrow.RecordBatch.from_pylist(
             "timestamp": None,
             "timepartition": None,
             "threadId": None,
-            "bridgesessionid": None,
+            "msgsessionid": None,
             "msgctxid": None,
             "msgseqnum": 7,
             "pluginid": "OMS",
             "level": "INFO",
-            "bodyhash": None,
+            "bodyhash": b"\x00" * 16,
             "body": b"Receiving : 8=FIX.4.4|35=D|55=AAPL|10=000|",
         }
     ],
@@ -289,29 +301,28 @@ batch = pyarrow.RecordBatch.from_pylist(
 )
 source = pyarrow.RecordBatchReader.from_batches(schema, [batch])
 codec = fix_codec(fix_registry(), options=fix_text_options())
-parsed = codec.parse_text_arrow_reader(dated_arrow_reader(source))
+parsed = codec.parse_text_arrow_reader(source)
 table = parsed.read_all()
 
 assert table.column("symbol").to_pylist() == ["AAPL"]
 assert table.column("msgseqnum").to_pylist() == [7]
-assert table.num_columns == 128
-assert table.schema.names[-3:] == ["msgdirection", "nofixentries", "fixentries"]
+assert table.num_columns == 130
+assert table.schema.names[-3:] == ["metadata", "nofixentries", "fixentries"]
 ```
 
 Source columns lead the output unless a fixed column owns the same folded
 name. A capture named for the field it fills therefore folds onto it:
 `sourceurl`, `msgctxid` and `msgseqnum` land inside the fixed projection rather
-than beside it, and `dated_arrow_reader` offers the capture clock as the
-`SendingTime` a message carrying none of its own takes. Message values always
-win over capture fills.
+than beside it. Message values always win over capture fills, and the capture's
+own `timestamp` fills nothing: it is context and dates no message.
 
 ## Two doors onto the same messages
 
-`fix_line_messages` is the line door: `parse_text_lines`, then
-`enrich_messages`, then `lifecycle`, over lines read one at a time. It dates no
-message from the line's own capture clock — a bridge spells that clock the way
-a log spells one, not the way `SendingTime` is spelled — so an undated message
-takes the codec's `UNDATED` floor here.
+`fix_line_messages` is the line door: `parse_text_lines`, then `lifecycle`,
+over lines read one at a time. It dates no message from the line's own capture
+clock — a bridge spells that clock the way a log spells one, not the way
+`SendingTime` is spelled — so an undated message takes the codec's `UNDATED`
+floor, and so does the same message read through the batch door.
 
 ```python
 from rekep import IOBase, Message
@@ -323,18 +334,20 @@ source = IOBase.from_uri("file:python/tests/data/ulbridge.log")
 lines = source.read_text_lines(options=options)
 messages = list(fix_line_messages(codec, lines))
 
-assert len(messages) == 71
-assert messages[0].field.name == "executionreport"
-assert messages[0].by_name("pluginid").as_py() == "ULBridge"
+assert len(messages) == 79
+assert messages[0].field.name == "8"
+assert messages[0].by_name("pluginid").as_py() == "Virtu_TritonBlack_TradeCapture"
 
 source.close()
 ```
 
-That capture holds 111 lines and answers 71 messages, because a row is a
+That capture holds 144 lines and answers 79 messages, because a row is a
 message and not a line. `fix_arrow_messages` is the batch door over the same
-three stages, and `fix_arrow_reader` runs it end to end: a stored capture in,
-settled rows out under the parse's own shape. One line carrying two frames
-answers two rows under one `rownum`; one carrying none answers no row at all.
+stages, and `fix_arrow_reader` runs it end to end: a stored capture in, settled
+rows out under the parse's own shape. One line carrying two frames answers two
+rows under one `rownum`; one carrying none answers no row at all. The walk then
+folds every hop that logged one message onto one identity, so those 79 messages
+are 53 events.
 
 ```python
 import pyarrow
@@ -356,12 +369,12 @@ batch = pyarrow.RecordBatch.from_pylist(
             "timestamp": None,
             "timepartition": None,
             "threadId": None,
-            "bridgesessionid": None,
+            "msgsessionid": None,
             "msgctxid": None,
             "msgseqnum": None,
             "pluginid": "OMS",
             "level": "INFO",
-            "bodyhash": None,
+            "bodyhash": b"\x00" * 16,
             "body": body,
         }
         for rownum, body in enumerate(lines, start=1)
@@ -375,7 +388,7 @@ table = settled.read_all()
 
 assert table.column("rownum").to_pylist() == [1, 3, 3]
 assert table.column("symbol").to_pylist() == ["AAPL", "AAPL", "HOLN"]
-assert table.num_columns == 128
+assert table.num_columns == 130
 
 settled.close()
 ```

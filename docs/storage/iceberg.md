@@ -29,7 +29,7 @@ written = messages.overwrite_arrow_reader(
 ```
 
 `merge_by=True` uses the primary key declared on the native Field:
-`(sourceurl, rownum)` for `logs.messages`, and `(sourceurl, rownum, msghash)`
+`bodyhash` for `logs.messages`, and `curruuid`
 for `fix.messages`, where a parse answers one row per message and a source URL
 and row number alone therefore name no row. A missing table is created.
 `commit_batch_num` and the optional `commit_row_size` bound each storage

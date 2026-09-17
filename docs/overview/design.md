@@ -43,7 +43,7 @@ Iceberg without rereading the original files.
 ## Replays are ordinary runs
 
 `logs.messages` replaces on `(sourceurl, rownum)`; `fix.messages` replaces on
-`(sourceurl, rownum, msghash)`, because a line can carry more than one message.
+`curruuid`, because a bridge logs one message again at every hop it passes.
 A run parses one window, `[start, end)` -- the last day up to now when a task
 is given neither bound -- and reprocessing the same window reads the same rows
 and lands them over the ones it landed before: the table holds each key once,

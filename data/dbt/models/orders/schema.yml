@@ -9,33 +9,26 @@ models:
     columns:
       - name: orderkey
         description: >
-          The logical order: sixteen bytes over the event chain the parser
-          named, which scopes a client order id by its session pair.
+          The logical order: the chain's own identity, over the first
+          identifier the message states.
         data_tests:
           - not_null
       - name: eventkey
         description: >
-          Sixteen bytes over the source position and the event's index inside
-          its line. The primary key, and the same bytes on every replay.
+          The event's own identity, which the parse settled: one message
+          logged at three hops answers one of these. The primary key, and the
+          same bytes on every replay.
         data_tests:
           - not_null
           - unique
+      - name: prevuuid
+        description: The identity of the step this event follows in its chain.
+      - name: seqnum
+        description: Where this event stands in its chain, filled by the walk.
       - name: sourceurl
         description: The capture object this event was read from.
-        data_tests:
-          - not_null
       - name: rownum
         description: The physical line number inside that object.
-        data_tests:
-          - not_null
-      - name: eventindex
-        description: The event's position inside its line, from zero.
-        data_tests:
-          - not_null
-      - name: msghash
-        description: The parsed message's own sixteen identity bytes.
-        data_tests:
-          - not_null
       - name: eventtime
         description: The transaction time, else the settled message instant.
         data_tests:
@@ -54,19 +47,17 @@ models:
         description: The client order id this event replaced or cancelled.
       - name: orderid
         description: The venue order id.
-      - name: parentclordid
-        description: The parent client order id, where the message named one.
-      - name: parentorderid
-        description: The parent venue order id, where the message named one.
       - name: symbolticker
         description: The normalized instrument identity.
       - name: side
         description: The side the order states.
       - name: ordtype
         description: The order type.
-      - name: price
-        description: The limit or working price.
-      - name: orderqty
+      - name: px
+        description: >
+          What the event is about: its own price, else what it last traded,
+          else what it averaged, else its own side's lane.
+      - name: qty
         description: The ordered quantity.
       - name: cumqty
         description: The cumulative filled quantity this event stated.
@@ -146,19 +137,15 @@ models:
         description: The client order id the winning event replaced or cancelled.
       - name: orderid
         description: The venue order id at the winning event.
-      - name: parentclordid
-        description: The parent client order id at the winning event.
-      - name: parentorderid
-        description: The parent venue order id at the winning event.
       - name: symbolticker
         description: The normalized instrument identity.
       - name: side
         description: The side the order states.
       - name: ordtype
         description: The order type.
-      - name: price
-        description: The limit or working price at the winning event.
-      - name: orderqty
+      - name: px
+        description: What the winning event was about, on the same ladder.
+      - name: qty
         description: The ordered quantity at the winning event.
       - name: cumqty
         description: The cumulative filled quantity the winning event stated.

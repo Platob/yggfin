@@ -24,7 +24,7 @@ def test_message_declares_the_text_row_and_its_storage_columns() -> None:
         "timestamp",
         "timepartition",
         "threadId",
-        "bridgesessionid",
+        "msgsessionid",
         "msgctxid",
         "msgseqnum",
         "pluginid",
@@ -51,7 +51,7 @@ def test_message_text_options_own_the_complete_native_read() -> None:
     assert options.capture_names == (
         "timestamp",
         "threadId",
-        "bridgesessionid",
+        "msgsessionid",
         "msgctxid",
         "msgseqnum",
         "pluginid",
@@ -75,13 +75,13 @@ def test_the_text_reader_produces_messages_without_a_python_row_pass(tmp_path) -
 
     assert table.schema.equals(Message.into_field().into_arrow_schema(), check_metadata=True)
     assert table.select(
-        ("rownum", "timestamp", "threadId", "bridgesessionid", "msgctxid", "msgseqnum", "pluginid")
+        ("rownum", "timestamp", "threadId", "msgsessionid", "msgctxid", "msgseqnum", "pluginid")
     ).to_pylist() == [
         {
             "rownum": 1,
             "timestamp": datetime.datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC),
             "threadId": 250,
-            "bridgesessionid": "e7256476",
+            "msgsessionid": "e7256476",
             "msgctxid": "9effef3e6a",
             "msgseqnum": 72504,
             "pluginid": "ULBridge",
@@ -90,7 +90,7 @@ def test_the_text_reader_produces_messages_without_a_python_row_pass(tmp_path) -
             "rownum": 2,
             "timestamp": datetime.datetime(2026, 8, 14, 0, 5, 1, 148000, tzinfo=UTC),
             "threadId": 653,
-            "bridgesessionid": None,
+            "msgsessionid": None,
             "msgctxid": None,
             "msgseqnum": None,
             "pluginid": "Spot_FX_TradeCapture",
@@ -122,7 +122,7 @@ def test_a_line_without_the_bridge_header_is_kept_as_an_unstamped_message(tmp_pa
             "timestamp",
             "timepartition",
             "threadId",
-            "bridgesessionid",
+            "msgsessionid",
             "msgctxid",
             "msgseqnum",
         )
@@ -241,7 +241,7 @@ def test_the_columns_a_header_is_expected_to_fill_are_the_contract_s_own() -> No
     assert Message.captures() == {
         "timestamp",
         "threadId",
-        "bridgesessionid",
+        "msgsessionid",
         "msgctxid",
         "msgseqnum",
         "pluginid",

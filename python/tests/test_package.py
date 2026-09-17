@@ -100,7 +100,7 @@ def test_rekep_installs_its_bundled_registry_as_the_process_default() -> None:
     bundled = fix_registry()
 
     assert registry_path().is_dir()
-    assert len(bundled) == 6314
+    assert len(bundled) == 7787
     assert global_registry() == bundled
     assert IOBase.__module__.startswith("yggdryl")
     assert TextOptions.__module__.startswith("yggdryl")

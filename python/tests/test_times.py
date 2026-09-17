@@ -170,7 +170,7 @@ def test_every_bridge_capture_is_named_for_the_column_it_fills() -> None:
     assert re.findall(r"\(\?P<([A-Za-z]+)>", ULBRIDGE_ROWHEADER) == [
         "timestamp",
         "threadId",
-        "bridgesessionid",
+        "msgsessionid",
         "msgctxid",
         "msgseqnum",
         "pluginid",

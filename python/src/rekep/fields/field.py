@@ -20,6 +20,16 @@ FIELD_ID = "iceberg:field_id"
 SORT_KEY = "iceberg:sort_key"
 SORT_ORDER = "iceberg:sort_order"
 
+#: The transform every capture table is laid out by, named once.
+#:
+#: Both published tables take it and neither states it again: `logs.messages`
+#: on the hour a line was printed in, `fix.messages` on the hour its message
+#: happened in. One hour of a busy bridge is a file a scan can skip whole, and
+#: a run's window is a whole number of them, so a replay replaces exactly the
+#: partitions it covers. Which column carries it is each table's own answer;
+#: the transform is not.
+HOUR = "hour"
+
 _MISSING = object()
 
 

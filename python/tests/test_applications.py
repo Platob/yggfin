@@ -46,8 +46,17 @@ def application(name: str) -> Any:
 
 
 def cells(app: Any) -> dict[str, Any]:
-    """Each cell of `app`, by the name its function carries."""
-    return {cell.name: cell._cell for _, cell in app._cell_manager.valid_cells()}
+    """Each cell of `app`, by the name its function carries.
+
+    An anonymous cell is spelled `_`, and several of them are ordinary, so the
+    key carries the position too: a dict keyed by name alone keeps the last of
+    them and silently drops the rest, which is not what a test that checks
+    every cell can be built on.
+    """
+    return {
+        (cell.name if cell.name != "_" else f"_{index}"): cell._cell
+        for index, (_, cell) in enumerate(app._cell_manager.valid_cells())
+    }
 
 
 def declared(name: str) -> dict[str, Any]:

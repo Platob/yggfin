@@ -39,15 +39,15 @@ fix.messages -> build_dbt -> orders.events, orders.current, executions.fills
 `parse_fix` is three native stages over one codec, in this order and no other:
 
 ```text
-parse -> enrich -> lifecycle
+parse -> lifecycle
 ```
 
-`parse` reads every frame a line carried, `enrich` fills what a message implied
-but did not carry -- including the session pair a bridge configuration
-announced earlier in the same stream -- and `lifecycle` names the chains: the
-`code` a message belongs to, its `updatedat` on the snapshot grid, the
-`createdat` its chain opened at, and the `prevmsghash` linking it to the
-message before it.
+`parse` reads every frame a line carried and settles it where it is read: a
+parsed message already carries what it implied, so there is no enriching stage
+between the two. `lifecycle` reads those messages as the chains they belong
+to -- the `prevuuid` a message follows, the `seqnum` it stands at, the
+`prevpx` and `prevqty` the step before it settled on, and the `creatunix` its
+chain opened at.
 
 Run it locally from the repository root:
 
@@ -68,11 +68,13 @@ lands its rows over what an earlier run of the same window landed, so a replay
 leaves the table holding each line once.
 
 `logs.messages` stores one physical line with its exact body bytes and source
-identity, keyed on `(sourceurl, rownum)`. `fix.messages` stores one row per
-message that line carried -- typed columns, the complete arrival record, and
-derived identities -- keyed on `(sourceurl, rownum, msghash)`, because a line
-can carry more than one message. A message that stated no clock of its own is
-dated by the instant its line was captured, so both replay idempotently.
+position, keyed on `bodyhash`, the digest of those bytes: identical bytes are
+one row whatever session carried them. `fix.messages` stores one row per
+*event* -- typed columns, the complete arrival record, and the identities the
+parse settled -- keyed on `curruuid`, because a bridge logs one message again
+at every hop it passes and those arrivals are one event. A message that stated
+no clock of its own takes the instant the codec is pinned with rather than the
+instant the parse ran, so both replay idempotently.
 
 `build_dbt` runs the [dbt project](data/dbt/README.md) under `data/dbt`: DuckDB
 owns the SQL, and every read and commit goes through the same Iceberg dataset

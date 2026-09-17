@@ -9,7 +9,7 @@ flowchart LR
     U["local or S3 capture"] --> R["rekep.IOBase"]
     R --> T["rekep.TextOptions"]
     T --> M[("logs.messages")]
-    M --> C["parse · enrich · lifecycle"]
+    M --> C["parse · lifecycle"]
     D[["bundled FIX registry"]] -.types.-> C
     C --> F[("fix.messages")]
     F --> P["orders · executions · book"]
@@ -22,7 +22,7 @@ flowchart LR
 | resource | URI binding, local and object-store traversal, decompression, bounded reads |
 | text | physical-line framing, header capture, source URL and row number |
 | field | schema metadata, casts, digests, partitions, Arrow conversion |
-| FIX | dictionary, dialect membership, code sets, line classification, parsing, enrichment, lifecycle, fixed Arrow projection |
+| FIX | dictionary, dialect membership, code sets, line classification, parsing, lifecycle, fixed Arrow projection |
 | Iceberg | table conversion, identifiers, snapshots, scan planning, commits |
 | tasks | application parameters, stage boundaries, counts, and orchestration |
 
@@ -46,7 +46,7 @@ assert IOBase.from_uri("file:data/capture").exists()
 The text reader yields `RecordBatch` objects. `parse_messages` applies the
 `Message` field and gives one `RecordBatchReader` directly to Iceberg.
 `parse_fix` reads that table as another reader, passes it through the codec's
-three stages — parse, enrich, lifecycle — applies the published field once, and
+two stages — parse, then lifecycle — applies the published field once, and
 writes it. No production stage converts rows through Python dictionaries or
 stages an S3 object on local disk.
 
@@ -61,9 +61,9 @@ logs.messages(sourceurl, rownum) == fix.messages(sourceurl, rownum)
 ```
 
 A parse answers one row per message rather than one per line, so the fixed
-product adds `msghash` and is keyed on `(sourceurl, rownum, msghash)`.
+product adds the identities the parse settled and is keyed on `curruuid`.
 
-`bodyhash` identifies exact source bytes. `msghash` identifies the parsed
+`bodyhash` identifies exact source bytes. `curruuid` identifies the settled
 message: sixteen ordered bytes over its settled instant and its named content.
 They intentionally answer different questions.
 

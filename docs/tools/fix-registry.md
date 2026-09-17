@@ -14,23 +14,24 @@ and bridge fields are added exactly as they are for parsing.
 
 ## Search and filter
 
-Search covers canonical tags, alternate tags, storage/display names, aliases,
-and descriptions. Branch and category filters narrow to one dialect, or to one
+Search covers canonical tags, alternate tags, storage and display names, the
+other spellings the dictionary keeps, and descriptions. Branch and category filters narrow to one dialect, or to one
 of the three categories a dictionary stores: `fields`, `components` and
 `groups`. A scalar field, a component and a repeating group are one kind of
 thing under three names, so the browser reads all three through one projection
 and the `shape` column says which of them is nested.
 
 The summary reports the counts per category, the dialects, and the message
-types. The bundled dictionary should report 6,314 field definitions, 930
-components and 581 repeating groups, in one dialect, `plugin`.
+types. The bundled dictionary should report 7,787 definitions — 6,277 scalar
+fields, 928 components and 582 repeating groups — under no named dialect.
 
 ## Message types
 
 One table above the browser lists every message type the dictionary defines,
 by the wire code `MsgType(35)` carries: its display name, its storage name,
-the identifiers the type declares, and its description. The bundled dictionary
-defines 182 of them.
+the identifiers the type declares, and its description. A message type is a
+component carrying `fix:msgtype`, so those are where they are counted: the
+bundled dictionary defines 181 of them.
 
 ## Definition views
 

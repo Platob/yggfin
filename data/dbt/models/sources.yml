@@ -3,7 +3,7 @@ version: 2
 # The two tables ingestion publishes. Each is read through the `rekep` plugin,
 # which is one Iceberg read per source: `table` names the Iceberg table and
 # `columns` is the projection pushed into scan planning, so DuckDB holds the
-# columns the products read and not the 128 a FIX row has.
+# columns the products read and not the 130 a FIX row has.
 #
 # Both are declared here because both are the repository's published contract;
 # only `fix.messages` is read by a model today.
@@ -18,36 +18,37 @@ sources:
     tables:
       - name: messages
         description: >
-          `fix.messages`, keyed on `(sourceurl, rownum, msghash)`.
+          `fix.messages`, keyed on `curruuid`: one row per event, however many
+          hops logged it.
         meta:
           table: fix.messages
           columns:
             - sourceurl
             - rownum
-            - msghash
-            - msgphash
-            - code
+            - curruuid
+            - crossuuid
+            - crosscode
+            - prevuuid
+            - seqnum
+            - unix
             - sendingtime
             - transacttime
-            - bridgesessionid
-            - sendersessionid
-            - targetsessionid
+            - msgsessionid
             - msgtype
             - msgdirection
             - account
             - clordid
             - origclordid
             - orderid
-            - parentclordid
-            - parentorderid
+            - symbol
             - symbolticker
             - isincode
             - miccode
             - side
             - ordtype
             - currency
-            - price
-            - orderqty
+            - px
+            - qty
             - cumqty
             - leavesqty
             - avgpx
@@ -65,22 +66,39 @@ sources:
             description: The capture object the line was read from.
           - name: rownum
             description: The physical line number inside that object.
-          - name: msghash
-            description: The message's sixteen identity bytes.
-          - name: msgphash
-            description: The event chain's sixteen identity bytes, over `code` alone.
-          - name: code
-            description: The exact event-chain name; empty means unknown.
+          - name: curruuid
+            description: >
+              The event's own identity: a UUID over the instant it settled on
+              and the code of its content, so every hop that logged one
+              message answers one of these.
+          - name: crossuuid
+            description: The chain's identity, over the first identifier the message states.
+          - name: crosscode
+            description: The exact chain name; empty means unknown.
+          - name: prevuuid
+            description: The identity of the step this one follows in its chain.
+          - name: seqnum
+            description: Where this step stands in its chain, filled by the walk.
+          - name: unix
+            description: The instant the event happened at, never null.
           - name: sendingtime
-            description: The settled message instant, never null.
+            description: The instant the message stated it was sent at, where it stated one.
           - name: transacttime
             description: The transaction instant the message stated, where it stated one.
           - name: exectype
             description: The normalized reason this message was sent.
           - name: ordstatus
-            description: The normalized order state the message reported.
+            description: The order status the message reported, as the wire spells it.
           - name: state
-            description: The normalized lifecycle state the enrichment settled on.
+            description: The normalized lifecycle state the parse settled on.
+          - name: px
+            description: >
+              What the message is about: its own price, else what it last
+              traded, else what it averaged, else its own side's lane.
+          - name: qty
+            description: >
+              What the message orders, else what it last traded, else the
+              lane's size.
           - name: lastqty
             description: The quantity this occurrence executed.
           - name: lastpx
@@ -95,8 +113,9 @@ sources:
     tables:
       - name: messages
         description: >
-          `logs.messages`, keyed on `(sourceurl, rownum)`. No model reads it
-          yet: every product here is derived from the typed FIX rows.
+          `logs.messages`, keyed on `bodyhash`: identical bytes are one row
+          whatever session carried them. No model reads it yet: every product
+          here is derived from the typed FIX rows.
         meta:
           table: logs.messages
         columns:
@@ -104,5 +123,7 @@ sources:
             description: The capture object the line was read from.
           - name: rownum
             description: The physical line number inside that object.
+          - name: bodyhash
+            description: The XXH3-128 digest of the exact body bytes, and the table's key.
           - name: body
             description: The exact body bytes, after the row header was removed.

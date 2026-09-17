@@ -5,10 +5,7 @@
         primary_key=['eventkey'],
         not_null=[
             'orderkey',
-            'sourceurl',
-            'rownum',
-            'eventindex',
-            'msghash',
+            'eventkey',
             'eventtime',
             'timepartition',
         ],
@@ -17,7 +14,6 @@
         arrow_types={
             'eventkey': 'fixed_size_binary[16]',
             'orderkey': 'fixed_size_binary[16]',
-            'msghash': 'fixed_size_binary[16]',
         },
     )
 }}
@@ -29,10 +25,14 @@
 -- stated execution type. A message carrying one and not the other stays in
 -- `fix.messages` rather than being assigned a guessed order.
 --
--- `orderkey` is the chain the parser already named: `msgphash` is sixteen bytes
--- over `code`, and `code` scopes a client order id by the session pair it was
--- seen on. A message the lifecycle could not place carries an empty `code`, and
--- an unknown chain is not an order, so those are left behind too.
+-- `orderkey` is the chain the parser already named: `crossuuid` is the chain's
+-- identity over `crosscode`, and `crosscode` is the first identifier the
+-- message states. A message the walk could not place carries an empty
+-- `crosscode`, and an unknown chain is not an order, so those are left behind.
+--
+-- `eventkey` is the event's own identity, which the parse settled: one message
+-- logged at three hops is one event, so the key is `curruuid` itself rather
+-- than a digest of where a copy of it was read from.
 --
 -- The event is immutable: a replace, a cancel and a reject are each an event,
 -- and `orders.current` is the fold over them rather than a row rewritten here.
@@ -40,12 +40,12 @@
 -- times the capture is read.
 
 select
-    msgphash as orderkey,
-    {{ rekep_digest(['sourceurl', 'rownum', 'eventindex']) }} as eventkey,
+    crossuuid as orderkey,
+    curruuid as eventkey,
+    prevuuid,
+    seqnum,
     sourceurl,
     rownum,
-    eventindex,
-    msghash,
     eventtime,
     eventtime as timepartition,
     sessionid,
@@ -53,13 +53,11 @@ select
     clordid,
     origclordid,
     orderid,
-    parentclordid,
-    parentorderid,
     symbolticker,
     side,
     ordtype,
-    price,
-    orderqty,
+    px,
+    qty,
     cumqty,
     leavesqty,
     avgpx,
@@ -68,6 +66,6 @@ select
     ordrejreason,
     "text"
 from {{ ref('stg_fix_messages') }}
-where code <> ''
+where crosscode <> ''
   and (clordid is not null or orderid is not null)
   and (ordstatus is not null or exectype is not null)

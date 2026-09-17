@@ -53,7 +53,7 @@ There is no version left to pin: what a message was read at is what its own
 of its seven pins. `version` is no longer a task parameter either, so a
 `--parameter 'version="4.4"'` names nothing the document declares — the CLI
 carries it into an unused definition and Airflow's operator fails the task
-outright. To publish parsed and enriched rows without naming the event chains,
+outright. To publish the parsed rows without walking the event chains,
 turn the last stage off instead:
 
 ```bash
@@ -110,6 +110,6 @@ same rows, land them over the rows the first run landed, and report them as
 written: the table holds each line and each message once, and the replay is
 one more snapshot. Running a window again after a registry or parser change
 is therefore the rebuild -- the new reading of every message lands over the
-old one on the same `(sourceurl, rownum, msghash)` key. A reading that changes
-a message's `msghash` is a new key, and the old row stays: delete the window
+old one on the same `curruuid` key. A reading that changes an event's
+`curruuid` is a new key, and the old row stays: delete the window
 first, or use a new target table, when the identity itself changes.

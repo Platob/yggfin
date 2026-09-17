@@ -32,13 +32,13 @@ FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
 #: model may write.
 INGESTED = {shape.table: shape for shape in TABLES}
 
-#: What the models commit, and the rows the checked-in 111-line fixture answers
+#: What the models commit, and the rows the checked-in 144-line fixture answers
 #: for each. One event per message that carried an order identity and a
 #: lifecycle fact, one row per chain, and one occurrence per execution the
 #: bridge relayed into a chain.
 PRODUCTS = {
-    "orders.events": 62,
-    "orders.current": 6,
+    "orders.events": 49,
+    "orders.current": 8,
     "executions.fills": 7,
 }
 
@@ -262,7 +262,7 @@ def test_the_states_a_fold_names_are_the_ones_the_codec_answers() -> None:
     for code in SETTLED:
         line = b"8=FIX.4.4|35=8|11=X|37=Y|17=Z|150=F|39=" + code.encode() + b"|10=000|"
         (message,) = codec.parse_line(line)
-        answered[code] = message.by_name("ordstatus").as_py()
+        answered[code] = message.by_name("state").as_py()
 
     assert answered == SETTLED
     terminal = spelled("rekep_terminal_states")

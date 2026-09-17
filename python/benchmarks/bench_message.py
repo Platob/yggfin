@@ -129,7 +129,7 @@ def expected(index: int) -> dict[str, object]:
         "timestamp": instant,
         "timepartition": instant,
         "threadId": index % 16 + 1,
-        "bridgesessionid": f"{index % 2**32:08x}",
+        "msgsessionid": f"{index % 2**32:08x}",
         "msgctxid": f"{index % 2**40:010x}",
         "msgseqnum": index,
         "pluginid": f"feed-{index % 4}",

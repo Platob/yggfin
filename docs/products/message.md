@@ -1,24 +1,26 @@
 # logs.messages
 
 `logs.messages` is the replay boundary. One row is one physical line from one
-leaf object, with the matched ULBridge header typed and the remaining body
-kept byte-for-byte.
+leaf object, with the matched ULBridge header typed and the remaining body kept
+byte-for-byte — and it is keyed on `bodyhash`, the digest of those bytes, so
+identical bytes are one row whatever session carried them and however often the
+capture is re-read.
 
 ## Complete schema
 
 | # | column | Arrow type | null | contract |
 | -: | --- | --- | :---: | --- |
-| 1 | `sourceurl` | `string` | no | canonical source URI, filling `sourceurl` (65026) downstream; primary-key member |
-| 2 | `rownum` | `int64` | no | 1-based physical line number; primary-key member |
+| 1 | `sourceurl` | `string` | no | canonical source URI, filling `sourceurl` (65026) downstream |
+| 2 | `rownum` | `int64` | no | 1-based physical line number |
 | 3 | `timestamp` | `timestamp[us, UTC]` | yes | UTC header timestamp |
 | 4 | `timepartition` | `timestamp[us, UTC]` | yes | derived from `timestamp`; Iceberg hour partition |
 | 5 | `threadId` | `int64` | yes | bridge thread identifier |
-| 6 | `bridgesessionid` | `string` | yes | bridge session instance, filling `bridgesessionid` (65032) downstream |
+| 6 | `msgsessionid` | `string` | yes | bridge session instance, filling `msgsessionid` (65032) downstream |
 | 7 | `msgctxid` | `string` | yes | message-context identifier, filling `msgctxid` (65008) downstream |
 | 8 | `msgseqnum` | `int64` | yes | context sequence number, filling `MsgSeqNum` (34) where a frame stated none |
 | 9 | `pluginid` | `string` | yes | plugin that wrote the line, filling `pluginid` (65009) downstream |
 | 10 | `level` | `string` | yes | header severity spelling |
-| 11 | `bodyhash` | `fixed_size_binary[16]` | yes | XXH3-128 of exact `body` bytes |
+| 11 | `bodyhash` | `fixed_size_binary[16]` | no | XXH3-128 of exact `body` bytes; the primary key |
 | 12 | `body` | `binary` | no | every byte after the matched header |
 
 The reviewed table contract is
@@ -29,8 +31,8 @@ The digest and derived-partition rules above are declared in
 
 Every header capture is named for the FIX column it fills when the stored row
 goes on through the codec, so `parse_fix` needs no renaming pass of its own.
-`bridgesessionid` is the session *instance* the bridge handled the line on, and
-not `sendersessionid` (65007), which is the counterparty session a message
+`msgsessionid` is the session *instance* the bridge handled the line on, and
+not what the message itself says about the counterparty session it
 names for itself.
 
 ## Header transcription
@@ -46,7 +48,7 @@ becomes:
 | --- | --- |
 | `timestamp` | `2026-08-14T14:46:39.769000Z` |
 | `threadId` | `15255` |
-| `bridgesessionid` | `e7254b12` |
+| `msgsessionid` | `e7254b12` |
 | `msgctxid` | `9f03166699` |
 | `msgseqnum` | `40218` |
 | `pluginid` | `OMS_X1_TradeCapture` |
@@ -82,7 +84,12 @@ source.close()
 - `bodyhash` is computed during field application, not in a Python row loop.
 - Only the lines whose `timepartition` falls in the run's window are written;
   a line with no clock is in every window.
-- The writer replaces on `(sourceurl, rownum)` within a line's hour partition,
-  so a replay of a window lands the same lines once.
+- The writer replaces on `bodyhash` within a line's hour partition, so a replay
+  of a window lands the same lines once. A key is scoped to its partition: the
+  same bytes logged in two hours are two rows, one in each, and the same bytes
+  logged twice inside one hour are one.
+- `bodyhash` is the digest of the *body* and not the message's own `hashcode`,
+  which covers the settled event and is a column of `fix.messages`. Two
+  different lines can state one message, so the two answer different questions.
 - Remote objects remain remote; local staging is not part of the production
   path.
