@@ -2450,6 +2450,26 @@ def window_filter(column: str, window: tuple[datetime.datetime, datetime.datetim
     return Or(And(GreaterThanOrEqual(column, lower), LessThan(column, upper)), IsNull(column))
 
 
+def carrying_filter(column: str) -> Any:
+    """The rows whose `column` holds something, as the predicate a scan prunes by.
+
+    `GreaterThan(column, b"")` and not `NotNull`: a column declared non-null --
+    `Message.body` is `bytes = b""` -- is never null, so a null test folds to
+    `AlwaysTrue` and selects every row. What a row can carry instead is nothing,
+    and for bytes ordered lexicographically "greater than empty" is exactly
+    "not empty".
+
+    It is also the spelling that can prune. PyIceberg's metrics evaluator
+    answers `ROWS_MIGHT_MATCH` for `NotEqualTo` unconditionally, so that
+    spelling opens every file however the bounds read; `GreaterThan` compares
+    the stored upper bound against the literal, so a file whose widest value is
+    empty is skipped whole.
+    """
+    from pyiceberg.expressions import GreaterThan
+
+    return GreaterThan(column, b"")
+
+
 def _key_bounds(
     chunk: pyarrow.Table, join: Sequence[str], widen: Mapping[str, str] | None = None
 ) -> Any:

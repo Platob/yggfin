@@ -1,7 +1,7 @@
 """Iceberg: catalogs, tables as datasets, and the field projection behind them."""
 
 from rekep.iceberg.catalog import IcebergCatalog, IcebergNamespace
-from rekep.iceberg.dataset import IcebergDataset, window_filter
+from rekep.iceberg.dataset import IcebergDataset, carrying_filter, window_filter
 from rekep.iceberg.fields import (
     CONTRACT_KEYS,
     derived_keys,
@@ -23,6 +23,7 @@ __all__ = [
     "IcebergCatalog",
     "IcebergDataset",
     "IcebergNamespace",
+    "carrying_filter",
     "derived_keys",
     "iceberg_contract",
     "iceberg_contract_field",

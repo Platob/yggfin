@@ -114,6 +114,8 @@ creates the same table a full one does, and the published contract is the field
 the task actually writes.
 
 ```python
+from pyiceberg.expressions import And
+
 from rekep.fix import (
     fix_arrow_reader,
     fix_codec,
@@ -121,7 +123,7 @@ from rekep.fix import (
     fix_registry,
     fix_stored_reader,
 )
-from rekep.iceberg import IcebergCatalog, window_filter
+from rekep.iceberg import IcebergCatalog, carrying_filter, window_filter
 from rekep.text import Message
 from rekep.times import window_of
 
@@ -142,7 +144,8 @@ field = fix_message_field(codec, carrier)
 
 store = IcebergCatalog.from_dict(catalog)
 counted = store.dataset("logs.messages", field=carrier).read_arrow_reader(
-    carrier, row_filter=window_filter("timestamp", window)
+    carrier,
+    row_filter=And(window_filter("timestamp", window), carrying_filter("body")),
 )
 parsed = fix_arrow_reader(codec, counted, lifecycle=lifecycle)
 applied = fix_stored_reader(parsed, field)
@@ -150,6 +153,21 @@ written = store.dataset("fix.messages", field=field, merge_schema=True).overwrit
     applied, field, merge_by=True
 )
 ```
+
+`carrying_filter` is the other half of what the read asks for: the lines that
+carry a body. A row header can consume the whole of its line -- the bundled
+capture has one, a matched `[ULBridge] (INFO)` header with nothing after it --
+and a line with no body states no message. The codec refuses it either way, so
+this changes what is read and never what is written: 122 stored lines become
+121 read, and `messages` and `written` are what they were.
+
+It is spelled `GreaterThan(column, b"")` and not `NotNull`. `body` is declared
+non-null, so a null test folds to `AlwaysTrue` and selects every row; what a
+line can carry instead is nothing, and for bytes ordered lexicographically
+"greater than empty" is exactly "not empty". It is also the spelling that can
+prune: PyIceberg answers `ROWS_MIGHT_MATCH` for `NotEqualTo` whatever the
+bounds say, while `GreaterThan` compares the stored upper bound and skips a
+file whose widest body is empty.
 
 `window_filter` is the stored half of the window rule: the rows whose capture
 clock falls in `[start, end)` and the rows carrying none, which belong to every
@@ -176,8 +194,8 @@ content-level failures.
 A source row is read for every message it carries. One frame is one row, a
 line carrying two frames is two, and a bulk configuration answer is one row
 per configuration it names. A line that carries no message at all publishes no
-row, which is why `read` counts lines and the result's own `messages` key
-counts what the codec answered.
+row, which is why `read` counts the lines the read asked for and the result's
+own `messages` key counts what the codec answered.
 
 A message is then logged again at every hop it passes, and each of those
 arrivals is a restatement of one event rather than a second one: they settle on

@@ -570,7 +570,7 @@ WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
 #: what a replay of the same window returns: the same rows, replaced.
 LANDED = {
     "parse_messages": {"read": 144, "written": 122, "skipped": 22},
-    "parse_fix": {"read": 122, "written": 53, "skipped": 23},
+    "parse_fix": {"read": 121, "written": 53, "skipped": 23},
 }
 REPLAYED = LANDED
 

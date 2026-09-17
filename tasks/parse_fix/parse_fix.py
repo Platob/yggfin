@@ -9,6 +9,7 @@ with app.setup:
 
     import marimo as mo
     import pyarrow
+    from pyiceberg.expressions import And
 
     from rekep.fix import (
         fix_arrow_reader,
@@ -17,7 +18,7 @@ with app.setup:
         fix_registry,
         fix_stored_reader,
     )
-    from rekep.iceberg import IcebergCatalog, window_filter
+    from rekep.iceberg import IcebergCatalog, carrying_filter, window_filter
     from rekep.logs import Stage, configure
     from rekep.tasks import Task
     from rekep.text import Message
@@ -81,8 +82,17 @@ def _(catalog, end, lifecycle, records, registry, start):
         carrier = Message.into_field()
         messages = store.dataset(SOURCE, field=carrier)
         opened.callback(messages.close)
+        # The window, and only the lines that carry a body. A line whose row
+        # header consumed the whole of it states no message -- the codec
+        # refuses it either way, so this changes what is read and not what is
+        # written -- and a file whose widest body is empty is skipped whole
+        # rather than opened to find that out.
         source = messages.read_arrow_reader(
-            carrier, row_filter=window_filter("timestamp", window)
+            carrier,
+            row_filter=And(
+                window_filter("timestamp", window),
+                carrying_filter("body"),
+            ),
         )
         opened.callback(source.close)
         counts = {"read": 0, "messages": 0}

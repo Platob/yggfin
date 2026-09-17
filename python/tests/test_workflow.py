@@ -39,12 +39,17 @@ WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
 #: another line's exactly are one row each with the line they repeat. A FIX row
 #: is a message and not a line -- prose answers none and a line carrying two
 #: frames answers two -- and `fix.messages` is keyed on `curruuid`, so the 76
-#: messages those 122 lines carry settle on the 53 events the capture
-#: describes. Both gaps are the point of the two keys: the same bytes are one
-#: line and the same message logged at every hop is one event.
+#: messages those lines carry settle on the 53 events the capture describes.
+#: Both gaps are the point of the two keys: the same bytes are one line and the
+#: same message logged at every hop is one event.
+#:
+#: `parse_fix` reads 121 of the 122 stored lines: one of them is a row header
+#: that consumed its whole line, and the read asks only for the lines that
+#: carry a body. It answered no message before the filter either, which is why
+#: `messages` and `written` are what they were.
 FIRST = {
     "parse_messages": {"read": 144, "written": 122, "skipped": 22},
-    "parse_fix": {"read": 122, "written": 53, "skipped": 23},
+    "parse_fix": {"read": 121, "written": 53, "skipped": 23},
 }
 
 #: What a replay of the same window produces: the same reads and the same
@@ -212,7 +217,7 @@ def test_a_window_the_capture_falls_outside_reads_every_line_and_writes_none(ran
     assert ran.table("logs.messages").column("timestamp").null_count == unstamped
 
     fixes = ran.task("parse_fix")
-    assert fixes["read"] == unstamped
+    assert fixes["read"] == unstamped, "an undated line carries a body, so the filter keeps it"
 
 
 def test_a_window_replaces_only_the_lines_it_covers(ran: Ran) -> None:
@@ -301,7 +306,7 @@ def test_a_dictionary_that_types_no_message_answers_no_event(ran: Ran, tmp_path:
 
     result = ran.task("parse_fix", registry=registry.as_uri(), **WINDOW)
 
-    assert result["read"] == STORED["logs.messages"]
+    assert result["read"] == FIRST["parse_fix"]["read"]
     assert counted(result)["written"] == 0
     fixes = ran.table("fix.messages")
     assert fixes.num_rows == 0

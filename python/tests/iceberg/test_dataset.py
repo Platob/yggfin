@@ -41,6 +41,7 @@ from rekep.fields import (
 from rekep.iceberg import (
     IcebergCatalog,
     IcebergDataset,
+    carrying_filter,
     iceberg_schema,
     partition_keys,
     primary_keys,
@@ -275,6 +276,82 @@ def test_columns_are_pushed_down_to_the_scan(dataset: IcebergDataset) -> None:
 def test_a_limit_is_pushed_down_to_the_scan(dataset: IcebergDataset) -> None:
     dataset.append_arrow_table(quotes(5))
     assert dataset.read_arrow_table(limit=2).num_rows == 2
+
+
+@scalar
+class Carried(Convertible):
+    """One captured line, whose body states a message or states nothing."""
+
+    key: Annotated[str, primary_key()]
+    """Which line."""
+
+    day: Annotated[datetime.date, partition_key()]
+    """Capture day."""
+
+    body: bytes = b""
+    """The exact bytes the line carried, empty when it carried none."""
+
+
+def carried(*days: tuple[datetime.date, tuple[bytes, ...]]) -> pyarrow.Table:
+    lines = [(day, index, body) for day, bodies in days for index, body in enumerate(bodies)]
+    return pyarrow.Table.from_pydict(
+        {
+            "key": [f"{day}-{index}" for day, index, _ in lines],
+            "day": [day for day, _, _ in lines],
+            "body": [body for _, _, body in lines],
+        },
+        schema=Carried.into_field().into_arrow_schema(),
+    )
+
+
+@pytest.fixture
+def lines(tmp_path: Path) -> IcebergDataset:
+    """Two capture days: one where a line carried a body, one where none did."""
+    dataset = IcebergCatalog(name="test", properties=catalog_properties(tmp_path)).dataset(
+        "trading.lines", field=Carried.into_field()
+    )
+    dataset.append_arrow_table(
+        carried(
+            (datetime.date(2026, 8, 14), (b"8=FIX.4.4|", b"")),
+            (datetime.date(2026, 8, 15), (b"", b"")),
+        )
+    )
+    return dataset
+
+
+def test_a_carrying_filter_keeps_the_rows_that_state_something(lines: IcebergDataset) -> None:
+    read = lines.read_arrow_table(row_filter=carrying_filter("body"))
+
+    assert read.num_rows == 1
+    assert read.column("body").to_pylist() == [b"8=FIX.4.4|"]
+
+
+def test_a_carrying_filter_skips_a_file_whose_widest_body_is_empty(
+    lines: IcebergDataset,
+) -> None:
+    """Pruning, and not only selection: the predicate is answered off the
+    stored bounds, so a file holding nothing but empty bodies is never opened."""
+    table = lines.iceberg_table
+
+    assert len(list(table.scan().plan_files())) == 2
+    assert len(list(table.scan(row_filter=carrying_filter("body")).plan_files())) == 1
+
+
+def test_the_two_spellings_a_carrying_filter_is_not(lines: IcebergDataset) -> None:
+    """Why `GreaterThan`, pinned against the library that decides it.
+
+    `NotNull` is vacuous on a column the shape declares non-null, and
+    `NotEqualTo` selects the right rows but can never skip a file.
+    """
+    from pyiceberg.expressions import AlwaysTrue, NotEqualTo, NotNull
+
+    table = lines.iceberg_table
+    stated = NotEqualTo("body", b"")
+
+    assert NotNull("body").bind(table.schema()) == AlwaysTrue()
+    assert lines.read_arrow_table(row_filter=NotNull("body")).num_rows == 4
+    assert lines.read_arrow_table(row_filter=stated).num_rows == 1
+    assert len(list(table.scan(row_filter=stated).plan_files())) == 2
 
 
 @scalar
