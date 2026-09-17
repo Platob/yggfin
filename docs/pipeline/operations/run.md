@@ -50,7 +50,7 @@ uv run --project python rekep task run \
 
 There is no version left to pin: what a message was read at is what its own
 `beginstring` said, and `fix_codec` refuses by name any keyword that is not one
-of its seven pins. `version` is no longer a task parameter either, so a
+of its ten pins. `version` is no longer a task parameter either, so a
 `--parameter 'version="4.4"'` names nothing the document declares — the CLI
 carries it into an unused definition and Airflow's operator fails the task
 outright. To publish the parsed rows without walking the event chains,

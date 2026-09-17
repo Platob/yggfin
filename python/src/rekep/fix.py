@@ -30,7 +30,6 @@ from __future__ import annotations
 import datetime
 import json
 import os
-from collections import deque
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
@@ -118,6 +117,13 @@ UNDATED = datetime.datetime(1970, 1, 1, tzinfo=UTC)
 #: used to be forwarded silently: `version` was a legal pin until a version
 #: became what a row states rather than what a caller chose, and the parse
 #: went on answering rows under a dictionary nobody asked for.
+#:
+#: `include_msgtypes` and `exclude_msgtypes` are the message types a parse
+#: keeps and refuses, read before a frame is built. Leaving `exclude_msgtypes`
+#: unstated is not the same as stating `[]`: unstated is the core's own
+#: refusal of `Heartbeat`, `TestRequest` and the untyped line, and `[]` keeps
+#: every type. It is not defaulted here, because a default spelled twice is a
+#: default that drifts from the one the core states.
 CODEC_PINS = frozenset(
     {
         "default_sending_time",
@@ -127,6 +133,9 @@ CODEC_PINS = frozenset(
         "null_values",
         "direction",
         "batch_byte_size",
+        "batch_row_size",
+        "include_msgtypes",
+        "exclude_msgtypes",
     }
 )
 
@@ -226,6 +235,10 @@ def fix_codec(
     every bracket part by position without one name lookup per line. An
     undated message takes `UNDATED` rather than the instant the parse ran, so
     a replay of the same bytes answers the same identity.
+
+    The message-type filter is a pin and not a default stated here: unpinned,
+    `exclude_msgtypes` is the core's own refusal of `Heartbeat`, `TestRequest`
+    and the untyped line, which is not what `exclude_msgtypes=[]` means.
     """
     unknown = sorted(set(pinned) - CODEC_PINS)
     if unknown:
@@ -282,12 +295,11 @@ def fix_arrow_messages(
     The batch door's message shape. `parse_text_arrow_reader` is the twin of
     `parse_text_lines` -- the capture's own columns lead each row, a column
     named after a field fills it, and one source row answers a row per message
-    it carried -- and `messages` crosses back from a *fixed row*, which is why
-    the projection below is there and not a convenience: a message is read
-    back out of the columns the dictionary defines, so a capture's own column
-    beside them would be read as content the message never carried.
+    it carried -- and `messages` crosses back from the row whole: a column no
+    tag and no counter names is the capture's own, so the message keeps it and
+    states it as no content of its own.
     """
-    parsed = _fixed_rows(codec, codec.parse_text_arrow_reader(source))
+    parsed = codec.parse_text_arrow_reader(source)
     return fix_messages(codec, codec.messages(parsed), lifecycle=lifecycle)
 
 
@@ -307,94 +319,7 @@ def fix_arrow_reader(
     `fix_stored_reader` is where that happens, not here.
     """
     parsed = codec.parse_text_arrow_reader(source)
-    return _walked(codec, parsed) if lifecycle else parsed
-
-
-def _fixed_rows(
-    codec: FixCodec,
-    parsed: pyarrow.RecordBatchReader,
-) -> pyarrow.RecordBatchReader:
-    """`parsed` narrowed to the columns the fixed row itself defines."""
-    kept = _row_columns(codec, parsed.schema)
-    if len(kept) == len(parsed.schema.names):
-        return parsed
-    schema = pyarrow.schema([parsed.schema.field(name) for name in kept])
-
-    def _rows() -> Iterator[pyarrow.RecordBatch]:
-        for batch in parsed:
-            yield batch.select(kept)
-
-    return pyarrow.RecordBatchReader.from_batches(schema, _rows())
-
-
-def _walked(
-    codec: FixCodec,
-    parsed: pyarrow.RecordBatchReader,
-) -> pyarrow.RecordBatchReader:
-    """The chains named over the fixed row, with the capture's columns kept.
-
-    The walk reads each row back as the message that wrote it, so what it is
-    given has to be a message and nothing else: a capture's own column carried
-    beside the row would be read as an arrived pair, and a pair that differs
-    between two logs of one message -- a line number, a line clock -- is enough
-    to make one event look like several. The capture's columns are held back
-    here and put in front again afterwards, which they can be because the walk
-    answers one row per row in the order it read them.
-    """
-    kept = _row_columns(codec, parsed.schema)
-    carried = [name for name in parsed.schema.names if name not in set(kept)]
-    if not carried:
-        return codec.lifecycle_arrow_reader(parsed)
-    held: deque[pyarrow.RecordBatch] = deque()
-    rows = pyarrow.schema([parsed.schema.field(name) for name in kept])
-
-    def _rows() -> Iterator[pyarrow.RecordBatch]:
-        for batch in parsed:
-            held.append(batch.select(carried))
-            yield batch.select(kept)
-
-    walk = codec.lifecycle_arrow_reader(pyarrow.RecordBatchReader.from_batches(rows, _rows()))
-
-    def _joined() -> Iterator[pyarrow.RecordBatch]:
-        for batch in walk:
-            beside = _taken(held, batch.num_rows)
-            yield pyarrow.RecordBatch.from_arrays(
-                [
-                    beside.column(name) if name in carried else batch.column(name)
-                    for name in parsed.schema.names
-                ],
-                schema=parsed.schema,
-            )
-
-    return pyarrow.RecordBatchReader.from_batches(parsed.schema, _joined())
-
-
-def _row_columns(codec: FixCodec, schema: pyarrow.Schema) -> list[str]:
-    """Which of `schema`'s columns the fixed row itself defines.
-
-    Read off the codec's own dictionary, because that is the one that parsed
-    the rows. A capture column named after a field is folded onto that field
-    by the parse, so it is one of these; the rest are the capture's own and
-    ride in front of the row.
-    """
-    row = {member.name for member in fix_schema(codec.registry, FIXMSG)}
-    return [name for name in schema.names if name in row]
-
-
-def _taken(held: deque[pyarrow.RecordBatch], rows: int) -> pyarrow.RecordBatch:
-    """The next `rows` rows of the columns held back, in the order read."""
-    taken: list[pyarrow.RecordBatch] = []
-    left = rows
-    while left:
-        if not held:
-            raise ValueError(f"the lifecycle answered {rows} rows it was not given")
-        batch = held.popleft()
-        if batch.num_rows > left:
-            held.appendleft(batch.slice(left))
-            batch = batch.slice(0, left)
-        taken.append(batch)
-        left -= batch.num_rows
-    return taken[0] if len(taken) == 1 else pyarrow.concat_batches(taken)
+    return codec.lifecycle_arrow_reader(parsed) if lifecycle else parsed
 
 
 def fix_stored_reader(

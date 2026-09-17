@@ -242,9 +242,10 @@ For each pair the builder:
 Version selection is what the row itself said: `ApplVerID(1128)`,
 `BeginString(8)`, then the registry's newest applicable version. No version is
 pinned on the codec — `fix_codec` refuses `version=` by name, along with any
-keyword that is not one of its seven pins (`default_sending_time`, `separator`,
+keyword that is not one of its ten pins (`default_sending_time`, `separator`,
 `payload_column`, `capture_names`, `null_values`, `direction`,
-`batch_byte_size`). Version affects code spelling, not column identity.
+`batch_byte_size`, `batch_row_size`, `include_msgtypes`, `exclude_msgtypes`).
+Version affects code spelling, not column identity.
 
 ## Message ordering and derived values
 

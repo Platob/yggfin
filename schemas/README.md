@@ -43,9 +43,9 @@ So what yggfin adds is the three things a table is — the primary key
 
 The dictionary this was generated against is the one bundled under
 `python/src/rekep/_data/fix`, taken from the core's own `config/fix` at
-`f3a4bd0e27345c6e99226709d248c7b2174b011a`. Regenerating the contract against a
-different dictionary is a failing `python/tests/test_schemas.py`, not a silent
-schema evolution.
+`daf774f5`, which is 0.1.7. Regenerating the contract against a different
+dictionary is a failing `python/tests/test_schemas.py`, not a silent schema
+evolution.
 
 ## What a contract holds
 

@@ -351,6 +351,19 @@ def test_a_pin_the_codec_does_not_take_is_refused_by_name() -> None:
         fix_codec(fix_registry(), version="4.4")
 
 
+def test_the_message_type_filter_and_the_row_bound_are_pins() -> None:
+    """The three the core grew a door for, each reaching the codec.
+
+    An unstated `exclude_msgtypes` is the core's own refusal and not the empty
+    list: the two read the same in Python and mean opposite things, so both
+    are pinned here rather than one standing for the other.
+    """
+    assert fix_codec(fix_registry()).exclude_msgtypes == ["0", "1", "unknown"]
+    assert fix_codec(fix_registry(), exclude_msgtypes=[]).exclude_msgtypes == []
+    assert fix_codec(fix_registry(), include_msgtypes=["D"]).include_msgtypes == ["D"]
+    assert fix_codec(fix_registry(), batch_row_size=8).batch_row_size == 8
+
+
 def test_a_message_stating_no_clock_answers_the_same_identity_on_every_read(tmp_path) -> None:
     """What makes a replay idempotent: nothing in the identity is read from now."""
     handle = _capture(tmp_path)
@@ -459,9 +472,15 @@ def test_the_capture_prices_every_message_that_stated_a_price(tracked) -> None:
 
 def test_the_instrument_columns_say_what_the_capture_says(tracked) -> None:
     """`symbolticker` is what `Symbol(55)` settled on minus FIX's non-answer,
-    and `tradable` is null where no message stated a trading status."""
+    and `tradable` is null where no message stated a trading status.
+
+    A non-answer is refused in both spellings the dictionary knows: `[N/A]`,
+    and the `[N/A` a message writes when the field was cut short. This capture
+    states neither, so what is pinned is that neither reaches the column.
+    """
     tickers = set(tracked.column("symbolticker").to_pylist())
     assert "[N/A]" not in tickers
+    assert "[N/A" not in tickers
     assert None in tickers, "an instrument the capture named only by code"
     assert {held for held in tickers if held} == set(
         tracked.filter(pyarrow.compute.is_valid(tracked.column("symbol")))
@@ -553,7 +572,8 @@ def test_the_two_doors_read_the_same_capture_as_the_same_messages() -> None:
 def test_the_batch_door_also_answers_messages(tracked) -> None:
     """The message shape of the batch door, for a reader that wants events
     rather than rows: the same messages the table holds, in the same order,
-    read back out of the columns the dictionary defines."""
+    read back out of the row whole -- a capture's own column among them, as a
+    column the message keeps and states no content of."""
     codec = _codec()
     handle = IOBase.from_uri(FIXTURE.as_uri())
     try:
@@ -571,14 +591,23 @@ def test_the_batch_door_also_answers_messages(tracked) -> None:
 
 
 def test_the_walk_reads_the_row_and_never_the_capture_beside_it() -> None:
-    """The one thing the batch door must not do.
+    """The two things the batch door owes a row it answers.
 
     A capture's own column is not content: a line number and a line clock
-    differ between two logs of one message, so a walk that read them would
-    give each arrival its own identity and the table would hold every hop
-    rather than every event. Read the row alone and the capture's 49-message
-    chain folds to the 31 events yggdryl's own walk reads; read the columns
-    beside it and it folds to none of them.
+    differ between two logs of one message, so a walk that read them as
+    content would give each arrival its own identity and the table would hold
+    every hop rather than every event. The capture's 49-message chain folds to
+    the 31 events yggdryl's own walk reads.
+
+    And the column stays the line's. The walk does not answer its rows in the
+    order it was handed them, so a caller that held the capture's columns back
+    and put them in front again by position would pair a row with whichever
+    line happened to sit at its index -- 29 of these 79 rows, on this capture.
+    Nothing else here would notice: the counts hold, the chains hold, and
+    every column is non-null whichever line each row ended up naming. So it is
+    checked against the capture itself, which is the only thing that can tell
+    them apart: the bytes at the line the row names, and the order identity
+    the row states found in those bytes.
     """
     codec = _codec()
     handle = IOBase.from_uri(FIXTURE.as_uri())
@@ -594,6 +623,15 @@ def test_the_walk_reads_the_row_and_never_the_capture_beside_it() -> None:
     assert walked.column("rownum").null_count == 0
     assert walked.column("body").null_count == 0
     assert walked.column("timestamp").null_count < walked.num_rows
+
+    lines = FIXTURE.read_bytes().split(b"\n")
+    for index in range(walked.num_rows):
+        rownum = walked.column("rownum")[index].as_py()
+        body = walked.column("body")[index].as_py()
+        stated = walked.column("clordid")[index].as_py()
+        assert body in lines[rownum - 1], f"row {index} carries bytes line {rownum} does not"
+        if stated:
+            assert stated.encode() in body, f"row {index} states {stated}, absent from its line"
 
 
 def test_the_walk_settles_the_same_identities_however_often_it_runs() -> None:

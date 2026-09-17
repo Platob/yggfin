@@ -228,9 +228,12 @@ that named no source say so; a capture read fills it on every row, along with
 
 `fixentries` and never a stored payload. `FixCodec.write_arrow_reader` and
 `FixMsg.into_bytes` rebuild from the arrival record, so dropping the text
-columns takes nothing the wire is rebuilt from: over the bundled capture the two re-emit the
-same 111,908 bytes with the column and without it, and a row that lost
-`fixentries` is refused outright.
+columns takes nothing the wire is rebuilt from: over the bundled capture the
+two re-emit the same 111,829 bytes with the columns and without them, and a
+row that lost `fixentries` is refused outright. They are the same bytes
+because a capture's own column is never content -- the core marks it
+`fix:captured` when a row becomes a message again and leaves it out of the
+entries -- so a row that still carries `body` re-emits no `body=`.
 
 What they rebuild is the **message**, not the **line**. Not one of the
 capture's 79 re-emissions equals the original body: the bridge writes

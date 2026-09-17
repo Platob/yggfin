@@ -36,11 +36,14 @@ and publishes the complete fixed projection to `fix.messages`.
 A dictionary is not a parameter: the registry is one namespace, so a field is
 resolved by tag, name or path and never by the dictionary that contributed it.
 A version is not a parameter either: what a message was read at is what its own
-`beginstring` said. `fix_codec` takes seven pins — `default_sending_time`,
-`separator`, `payload_column`, `capture_names`, `null_values`, `direction` and
-`batch_byte_size` — and refuses by name any keyword that is not one of them, so
-a `version=` that no longer means anything fails the call rather than being
-carried silently into the parse.
+`beginstring` said. `fix_codec` takes ten pins — `default_sending_time`,
+`separator`, `payload_column`, `capture_names`, `null_values`, `direction`,
+`batch_byte_size`, `batch_row_size`, `include_msgtypes` and `exclude_msgtypes`
+— and refuses by name any keyword that is not one of them, so a `version=`
+that no longer means anything fails the call rather than being carried
+silently into the parse. An unstated `exclude_msgtypes` is not `[]`: unstated
+is the core's own refusal of `Heartbeat`, `TestRequest` and the untyped line,
+and `[]` keeps every type.
 
 ## Parse, then walk the chains
 
@@ -71,13 +74,21 @@ straight through without a table in between. `fix_arrow_messages(codec, source)`
 and `fix_arrow_reader(codec, source)` are the batch door, which is what this
 task takes because it holds a table.
 
-The walk reads the row the dictionary defines and nothing beside it. A capture's
-own column — a line number, a line clock — is not content, and a walk that read
-one would give every hop that logged a message its own identity: the bridge
-logs one message at several hops, so the table would hold every arrival rather
-than every event. `fix_arrow_reader` holds those columns back across the walk
-and puts them in front again afterwards, which it can because the walk answers
-one row per row in the order it read them.
+The walk reads the whole row, and a capture's own column is a column. A line
+number and a line clock are not content — a walk that read one would give every
+hop that logged a message its own identity, and the bridge logs one message at
+several hops, so the table would hold every arrival rather than every event.
+The core settles that where a row becomes a message again: a column no tag and
+no counter names is marked `fix:captured` and left out of the message's
+entries, so it reaches no digest and no wire but stays on the row. So
+`fix_arrow_reader` hands the walk what the parse answered and takes back what
+it returns.
+
+Which is also why it does not hold those columns back and put them in front
+again: the walk does not answer its rows in the order it was handed them, so a
+caller that rejoined them by position would pair a row with whichever line sat
+at its index. `fix.messages` names the line each event was read from, and that
+is the line that states it.
 
 ## Read, parse, apply, write
 
@@ -178,7 +189,7 @@ with no clock lands in the null partition and PyIceberg 0.12 cannot plan a
 comparison against one.
 
 `fix_arrow_reader` is the batch door end to end: `parse_text_arrow_reader`,
-then `lifecycle_arrow_reader` over the fixed row. The rows land in the parse's
+then `lifecycle_arrow_reader` over the row it answered. The rows land in the parse's
 own shape — the carrier's columns first, the dictionary's after — and narrowing
 that shape to what a table stores belongs to the storage boundary, which is
 `fix_stored_reader`: the content codes read as the signed integers Iceberg

@@ -23,6 +23,12 @@ dependencies = [
     # and 53, and `lifecycle` as the one stage after the parse. Nothing here
     # reads the shape 0.1.6 published, so a resolution that lands on it fails
     # at import rather than writing a table under the wrong contract.
+    #
+    # It is also the release that leaves a capture's own columns to the
+    # capture. Under 0.1.6 a walk read them back as content, and the batch
+    # door held them out of it and rejoined them by position afterwards;
+    # 0.1.7 marks them `fix:captured` and reads the whole row, so the door is
+    # a straight call and the walk is free to answer in its own order.
     "yggdryl>=0.1.7",
     # `Self` is 3.11's, and the return annotation of every builder here names
     # it. The dependency is the typing back-port rather than a second spelling

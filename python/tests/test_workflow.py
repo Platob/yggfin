@@ -288,9 +288,10 @@ def test_a_dictionary_that_types_no_message_answers_no_event(ran: Ran, tmp_path:
     The second half is the message-type filter, which is on by default: the
     codec refuses `Heartbeat(0)`, `TestRequest(1)` and the untyped line, and
     every line of this capture is untyped to a dictionary that cannot resolve
-    `MsgType(35)`. Turning it off is `exclude_msgtypes=[]` on the codec, which
-    the Python bindings do not expose today, so a run under a dictionary this
-    narrow reports zero rather than offering a way to keep them.
+    `MsgType(35)`. Turning it off is `exclude_msgtypes=[]`, which `fix_codec`
+    takes; `parse_fix` pins no message type, so a run under a dictionary this
+    narrow reports zero because the task asked for the default and not because
+    nothing could ask otherwise.
     """
     ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
     registry = tmp_path / "nanosecond-fix-registry"

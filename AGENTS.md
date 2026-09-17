@@ -117,9 +117,10 @@ and nothing else defined here. A FIX row is a message and not a line -- a line
 carrying two frames answers two and a line carrying none answers none -- and a
 message logged again at every hop it passes is one event, so `fix.messages` is
 keyed on `curruuid`, laid out by the hour of `unix`, and sorted within a
-partition by `unix, seqnum, curruuid`. The walk reads the fixed row alone: a
-capture's own column beside it would be read as content and give every arrival
-its own identity.
+partition by `unix, seqnum, curruuid`. The walk reads the whole row: a
+capture's own column is a column and never content -- the core marks it
+`fix:captured` and leaves it out of the entries -- so every arrival of one
+message folds onto one identity and still names the line it was read from.
 
 The codec is the whole parse surface: the dictionary and the instant an undated
 message takes are pinned on it once, and each stage after it is a call rather
@@ -128,7 +129,7 @@ position, which is the line door; the batch door fills from a column named
 after the field, so `parse_fix` pins none and cannot go stale against a header
 it never sees. A version is not among the pins -- what a message was read at
 is what its own `beginstring` said -- and `fix_codec` refuses by name any
-keyword that is not one of its seven.
+keyword that is not one of its ten.
 
 `build_dbt` runs the dbt project under `data/dbt`. dbt owns the SQL a product
 is written in and nothing else: `rekep.dbt` is the one seam, a source is one
