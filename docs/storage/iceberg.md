@@ -39,14 +39,14 @@ bounded chunk spans: its parts are staged one at a time and committed together.
 Two verbs, and each returns the rows it wrote:
 
 - `append_arrow_reader` is blind: every row lands, whatever the table holds.
-- `overwrite_arrow_reader` replaces. Each bounded chunk is staged locally, the
-  stored rows it replaces are taken out, and the staged files are appended in
-  the same commit. Under `merge_by` those rows are the ones carrying the
-  chunk's keys in the same transformed partition -- the same key on two days
-  is two rows, and a null partition value is a partition of its own; with
-  `merge_by=False` on a partitioned table they are every row of the
-  partitions the chunk touches, emptied once per write and only added to
-  after that.
+- `overwrite_arrow_reader` replaces. Each bounded chunk is written to the
+  store one partition at a time, the stored rows it replaces are taken out,
+  and the written files are appended in the same commit. Under `merge_by`
+  those rows are the ones carrying the chunk's keys in the same transformed
+  partition -- the same key on two days is two rows, and a null partition
+  value is a partition of its own; with `merge_by=False` on a partitioned
+  table they are every row of the partitions the chunk touches, emptied once
+  per write and only added to after that.
 
 Both APIs require a schema-bearing `RecordBatchReader` and consume one batch
 at a time. The batch and table helpers build that reader.
@@ -61,10 +61,13 @@ row it would replace.
 ### What a commit holds
 
 Every verb writes the same way: a bounded chunk is split into its transformed
-partitions, and each partition is taken out of the chunk, written to a local
-Parquet file, uploaded through the table's configured `FileIO`, and committed
+partitions, and each partition is taken out of the chunk, streamed through
+PyIceberg's Parquet writer into the table's configured `FileIO`, and committed
 by path. What the write holds past the chunk it was handed is one partition
-rather than every partition's rows.
+rather than every partition's rows, and nothing touches local disk on the
+way: the writer opens the store's own output stream, and the statistics the
+commit records are what it answers on closing the file rather than what a
+second read of the file would find.
 
 A keyed replace plans the stored files to read from the chunk's key bounds --
 between each key column's least and greatest value, and between the partition
@@ -99,25 +102,36 @@ is sorted on every read, through Arrow IPC runs on local disk; over four files
 of that same 524,288-row table, dropping that pass took a warm ordered read
 from 85 ms to 62 ms and wrote no temporary file at all.
 
-The local stage is a bounded file and not a copy of the commit: one file
-exists at a time and it is deleted as soon as it is uploaded, so a commit
-needs up to `write.target-file-size-bytes` of free space wherever Python puts
-temporary files -- `TMPDIR` on POSIX, which on a container is often a tmpfs
-and therefore memory. A warehouse on that same local disk writes those bytes
-twice, once to the stage and once to the table.
+One file is open at a time, and it is the table's own: a warehouse on local
+disk writes each byte once, and a write needs no temporary space for its data
+files. The one local stage left is the external sort above, which an ordered
+read makes of a file that does not record its order.
 
-A commit's files are encoded and uploaded one after another, on the thread
-that called the write. It is less work than splitting a chunk and handing the
-parts to a pool -- measured, less processor time -- but none of it overlaps,
-so a chunk spanning many partitions finishes later on a machine with cores to
-spare, and a warehouse on an object store pays one round trip per partition
-rather than overlapping them. On the shapes this pipeline writes -- a chunk
-spanning an hour or two -- that is one or two of each; a table partitioned
-into many parts per commit, a bucket spec among them, pays per part.
+A commit's files are encoded one after another, on the thread that called the
+write, each streamed to the store as its row groups close -- so on an object
+store the upload of one row group overlaps the encoding of the next, through
+Arrow's own output stream. It is less work than splitting a chunk and handing
+the parts to a pool, because it never copies a partition out of the chunk,
+but no two files overlap, so a chunk spanning many partitions finishes later
+on a machine with cores to spare. On the shapes this pipeline writes -- a
+chunk spanning an hour or two -- that is one or two files; a table
+partitioned into many parts per commit, a bucket spec among them, pays per
+part.
 
-A refused commit deletes what it uploaded, and a commit whose acknowledgement
-is lost leaves its files for the orphan sweep to settle rather than deleting
-rows that may be live.
+A refused commit deletes what it wrote, and a commit whose acknowledgement is
+lost leaves its files for the orphan sweep to settle rather than deleting rows
+that may be live.
+
+A commit another writer beats is retried by PyIceberg against the refreshed
+head, and the retry is validated against what landed in between. An
+overwrite declares the rows it takes out -- the key bounds a keyed replace
+planned by, the partitions a keyless one empties, the predicate a delete
+names -- and a commit since the plan that added or deleted rows under that
+predicate is a conflict: the write raises `CommitFailedException` for a fresh
+plan, with nothing of its own left behind. A commit anywhere else in the
+table is not, and the retry lands; two windows replayed side by side land
+whichever order their commits arrive in. A blind append conflicts with
+nothing.
 
 Set `merge_schema=True` on a dataset, or on an `append_arrow_*` or
 `overwrite_arrow_*` write, to add columns from its authoritative write Field

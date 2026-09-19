@@ -704,33 +704,29 @@ def test_a_failed_stream_write_closes_its_source(
     assert batches.closed
 
 
-def _observed_staging(
+def _observed_writes(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
-) -> tuple[list[Path], set[str], list[str]]:
-    """Local stages, uploaded targets, and target Parquet footer reopens."""
+) -> tuple[list[str], list[str]]:
+    """Data files opened for writing in the store, and any of them opened again."""
     io = dataset.get_or_create_table().io
-    original_copy = io.copy_from_local
+    original_output = io.new_output
     original_input = io.new_input
-    staged: list[Path] = []
-    uploaded: set[str] = set()
+    written: list[str] = []
     reopened: list[str] = []
 
-    def copied(local_path: str, target: str) -> Any:
-        path = Path(local_path)
-        assert path.exists() and path.stat().st_size > 0
-        staged.append(path)
-        result = original_copy(local_path, target)
-        uploaded.add(target)
-        return result
+    def opened_for_writing(location: str) -> Any:
+        if location.endswith(".parquet"):
+            written.append(location)
+        return original_output(location)
 
     def opened(location: str) -> Any:
-        if location in uploaded:
+        if location in written:
             reopened.append(location)
         return original_input(location)
 
-    monkeypatch.setattr(io, "copy_from_local", copied)
+    monkeypatch.setattr(io, "new_output", opened_for_writing)
     monkeypatch.setattr(io, "new_input", opened)
-    return staged, uploaded, reopened
+    return written, reopened
 
 
 def _iceberg_artifacts(dataset: IcebergDataset) -> set[Path]:
@@ -743,19 +739,22 @@ def _iceberg_artifacts(dataset: IcebergDataset) -> set[Path]:
     }
 
 
-def test_every_write_path_stages_its_rows_locally_before_committing(
+def test_every_write_path_streams_one_file_per_partition_into_the_store(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """One writer for every verb: a local Parquet file per partition, uploaded
-    once and committed by path, with nothing read back to describe it."""
+    """One writer for every verb: a Parquet file per partition, streamed once
+    through the table's FileIO and committed by path, with nothing on local
+    disk and nothing read back to describe it."""
     with monkeypatch.context() as observed:
-        staged, uploaded, reopened = _observed_staging(dataset, observed)
+        written, reopened = _observed_writes(dataset, observed)
         assert dataset.append_arrow_table(quotes(2)) == 2
         assert dataset.overwrite_arrow_table(keyed("N", 2), merge_by=True) == 2
 
-    assert len(staged) == len(uploaded) == 2, "one staged file per write, one partition each"
-    assert reopened == [], "the local footer already supplied every DataFile metric"
-    assert not any(path.exists() for path in staged)
+    assert len(written) == 2, "one file per write, one partition each"
+    assert reopened == [], "the footer the writer closed supplied every DataFile metric"
+    assert set(written) == set(dataset.data_files().column("file_path").to_pylist()), (
+        "every file written is the one committed, under the location it was opened at"
+    )
     assert {row["symbol"] for row in dataset.read_arrow_table().to_pylist()} == {
         "S0",
         "S1",
@@ -764,14 +763,14 @@ def test_every_write_path_stages_its_rows_locally_before_committing(
     }
 
 
-def test_a_keyed_replace_stages_one_file_and_empties_the_file_it_replaces(
+def test_a_keyed_replace_writes_one_file_and_empties_the_file_it_replaces(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     dataset.append_arrow_table(quotes(2))
     changed = quotes(3, "XETR")
 
     with monkeypatch.context() as observed:
-        staged, uploaded, reopened = _observed_staging(dataset, observed)
+        written, reopened = _observed_writes(dataset, observed)
         assert (
             dataset.overwrite_arrow_table(
                 changed,
@@ -781,11 +780,9 @@ def test_a_keyed_replace_stages_one_file_and_empties_the_file_it_replaces(
             == 3
         )
 
-    assert len(staged) == len(uploaded) == 1, (
-        "one stage carries the chunk; the emptied file is gone"
-    )
+    assert len(written) == 1, "one file carries the chunk; the emptied file is gone"
     assert reopened == []
-    assert not any(path.exists() for path in staged)
+    assert set(written) == set(dataset.data_files().column("file_path").to_pylist())
     assert stored_sizes(dataset) == {"S0": 0, "S1": 1, "S2": 2}
     assert set(dataset.read_arrow_table().column("venue").to_pylist()) == {"XETR"}
 
@@ -1210,37 +1207,17 @@ def test_a_falsy_merge_by_replaces_complete_partitions_from_a_stream(
     assert sorted(row["record_count"] for row in today_files) == [1, 2, 2]
 
 
-def test_partition_staging_uses_local_disk_then_cleans_it(
+def test_partition_staging_streams_each_partition_into_the_store_once(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     dataset.append_arrow_table(quotes(2))
     dataset.append_arrow_table(other_day(2))
     source = pyarrow.Table.from_batches([*keyed("N", 3).to_batches(), *other_day(2).to_batches()])
-    staged: list[Path] = []
-    uploaded: set[str] = set()
-    reopened: list[str] = []
-    io = dataset.iceberg_table.io
-    original_copy = io.copy_from_local
-    original_input = io.new_input
     before = len(dataset.iceberg_table.history())
 
-    def copied(local_path: str, target: str) -> str:
-        path = Path(local_path)
-        assert path.exists() and path.stat().st_size > 0
-        staged.append(path)
-        result = original_copy(local_path, target)
-        uploaded.add(target)
-        return result
-
-    def opened(location: str):
-        if location in uploaded:
-            reopened.append(location)
-        return original_input(location)
-
-    monkeypatch.setattr(io, "copy_from_local", copied)
-    monkeypatch.setattr(io, "new_input", opened)
-    with monkeypatch.context() as no_concat:
-        no_concat.setattr(
+    with monkeypatch.context() as observed:
+        written, reopened = _observed_writes(dataset, observed)
+        observed.setattr(
             pyarrow,
             "concat_tables",
             lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("collected")),
@@ -1252,16 +1229,17 @@ def test_partition_staging_uses_local_disk_then_cleans_it(
             properties={"rekep.test": "staged"},
         )
 
-    assert staged and not any(path.exists() for path in staged)
-    assert reopened == [], "the local footer already supplied every DataFile metric"
+    assert reopened == [], "the footer the writer closed supplied every DataFile metric"
     assert len(dataset.iceberg_table.history()) - before == 3, "one snapshot per bounded commit"
     assert all(
         snapshot.summary["rekep.test"] == "staged"
         for snapshot in dataset.iceberg_table.snapshots()[-3:]
     )
-    monkeypatch.setattr(io, "new_input", original_input)
     files = dataset.data_files().to_pylist()
     assert len(files) == 4, "a file per partition per commit, and nothing of what was stored"
+    assert set(written) == {row["file_path"] for row in files}, (
+        "every file written landed, and nothing else was written"
+    )
     assert all(row["record_count"] <= 2 for row in files)
     assert all("day=" in row["file_path"] for row in files)
     stored = dataset.read_arrow_table().to_pylist()
@@ -1279,26 +1257,20 @@ def test_a_failed_partition_commit_removes_unreferenced_stages(
 
     dataset.append_arrow_table(quotes(2))
     before = {row["file_path"] for row in dataset.data_files().to_pylist()}
-    uploaded: list[str] = []
     io = dataset.iceberg_table.io
-    original_copy = io.copy_from_local
-
-    def copied(local_path: str, target: str) -> str:
-        uploaded.append(target)
-        return original_copy(local_path, target)
 
     def refused(*_args: object, **_kwargs: object) -> None:
         raise RuntimeError("catalog refused")
 
-    monkeypatch.setattr(io, "copy_from_local", copied)
+    written, _ = _observed_writes(dataset, monkeypatch)
     monkeypatch.setattr(_OverwriteFiles, "append_data_file", refused)
     with pytest.raises(RuntimeError, match="catalog refused"):
         dataset.overwrite_arrow_reader(
             quotes(3).to_reader(max_chunksize=1), merge_by=False, commit_row_size=2
         )
 
-    assert uploaded
-    assert all(not io.new_input(path).exists() for path in uploaded)
+    assert written
+    assert all(not io.new_input(path).exists() for path in written)
     assert {row["file_path"] for row in dataset.refresh().data_files().to_pylist()} == before
 
 
@@ -1341,7 +1313,7 @@ def test_a_delete_drops_the_rewritten_copy_of_a_file_it_keeps(
     assert {row["symbol"] for row in dataset.read_arrow_table().to_pylist()} == {"A", "C"}
 
 
-def test_partition_cleanup_attempts_every_upload_without_masking_the_source_error(
+def test_partition_cleanup_attempts_every_output_without_masking_the_source_error(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from rekep.iceberg.dataset import _PartitionStager
@@ -1356,14 +1328,14 @@ def test_partition_cleanup_attempts_every_upload_without_masking_the_source_erro
     monkeypatch.setattr(table.io, "delete", refused)
     with pytest.raises(RuntimeError, match="source failed"):
         with _PartitionStager(table, (), 1) as stager:
-            stager.uploaded.update({"first.parquet", "second.parquet"})
+            stager.outputs.update({"first.parquet", "second.parquet"})
             raise RuntimeError("source failed")
     assert set(attempted) == {"first.parquet", "second.parquet"}
 
     attempted.clear()
     with pytest.raises(ExceptionGroup, match="partition staging cleanup failed") as caught:
         with _PartitionStager(table, (), 1) as stager:
-            stager.uploaded.update({"first.parquet", "second.parquet"})
+            stager.outputs.update({"first.parquet", "second.parquet"})
     assert set(attempted) == {"first.parquet", "second.parquet"}
     assert len(caught.value.exceptions) == 2
 
@@ -1428,6 +1400,122 @@ def test_a_contended_replacement_is_handed_back_rather_than_rebuilt(
     assert set(dataset.refresh().read_arrow_table().column("venue").to_pylist()) == {"XPAR"}
 
 
+def _beaten_once(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch, concurrent: Callable[[], None]
+) -> Callable[[], int]:
+    """Land `concurrent` the first time this dataset's catalog is asked to commit,
+    and report that commit as beaten -- which PyIceberg retries on its own
+    against the refreshed head, validating the retry against what landed in
+    between. Returns how many commits the catalog was asked for."""
+    from pyiceberg.exceptions import CommitFailedException
+
+    catalog = dataset.catalog
+    original = catalog.commit_table
+    attempts = 0
+
+    def beaten(*args: Any, **kwargs: Any) -> Any:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            concurrent()
+            raise CommitFailedException("another writer won")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(catalog, "commit_table", beaten)
+    return lambda: attempts
+
+
+def _another_writer(dataset: IcebergDataset) -> IcebergDataset:
+    """A second handle on the same table, through a connection of its own.
+
+    The same catalog *name*, because a SQL catalog keys its tables by it: a
+    handle under another name would create a second table over the same
+    files rather than race this one.
+    """
+    return IcebergCatalog(name=dataset.catalog_name, properties=dataset.catalog_properties).dataset(
+        dataset.identifier, field=dataset.field
+    )
+
+
+@pytest.mark.parametrize("merge_by", [True, False])
+def test_a_replacement_beaten_by_an_unrelated_append_lands_on_the_retry(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch, merge_by: bool
+) -> None:
+    """A replacement declares the rows it takes out, so the retry PyIceberg
+    makes past another writer is validated against those rows alone: a row
+    landed in another day is no conflict, and the retry lands without a
+    fresh plan."""
+    dataset.append_arrow_table(quotes(2), commit_row_size=1_000_000)
+    another = _another_writer(dataset)
+    attempts = _beaten_once(dataset, monkeypatch, lambda: another.append_arrow_table(other_day(1)))
+
+    assert dataset.overwrite_arrow_table(quotes(2, "XETR"), merge_by=merge_by) == 2
+
+    assert attempts() == 2, "PyIceberg's own retry landed it"
+    stored = dataset.refresh().read_arrow_table().to_pylist()
+    assert {row["venue"] for row in stored if row["day"] == datetime.date(2026, 8, 14)} == {"XETR"}
+    assert [row["symbol"] for row in stored if row["day"] == datetime.date(2026, 8, 15)] == ["D0"]
+
+
+@pytest.mark.parametrize("merge_by", [True, False])
+def test_a_replacement_beaten_by_a_conflicting_append_is_handed_back(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch, merge_by: bool
+) -> None:
+    """A row landed under the rows this replacement takes out -- one of its
+    keys, or one of its partitions -- is a row the plan never saw, so the
+    retry is refused and the write is handed back for a fresh plan, with
+    nothing of its own left behind."""
+    from pyiceberg.exceptions import CommitFailedException
+
+    dataset.append_arrow_table(quotes(2), commit_row_size=1_000_000)
+    another = _another_writer(dataset)
+    _beaten_once(dataset, monkeypatch, lambda: another.append_arrow_table(quotes(1, "later")))
+
+    with pytest.raises(CommitFailedException, match="changed since this write was planned"):
+        dataset.overwrite_arrow_table(quotes(2, "XETR"), merge_by=merge_by)
+
+    stored = dataset.refresh().read_arrow_table().to_pylist()
+    assert sorted(row["venue"] for row in stored) == ["XPAR", "XPAR", "later"]
+    io = dataset.iceberg_table.io
+    paths = dataset.data_files().column("file_path").to_pylist()
+    assert len(paths) == 2 and all(io.new_input(path).exists() for path in paths)
+
+
+@pytest.mark.parametrize("verb", ["replace", "partitions", "delete"])
+def test_an_overwrite_declares_the_rows_it_takes_out(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch, verb: str
+) -> None:
+    """What each verb hands PyIceberg as the rows it takes out: the key bounds
+    a keyed replace planned by, the partition sources a keyless one empties,
+    and the predicate a delete names."""
+    from pyiceberg.table.update.snapshot import _OverwriteFiles
+
+    dataset.append_arrow_table(quotes(3))
+    declared: list[Any] = []
+    original = _OverwriteFiles.delete_by_predicate
+
+    def recorded(self: Any, predicate: Any, case_sensitive: bool = True) -> None:
+        declared.append(predicate)
+        original(self, predicate, case_sensitive)
+
+    monkeypatch.setattr(_OverwriteFiles, "delete_by_predicate", recorded)
+    if verb == "replace":
+        assert dataset.overwrite_arrow_table(quotes(2, "XETR"), merge_by=True) == 2
+    elif verb == "partitions":
+        assert dataset.overwrite_arrow_table(quotes(2, "XETR"), merge_by=False) == 2
+    else:
+        assert dataset.delete_where("size = 1") == 1
+
+    assert len(declared) == 1, "one overwrite, one declaration"
+    spelled = str(declared[0])
+    if verb == "replace":
+        assert "symbol" in spelled and "day" in spelled
+    elif verb == "partitions":
+        assert "day" in spelled and "symbol" not in spelled
+    else:
+        assert "size" in spelled
+
+
 def test_an_interrupt_between_a_commit_and_its_handover_keeps_the_rows(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1453,11 +1541,11 @@ def test_an_interrupt_between_a_commit_and_its_handover_keeps_the_rows(
     assert stored.read_arrow_table().num_rows == 2
 
 
-def test_partition_cleanup_survives_an_interrupt_closing_its_local_file(
+def test_partition_cleanup_survives_an_interrupt_closing_its_open_file(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """An interrupt is not an ordinary error, and the uploads already made are
-    still this object's to delete when one arrives."""
+    """An interrupt is not an ordinary error, and the files already written
+    are still this object's to delete when one arrives."""
     from rekep.iceberg.dataset import _PartitionStager
 
     table = dataset.get_or_create_table()
@@ -1469,7 +1557,7 @@ def test_partition_cleanup_survives_an_interrupt_closing_its_local_file(
 
     with pytest.raises(KeyboardInterrupt):
         with _PartitionStager(table, (), 1) as stager:
-            stager.uploaded.update({"first.parquet", "second.parquet"})
+            stager.outputs.update({"first.parquet", "second.parquet"})
             monkeypatch.setattr(stager, "_close_file", interrupted)
 
     assert set(deleted) == {"first.parquet", "second.parquet"}
@@ -2388,10 +2476,14 @@ def test_append_streams_one_commit_per_chunk(dataset: IcebergDataset) -> None:
     assert len(dataset.iceberg_table.snapshots()) == 3, "two rows per commit"
 
 
-def test_a_stale_replacement_is_refused_and_lands_after_a_refresh(tmp_path: Path) -> None:
-    """Iceberg rejects a commit planned against a head another writer moved,
-    and a replacement is never rebuilt on a stale plan: the caller refreshes
-    and plans again, against what is stored now."""
+def test_a_stale_plan_lands_on_the_retry_unless_the_moved_head_holds_its_rows(
+    tmp_path: Path,
+) -> None:
+    """A commit planned against a head another writer moved is retried by
+    PyIceberg against the new head, and what decides it is whether the rows
+    landed in between are ones the plan takes out. A replacement is never
+    rebuilt on a stale plan, so one that is refused is handed back for the
+    caller to refresh and plan again, against what is stored now."""
     from pyiceberg.exceptions import CommitFailedException
 
     catalog = IcebergCatalog(name="concurrent", properties=catalog_properties(tmp_path))
@@ -2400,11 +2492,23 @@ def test_a_stale_replacement_is_refused_and_lands_after_a_refresh(tmp_path: Path
     other = catalog.dataset("trading.timed", field=Timed.into_field())
     other.append_arrow_table(timed(100), commit_row_size=1_000_000)
 
-    with pytest.raises(CommitFailedException, match="branch main has changed"):
-        writer.overwrite_arrow_table(timed(1, 2), merge_by=True, commit_row_size=1_000_000)
+    assert writer.overwrite_arrow_table(timed(1, 2), merge_by=True, commit_row_size=1_000_000) == 2
+    assert writer.read_arrow_table().sort_by("unix").column("unix").to_pylist() == [0, 1, 2, 100], (
+        "nothing landed under keys 1 and 2, so the stale plan landed on the retry"
+    )
 
-    assert writer.refresh().overwrite_arrow_table(timed(1, 2), merge_by=True) == 2
-    assert writer.read_arrow_table().sort_by("unix").column("unix").to_pylist() == [0, 1, 2, 100]
+    other.refresh().append_arrow_table(timed(3), commit_row_size=1_000_000)
+    with pytest.raises(CommitFailedException, match="branch main has changed"):
+        writer.overwrite_arrow_table(timed(2, 3), merge_by=True, commit_row_size=1_000_000)
+
+    assert writer.refresh().overwrite_arrow_table(timed(2, 3), merge_by=True) == 2
+    assert writer.read_arrow_table().sort_by("unix").column("unix").to_pylist() == [
+        0,
+        1,
+        2,
+        3,
+        100,
+    ], "key 3 landed by the other writer was taken out by the fresh plan"
 
 
 def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:

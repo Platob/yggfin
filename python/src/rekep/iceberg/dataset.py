@@ -687,12 +687,12 @@ class IcebergDataset(Dataset):
         """Replace what a stream carries, then expire snapshots under the configured cutoff.
 
         One commit per bounded chunk, and every commit is the same three
-        steps: the chunk is staged locally as Parquet, one transformed
-        partition at a time; the stored rows it replaces are taken out -- the
-        rows carrying its keys under `merge_by`, or every row of the
-        partitions it touches when `merge_by` names nothing; and the staged
-        files are appended. A replay of the same rows leaves the table holding
-        them once.
+        steps: the chunk is written to the table's store as Parquet, one
+        transformed partition at a time; the stored rows it replaces are
+        taken out -- the rows carrying its keys under `merge_by`, or every
+        row of the partitions it touches when `merge_by` names nothing; and
+        the written files are appended. A replay of the same rows leaves the
+        table holding them once.
 
         Under keys a stored row is the one in the same transformed partition
         carrying the same key -- the same symbol on two days is two rows, and
@@ -793,7 +793,7 @@ class IcebergDataset(Dataset):
             return table, 0
         with _PartitionStager(table, self.sort_fields(), _target_file_rows(table, chunk)) as stager:
             if join:
-                staged, originals, rewritten, landed = self._replace_keys(
+                staged, originals, rewritten, landed, conflicts = self._replace_keys(
                     table, chunk, join, reference, stager
                 )
             else:
@@ -805,6 +805,14 @@ class IcebergDataset(Dataset):
                 replaced.update(_partition_identity(part.partition) for part in fresh)
                 rewritten = []
                 landed = chunk.num_rows
+                # The partitions this chunk empties, as the rows they hold: a
+                # bound on each partition source, widened to the hours or days
+                # a time transform partitions by, and no term at all for a
+                # source no range can name, which is the safe direction.
+                sources = _partition_sources(table, chunk)
+                conflicts = _key_bounds(
+                    chunk, list(sources), {column: unit for column, unit in sources.items() if unit}
+                )
             table = self._commit_replacement(
                 table,
                 stager,
@@ -813,6 +821,7 @@ class IcebergDataset(Dataset):
                 reference,
                 properties,
                 rebuild=False,
+                conflicts=conflicts,
             )
         return table, landed
 
@@ -823,12 +832,15 @@ class IcebergDataset(Dataset):
         join: Sequence[str],
         reference: str,
         stager: _PartitionStager,
-    ) -> tuple[list[_StagedPartition], list[Any], list[_StagedPartition], int]:
+    ) -> tuple[list[_StagedPartition], list[Any], list[_StagedPartition], int, Any]:
         """Stage a keyed chunk one partition at a time, taking its keys out as it goes.
 
-        `(staged, originals, rewritten, landed)`: the chunk's files, the
-        stored files to delete, the files that stand in for them, and the rows
-        the chunk lands. A key is scoped to its transformed partition, so the
+        `(staged, originals, rewritten, landed, bounds)`: the chunk's files,
+        the stored files to delete, the files that stand in for them, the rows
+        the chunk lands, and the predicate the stored files were planned by --
+        which is also what a concurrent commit is checked against, since a
+        row landed under it since the plan is one this chunk may have had to
+        replace. A key is scoped to its transformed partition, so the
         files a partition's keys are taken out of are that partition's own,
         planned once for the chunk: only files whose key bounds overlap the
         chunk's are planned, and only the partitions the chunk carries are
@@ -878,7 +890,7 @@ class IcebergDataset(Dataset):
                 originals.extend(deleted)
                 rewritten.extend(replaced)
             del run
-        return staged, originals, rewritten, landed
+        return staged, originals, rewritten, landed, bounds
 
     def _rewritten_without(
         self,
@@ -973,6 +985,7 @@ class IcebergDataset(Dataset):
         properties: Mapping[str, str],
         *,
         rebuild: bool,
+        conflicts: Any = None,
     ) -> Any:
         """One snapshot: `originals` deleted and `additions` appended.
 
@@ -982,6 +995,17 @@ class IcebergDataset(Dataset):
         staged files are still there to commit again. A replacement passes
         `rebuild=False`: the files it takes out were planned against this head,
         and a head that moved has to be planned again.
+
+        `conflicts` is the rows an overwrite takes out, as a predicate over
+        the table's columns, and it is declared to PyIceberg with the files.
+        PyIceberg retries a commit another writer beat on its own, against
+        the refreshed head, and validates the retry: a commit landed since
+        the plan that added or deleted rows under this predicate is a
+        conflict it refuses, and one anywhere else in the table is not. Left
+        undeclared, every concurrent commit is a conflict, and a replay of
+        one day fails because another day landed beside it. The same
+        predicate's partition projection is what prunes the manifests the
+        overwrite rewrites, beside the partitions of the files it deletes.
         """
         if not originals and not any(part.data_files for part in additions):
             return table
@@ -995,6 +1019,8 @@ class IcebergDataset(Dataset):
                         with transaction.update_snapshot(
                             snapshot_properties=dict(summary), branch=reference
                         ).overwrite() as overwrite:
+                            if conflicts is not None:
+                                overwrite.delete_by_predicate(conflicts)
                             for original in originals:
                                 overwrite.delete_data_file(original)
                             for part in additions:
@@ -1375,6 +1401,7 @@ class IcebergDataset(Dataset):
                 reference,
                 properties or {},
                 rebuild=False,
+                conflicts=expression,
             )
         after = _branch_records(table, reference)
         return max(before - after, 0)
@@ -1813,9 +1840,7 @@ class IcebergDataset(Dataset):
 
     def _locations(self, table: Any) -> Any:
         """pyiceberg's own location provider for this table."""
-        from pyiceberg.table.locations import load_location_provider
-
-        return load_location_provider(table.location(), table.properties)
+        return table.location_provider()
 
     def _live(self, table: Any) -> tuple[set[str], set[str]]:
         """`(data files, metadata files)` nothing may delete, from **one** walk."""
@@ -2325,16 +2350,18 @@ def _kept_of(
 
 
 def _task_batches(scan: Any, io: Any, tasks: Sequence[Any]) -> Iterator[pyarrow.RecordBatch]:
-    """Decode planned files synchronously so one task retains one batch."""
-    from pyiceberg.io import pyarrow as iceberg_arrow
+    """Decode planned files synchronously so one task retains one batch.
 
-    decode = getattr(scan, "_record_batches_from_scan_tasks_and_deletes", None)
-    read_deletes = getattr(iceberg_arrow, "_read_all_delete_files", None)
-    if decode is None or read_deletes is None:
-        yield from scan.to_record_batches(tasks)
-        return
-    deletes = read_deletes(io, tasks)
-    yield from decode(tasks, deletes)
+    `ArrowScan.to_record_batches` hands every task of the group to the pool
+    and collects each file's batches whole before yielding the first, so a
+    group holds every decoded file at once. The generator under it decodes one
+    task at a time and yields as it goes; the group's delete files are still
+    read once, up front, which is what the group is for.
+    """
+    from pyiceberg.io.pyarrow import _read_all_delete_files
+
+    deletes = _read_all_delete_files(io, tasks)
+    yield from scan._record_batches_from_scan_tasks_and_deletes(tasks, deletes)
 
 
 def _partition_tasks(scan: Any, tasks: Iterable[Any]) -> Iterator[tuple[str, list[Any]]]:
@@ -2349,27 +2376,19 @@ def _ordered_partition_tasks(
 ) -> tuple[list[Any], Callable[[Any], tuple[str, int]]]:
     """Planned tasks plus their canonical partition identity, path-sorted."""
     planned = tasks if isinstance(tasks, list) else list(tasks)
-    metadata = getattr(scan, "table_metadata", None)
-    held_specs = getattr(metadata, "specs", None)
-    held_specs = held_specs() if callable(held_specs) else held_specs
-    specs = (
-        held_specs
-        if isinstance(held_specs, Mapping)
-        else {spec.spec_id: spec for spec in (held_specs or ())}
-    )
-    schema = metadata.schema() if metadata is not None else None
+    specs = scan.table_metadata.specs()
+    schema = scan.table_metadata.schema()
 
     def identity(task: Any) -> tuple[str, int]:
         data = task.file
-        spec_id = int(getattr(data, "spec_id", 0) or 0)
-        partition = getattr(data, "partition", None)
+        spec_id = int(data.spec_id or 0)
         spec = specs.get(spec_id)
-        if spec is not None and schema is not None:
+        if spec is not None:
             try:
-                return spec.partition_to_path(partition, schema), spec_id
+                return spec.partition_to_path(data.partition, schema), spec_id
             except (KeyError, TypeError, ValueError):
                 pass
-        return str(partition or ""), spec_id
+        return str(data.partition or ""), spec_id
 
     planned.sort(key=lambda task: (*identity(task), str(getattr(task.file, "file_path", ""))))
     return planned, identity
@@ -2392,13 +2411,17 @@ def _read_ahead() -> int:
     """How many planned files a read has in flight, from the pool's own width.
 
     pyiceberg's shared executor decides how many files can be decoded at once;
-    reading further ahead than that fills memory without filling the pool. Its
-    width is not exposed, so it is read off the `ThreadPoolExecutor` -- and if
-    a future one stops saying, one file at a time is the answer that cannot be
-    wrong about memory.
+    reading further ahead than that fills memory without filling the pool.
+    `ExecutorFactory.max_workers()` is the width its configuration names; a
+    pool left to size itself is asked for the width it settled on, and if it
+    stops saying, one file at a time is the answer that cannot be wrong about
+    memory.
     """
     from pyiceberg.utils.concurrent import ExecutorFactory
 
+    configured = ExecutorFactory.max_workers()
+    if configured:
+        return max(int(configured), 1)
     return max(int(getattr(ExecutorFactory.get_or_create(), "_max_workers", 0) or 0), 1)
 
 
@@ -2922,7 +2945,16 @@ class _StagedPartition:
 
 
 class _PartitionStager:
-    """Bounded local Parquet staging for complete partitions."""
+    """Bounded staging of complete partitions, streamed into the table's store.
+
+    One partition at a time and one file of it open at a time, written through
+    pyiceberg's own Parquet writer on the table's configured `FileIO`: the
+    writer opens the store's output stream, applies the options the table
+    properties declare, and answers the file's statistics when it closes. So
+    nothing is written to local disk first, and nothing is read back to
+    describe what was written. Every location opened here is owned until the
+    commit that references it lands, and deleted on the way out otherwise.
+    """
 
     def __init__(
         self,
@@ -2931,13 +2963,9 @@ class _PartitionStager:
         file_row_size: int,
     ) -> None:
         from pyiceberg.io.fileformat import FileFormatFactory
-        from pyiceberg.io.pyarrow import (
-            _get_parquet_writer_kwargs,
-            sanitize_column_names,
-        )
+        from pyiceberg.io.pyarrow import sanitize_column_names
         from pyiceberg.manifest import FileFormat
         from pyiceberg.table import TableProperties
-        from pyiceberg.table.locations import load_location_provider
         from pyiceberg.utils.properties import property_as_int
 
         self.table = table
@@ -2947,17 +2975,15 @@ class _PartitionStager:
         #: partition over many calls has no rows to measure until it is done.
         self.default_file_row_size = max(int(file_row_size), 1)
         self.file_row_size = self.default_file_row_size
-        self.directory = tempfile.TemporaryDirectory(prefix="rekep-iceberg-")
-        self.location_provider = load_location_provider(
-            table_location=table.metadata.location,
-            table_properties=table.metadata.properties,
-        )
-        self.writer_kwargs = _get_parquet_writer_kwargs(table.metadata.properties)
-        #: What stamps each column of a staged file with its Iceberg field id,
-        #: the way pyiceberg's own writer stamps them.
+        self.location_provider = table.location_provider()
+        #: pyiceberg's writer for the table's file format: it names the
+        #: extension, stamps each column with its Iceberg field id, and writes
+        #: one file per `create_writer`.
         self.format_model = FileFormatFactory.get(FileFormat.PARQUET)
         schema = table.metadata.schema()
-        self.requested_schema = sanitize_column_names(schema)
+        #: The schema a file is written under: column names sanitized the way
+        #: pyiceberg's own writer sanitizes them, ids and all.
+        self.file_schema = sanitize_column_names(schema)
         self.name_mapping = schema.name_mapping
         self.downcast_ns = _downcasts_ns()
         self.row_group_size = property_as_int(
@@ -2965,13 +2991,15 @@ class _PartitionStager:
             property_name=TableProperties.PARQUET_ROW_GROUP_LIMIT,
             default=TableProperties.PARQUET_ROW_GROUP_LIMIT_DEFAULT,
         )
-        self.uploaded: set[str] = set()
+        #: Store locations this stager still owns: opened here, and not yet
+        #: handed over to a commit that landed.
+        self.outputs: set[str] = set()
         self.partition: Mapping[str, Any] | None = None
         self.paths: list[str] = []
         self.data_files: list[Any] = []
         self.rows = 0
         self._writer: Any | None = None
-        self._local: str | None = None
+        self._output: Any | None = None
         self._target: str | None = None
         self._file_rows = 0
         self._last_key: tuple[Any, ...] | None = None
@@ -2986,14 +3014,14 @@ class _PartitionStager:
     def __exit__(self, exc_type: object, _exc: object, _traceback: object) -> None:
         errors: list[BaseException] = []
         try:
-            self._close_file(upload=False)
+            self._close_file(keep=False)
         except BaseException as error:
-            # Whatever stopped the local writer, the uploads it already made
+            # Whatever stopped the open writer, the files this already wrote
             # are still this object's to delete, and an interrupt escaping
             # here left every one of them behind.
             errors.append(error)
-        leftover = tuple(self.uploaded)
-        # The store these were uploaded through, held before the question is
+        leftover = tuple(self.outputs)
+        # The store these were written through, held before the question is
         # asked: answering it reloads the table, and a reloaded table carries
         # a fresh `FileIO`.
         io = self.table.io
@@ -3009,10 +3037,6 @@ class _PartitionStager:
                     pass
                 except Exception as error:
                     errors.append(error)
-        try:
-            self.directory.cleanup()
-        except Exception as error:
-            errors.append(error)
         if exc_type is None and errors:
             if len(errors) == 1:
                 raise errors[0]
@@ -3052,14 +3076,13 @@ class _PartitionStager:
             piece_batches = piece.to_batches(max_chunksize=piece.num_rows)
             first = _row_key(piece_batches[0], self.sort_fields, 0)
             if self._writer is not None and self._last_key is not None and first < self._last_key:
-                self._close_file(upload=True)
+                self._close_file(keep=True)
                 available = self.file_row_size
                 piece = chunk.slice(offset, min(available, chunk.num_rows - offset))
                 piece_batches = piece.to_batches(max_chunksize=piece.num_rows)
             for batch in piece_batches:
-                requested = self._requested_batch(batch)
-                self._open_file(requested.schema)
-                self._hold(requested)
+                self._open_file()
+                self._hold(self._requested_batch(batch))
             self._file_rows += piece.num_rows
             self.rows += piece.num_rows
             offset += piece.num_rows
@@ -3071,7 +3094,7 @@ class _PartitionStager:
                     last_batch.num_rows - 1,
                 )
             if self._file_rows >= self.file_row_size:
-                self._close_file(upload=True)
+                self._close_file(keep=True)
 
     def _hold(self, batch: pyarrow.RecordBatch) -> None:
         """Keep a batch back until it fills a row group.
@@ -3105,13 +3128,14 @@ class _PartitionStager:
         self._pending = remainder.to_batches() if remainder.num_rows else []
         self._pending_rows = remainder.num_rows
         if full:
-            target = self._writer if writer is None else writer
-            target.write_table(held.slice(0, full), row_group_size=self.row_group_size)
+            # pyiceberg's writer cuts what it is handed into row groups of the
+            # table's declared limit, so a multiple of it lands as full ones.
+            (self._writer if writer is None else writer).write(held.slice(0, full))
 
     def finish(self) -> _StagedPartition:
         if self.partition is None:
             raise RuntimeError("no staged partition to finish")
-        self._close_file(upload=True)
+        self._close_file(keep=True)
         staged = _StagedPartition(
             dict(self.partition), tuple(self.paths), tuple(self.data_files), self.rows
         )
@@ -3124,7 +3148,7 @@ class _PartitionStager:
     def release(self, partitions: Sequence[_StagedPartition]) -> None:
         """Leave successfully committed targets in place on context exit."""
         for partition in partitions:
-            self.uploaded.difference_update(partition.paths)
+            self.outputs.difference_update(partition.paths)
 
     def discard(self, partitions: Sequence[_StagedPartition]) -> None:
         """Remove staged files this write turned out not to need.
@@ -3136,7 +3160,7 @@ class _PartitionStager:
         """
         paths = [path for partition in partitions for path in partition.paths]
         _discard_paths(self.table.io, paths)
-        self.uploaded.difference_update(paths)
+        self.outputs.difference_update(paths)
 
     def _requested_batch(self, batch: pyarrow.RecordBatch) -> pyarrow.RecordBatch:
         """One source batch on PyIceberg's sanitized, field-id-bearing file schema."""
@@ -3153,7 +3177,7 @@ class _PartitionStager:
                 format_version=self.table.metadata.format_version,
             )
         return _to_requested_schema(
-            requested_schema=self.requested_schema,
+            requested_schema=self.file_schema,
             file_schema=self._incoming_schema,
             batch=batch,
             downcast_ns_timestamp_to_us=self.downcast_ns,
@@ -3161,68 +3185,72 @@ class _PartitionStager:
             format_model=self.format_model,
         )
 
-    def _open_file(self, schema: pyarrow.Schema) -> None:
+    def _open_file(self) -> None:
+        """Open the next file of this partition in the store, once."""
         if self._writer is not None:
             return
-        import pyarrow.parquet
-
         identifier = uuid.uuid4()
-        self._local = os.path.join(self.directory.name, f"{identifier}.parquet")
-        self._target = self.location_provider.new_data_location(
-            data_file_name=f"{identifier}.parquet",
+        target = self.location_provider.new_data_location(
+            data_file_name=f"{identifier}.{self.format_model.file_extension()}",
             partition_key=_partition_key(self.table, self.partition or {}),
         )
-        self._writer = pyarrow.parquet.ParquetWriter(
-            self._local,
-            schema=schema,
-            store_decimal_as_integer=True,
-            **self.writer_kwargs,
+        # Owned before the store sees a byte of it: a stream can create its
+        # object and then fail, and what this owns on the way out is deleted
+        # whichever way the write ends.
+        self.outputs.add(target)
+        output = self.table.io.new_output(target)
+        self._writer = self.format_model.create_writer(
+            output, self.file_schema, self.table.metadata.properties
         )
+        self._output, self._target = output, target
         self._file_rows = 0
         self._last_key = None
 
-    def _close_file(self, *, upload: bool) -> None:
-        writer, local, target = self._writer, self._local, self._target
+    def _close_file(self, *, keep: bool) -> None:
+        """Close the open file: recorded as a data file, or left for the sweep."""
+        writer, output, target = self._writer, self._output, self._target
         rows = self._file_rows
-        self._writer = self._local = self._target = None
+        self._writer = self._output = self._target = None
         self._file_rows = 0
         self._last_key = None
         if writer is None:
             self._pending, self._pending_rows = [], 0
             return
+        if not keep:
+            # Whatever stopped this file, what it wrote is this object's to
+            # delete on the way out -- and a stream still open would refuse
+            # that on Windows, replacing the error that got here with its own.
+            self._pending, self._pending_rows = [], 0
+            _close_quietly(writer)
+            return
         try:
-            # Closed whatever the flush does: an open writer holds the local
-            # file, and Windows refuses to unlink a file that is still open,
-            # which would replace the error that got here with its own.
-            try:
-                self._flush(writer, whole=True)
-            finally:
-                writer.close()
-            if upload:
-                data_file = _staged_data_file(
-                    self.table,
-                    local,
-                    target,
-                    self.partition or {},
-                    ordered=bool(self.sort_fields),
-                )
-                # A remote copy can create its object and then lose the
-                # acknowledgement. Own the UUID target before starting it so
-                # context cleanup retries deletion after either outcome.
-                self.uploaded.add(target)
-                copier = getattr(self.table.io, "copy_from_local", None)
-                if copier is None:
-                    _copy_to_output(self.table.io, local, target)
-                else:
-                    copier(local, target)
-                self.paths.append(target)
-                self.data_files.append(data_file)
-                LOGGER.debug("staged %d rows to %s", rows, target)
-        finally:
-            try:
-                os.unlink(local)
-            except FileNotFoundError:
-                pass
+            self._flush(writer, whole=True)
+        except BaseException:
+            _close_quietly(writer)
+            raise
+        # The footer the writer just wrote is what describes the file: its
+        # statistics come back from the close, and nothing reads it again.
+        statistics = writer.close()
+        self.paths.append(target)
+        self.data_files.append(
+            _data_file(
+                self.table,
+                target,
+                len(output),
+                statistics,
+                self.partition or {},
+                ordered=bool(self.sort_fields),
+            )
+        )
+        LOGGER.debug("staged %d rows to %s", rows, target)
+
+
+def _close_quietly(writer: Any) -> None:
+    """Release a format writer's stream without replacing the error that stopped it."""
+    try:
+        writer.close()
+    except Exception:
+        pass
 
 
 def _track_outputs() -> Any:
@@ -3438,7 +3466,12 @@ def _partition_data_files(
     if snapshot is None:
         return []
     filters = [_partition_value_filter(replacement.partition) for replacement in replacements]
-    partition_filter = functools.reduce(Or, filters) if len(filters) > 1 else filters[0]
+    # One `Or` over every partition, which pyiceberg builds as a balanced
+    # tree. Folded pairwise instead, the expression is as deep as the chunk
+    # has partitions, and pyiceberg's visitors descend it recursively:
+    # measured, binding a fold of 800 partitions overflows the interpreter's
+    # default recursion limit, and the balanced tree binds at any width.
+    partition_filter = Or(*filters) if len(filters) > 1 else filters[0]
     specs = table.metadata.specs()
     evaluators: dict[int, Callable[[Any], bool]] = {}
     found = []
@@ -3463,66 +3496,41 @@ def _partition_data_files(
     return found
 
 
-def _staged_data_file(
+def _data_file(
     table: Any,
-    local: str,
     target: str,
+    size: int,
+    statistics: Any,
     partition: Mapping[str, Any],
     *,
     ordered: bool,
 ) -> Any:
-    """A staged Parquet footer plus its already computed non-linear partition.
+    """One written file as the `DataFile` a commit appends.
 
-    `ordered` is whether the writer laid these rows out in the table's
-    recorded order, and only then does the file say so. A shape cannot hold
-    every order Iceberg can record -- a transformed sort field, a nulls-first
-    one, a nested column -- and for those the writer has nothing to sort by,
-    so a file stamped with the order id would be claiming one it was not
-    written in. A reader takes that claim at its word.
+    `statistics` is what pyiceberg's writer answered on closing the file, and
+    `partition` the already computed transformed partition, which a bucket's
+    bounds could not give back. `ordered` is whether the writer laid these
+    rows out in the table's recorded order, and only then does the file say
+    so. A shape cannot hold every order Iceberg can record -- a transformed
+    sort field, a nulls-first one, a nested column -- and for those the writer
+    has nothing to sort by, so a file stamped with the order id would be
+    claiming one it was not written in. A reader takes that claim at its word.
     """
-    import pyarrow.parquet
-    from pyiceberg.io.pyarrow import (
-        compute_statistics_plan,
-        data_file_statistics_from_parquet_metadata,
-        parquet_path_to_id_mapping,
-        sanitize_column_names,
-    )
     from pyiceberg.manifest import DataFile, DataFileContent, FileFormat
 
-    metadata = pyarrow.parquet.read_metadata(local)
-    schema = sanitize_column_names(table.metadata.schema())
-    statistics = data_file_statistics_from_parquet_metadata(
-        parquet_metadata=metadata,
-        stats_columns=compute_statistics_plan(schema, table.metadata.properties),
-        parquet_column_mapping=parquet_path_to_id_mapping(schema),
-    )
     return DataFile.from_args(
         _table_format_version=table.metadata.format_version,
         content=DataFileContent.DATA,
         file_path=target,
         file_format=FileFormat.PARQUET,
         partition=_partition_key(table, partition).partition,
-        file_size_in_bytes=os.path.getsize(local),
+        file_size_in_bytes=size,
         sort_order_id=(table.sort_order().order_id or None) if ordered else None,
         spec_id=table.metadata.default_spec_id,
         equality_ids=None,
         key_metadata=None,
         **statistics.to_serialized_dict(),
     )
-
-
-def _copy_to_output(io: Any, source: str, target: str) -> None:
-    """Bounded fallback for a custom PyIceberg FileIO without Arrow copying."""
-    try:
-        with open(source, "rb") as incoming, io.new_output(target).create(overwrite=True) as output:
-            while payload := incoming.read(1 << 22):
-                output.write(payload)
-    except Exception:
-        try:
-            io.delete(target)
-        except FileNotFoundError:
-            pass
-        raise
 
 
 def _staged_partition_chunk(
@@ -3708,7 +3716,7 @@ def _partition_filter(partition: Any, identities: Sequence[tuple[str, str]]) -> 
     ]
     if not terms:
         return None
-    return functools.reduce(And, terms)
+    return And(*terms) if len(terms) > 1 else terms[0]
 
 
 def _partition_value_filter(partition: Mapping[str, Any]) -> Any:

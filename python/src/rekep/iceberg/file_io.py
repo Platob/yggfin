@@ -147,10 +147,6 @@ class IcebergFileIO(PyArrowFileIO):
         _record_output(location)
         return super().new_output(location)
 
-    def copy_from_local(self, source: str | os.PathLike[str], target: str) -> str:
-        """Stream one local stage into this FileIO's configured store."""
-        return _stream_local(self, source, target)
-
 
 class TrackedFileIO(FileIO):
     """A configured PyIceberg FileIO with transaction ownership added."""
@@ -177,36 +173,8 @@ class TrackedFileIO(FileIO):
     def delete(self, location: str | InputFile | OutputFile) -> None:
         self.delegate.delete(location)
 
-    def copy_from_local(self, source: str | os.PathLike[str], target: str) -> str:
-        """Use the delegate's copy, or stream through its output in bounded chunks."""
-        _record_output(target)
-        copier = getattr(self.delegate, "copy_from_local", None)
-        if callable(copier):
-            copier(source, target)
-            return target
-        return _stream_local(self.delegate, source, target)
-
     def __getattr__(self, name: str) -> Any:
         return getattr(self.delegate, name)
-
-
-def _stream_local(file_io: FileIO, source: str | os.PathLike[str], target: str) -> str:
-    """Copy a local file through one bounded native output stream."""
-    _record_output(target)
-    try:
-        with (
-            open(source, "rb") as incoming,
-            file_io.new_output(target).create(overwrite=True) as output,
-        ):
-            while payload := incoming.read(1 << 22):
-                output.write(payload)
-    except Exception:
-        try:
-            file_io.delete(target)
-        except FileNotFoundError:
-            pass
-        raise
-    return target
 
 
 def configured_store(file_io: FileIO, location: str) -> tuple[pyarrow.fs.FileSystem, str]:
