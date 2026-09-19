@@ -75,9 +75,10 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   scoped to its partition: the same key on two days is two rows.
 - Commit after `commit_batch_num` input batches or the earlier optional
   `commit_row_size` bound.
-- Every write stages one transformed partition at a time as a local Parquet
-  file and commits it by path, so a commit holds its chunk and not a multiple
-  of it. Never hand a whole chunk to a writer that splits it.
+- Every write streams one transformed partition at a time through PyIceberg's
+  file-format writer on the table's `FileIO` and commits it by path, so a
+  commit holds its chunk and not a multiple of it, and no data file touches
+  local disk. Never hand a whole chunk to a writer that splits it.
 - Push filters, projections, ordering, and limits into storage planning.
 - Every verb accepts `branch`; every read accepts `snapshot_id`.
 - Preserve supplied Iceberg ids and assign missing ids.

@@ -185,8 +185,9 @@ one batch of the stored file it rewrites, beside the chunk.
 Wall time is not in the table because run-to-run spread swamped the
 difference on this host. What is systematic is where the time goes: handing a
 chunk to PyIceberg's writer submits every partition to a thread pool, and
-staging encodes and uploads them one after another. Measured on 200,000 rows
-of 400-byte payload, best of three:
+staging encodes them one after another, each streamed into the store through
+that same writer's output stream. Measured on 200,000 rows of 400-byte
+payload, best of three:
 
 | partitions | whole: wall, cpu | staged: wall, cpu |
 | ---: | --- | --- |
