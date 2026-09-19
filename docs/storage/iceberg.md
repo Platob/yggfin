@@ -122,6 +122,17 @@ A refused commit deletes what it wrote, and a commit whose acknowledgement is
 lost leaves its files for the orphan sweep to settle rather than deleting rows
 that may be live.
 
+A commit another writer beats is retried by PyIceberg against the refreshed
+head, and the retry is validated against what landed in between. An
+overwrite declares the rows it takes out -- the key bounds a keyed replace
+planned by, the partitions a keyless one empties, the predicate a delete
+names -- and a commit since the plan that added or deleted rows under that
+predicate is a conflict: the write raises `CommitFailedException` for a fresh
+plan, with nothing of its own left behind. A commit anywhere else in the
+table is not, and the retry lands; two windows replayed side by side land
+whichever order their commits arrive in. A blind append conflicts with
+nothing.
+
 Set `merge_schema=True` on a dataset, or on an `append_arrow_*` or
 `overwrite_arrow_*` write, to add columns from its authoritative write Field
 before the first batch is consumed:

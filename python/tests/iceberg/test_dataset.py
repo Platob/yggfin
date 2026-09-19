@@ -1400,6 +1400,122 @@ def test_a_contended_replacement_is_handed_back_rather_than_rebuilt(
     assert set(dataset.refresh().read_arrow_table().column("venue").to_pylist()) == {"XPAR"}
 
 
+def _beaten_once(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch, concurrent: Callable[[], None]
+) -> Callable[[], int]:
+    """Land `concurrent` the first time this dataset's catalog is asked to commit,
+    and report that commit as beaten -- which PyIceberg retries on its own
+    against the refreshed head, validating the retry against what landed in
+    between. Returns how many commits the catalog was asked for."""
+    from pyiceberg.exceptions import CommitFailedException
+
+    catalog = dataset.catalog
+    original = catalog.commit_table
+    attempts = 0
+
+    def beaten(*args: Any, **kwargs: Any) -> Any:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            concurrent()
+            raise CommitFailedException("another writer won")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(catalog, "commit_table", beaten)
+    return lambda: attempts
+
+
+def _another_writer(dataset: IcebergDataset) -> IcebergDataset:
+    """A second handle on the same table, through a connection of its own.
+
+    The same catalog *name*, because a SQL catalog keys its tables by it: a
+    handle under another name would create a second table over the same
+    files rather than race this one.
+    """
+    return IcebergCatalog(name=dataset.catalog_name, properties=dataset.catalog_properties).dataset(
+        dataset.identifier, field=dataset.field
+    )
+
+
+@pytest.mark.parametrize("merge_by", [True, False])
+def test_a_replacement_beaten_by_an_unrelated_append_lands_on_the_retry(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch, merge_by: bool
+) -> None:
+    """A replacement declares the rows it takes out, so the retry PyIceberg
+    makes past another writer is validated against those rows alone: a row
+    landed in another day is no conflict, and the retry lands without a
+    fresh plan."""
+    dataset.append_arrow_table(quotes(2), commit_row_size=1_000_000)
+    another = _another_writer(dataset)
+    attempts = _beaten_once(dataset, monkeypatch, lambda: another.append_arrow_table(other_day(1)))
+
+    assert dataset.overwrite_arrow_table(quotes(2, "XETR"), merge_by=merge_by) == 2
+
+    assert attempts() == 2, "PyIceberg's own retry landed it"
+    stored = dataset.refresh().read_arrow_table().to_pylist()
+    assert {row["venue"] for row in stored if row["day"] == datetime.date(2026, 8, 14)} == {"XETR"}
+    assert [row["symbol"] for row in stored if row["day"] == datetime.date(2026, 8, 15)] == ["D0"]
+
+
+@pytest.mark.parametrize("merge_by", [True, False])
+def test_a_replacement_beaten_by_a_conflicting_append_is_handed_back(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch, merge_by: bool
+) -> None:
+    """A row landed under the rows this replacement takes out -- one of its
+    keys, or one of its partitions -- is a row the plan never saw, so the
+    retry is refused and the write is handed back for a fresh plan, with
+    nothing of its own left behind."""
+    from pyiceberg.exceptions import CommitFailedException
+
+    dataset.append_arrow_table(quotes(2), commit_row_size=1_000_000)
+    another = _another_writer(dataset)
+    _beaten_once(dataset, monkeypatch, lambda: another.append_arrow_table(quotes(1, "later")))
+
+    with pytest.raises(CommitFailedException, match="changed since this write was planned"):
+        dataset.overwrite_arrow_table(quotes(2, "XETR"), merge_by=merge_by)
+
+    stored = dataset.refresh().read_arrow_table().to_pylist()
+    assert sorted(row["venue"] for row in stored) == ["XPAR", "XPAR", "later"]
+    io = dataset.iceberg_table.io
+    paths = dataset.data_files().column("file_path").to_pylist()
+    assert len(paths) == 2 and all(io.new_input(path).exists() for path in paths)
+
+
+@pytest.mark.parametrize("verb", ["replace", "partitions", "delete"])
+def test_an_overwrite_declares_the_rows_it_takes_out(
+    dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch, verb: str
+) -> None:
+    """What each verb hands PyIceberg as the rows it takes out: the key bounds
+    a keyed replace planned by, the partition sources a keyless one empties,
+    and the predicate a delete names."""
+    from pyiceberg.table.update.snapshot import _OverwriteFiles
+
+    dataset.append_arrow_table(quotes(3))
+    declared: list[Any] = []
+    original = _OverwriteFiles.delete_by_predicate
+
+    def recorded(self: Any, predicate: Any, case_sensitive: bool = True) -> None:
+        declared.append(predicate)
+        original(self, predicate, case_sensitive)
+
+    monkeypatch.setattr(_OverwriteFiles, "delete_by_predicate", recorded)
+    if verb == "replace":
+        assert dataset.overwrite_arrow_table(quotes(2, "XETR"), merge_by=True) == 2
+    elif verb == "partitions":
+        assert dataset.overwrite_arrow_table(quotes(2, "XETR"), merge_by=False) == 2
+    else:
+        assert dataset.delete_where("size = 1") == 1
+
+    assert len(declared) == 1, "one overwrite, one declaration"
+    spelled = str(declared[0])
+    if verb == "replace":
+        assert "symbol" in spelled and "day" in spelled
+    elif verb == "partitions":
+        assert "day" in spelled and "symbol" not in spelled
+    else:
+        assert "size" in spelled
+
+
 def test_an_interrupt_between_a_commit_and_its_handover_keeps_the_rows(
     dataset: IcebergDataset, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -2360,10 +2476,14 @@ def test_append_streams_one_commit_per_chunk(dataset: IcebergDataset) -> None:
     assert len(dataset.iceberg_table.snapshots()) == 3, "two rows per commit"
 
 
-def test_a_stale_replacement_is_refused_and_lands_after_a_refresh(tmp_path: Path) -> None:
-    """Iceberg rejects a commit planned against a head another writer moved,
-    and a replacement is never rebuilt on a stale plan: the caller refreshes
-    and plans again, against what is stored now."""
+def test_a_stale_plan_lands_on_the_retry_unless_the_moved_head_holds_its_rows(
+    tmp_path: Path,
+) -> None:
+    """A commit planned against a head another writer moved is retried by
+    PyIceberg against the new head, and what decides it is whether the rows
+    landed in between are ones the plan takes out. A replacement is never
+    rebuilt on a stale plan, so one that is refused is handed back for the
+    caller to refresh and plan again, against what is stored now."""
     from pyiceberg.exceptions import CommitFailedException
 
     catalog = IcebergCatalog(name="concurrent", properties=catalog_properties(tmp_path))
@@ -2372,11 +2492,23 @@ def test_a_stale_replacement_is_refused_and_lands_after_a_refresh(tmp_path: Path
     other = catalog.dataset("trading.timed", field=Timed.into_field())
     other.append_arrow_table(timed(100), commit_row_size=1_000_000)
 
-    with pytest.raises(CommitFailedException, match="branch main has changed"):
-        writer.overwrite_arrow_table(timed(1, 2), merge_by=True, commit_row_size=1_000_000)
+    assert writer.overwrite_arrow_table(timed(1, 2), merge_by=True, commit_row_size=1_000_000) == 2
+    assert writer.read_arrow_table().sort_by("unix").column("unix").to_pylist() == [0, 1, 2, 100], (
+        "nothing landed under keys 1 and 2, so the stale plan landed on the retry"
+    )
 
-    assert writer.refresh().overwrite_arrow_table(timed(1, 2), merge_by=True) == 2
-    assert writer.read_arrow_table().sort_by("unix").column("unix").to_pylist() == [0, 1, 2, 100]
+    other.refresh().append_arrow_table(timed(3), commit_row_size=1_000_000)
+    with pytest.raises(CommitFailedException, match="branch main has changed"):
+        writer.overwrite_arrow_table(timed(2, 3), merge_by=True, commit_row_size=1_000_000)
+
+    assert writer.refresh().overwrite_arrow_table(timed(2, 3), merge_by=True) == 2
+    assert writer.read_arrow_table().sort_by("unix").column("unix").to_pylist() == [
+        0,
+        1,
+        2,
+        3,
+        100,
+    ], "key 3 landed by the other writer was taken out by the fresh plan"
 
 
 def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:

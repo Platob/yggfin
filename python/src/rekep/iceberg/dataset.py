@@ -793,7 +793,7 @@ class IcebergDataset(Dataset):
             return table, 0
         with _PartitionStager(table, self.sort_fields(), _target_file_rows(table, chunk)) as stager:
             if join:
-                staged, originals, rewritten, landed = self._replace_keys(
+                staged, originals, rewritten, landed, conflicts = self._replace_keys(
                     table, chunk, join, reference, stager
                 )
             else:
@@ -805,6 +805,14 @@ class IcebergDataset(Dataset):
                 replaced.update(_partition_identity(part.partition) for part in fresh)
                 rewritten = []
                 landed = chunk.num_rows
+                # The partitions this chunk empties, as the rows they hold: a
+                # bound on each partition source, widened to the hours or days
+                # a time transform partitions by, and no term at all for a
+                # source no range can name, which is the safe direction.
+                sources = _partition_sources(table, chunk)
+                conflicts = _key_bounds(
+                    chunk, list(sources), {column: unit for column, unit in sources.items() if unit}
+                )
             table = self._commit_replacement(
                 table,
                 stager,
@@ -813,6 +821,7 @@ class IcebergDataset(Dataset):
                 reference,
                 properties,
                 rebuild=False,
+                conflicts=conflicts,
             )
         return table, landed
 
@@ -823,12 +832,15 @@ class IcebergDataset(Dataset):
         join: Sequence[str],
         reference: str,
         stager: _PartitionStager,
-    ) -> tuple[list[_StagedPartition], list[Any], list[_StagedPartition], int]:
+    ) -> tuple[list[_StagedPartition], list[Any], list[_StagedPartition], int, Any]:
         """Stage a keyed chunk one partition at a time, taking its keys out as it goes.
 
-        `(staged, originals, rewritten, landed)`: the chunk's files, the
-        stored files to delete, the files that stand in for them, and the rows
-        the chunk lands. A key is scoped to its transformed partition, so the
+        `(staged, originals, rewritten, landed, bounds)`: the chunk's files,
+        the stored files to delete, the files that stand in for them, the rows
+        the chunk lands, and the predicate the stored files were planned by --
+        which is also what a concurrent commit is checked against, since a
+        row landed under it since the plan is one this chunk may have had to
+        replace. A key is scoped to its transformed partition, so the
         files a partition's keys are taken out of are that partition's own,
         planned once for the chunk: only files whose key bounds overlap the
         chunk's are planned, and only the partitions the chunk carries are
@@ -878,7 +890,7 @@ class IcebergDataset(Dataset):
                 originals.extend(deleted)
                 rewritten.extend(replaced)
             del run
-        return staged, originals, rewritten, landed
+        return staged, originals, rewritten, landed, bounds
 
     def _rewritten_without(
         self,
@@ -973,6 +985,7 @@ class IcebergDataset(Dataset):
         properties: Mapping[str, str],
         *,
         rebuild: bool,
+        conflicts: Any = None,
     ) -> Any:
         """One snapshot: `originals` deleted and `additions` appended.
 
@@ -982,6 +995,17 @@ class IcebergDataset(Dataset):
         staged files are still there to commit again. A replacement passes
         `rebuild=False`: the files it takes out were planned against this head,
         and a head that moved has to be planned again.
+
+        `conflicts` is the rows an overwrite takes out, as a predicate over
+        the table's columns, and it is declared to PyIceberg with the files.
+        PyIceberg retries a commit another writer beat on its own, against
+        the refreshed head, and validates the retry: a commit landed since
+        the plan that added or deleted rows under this predicate is a
+        conflict it refuses, and one anywhere else in the table is not. Left
+        undeclared, every concurrent commit is a conflict, and a replay of
+        one day fails because another day landed beside it. The same
+        predicate's partition projection is what prunes the manifests the
+        overwrite rewrites, beside the partitions of the files it deletes.
         """
         if not originals and not any(part.data_files for part in additions):
             return table
@@ -995,6 +1019,8 @@ class IcebergDataset(Dataset):
                         with transaction.update_snapshot(
                             snapshot_properties=dict(summary), branch=reference
                         ).overwrite() as overwrite:
+                            if conflicts is not None:
+                                overwrite.delete_by_predicate(conflicts)
                             for original in originals:
                                 overwrite.delete_data_file(original)
                             for part in additions:
@@ -1375,6 +1401,7 @@ class IcebergDataset(Dataset):
                 reference,
                 properties or {},
                 rebuild=False,
+                conflicts=expression,
             )
         after = _branch_records(table, reference)
         return max(before - after, 0)
@@ -3439,7 +3466,12 @@ def _partition_data_files(
     if snapshot is None:
         return []
     filters = [_partition_value_filter(replacement.partition) for replacement in replacements]
-    partition_filter = functools.reduce(Or, filters) if len(filters) > 1 else filters[0]
+    # One `Or` over every partition, which pyiceberg builds as a balanced
+    # tree. Folded pairwise instead, the expression is as deep as the chunk
+    # has partitions, and pyiceberg's visitors descend it recursively:
+    # measured, binding a fold of 800 partitions overflows the interpreter's
+    # default recursion limit, and the balanced tree binds at any width.
+    partition_filter = Or(*filters) if len(filters) > 1 else filters[0]
     specs = table.metadata.specs()
     evaluators: dict[int, Callable[[Any], bool]] = {}
     found = []
@@ -3684,7 +3716,7 @@ def _partition_filter(partition: Any, identities: Sequence[tuple[str, str]]) -> 
     ]
     if not terms:
         return None
-    return functools.reduce(And, terms)
+    return And(*terms) if len(terms) > 1 else terms[0]
 
 
 def _partition_value_filter(partition: Mapping[str, Any]) -> Any:

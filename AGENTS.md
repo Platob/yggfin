@@ -79,6 +79,9 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   file-format writer on the table's `FileIO` and commits it by path, so a
   commit holds its chunk and not a multiple of it, and no data file touches
   local disk. Never hand a whole chunk to a writer that splits it.
+- An overwrite declares the rows it takes out as a predicate. PyIceberg
+  validates a retried commit against it, so a concurrent commit elsewhere in
+  the table lands and one under it is handed back for a fresh plan.
 - Push filters, projections, ordering, and limits into storage planning.
 - Every verb accepts `branch`; every read accepts `snapshot_id`.
 - Preserve supplied Iceberg ids and assign missing ids.
