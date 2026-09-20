@@ -69,8 +69,10 @@ the parents, a step never precedes what it follows, and `seqnum` is at least
 1. Over the bundled capture 22 of the 53 rows follow a step, and the widest
 chain is `e7254b12:9f0316669a`, 21 events walked to step 6. A chain is named
 by the bridge's `msgsessionid:msgctxid` where the row header stated both, else
-by the first identifier the message states, and `currunix, seqnum` within a
-partition is the order the walk gave it.
+by the first identifier the message states -- unless the walk matches the
+message to a chain already open, which names it instead, whatever its own
+header said. `currunix, seqnum` within a partition is the order the walk gave
+it.
 
 A chain is read off a stream, and a stream has an order: the walk states each
 message as the one after the live message it follows, so the order it is
@@ -259,10 +261,10 @@ bytes; a null is an empty cell.
 --8<-- "docs/pipeline/tasks/samples/parse-fix-silver.md"
 
 The first table is the table's own order, `currunix, seqnum, curruuid`, in
-which a head sorts after the steps that follow it: the first seven rows are
-steps `1` to `7`, row 7 is the head they descend from, and rows 6 and 35 are
-the pair the bridge received, at `.761` and `.762`. A chain is read off this
-table by `prevuuid` and never by reading down it.
+which a null `seqnum` sorts last within one instant: rows 8 to 36 all read
+`12:46:39.743` and row 7, the head they descend from, follows them. Rows 6 and
+35, the pair the bridge received, are later instants and sort after both. A
+chain is read off this table by `prevuuid` and never by reading down it.
 
 Under one chain the table holds two successions. Row 7 heads one: rows 8, 9,
 10, 11, 15 and 22 follow it at `seqnum` `1` to `6`, and row 36, the bridge's
@@ -270,27 +272,30 @@ restatement of the fill, is `7`. Row 6 heads the other, with row 35 its `1`.
 Each row's `prevuuid` is the `curruuid` of the row before it in its own
 succession -- row 8 names `…caf49857`, row 35 names `…91130359` -- and
 neither succession names a row of the other. `parentuuids` is shown as its
-length, and that length is `seqnum` on every row: the column holds the whole
-lineage and not only the step before.
+length, and that length is `seqnum` on every row that follows one: the column
+holds the whole lineage and not only the step before.
 
 The walk re-dated the eight rows the parse had left at the pin, by their
 `transacttime`, so each reads `12:46:39.743` here and took an identity
-beginning with that instant. The second table pairs each line's bronze row
-with its silver one: row 7 moved from `…2788b1e8` to `…caf49857`, and its
-seven neighbours the same way. Row 6 kept both its instant and its identity.
-Row 35 kept its `.762` and still took a new one, `…998b5795` to `…274eb390`,
-because the walk restated its content: rows 35 and 36 were parsed under
-`e7254b12:9f0316669a`, the fill's own context, as the
+opening with that instant, the way a [UUIDv7](parse-messages.md#parse-step)
+opens with the instant it is dated by. The second table pairs each line's
+bronze row with its silver one: row 7 moved from `…2788b1e8` to `…caf49857`,
+and the seven other pinned rows the same way. Row 6 kept both its instant and
+its identity. Row 35 kept its `.762` and still took a new one, `…998b5795` to
+`…274eb390`, because the walk restated its content: rows 35 and 36 were parsed
+under `e7254b12:9f0316669a`, the fill's own context, as the
 [bronze sample](parse-fix-bronze.md#sample-rows) shows, and the walk settled
-them under this chain, `crossuuid` `…b7b57111` where bronze held `…3e201dc0`.
+them under this chain -- `crossuuid` `…b7b57111` where bronze held
+`…3e201dc0` -- and wrote this order's `clordid` into their `identifiers`.
 
-`state` and `creaunix` are what the chain folded forward, so they follow a
-succession rather than the table: `80FILLED` on rows 36 and 35, the two
-restatements of the fill, and `40PARTFILL` on every row before them in their
-own succession. `creaunix` reads `12:46:39.743` down the bridge's succession
-and `12:46:39.761` on both received rows, row 35 inheriting its head's;
-`expirunix` is `2026-08-14 16:25:00.000` on all ten. What a product reads off
-these rows is on [`build_dbt`](build-dbt.md#sample-rows).
+`state` and `creaunix` follow a succession rather than the table: `80FILLED`
+on rows 35 and 36, the fill as the bridge received it and as the bridge
+restated it, and `40PARTFILL` on every row before them in their own
+succession. `creaunix` reads `12:46:39.743` down the bridge's succession and
+`12:46:39.761` on both received rows, row 35 inheriting its head's.
+`expirunix` reads `2026-08-14 16:25:00.000` on all ten, one value for the
+chain rather than one per succession. What a product reads off these rows is
+on [`build_dbt`](build-dbt.md#sample-rows).
 
 `tools/pipeline_samples.py` regenerates the file from a run over the fixture,
 and the integration suite checks it with `--check`.
