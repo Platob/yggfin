@@ -162,6 +162,7 @@ absolute settings instead if the deploy cannot run from the checkout:
 
 ```bash
 uv run --project "$REKEP_ROOT/python" rekep iceberg deploy \
+  --catalog rekep \
   --property type=sql \
   --property uri=sqlite:////var/lib/rekep/catalog.db \
   --property warehouse=/var/lib/rekep/warehouse
@@ -174,8 +175,9 @@ share one durable host filesystem.
 
 ## A run on this checkout
 
-The check the integration suite makes, by hand: a private `AIRFLOW_HOME`, the
-bundled fixture as `filesystem`, and the catalog of your choice as `CATALOG`.
+The run the integration suite makes of `rekep_ingestion`, with the products
+DAG beside it, by hand: a private `AIRFLOW_HOME`, the test fixture as
+`filesystem`, and the catalog of your choice as `CATALOG`.
 
 ```bash
 cd "$REKEP_ROOT"
@@ -207,8 +209,8 @@ DagRun Finished: dag_id=rekep_products, ... state=success
 `dags test` proves that the DAG parses under Airflow's own loading, that the
 run's `--conf` reaches every node as its Params, and that each node ran the
 locked runner into the catalog the conf named. It runs one DAG directly and
-fires no Asset-triggered run, which is why the products DAG has its own command
-above; a scheduler fires it on the `fix.silver` event. `airflow assets list`
+fires no Asset-triggered run, which is why the products DAG has its own
+command above. `airflow assets list`
 then names the six Assets: `logs.messages`, `fix.bronze`, `fix.silver`,
 `orders.events`, `orders.current` and `executions.fills`. The integration test
 `test_a_real_dag_run_publishes_both_tables_from_its_conf` in
@@ -218,7 +220,8 @@ then names the six Assets: `logs.messages`, `fix.bronze`, `fix.silver`,
 
 What `dags test` cannot show, a scheduler does: `airflow standalone` in a
 private home of the same shape, both DAGs unpaused, and the local-files
-trigger above issued with no `catalog` in its conf. The scheduler recorded a
+trigger above issued over the test fixture and with no `catalog` in its conf.
+The scheduler recorded a
 manual run of `rekep_ingestion` that took 22 seconds and, before that run was
 marked finished, a run of `rekep_products` it created itself off the event
 `parse_fix_silver` had just published:
@@ -228,17 +231,19 @@ Created asset-triggered DagRun for 'rekep_products': ... consumed 1 asset events
 ```
 
 Its `run_id` begins `asset_triggered__`, it finished ten seconds later, and
-its `build_dbt` logged the same two lines as above. Both DAGs wrote the
-checkout's default catalog, `data/catalog.db`, because the conf named none.
-That is the rule the run shows: an asset-triggered run has no conf at all, so
-`rekep_products` reads the catalog its own document names, and the two DAGs
-name the same catalog through their documents or not at all. A first attempt
-that had pointed the ingestion trigger at a catalog of its own failed in
+its `build_dbt` logged the same counts as above, in `2.9s`. Both DAGs wrote
+the checkout's default catalog, `data/catalog.db`, because the conf named
+none. That is the rule the run shows: an asset-triggered run carries no conf
+at all, so `rekep_products` reads the catalog
+[its own document](tasks/build-dbt.md#task-document) names -- `null` here,
+which leaves the one `data/dbt/profiles.yml` declares -- and the two DAGs
+reach one catalog through their documents or not at all. A first attempt that
+had pointed the ingestion trigger at a catalog of its own failed in
 `build_dbt` with `Table does not exist: fix.silver` for exactly that reason.
-The warehouse then held the six tables at the counts every other route lands
--- 141, 53, 53, 49, 9 and 8 rows -- and
-`tools/pipeline_samples.py --catalog … --check` against it answered
-`4 samples match`.
+The warehouse then held the three ingestion counts above, and `orders.events`
+49, `orders.current` 9 and `executions.fills` 8 rows, which is what every
+other route lands; `tools/pipeline_samples.py --catalog … --check` against it
+answered `4 samples match`.
 
 ## S3 capture with SQL catalog
 

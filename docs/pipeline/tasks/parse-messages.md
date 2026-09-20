@@ -224,11 +224,11 @@ destination the bridge resolved for it.
 Ten lines are ten rows: no two of these are the same bytes. An enrichment
 step need not have added a field for that. Rows 8 and 9 are both
 `TECH_AddFields_OMS_X1` logging `After Enrichment ->`, and the second is 118
-bytes shorter, because the step dropped `FIRM.SOURCE`, dropped an empty party
-sub-group, and rewrote every repeating group's sub-field separator into a
-shorter one. Every `curruuid` here begins `0000000000007000`: the
-[UUIDv7](#parse-step) the read states opens with the instant it is dated by,
-and a line is dated by none.
+bytes shorter, because the step dropped `FIRM.SOURCE`, re-nested the party
+sub-group inside `NOPARTYIDS[0]`, and rewrote every repeating group's
+six-byte sub-field separator into a two-byte one. Every `curruuid` here
+begins `0000000000007000`: the [UUIDv7](#parse-step) the read states opens
+with the instant it is dated by, and a line is dated by none.
 
 `tools/pipeline_samples.py` regenerates the file from a run over the fixture,
 and the integration suite checks it with `--check`.

@@ -106,9 +106,10 @@ def _(catalog, end, filesystem, records, rowheader, start):
         # rather than converted on the way to the table.
         parsed = stored_arrow_reader(read, field)
         opened.callback(parsed.close)
-        # What the window carries replaces what the table held for the same
-        # `(sourceurl, rownum)`: a replay of the window lands the same rows
-        # again, so the table holds each line once however often it runs.
+        # What the window carries replaces what the table held under the same
+        # `currhashcode`, the key the field declares: a replay of the window
+        # lands the same rows again, so the table holds each line once
+        # however often it runs.
         written = messages.overwrite_arrow_reader(parsed, field, merge_by=True)
         _outcome = stage.finished(read=counts["read"], written=written)
     outcome = _outcome

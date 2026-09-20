@@ -77,13 +77,13 @@ the command line.
 | `rowheader` | messages | `null` | the row header each line is framed with; `null` is the bridge's own |
 | `messages` | bronze | `logs.messages` | the stored raw table the parse reads |
 | `bronze` | silver | `fix.bronze` | the parsed table the walk reads |
-| `start` | messages, FIX | `null` | the window's inclusive start; `null` is one day before `end` |
-| `end` | messages, FIX | `null` | the window's exclusive end; `null` is the instant the run starts, and a whole day is the end of that day |
+| `start` | messages, bronze, silver | `null` | the window's inclusive start; `null` is one day before `end` |
+| `end` | messages, bronze, silver | `null` | the window's exclusive end; `null` is the instant the run starts, and a whole day is the end of that day |
 | `catalog.name` | every | `rekep` | PyIceberg catalog name |
 | `catalog.properties.type` | every | `sql` | `sql`, `glue`, or another installed PyIceberg catalog |
 | `catalog.properties.uri` | every | local SQLite | SQL catalog URI; not used by Glue |
 | `catalog.properties.warehouse` | every | `data/warehouse` | local path or `s3://` Iceberg root |
-| `registry` | FIX | `null` | bundled dictionary; explicit URI overrides it, on both FIX tasks |
+| `registry` | bronze, silver | `null` | bundled dictionary; an explicit URI overrides it |
 | `project` | dbt | `data/dbt` | the dbt project directory |
 | `profiles` | dbt | `null` | where `profiles.yml` is; `null` is the project itself |
 | `target` | dbt | `null` | the profile target; `null` is the profile's own |
@@ -114,9 +114,9 @@ Every successful task returns the same small result contract:
 ```json
 {
   "task": "parse_messages",
-  "read": 144,
-  "written": 141,
-  "skipped": 3,
+  "read": 14,
+  "written": 14,
+  "skipped": 0,
   "sources": {"capture": "file:///data/capture"},
   "targets": {"messages": "logs.messages"},
   "window": {"start": 1786665600000000000, "end": 1786752000000000000},
@@ -128,9 +128,11 @@ Every successful task returns the same small result contract:
 
 ## Sample rows
 
-Each task page shows one order of the bundled capture as that task lands it:
-chain `e7254b12:9f03166699` of `python/tests/data/ulbridge.log`, a partial
-fill and the fill that closed it, ten of its 144 lines.
+Each task page shows one order of the test capture as that task lands it: the
+order the walk settles under chain `e7254b12:9f03166699` in
+`python/tests/data/ulbridge.log`, a partial fill and the fill that closed it,
+ten of its 144 lines. The fill's two lines are `e7254b12:9f0316669a` until
+the walk moves them.
 [`parse_messages`](tasks/parse-messages.md) shows the ten stored lines,
 [`parse_fix_bronze`](tasks/parse-fix-bronze.md) the ten rows the parse read
 off them, [`parse_fix_silver`](tasks/parse-fix-silver.md) the same ten walked
@@ -138,8 +140,9 @@ into one chain, and [`build_dbt`](tasks/build-dbt.md) the order's ten events,
 its one current row and its two fills. `tools/pipeline_samples.py` runs the
 four tasks over the fixture and renders the tables into
 `docs/pipeline/tasks/samples/`, one file per page, and each page includes its
-own. The integration suite runs the tool with `--check`, which regenerates the
-tables in memory and fails on drift.
+own. The integration suite runs the tool with `--check`, which runs the four
+tasks again into a throwaway catalog, renders the tables, and fails on any
+difference.
 
 ## Deployment choices
 

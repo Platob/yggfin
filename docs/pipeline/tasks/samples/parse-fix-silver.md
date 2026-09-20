@@ -15,7 +15,7 @@
 | 6 | 2026-08-14 12:46:39.761 | …91130359 |  |  |  | R | 40PARTFILL | 2026-08-14 12:46:39.761 | 2026-08-14 16:25:00.000 |
 | 35 | 2026-08-14 12:46:39.762 | …274eb390 | …91130359 | 1 | 1 | R | 80FILLED | 2026-08-14 12:46:39.761 | 2026-08-14 16:25:00.000 |
 
-**Where the walk moved an identity: the same line's row in both tables**
+**What the walk did to each line's identity: its row in both tables**
 
 | `rownum` | `bronze currunix` | `bronze curruuid` | `silver currunix` | `silver curruuid` |
 | --- | --- | --- | --- | --- |

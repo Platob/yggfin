@@ -2,10 +2,10 @@
 
 The pipeline pages under `docs/pipeline/tasks/` show real rows rather than
 invented ones: one chain of `python/tests/data/ulbridge.log` -- bridge session
-`e7254b12`, context `9f03166699`, a partial fill and the fill that closed the
-order after it -- as `parse_messages` stores its lines, `parse_fix_bronze`
-parses them, `parse_fix_silver` walks them and `build_dbt` derives the
-products. Each page includes its own Markdown file from
+`e7254b12`, contexts `9f03166699` and `9f0316669a`, a partial fill and the
+fill that closed the order after it -- as `parse_messages` stores its lines,
+`parse_fix_bronze` parses them, `parse_fix_silver` walks them and `build_dbt`
+derives the products. Each page includes its own Markdown file from
 `docs/pipeline/tasks/samples/` through `pymdownx.snippets`, so what a page
 shows is what a run lands, and `--check` regenerates into memory and fails on
 any difference, which is what the test suite asks.
@@ -64,7 +64,7 @@ TABLES = (
     "executions.fills",
 )
 
-#: One file per page, and the tables each holds.
+#: One sample file per task page.
 PAGES = ("parse-messages", "parse-fix-bronze", "parse-fix-silver", "build-dbt")
 
 
@@ -142,7 +142,7 @@ def walked(chain: pyarrow.Table) -> pyarrow.Table:
 
 
 def selected(held: dict[str, pyarrow.Table]) -> dict[str, pyarrow.Table]:
-    """The chain's rows in every table, in the order each table sorts them."""
+    """The chain's rows in every table, each in the order its page reads them."""
     equal, is_in = pyarrow.compute.equal, pyarrow.compute.is_in
     silver = held["fix.silver"]
     chain = silver.filter(equal(silver.column("crosscode"), CHAIN))
@@ -320,7 +320,7 @@ def silver_page(silver: pyarrow.Table, bronze: pyarrow.Table) -> str:
         [
             f"**The {silver.num_rows} walked rows of chain `{CHAIN}`, in the table's own order**",
             table(walked, rows(silver, walked)),
-            "**Where the walk moved an identity: the same line's row in both tables**",
+            "**What the walk did to each line's identity: its row in both tables**",
             table(list(moved[0]), moved),
         ]
     )

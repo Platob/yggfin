@@ -261,9 +261,10 @@ bytes; a null is an empty cell.
 --8<-- "docs/pipeline/tasks/samples/parse-fix-silver.md"
 
 The first table is the table's own order, `currunix, seqnum, curruuid`, in
-which a null `seqnum` sorts last within one instant: rows 8 to 36 all read
-`12:46:39.743` and row 7, the head they descend from, follows them. Rows 6 and
-35, the pair the bridge received, are later instants and sort after both. A
+which a null `seqnum` sorts last within one instant: rows 8, 9, 10, 11, 15,
+22 and 36 all read `12:46:39.743`, and row 7, the head they descend from,
+follows them. Rows 6 and 35, the pair the bridge received, read later
+instants and sort after all eight. A
 chain is read off this table by `prevuuid` and never by reading down it.
 
 Under one chain the table holds two successions. Row 7 heads one: rows 8, 9,

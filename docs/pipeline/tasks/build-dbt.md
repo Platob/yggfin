@@ -252,8 +252,9 @@ stored value is sixteen bytes; a null is an empty cell.
 --8<-- "docs/pipeline/tasks/samples/build-dbt.md"
 
 The first table is the order's ten events in `eventtime` then `rownum` order.
-`eventtime` is what [the staging model](#what-a-source-declares) reads off
-`transacttime`, so the eight bridge lines sit at `12:46:39.743`, row 6, the
+`eventtime` is the `transacttime` each of these ten rows states, which is
+what [the staging model](#what-a-source-declares) settles it to where a row
+states one, so the eight bridge lines sit at `12:46:39.743`, row 6, the
 received frame with microseconds on its tag, comes last at `12:46:39.743016`,
 and row 35 comes first at `2026-08-14 00:00:00.000`, because its
 `TransactTime(60)` was a bare date, as
@@ -282,12 +283,14 @@ since no event of this order is in an opening state; `closedat` is
 `12:46:39.743`, the latest terminal event, row 36's; `updatedat` is row 6's
 instant.
 
-The third table is the two venue executions, one row each. Eight rows of the
-chain carry `00011377089XEEA0`, and the occurrence is keyed to row 7's event
-`…caf49857`: the model orders the copies by `eventtime`, then by source
-position, so row 6's `.743016` loses to the seven at `.743` and `rownum` picks
-the first of those. `00011377090XEEA0`, `57` at `83.08`, is row 35's, at
-midnight, in state `80FILLED`.
+The third table is the two venue executions, one row each, keyed by
+`executionkey` over the chain and the execution id: `…f68c7d6c` and
+`…2b24762b`. Eight rows of the chain carry `00011377089XEEA0`, and the row
+they fold to names row 7's event `…caf49857` as its `eventkey`, because the
+model orders the copies by `eventtime` and then by source position: row 6's
+`.743016` loses to the seven at `.743`, and `rownum` picks the first of
+those. `00011377090XEEA0`, `57` at `83.08`, is row 35's, at midnight, in
+state `80FILLED`.
 
 `tools/pipeline_samples.py` regenerates the file from a run over the fixture,
 and the integration suite checks it with `--check`.
