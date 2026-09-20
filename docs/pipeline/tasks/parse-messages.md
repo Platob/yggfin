@@ -69,8 +69,9 @@ whole line, row header included: the core retains the whole record and reads
 the captures off it, and `bodyhash` is the digest of those bytes, computed
 during field application. `sourceurl` and `rownum` come from traversal, and
 `curruuid`, the last column, is the line's own identity the read states -- a
-UUIDv7 over the line's instant and the XXH3-64 of its bytes -- which a message
-parsed out of the stored line names as its one `srcuuids` entry.
+UUIDv7 over the XXH3-64 of its bytes, at no instant, because the read dates no
+line -- which a message parsed out of the stored line names as its one
+`srcuuids` entry.
 
 `msgsessionid` is the session *instance* the bridge handled the line on
 (65032) -- never what the message itself says about the counterparty session it
@@ -184,25 +185,25 @@ of the bytes and of nothing else; the bundled capture's 144 physical lines are
 ## Sample rows
 
 The sample is chain `e7254b12:9f03166699` of `python/tests/data/ulbridge.log`,
-a partial fill and the fill that closed the order: ten lines, as
-`parse_messages` lands them in `logs.messages`. An identity is shown by its
-last eight hex digits behind a leading `…`, and the stored value is sixteen
-bytes; `bodyhash` is shown by its first eight.
+a partial fill and the fill that closed the order: the ten lines a FIX message
+was parsed out of, as `parse_messages` lands them in `logs.messages`. An
+identity is shown by its last eight hex digits behind a leading `…`, and the
+stored value is sixteen bytes; `bodyhash` is shown by its first eight.
 
 --8<-- "docs/pipeline/tasks/samples/parse-messages.md"
 
-The first table is the header, read off each line. All ten are thread `15255`
-on session `e7254b12`, and the bridge handled them in two contexts: the first
-eight rows are `9f03166699` at sequence `40218`, the partial fill, and rows 35
-and 36 are `9f0316669a` at `40219`, the fill. What makes ten lines of two
-contexts one chain is the walk, on
-[`parse_fix_silver`](parse-fix-silver.md#sample-rows); nothing read here
-knows it.
+The first table is `rownum` and the seven captures read off each line's
+header. All ten are thread `15255` on session `e7254b12`, and the bridge
+handled them in two contexts: rows 6, 7, 8, 9, 10, 11, 15 and 22 are
+`9f03166699` at sequence `40218`, the partial fill, and rows 35 and 36 are
+`9f0316669a` at `40219`, the fill. What makes lines of two contexts one chain
+is the walk, on [`parse_fix_silver`](parse-fix-silver.md#sample-rows); nothing
+read here knows it.
 
-`timestamp` reads `2026-08-14 14:46:39.769` on the first eight rows and
-`.770` on the last two. It is the clock the bridge printed, and it is what
+`timestamp` reads `2026-08-14 14:46:39.769` on those eight rows and `.770` on
+rows 35 and 36. It is the clock the bridge printed, and it is what
 [the window](#the-window) is taken on, but it dates no message: the frame on
-row 6 states `52=20260814-12:46:39.761` past where the `body` column cuts
+row 6 states `52=20260814-12:46:39.761` past where the sample cuts the line
 off, two hours earlier, and that is the clock the parse reads instead, on
 [`parse_fix_bronze`](parse-fix-bronze.md#sample-rows).
 
@@ -211,23 +212,23 @@ are `OMS_X1_TradeCapture` at `INFO`, `Receiving :` and the FIX frame the
 bridge received. Rows 7 and 36 are the same plugin at `DEBUG`,
 `RouteMessage :` and the bridge's own key=value restatement of the frame it
 just received. Rows 8, 9, 10 and 11 are `After Enrichment ->`, the same
-message logged again after each plugin ran, and row 15 is `After -->` from
-`Force_IRIS_ByPass`. Row 22 is `PushMessage :`, the message handed on to
-`ULFilter`, the destination the bridge resolved for it.
+message logged again after an enrichment step, twice by
+`TECH_AddFields_OMS_X1`, and row 15 is `After -->` from `Force_IRIS_ByPass`.
+Row 22 is `PushMessage :`, the message handed on to `ULFilter`, the
+destination the bridge resolved for it.
 
-Ten lines are ten rows, because the key is the digest of the whole line and
-no two of these are the same bytes. A plugin need not have added a field for
-that: rows 8 and 9 are both `TECH_AddFields_OMS_X1` logging
-`After Enrichment ->`, and the second is the shorter of the two, because the
-enrichment rewrote the party group rather than growing it. Every `curruuid`
-here begins `0000000000007000`: the identity is a version-7 UUID whose first
-48 bits are the instant it was settled at, a stored line is settled at none,
-and the leading zeros are that absence. What the parse does with the identity
-is name it as the message's one `srcuuids` entry, unchanged, on
-[`parse_fix_bronze`](parse-fix-bronze.md#sample-rows).
+Ten lines are ten rows: no two of these are the same bytes. An enrichment
+step need not have added a field for that. Rows 8 and 9 are both
+`TECH_AddFields_OMS_X1` logging `After Enrichment ->`, and the second is 118
+bytes shorter, because the step dropped `FIRM.SOURCE`, dropped an empty party
+sub-group, and rewrote every repeating group's sub-field separator into a
+shorter one. Every `curruuid` here begins `0000000000007000`: the
+[UUIDv7](#parse-step) the read states opens with the instant it is dated by,
+and a line is dated by none.
 
 `tools/pipeline_samples.py` regenerates the file from a run over the fixture,
 and the integration suite checks it with `--check`.
+
 ## Run
 
 ```bash

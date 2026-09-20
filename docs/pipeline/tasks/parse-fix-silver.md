@@ -294,6 +294,7 @@ these rows is on [`build_dbt`](build-dbt.md#sample-rows).
 
 `tools/pipeline_samples.py` regenerates the file from a run over the fixture,
 and the integration suite checks it with `--check`.
+
 ## Migrating a warehouse that holds the retired table
 
 There is no compatibility shim for the one FIX table the two replaced. Create
