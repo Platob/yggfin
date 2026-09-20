@@ -19,7 +19,16 @@ import pytest
 from dbt.cli.main import dbtRunner
 
 from rekep import cli
-from rekep.dbt import COMMITTED, catalog_settings, committed, declared_field
+from rekep.dbt import (
+    CATALOG,
+    COMMITTED,
+    OPENED,
+    Plugin,
+    catalog_settings,
+    committed,
+    declared_field,
+    released,
+)
 from rekep.deploy import TABLES
 from rekep.fix import FixCodec, fix_registry
 from rekep.iceberg import IcebergCatalog, partition_keys, primary_keys, sort_keys
@@ -367,6 +376,46 @@ def test_what_a_build_committed_is_reported_once() -> None:
 
     assert committed() == {"orders.events": 62}
     assert committed() == {}
+
+
+def test_the_catalog_a_build_read_through_is_closed_when_it_is_released(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """dbt says nothing to a plugin when a build ends, so a task closes it.
+
+    An Iceberg catalog is a live connection, and over SQLite it is an open
+    file: Windows will not delete one, so a run into a temporary warehouse
+    failed on its way out rather than in any task -- which is why POSIX, where
+    an open file unlinks, never showed it.
+    """
+    import pyiceberg.catalog
+
+    class Opened:
+        closed = 0
+
+        def close(self) -> None:
+            self.closed += 1
+
+    opened = Opened()
+    monkeypatch.delenv(CATALOG, raising=False)
+    monkeypatch.setattr(pyiceberg.catalog, "load_catalog", lambda *_args, **_kwargs: opened)
+    OPENED.clear()
+    plugin = Plugin(
+        name="rekep",
+        plugin_config={"catalog": {"name": "rekep", "properties": {}}},
+    )
+
+    assert OPENED == [], "asking for a plugin opens nothing"
+    held = plugin.catalog()
+    assert held.catalog is opened, "the handle loads on first use, not on from_dict"
+    assert OPENED == [plugin]
+
+    assert released() == 1
+    assert (OPENED, opened.closed) == ([], 1)
+    assert released() == 0, "nothing is held, so nothing is closed a second time"
+    # A build after this one reads through a handle of its own, not a closed one.
+    assert plugin.catalog() is not held
+    assert released() == 1
 
 
 # -- the products, over the checked-in fixture -------------------------------

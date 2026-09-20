@@ -13,7 +13,7 @@ with app.setup:
     import marimo as mo
     from dbt.cli.main import dbtRunner
 
-    from rekep.dbt import CATALOG, committed
+    from rekep.dbt import CATALOG, committed, released
     from rekep.logs import Stage, configure
     from rekep.tasks import Task
 
@@ -103,6 +103,11 @@ def _(catalog, profiles, project, records, select, target):
     if select:
         argv += ["--select", *([select] if isinstance(select, str) else list(select))]
     invoked = dbtRunner(callbacks=[_relayed]).invoke(argv)
+    # dbt says nothing to a plugin when a build ends, so the catalog it read
+    # and committed through is this task's to close: it is a live connection,
+    # and over SQLite it is a file the caller of a run cannot delete until the
+    # handle goes. Nothing below reads it -- the counts come off the results.
+    released()
     return invoked, stage
 
 

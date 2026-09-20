@@ -50,6 +50,12 @@ BATCH_ROW_SIZE = 65_536
 #: next build.
 COMMITTED: dict[str, int] = {}
 
+#: Every plugin in this process holding a catalog open. dbt builds a plugin per
+#: run, keeps it for the life of the process and hands it no teardown, so the
+#: catalog a build read and committed through outlives the build unless a task
+#: closes it; `rekep.dbt.released()` is what closes them.
+OPENED: list[Plugin] = []
+
 #: What `mode` may say, and what the dataset verb each one names did. An append
 #: adds every row the model built; an overwrite replaces the rows whose keys
 #: match -- or, for a model with no key, the partitions it touches -- and adds
@@ -74,6 +80,21 @@ def committed() -> dict[str, int]:
     written = dict(COMMITTED)
     COMMITTED.clear()
     return written
+
+
+def released() -> int:
+    """Close the catalog every plugin opened, and say how many were holding one.
+
+    An Iceberg catalog is a live SQLite or REST connection, and dbt hands a
+    plugin nothing that says the build is over -- so a run that ends leaves one
+    open, and on Windows an open file is one its caller cannot delete. A task
+    calls this once its build is done, the way it calls `committed()`.
+    """
+    held = list(OPENED)
+    OPENED.clear()
+    for plugin in held:
+        plugin.close()
+    return len(held)
 
 
 def declared_field(
@@ -150,7 +171,14 @@ class Plugin(BasePlugin):
         """The one catalog handle this build reads and commits through."""
         if self._opened is None:
             self._opened = IcebergCatalog.from_dict(self._settings)
+            OPENED.append(self)
         return self._opened
+
+    def close(self) -> None:
+        """Release the catalog this plugin opened, if it opened one."""
+        opened, self._opened = self._opened, None
+        if opened is not None:
+            opened.close()
 
     def load(self, source_config: SourceConfig) -> pyarrow.Table:
         """One Iceberg table, under the projection, filter and limit it names.
@@ -240,9 +268,11 @@ __all__ = [
     "CATALOG",
     "COMMITTED",
     "MODES",
+    "OPENED",
     "TABLE",
     "Plugin",
     "catalog_settings",
     "committed",
     "declared_field",
+    "released",
 ]

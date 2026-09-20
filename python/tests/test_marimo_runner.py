@@ -88,8 +88,8 @@ def test_the_runner_runs_the_shipped_application_and_publishes_its_result(
                     "name": "rekep",
                     "properties": {
                         "type": "sql",
-                        "uri": f"sqlite:///{tmp_path / 'catalog.db'}",
-                        "warehouse": f"file://{tmp_path / 'warehouse'}",
+                        "uri": f"sqlite:///{(tmp_path / 'catalog.db').as_posix()}",
+                        "warehouse": (tmp_path / "warehouse").as_uri(),
                     },
                 },
             }
