@@ -237,6 +237,56 @@ codec's and this repository cannot enumerate it -- a state the products have no
 reading for is worth reporting and is not a reason to stop. What the folds do
 read is pinned against the codec itself in `python/tests/test_dbt.py`.
 
+## Sample rows
+
+The sample is chain `e7254b12:9f03166699` of `python/tests/data/ulbridge.log`,
+a partial fill and the fill that closed the order: ten lines, as `build_dbt`
+lands them in `orders.events`, `orders.current` and `executions.fills`. An
+identity is shown by its last eight hex digits behind a leading `…`, and the
+stored value is sixteen bytes; a null is an empty cell.
+
+--8<-- "docs/pipeline/tasks/samples/build-dbt.md"
+
+The first table is the order's ten events in `eventtime` then `rownum` order.
+`eventtime` is what [the staging model](#what-a-source-declares) reads off
+`transacttime`, so the eight bridge lines sit at `12:46:39.743`, row 6, the
+received frame with microseconds on its tag, comes last at `12:46:39.743016`,
+and row 35 comes first at `2026-08-14 00:00:00.000`, because its
+`TransactTime(60)` was a bare date, as
+[`parse_fix_bronze`](parse-fix-bronze.md#sample-rows) shows. `prevuuid` and
+`seqnum` are as the walk left them, and they read as two successions: row 7
+is a head, rows 8, 9, 10, 11, 15 and 22 are its steps 1 to 6, and row 36 is
+step 7, following `…f16b9d55`, row 22's key; row 6 is a head, and row 35 is
+its step 1, following `…91130359`. The walk that gave them those steps is on
+[`parse_fix_silver`](parse-fix-silver.md#walk-the-chains). `cumqty` and
+`leavesqty` read `340` and `260` until the fill's rows, 35 and 36, where they
+read `600` and `0` and `state` reads `80FILLED`. `clordid` is empty on those
+two rows, because neither line states a `ClOrdID(11)`, and `avgpx` is empty
+on row 36.
+
+The second table is the one row the ten events fold to. `orderkey` is
+`…b7b57111`, the chain's `crossuuid`, and `eventcount` is `10`.
+`last_eventkey` is `…91130359`: row 6's `12:46:39.743016` is the latest
+`eventtime` of the ten, later than the fill's midnight, so row 6 wins the
+fold and the row reads `state` `40PARTFILL`, `cumqty` `340` and `leavesqty`
+`260` although the venue reported the order filled. That is what the capture
+states, and reading a bare-date `TransactTime` as no instant is not done
+here. `openedat` is `2026-08-14 00:00:00.000`, the earliest `eventtime`,
+since no event of this order is in an opening state; `closedat` is
+`12:46:39.743`, the latest terminal event, row 36's; `updatedat` is row 6's
+instant.
+
+The third table is the two venue executions, one row each. `00011377089XEEA0`,
+`21` at `83.08`, is keyed to row 7's event `…caf49857` and not to row 6's:
+the earliest `eventtime` wins among the copies of one execution, and the
+bridge's `.743` is earlier than the received frame's `.743016`.
+`00011377090XEEA0`, `57` at `83.08`, is row 35's, at midnight, in state
+`80FILLED`. Both read `isincode` `CH0012221716`, `miccode` `XSWX` and
+`currency` `CHF`.
+
+`tools/pipeline_samples.py` regenerates the file from a run over the fixture,
+and the integration suite checks it with `--check`.
+
 ## The project
 
 ```text

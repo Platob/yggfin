@@ -248,6 +248,52 @@ shape and no row lands.
   parties: kept what reads and nulled the rest` from the core; it is a notice,
   not a dropped row.
 
+## Sample rows
+
+The sample is chain `e7254b12:9f03166699` of `python/tests/data/ulbridge.log`,
+a partial fill and the fill that closed the order: ten lines, as
+`parse_fix_silver` lands them in `fix.silver`. An identity is shown by its
+last eight hex digits behind a leading `…`, and the stored value is sixteen
+bytes; a null is an empty cell.
+
+--8<-- "docs/pipeline/tasks/samples/parse-fix-silver.md"
+
+The first table is the table's own order, `currunix, seqnum, curruuid`, in
+which a head sorts after the steps that follow it: the first seven rows are
+steps `1` to `7`, row 7 is the head they descend from, and rows 6 and 35 are
+the pair the bridge received, at `.761` and `.762`. A chain is read off this
+table by `prevuuid` and never by reading down it.
+
+Under one chain the table holds two successions. Row 7 heads one: rows 8, 9,
+10, 11, 15 and 22 follow it at `seqnum` `1` to `6`, and row 36, the bridge's
+restatement of the fill, is `7`. Row 6 heads the other, with row 35 its `1`.
+Each row's `prevuuid` is the `curruuid` of the row before it in its own
+succession -- row 8 names `…caf49857`, row 35 names `…91130359` -- and
+neither succession names a row of the other. `parentuuids` is shown as its
+length, and that length is `seqnum` on every row: the column holds the whole
+lineage and not only the step before.
+
+The walk re-dated the eight rows the parse had left at the pin, by their
+`transacttime`, so each reads `12:46:39.743` here and took an identity
+beginning with that instant. The second table pairs each line's bronze row
+with its silver one: row 7 moved from `…2788b1e8` to `…caf49857`, and its
+seven neighbours the same way. Row 6 kept both its instant and its identity.
+Row 35 kept its `.762` and still took a new one, `…998b5795` to `…274eb390`,
+because the walk restated its content: rows 35 and 36 were parsed under
+`e7254b12:9f0316669a`, the fill's own context, as the
+[bronze sample](parse-fix-bronze.md#sample-rows) shows, and the walk settled
+them under this chain, `crossuuid` `…b7b57111` where bronze held `…3e201dc0`.
+
+`state` and `creaunix` are what the chain folded forward, so they follow a
+succession rather than the table: `80FILLED` on rows 36 and 35, the two
+restatements of the fill, and `40PARTFILL` on every row before them in their
+own succession. `creaunix` reads `12:46:39.743` down the bridge's succession
+and `12:46:39.761` on both received rows, row 35 inheriting its head's;
+`expirunix` is `2026-08-14 16:25:00.000` on all ten. What a product reads off
+these rows is on [`build_dbt`](build-dbt.md#sample-rows).
+
+`tools/pipeline_samples.py` regenerates the file from a run over the fixture,
+and the integration suite checks it with `--check`.
 ## Migrating a warehouse that holds the retired table
 
 There is no compatibility shim for the one FIX table the two replaced. Create

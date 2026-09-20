@@ -181,6 +181,53 @@ line the bridge printed twice, byte for byte, is one row, because the key is
 of the bytes and of nothing else; the bundled capture's 144 physical lines are
 141 stored ones for that reason, 3 of them repeated exactly.
 
+## Sample rows
+
+The sample is chain `e7254b12:9f03166699` of `python/tests/data/ulbridge.log`,
+a partial fill and the fill that closed the order: ten lines, as
+`parse_messages` lands them in `logs.messages`. An identity is shown by its
+last eight hex digits behind a leading `…`, and the stored value is sixteen
+bytes; `bodyhash` is shown by its first eight.
+
+--8<-- "docs/pipeline/tasks/samples/parse-messages.md"
+
+The first table is the header, read off each line. All ten are thread `15255`
+on session `e7254b12`, and the bridge handled them in two contexts: the first
+eight rows are `9f03166699` at sequence `40218`, the partial fill, and rows 35
+and 36 are `9f0316669a` at `40219`, the fill. What makes ten lines of two
+contexts one chain is the walk, on
+[`parse_fix_silver`](parse-fix-silver.md#sample-rows); nothing read here
+knows it.
+
+`timestamp` reads `2026-08-14 14:46:39.769` on the first eight rows and
+`.770` on the last two. It is the clock the bridge printed, and it is what
+[the window](#the-window) is taken on, but it dates no message: the frame on
+row 6 states `52=20260814-12:46:39.761` past where the `body` column cuts
+off, two hours earlier, and that is the clock the parse reads instead, on
+[`parse_fix_bronze`](parse-fix-bronze.md#sample-rows).
+
+The second table is what each line printed after its header. Rows 6 and 35
+are `OMS_X1_TradeCapture` at `INFO`, `Receiving :` and the FIX frame the
+bridge received. Rows 7 and 36 are the same plugin at `DEBUG`,
+`RouteMessage :` and the bridge's own key=value restatement of the frame it
+just received. Rows 8, 9, 10 and 11 are `After Enrichment ->`, the same
+message logged again after each plugin ran, and row 15 is `After -->` from
+`Force_IRIS_ByPass`. Row 22 is `PushMessage :`, the message handed on to
+`ULFilter`, the destination the bridge resolved for it.
+
+Ten lines are ten rows, because the key is the digest of the whole line and
+no two of these are the same bytes. A plugin need not have added a field for
+that: rows 8 and 9 are both `TECH_AddFields_OMS_X1` logging
+`After Enrichment ->`, and the second is the shorter of the two, because the
+enrichment rewrote the party group rather than growing it. Every `curruuid`
+here begins `0000000000007000`: the identity is a version-7 UUID whose first
+48 bits are the instant it was settled at, a stored line is settled at none,
+and the leading zeros are that absence. What the parse does with the identity
+is name it as the message's one `srcuuids` entry, unchanged, on
+[`parse_fix_bronze`](parse-fix-bronze.md#sample-rows).
+
+`tools/pipeline_samples.py` regenerates the file from a run over the fixture,
+and the integration suite checks it with `--check`.
 ## Run
 
 ```bash

@@ -30,6 +30,13 @@ named by the bridge's `msgsessionid:msgctxid`. `python/tests/test_fix.py`
 holds every chain's counts; they are the same numbers
 `cargo run --example fix_capture` prints in a core checkout.
 
+The pipeline task pages under `docs/pipeline/tasks/` show chain
+`e7254b12:9f03166699` -- rows 6 to 11, 15, 22, 35 and 36, a partial fill and
+the fill that closed the order -- as each of the four tasks lands it.
+`tools/pipeline_samples.py` renders those tables from a run over this file
+into `docs/pipeline/tasks/samples/`, and `--check` regenerates them in memory
+and fails on drift.
+
 The workflow integration test reads it through `Message.text_options()`,
 writes `logs.messages`, parses that table into `fix.bronze` and walks it into
 `fix.silver`. The Airflow operator tests run the same fixture through the

@@ -291,6 +291,53 @@ none of them.
   `fix_stored_reader` views rather than converts: half the codes read back
   negative and name the same rows.
 
+## Sample rows
+
+The sample is chain `e7254b12:9f03166699` of `python/tests/data/ulbridge.log`,
+a partial fill and the fill that closed the order: ten lines, as
+`parse_fix_bronze` lands them in `fix.bronze`. An identity is shown by its
+last eight hex digits behind a leading `…`, and the stored value is sixteen
+bytes; a null is an empty cell.
+
+--8<-- "docs/pipeline/tasks/samples/parse-fix-bronze.md"
+
+Ten lines answer ten messages, one frame each. `msgdirection` reads `R` on
+rows 6 and 35, the two frames the bridge received, and `S` on its own eight
+lines. `sendingtime` is set on those two alone, because the bridge's
+key=value form carries no `SendingTime(52)`, and `currunix` follows it:
+`2026-08-14 12:46:39.761` on row 6, `.762` on row 35, and the pin
+`1970-01-01 00:00:00.000` on the other eight. An identity is settled over
+that instant and the message's content code, and its first 48 bits are the
+instant, so the two dated rows' `curruuid` begin `01a0004f6a…` and the eight
+pinned ones begin with zeros.
+
+`transacttime` is the `TransactTime(60)` each message stated, and the second
+table is what the parse does not read it for: `seqnum`, `prevuuid`,
+`prevunix` and `parentuuids` are empty on all ten rows, and filling them is
+[`parse_fix_silver`](parse-fix-silver.md#sample-rows)'s. Row 6 states the tag
+to the microsecond, `12:46:39.743016`, the eight bridge lines state
+`12:46:39.743`, and row 35 states a bare date, so its column reads
+`2026-08-14 00:00:00.000`. What that bare date costs a product is on
+[`build_dbt`](build-dbt.md#sample-rows).
+
+`crosscode` is the bridge's `msgsessionid:msgctxid` as parsed, so the fill is
+a chain of its own here: `e7254b12:9f03166699` on the first eight rows and
+`e7254b12:9f0316669a` on rows 35 and 36. `srcuuids` names the stored line
+each message was parsed out of, row 6 naming `…7eeab44c`, the identity
+[`parse_messages`](parse-messages.md#sample-rows) shows against that line.
+
+The first table is what the parse read and what it settled. `ordstatus` is
+read where the message spells it -- `1` on row 6, off `39=1`, and
+`partfilled` on rows 7, 8, 9, 10, 11, 15 and 22, where the bridge spells the
+field as a word -- and settled where no message does: rows 35 and 36 read
+`2`, filled, which neither line states, and which is the reading `state`
+gives as `80FILLED`. The two `execid` values are the order's two venue
+executions, and the quantities beside them are the order's rather than each
+execution's: `00011377089XEEA0` puts `21` into a `cumqty` of `340`, and
+`00011377090XEEA0` puts `57` into `600`, leaving `0`.
+
+`tools/pipeline_samples.py` regenerates the file from a run over the fixture,
+and the integration suite checks it with `--check`.
 ## Run
 
 ```bash

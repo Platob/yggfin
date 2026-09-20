@@ -126,6 +126,21 @@ Every successful task returns the same small result contract:
 
 `window` is the interval the run covered, in epoch nanoseconds.
 
+## Sample rows
+
+Each task page shows one order of the bundled capture as that task lands it:
+chain `e7254b12:9f03166699` of `python/tests/data/ulbridge.log`, a partial
+fill and the fill that closed it, ten of its 144 lines.
+[`parse_messages`](tasks/parse-messages.md) shows the ten stored lines,
+[`parse_fix_bronze`](tasks/parse-fix-bronze.md) the ten rows the parse read
+off them, [`parse_fix_silver`](tasks/parse-fix-silver.md) the same ten walked
+into one chain, and [`build_dbt`](tasks/build-dbt.md) the order's ten events,
+its one current row and its two fills. `tools/pipeline_samples.py` runs the
+four tasks over the fixture and renders the tables into
+`docs/pipeline/tasks/samples/`, one file per page, and each page includes its
+own. The integration suite runs the tool with `--check`, which regenerates the
+tables in memory and fails on drift.
+
 ## Deployment choices
 
 | mode | capture | catalog | warehouse | guide |

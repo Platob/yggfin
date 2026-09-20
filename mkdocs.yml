@@ -6,6 +6,7 @@ repo_name: rekep
 docs_dir: docs
 exclude_docs: |
   assets/README.md
+  pipeline/tasks/samples/
 
 theme:
   name: material

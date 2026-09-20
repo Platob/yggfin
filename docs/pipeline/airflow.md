@@ -172,6 +172,72 @@ and name the same catalog in `--conf`, as the S3 example below does.
 The default SQLite catalog is suitable only when scheduler and task execution
 share one durable host filesystem.
 
+## A run on this checkout
+
+The check the integration suite makes, by hand: a private `AIRFLOW_HOME`, the
+bundled fixture as `filesystem`, and the catalog of your choice as `CATALOG`.
+
+```bash
+cd "$REKEP_ROOT"
+export AIRFLOW_HOME="$(mktemp -d)"
+export AIRFLOW__CORE__DAGS_FOLDER="$REKEP_ROOT/tasks/airflow"
+export AIRFLOW__CORE__LOAD_EXAMPLES=False
+CATALOG='{"name":"rekep","properties":{"type":"sql","uri":"sqlite:////var/lib/rekep/catalog.db","warehouse":"/var/lib/rekep/warehouse"}}'
+uv run --project "$REKEP_ROOT/python" --group airflow airflow db migrate
+uv run --project "$REKEP_ROOT/python" --group airflow airflow dags test \
+  rekep_ingestion \
+  --conf '{"filesystem":"file://'"$REKEP_ROOT"'/python/tests/data/ulbridge.log",
+           "start":"2026-08-14","end":"2026-08-14","catalog":'"$CATALOG"'}'
+uv run --project "$REKEP_ROOT/python" --group airflow airflow dags test \
+  rekep_products --conf '{"catalog":'"$CATALOG"'}'
+```
+
+Airflow 3.3.1 printed these lines among its own:
+
+```text
+INFO rekep.logs parse_messages finished: 144 read, 141 written, 3 skipped → messages=logs.messages in 0.8s
+INFO rekep.logs parse_fix_bronze finished: 141 read, 53 written, 26 skipped → bronze=fix.bronze in 1.3s
+INFO rekep.logs parse_fix_silver finished: 53 read, 53 written, 0 skipped → silver=fix.silver in 1.4s
+DagRun Finished: dag_id=rekep_ingestion, ... state=success
+INFO rekep.logs build_dbt 29 nodes ran: 4 models, 25 tests, 0 warned
+INFO rekep.logs build_dbt finished: 29 read, 66 written, 0 skipped → executions_fills=executions.fills, orders_events=orders.events, orders_current=orders.current in 3.2s
+DagRun Finished: dag_id=rekep_products, ... state=success
+```
+
+`dags test` proves that the DAG parses under Airflow's own loading, that the
+run's `--conf` reaches every node as its Params, and that each node ran the
+locked runner into the catalog the conf named. It runs one DAG directly and
+fires no Asset-triggered run, which is why the products DAG has its own command
+above; a scheduler fires it on the `fix.silver` event. `airflow assets list`
+then names the six Assets: `logs.messages`, `fix.bronze`, `fix.silver`,
+`orders.events`, `orders.current` and `executions.fills`. The integration test
+`test_a_real_dag_run_publishes_both_tables_from_its_conf` in
+`python/tests/test_marimo_operator.py` runs the ingestion DAG this way.
+
+### Under a scheduler
+
+What `dags test` cannot show, a scheduler does: `airflow standalone` in a
+private home of the same shape, both DAGs unpaused, and the local-files
+trigger above issued with no `catalog` in its conf. The scheduler recorded a
+manual run of `rekep_ingestion` that took 23 seconds and, one second after it
+ended, a run of `rekep_products` it created itself:
+
+```text
+Created asset-triggered DagRun for 'rekep_products': ... consumed 1 asset events
+```
+
+Its `run_id` begins `asset_triggered__`, and its `build_dbt` logged the same
+two lines as above. Both DAGs wrote the checkout's default catalog,
+`data/catalog.db`, because the conf named none. That is the rule the run
+shows: an asset-triggered run has no conf at all, so `rekep_products` reads
+the catalog its own document names, and the two DAGs name the same catalog
+through their documents or not at all. A first attempt that had pointed the
+ingestion trigger at a catalog of its own failed in `build_dbt` with
+`Table does not exist: fix.silver` for exactly that reason. The warehouse
+then held the six tables at the counts every other route lands -- 141, 53,
+53, 49, 9 and 8 rows -- and `tools/pipeline_samples.py --catalog … --check`
+against it answered `4 samples match`.
+
 ## S3 capture with SQL catalog
 
 Deploy the warehouse as described in [S3 deployment](operations/deploy.md#s3-with-a-sql-catalog),
