@@ -1,4 +1,4 @@
-"""Publish one order of the bundled capture as every stage lands it.
+"""Publish one order of the test capture as every stage lands it.
 
 The pipeline pages under `docs/pipeline/tasks/` show real rows rather than
 invented ones: one chain of `python/tests/data/ulbridge.log` -- bridge session
@@ -7,8 +7,9 @@ fill that closed the order after it -- as `parse_messages` stores its lines,
 `parse_fix_bronze` parses them, `parse_fix_silver` walks them and `build_dbt`
 derives the products. Each page includes its own Markdown file from
 `docs/pipeline/tasks/samples/` through `pymdownx.snippets`, so what a page
-shows is what a run lands, and `--check` regenerates into memory and fails on
-any difference, which is what the test suite asks.
+shows is what a run lands. `--check` runs the four tasks again into a
+throwaway catalog, renders the tables, and fails on any difference, which is
+what the test suite asks.
 
 Run from the repository root whenever a stage or the fixture changes:
 
