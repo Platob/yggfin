@@ -258,11 +258,11 @@ and row 35 comes first at `2026-08-14 00:00:00.000`, because its
 is a head, rows 8, 9, 10, 11, 15 and 22 are its steps 1 to 6, and row 36 is
 step 7, following `…f16b9d55`, row 22's key; row 6 is a head, and row 35 is
 its step 1, following `…91130359`. The walk that gave them those steps is on
-[`parse_fix_silver`](parse-fix-silver.md#walk-the-chains). `cumqty` and
-`leavesqty` read `340` and `260` until the fill's rows, 35 and 36, where they
-read `600` and `0` and `state` reads `80FILLED`. `clordid` is empty on those
-two rows, because neither line states a `ClOrdID(11)`, and `avgpx` is empty
-on row 36.
+[`parse_fix_silver`](parse-fix-silver.md#sample-rows). `cumqty` and
+`leavesqty` read `600` and `0` on rows 35 and 36, the two restatements of the
+fill, where `state` reads `80FILLED`, and `340` and `260` on the other eight.
+`clordid` is empty on those two rows, because neither line states a
+`ClOrdID(11)`, and `avgpx` is empty on row 36.
 
 The second table is the one row the ten events fold to. `orderkey` is
 `…b7b57111`, the chain's `crossuuid`, and `eventcount` is `10`.

@@ -219,24 +219,26 @@ then names the six Assets: `logs.messages`, `fix.bronze`, `fix.silver`,
 What `dags test` cannot show, a scheduler does: `airflow standalone` in a
 private home of the same shape, both DAGs unpaused, and the local-files
 trigger above issued with no `catalog` in its conf. The scheduler recorded a
-manual run of `rekep_ingestion` that took 23 seconds and, one second after it
-ended, a run of `rekep_products` it created itself:
+manual run of `rekep_ingestion` that took 22 seconds and, before that run was
+marked finished, a run of `rekep_products` it created itself off the event
+`parse_fix_silver` had just published:
 
 ```text
 Created asset-triggered DagRun for 'rekep_products': ... consumed 1 asset events
 ```
 
-Its `run_id` begins `asset_triggered__`, and its `build_dbt` logged the same
-two lines as above. Both DAGs wrote the checkout's default catalog,
-`data/catalog.db`, because the conf named none. That is the rule the run
-shows: an asset-triggered run has no conf at all, so `rekep_products` reads
-the catalog its own document names, and the two DAGs name the same catalog
-through their documents or not at all. A first attempt that had pointed the
-ingestion trigger at a catalog of its own failed in `build_dbt` with
-`Table does not exist: fix.silver` for exactly that reason. The warehouse
-then held the six tables at the counts every other route lands -- 141, 53,
-53, 49, 9 and 8 rows -- and `tools/pipeline_samples.py --catalog … --check`
-against it answered `4 samples match`.
+Its `run_id` begins `asset_triggered__`, it finished ten seconds later, and
+its `build_dbt` logged the same two lines as above. Both DAGs wrote the
+checkout's default catalog, `data/catalog.db`, because the conf named none.
+That is the rule the run shows: an asset-triggered run has no conf at all, so
+`rekep_products` reads the catalog its own document names, and the two DAGs
+name the same catalog through their documents or not at all. A first attempt
+that had pointed the ingestion trigger at a catalog of its own failed in
+`build_dbt` with `Table does not exist: fix.silver` for exactly that reason.
+The warehouse then held the six tables at the counts every other route lands
+-- 141, 53, 53, 49, 9 and 8 rows -- and
+`tools/pipeline_samples.py --catalog … --check` against it answered
+`4 samples match`.
 
 ## S3 capture with SQL catalog
 
