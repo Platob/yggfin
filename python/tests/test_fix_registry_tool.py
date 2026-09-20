@@ -130,7 +130,7 @@ def test_documentation_labels_the_standalone_tool_and_uv_entrypoint() -> None:
     assert "Standalone tool" in page
     assert "uv run --project python --group runner --frozen" in page
     assert "fix_registry" in page
-    assert "7,787" in page
+    assert "7,771" in page
     assert "Field.explode_fields()" in page
     assert "Field.into_json(indent=2)" in page
     assert "empty Arrow reader" in page

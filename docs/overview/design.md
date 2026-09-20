@@ -34,20 +34,25 @@ order.
 
 ## Raw before interpreted
 
-`logs.messages` preserves exact text bodies. `fix.messages` interprets every
-body while retaining the arrival record in `fixentries`, under the
+`logs.messages` preserves exact line bytes. `fix.bronze` interprets every
+line while retaining the arrival record in `fixentries`, under the
 `nofixentries` that counts it, where a pair no dictionary explains is an entry
-of tag 0 under its own key. A parser update can therefore be replayed from
-Iceberg without rereading the original files.
+of tag 0 under its own key; `fix.silver` restates those rows with their chains
+walked. A parser update can therefore be replayed from Iceberg without
+rereading the original files, and a change to the walk from the parsed rows
+without parsing again.
 
 ## Replays are ordinary runs
 
-`logs.messages` replaces on `(sourceurl, rownum)`; `fix.messages` replaces on
-`curruuid`, because a bridge logs one message again at every hop it passes.
+`logs.messages` replaces on `currhashcode`; `fix.bronze` and `fix.silver`
+replace on `curruuid`, because a bridge logs one message again at every hop
+it passes.
 A run parses one window, `[start, end)` -- the last day up to now when a task
 is given neither bound -- and reprocessing the same window reads the same rows
 and lands them over the ones it landed before: the table holds each key once,
-and the run reports what it carried.
+and the run reports what it carried. The walk re-settles the identity of a
+message it dates, so a silver key is not always its bronze twin's: `fix.silver`
+is written from `fix.bronze` and never in place.
 
 ## Documentation names contracts
 

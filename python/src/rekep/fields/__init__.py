@@ -11,6 +11,7 @@ from rekep.fields.field import (
     FIELD_ID,
     HOUR,
     ICEBERG,
+    IDENTITY_PARTITION,
     PARTITION_KEY,
     PRIMARY_KEY,
     SORT_KEY,
@@ -24,6 +25,7 @@ from rekep.fields.field import (
     primary_key,
     replace_field,
     sort_key,
+    stored_arrow_reader,
 )
 
 __all__ = [
@@ -34,6 +36,7 @@ __all__ = [
     "FIELD_ID",
     "HOUR",
     "ICEBERG",
+    "IDENTITY_PARTITION",
     "PARTITION_KEY",
     "PRIMARY_KEY",
     "SORT_KEY",
@@ -50,4 +53,5 @@ __all__ = [
     "replace_field",
     "scalar",
     "sort_key",
+    "stored_arrow_reader",
 ]

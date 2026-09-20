@@ -24,7 +24,9 @@ from rekep.times import datetime_of  # noqa: E402
 
 # Yggdryl's default when TextOptions leaves the bound unset.
 BATCH_ROW_SIZE = 65_536
-FIELD = Message.into_field()
+# The read's own shape, which is the contract with the line's content code
+# widened to the unsigned type the core states it in.
+FIELD = Message.read_field()
 SCHEMA = FIELD.into_arrow_schema()
 
 
@@ -150,10 +152,16 @@ def verify(case: Case, rows: int) -> pyarrow.Table:
     first, last = table.slice(0, 1).to_pylist()[0], table.slice(rows - 1, 1).to_pylist()[0]
     for row, index in ((first, 0), (last, rows - 1)):
         url = row.pop("sourceurl")
-        digest = row.pop("bodyhash")
+        code = row.pop("currhashcode")
+        identity = row.pop("curruuid")
+        # The body is the whole line as the read retains it, header included,
+        # so the payload written for the row closes it.
+        line = row.pop("body")
         assert isinstance(url, str) and url.endswith(case.filename)
-        assert isinstance(digest, bytes) and len(digest) == 16
-        assert row == expected(index)
+        assert isinstance(code, int)
+        assert isinstance(identity, bytes) and len(identity) == 16
+        assert isinstance(line, bytes) and line.endswith(expected(index)["body"])
+        assert row == {key: value for key, value in expected(index).items() if key != "body"}
     return table
 
 

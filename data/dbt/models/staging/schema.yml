@@ -3,8 +3,10 @@ version: 2
 models:
   - name: stg_fix_messages
     description: >
-      One FIX message, narrowed to the columns the products read and dated by
-      the precedence both of them state. A view: it is never published.
+      One walked FIX message off `fix.silver`, narrowed to the columns the
+      products read, dated by the precedence both of them state, and carrying
+      the products' reading of the market facts FIX's own fields state. A
+      view: it is never published.
     columns:
       - name: sourceurl
         description: The capture object the message's line was read from.
@@ -24,15 +26,31 @@ models:
       - name: crosscode
         description: The exact chain name; empty means unknown.
       - name: prevuuid
-        description: The identity of the step this one follows in its chain.
+        description: The identity of the step this one follows in its chain, filled by the walk.
       - name: seqnum
         description: Where this step stands in its chain, filled by the walk.
       - name: eventtime
         description: >
-          The transaction time the message stated, else the instant the parse
+          The transaction time the message stated, else the instant the walk
           settled on. Never null, because the settled instant never is.
         data_tests:
           - not_null
       - name: sessionid
         description: >
           The bridge session instance the capture recorded the line on.
+      - name: symbolticker
+        description: The symbol the message stated, minus FIX's own non-answer.
+      - name: isincode
+        description: The ISIN the message stated under `SecurityIDSource(22)`, else null.
+      - name: miccode
+        description: >
+          The market the message named first: `SecurityExchange(207)`, else
+          `ExDestination(100)`, else `LastMkt(30)`.
+      - name: px
+        description: >
+          The price the event is about: `Price(44)`, else `LastPx(31)`, else
+          `AvgPx(6)`.
+      - name: qty
+        description: >
+          The quantity the event is about: `OrderQty(38)`, else `LastQty(32)`,
+          else `CumQty(14)`, else `LeavesQty(151)`.

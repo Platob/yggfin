@@ -120,7 +120,7 @@ def test_false_primary_key_metadata_is_not_an_identifier() -> None:
                     "value",
                     pyarrow.int64(),
                     nullable=False,
-                    metadata={b"iceberg:primary_key": b"false"},
+                    metadata={b"ICEBERG:primary_key": b"false"},
                 )
             ]
         ),
@@ -137,7 +137,7 @@ def test_nullable_primary_key_metadata_is_rejected() -> None:
                     "value",
                     pyarrow.int64(),
                     nullable=True,
-                    metadata={b"iceberg:primary_key": b"true"},
+                    metadata={b"ICEBERG:primary_key": b"true"},
                 )
             ]
         ),
@@ -428,14 +428,14 @@ def test_an_invalid_declared_id_is_rejected() -> None:
 
 
 def test_ids_ride_under_the_protocol_prefix() -> None:
-    """`iceberg:field_id` beside the other Iceberg keys; parquet's is the bridge."""
+    """`ICEBERG:field_id` beside the other Iceberg keys; parquet's is the bridge."""
     from rekep.fields import FIELD_ID
     from rekep.iceberg.fields import PARQUET_FIELD_ID
 
     field = Field(name="mic", dtype=pyarrow.string())
     field.iceberg["field_id"] = "7"
     assert field.metadata[FIELD_ID] == "7"
-    assert FIELD_ID == "iceberg:field_id"
+    assert FIELD_ID == "ICEBERG:field_id"
     assert field.into_dict()["metadata"][FIELD_ID] == "7"
     assert PARQUET_FIELD_ID == b"PARQUET:field_id", "what parquet files carry, not what we write"
 

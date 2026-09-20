@@ -35,16 +35,17 @@ INGESTED = {shape.table: shape for shape in TABLES}
 #: What the models commit, and the rows the checked-in 144-line fixture answers
 #: for each. One event per message that carried an order identity and a
 #: lifecycle fact, one row per chain, and one occurrence per execution the
-#: bridge relayed into a chain.
+#: bridge relayed into a chain -- a chain being the bridge's own
+#: `msgsessionid:msgctxid` where the row header stated both.
 PRODUCTS = {
     "orders.events": 49,
-    "orders.current": 8,
-    "executions.fills": 7,
+    "orders.current": 9,
+    "executions.fills": 8,
 }
 
-#: The whole route, in order: capture to raw rows, raw rows to FIX, FIX to
-#: products.
-WORKFLOW = ("parse_messages", "parse_fix", "build_dbt")
+#: The whole route, in order: capture to raw rows, raw rows to parsed FIX,
+#: parsed FIX to walked FIX, walked FIX to products.
+WORKFLOW = ("parse_messages", "parse_fix_bronze", "parse_fix_silver", "build_dbt")
 
 #: The day the fixture was captured on, which the two ingestion tasks are
 #: told because each covers the last day when nothing says otherwise.
@@ -156,7 +157,7 @@ def test_every_projected_column_is_one_the_published_shape_carries(manifest: Any
 
 
 def test_no_model_writes_a_table_ingestion_owns(manifest: Any) -> None:
-    """A product is derived; the two ingested tables are written by their tasks."""
+    """A product is derived; the three ingested tables are written by their tasks."""
     assert not set(published(manifest)) & set(INGESTED)
 
 

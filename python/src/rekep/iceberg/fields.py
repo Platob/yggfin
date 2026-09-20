@@ -35,8 +35,10 @@ FIRST_PARTITION_ID = 1000
 
 #: Arrow field metadata key the ecosystem stores Iceberg's column ids under --
 #: parquet's own, which is why the prefix is not ours. Ours is
-#: `iceberg:field_id`, beside the other keys the protocol owns; this is the
-#: bridge between the two, and it is crossed here and nowhere else.
+#: `ICEBERG:field_id`, beside the other keys the protocol owns; this is the
+#: bridge between the two, and it is crossed here and nowhere else: a
+#: declared id is read under our key first, and under parquet's where a
+#: schema came back from a file rather than from a declaration.
 PARQUET_FIELD_ID = b"PARQUET:field_id"
 ICEBERG_FIELD_ID = FIELD_ID.encode()
 
@@ -174,7 +176,7 @@ def iceberg_sort_order(
     and not the order 1 a bare `SortOrder()` carries.
 
     What a sort key *is* -- where a row sits inside its file, against a
-    partition, which decides which file -- is in its ``iceberg:`` metadata.
+    partition, which decides which file -- is in its ``ICEBERG:`` metadata.
     """
     require("pyiceberg", "iceberg")
     from pyiceberg.table.sorting import (
@@ -450,8 +452,9 @@ def _planned_type_ids(dtype: pyarrow.DataType, path: str) -> list[tuple[str, int
 
 
 def _declared_id(field: pyarrow.Field) -> int | None:
-    """One positive Iceberg id from Arrow's bridge metadata."""
-    encoded = (field.metadata or {}).get(PARQUET_FIELD_ID)
+    """One positive Iceberg id from Arrow's metadata: ours, else parquet's."""
+    held = field.metadata or {}
+    encoded = held.get(ICEBERG_FIELD_ID, held.get(PARQUET_FIELD_ID))
     if encoded is None:
         return None
     try:

@@ -5,7 +5,7 @@
 {#
   Sixteen ordered bytes over the parts that scope one identity.
 
-  `fix.messages` already carries the identities the parser could name --
+  `fix.silver` already carries the identities the parser could name --
   `curruuid` for an event and `crossuuid` for the chain it belongs to -- so a
   digest is written here only where SQL has to name something the parser had no
   word for. Every part is cast and coalesced before it is joined, so a null
@@ -23,7 +23,7 @@ from_hex(md5(
 {#
   The normalized states an order is no longer live in.
 
-  `state` and `exectype` reach `fix.messages` as the codec's own sortable
+  `state` and `exectype` reach `fix.silver` as the codec's own sortable
   spelling of an OrdStatus(39) or ExecType(150) code, not as the wire's
   character: `2` Filled is `80FILLED`, `3` DoneForDay is `80DONEDAY`, `B`
   Calculated is `80CALCULAT`, `4` Canceled is `90CANCELED`, `8` Rejected is

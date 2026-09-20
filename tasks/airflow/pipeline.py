@@ -1,4 +1,4 @@
-"""Airflow DAG for the two streamed ingestion stages."""
+"""Airflow DAG for the three streamed ingestion stages."""
 
 from __future__ import annotations
 
@@ -18,8 +18,13 @@ def _defaults(name: str) -> dict[str, object]:
 
 
 MESSAGE_DEFAULTS = _defaults("parse_messages")
-FIX_DEFAULTS = _defaults("parse_fix")
-PARAMS = {**MESSAGE_DEFAULTS, **FIX_DEFAULTS}
+BRONZE_DEFAULTS = _defaults("parse_fix_bronze")
+SILVER_DEFAULTS = _defaults("parse_fix_silver")
+# One Params mapping over three documents, so a name two of them share --
+# `start`, `end`, `catalog`, `registry` -- means one thing on every node. The
+# table each stage reads is named for what it reads, `messages` and `bronze`,
+# so a run's conf cannot hand one stage the other's source.
+PARAMS = {**MESSAGE_DEFAULTS, **BRONZE_DEFAULTS, **SILVER_DEFAULTS}
 
 
 def _task(name: str, target: str) -> MarimoOperator:
@@ -35,9 +40,9 @@ def _task(name: str, target: str) -> MarimoOperator:
 
 @dag(
     dag_id="rekep_ingestion",
-    description="Parse one day of captured text into raw messages, then native FIX rows.",
+    description="Parse one day of captured text into raw messages, then parsed and walked FIX.",
     # One run a day, covering its own data interval: the operator hands the
-    # interval to both tasks as their `start` and `end`, and a manual trigger
+    # interval to every task as its `start` and `end`, and a manual trigger
     # of the DAG covers the last complete day the same way. Triggered on an
     # unscheduled DAG, the interval has no width and each task covers the day
     # before the instant it ran instead.
@@ -50,8 +55,9 @@ def _task(name: str, target: str) -> MarimoOperator:
 )
 def _ingestion() -> None:
     messages = _task("parse_messages", "logs.messages")
-    fixed = _task("parse_fix", "fix.messages")
-    messages >> fixed
+    bronze = _task("parse_fix_bronze", "fix.bronze")
+    silver = _task("parse_fix_silver", "fix.silver")
+    messages >> bronze >> silver
 
 
 ingestion = _ingestion()

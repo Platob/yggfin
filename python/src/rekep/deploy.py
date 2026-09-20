@@ -43,10 +43,13 @@ class Deployed:
         return field_of(self.shape(), self.table)
 
 
-#: The tables the supported ingestion graph writes, in production order.
+#: The tables the supported ingestion graph writes, in production order. The
+#: two FIX tables are one shape: what the parse answered and what the walk
+#: restated are the same row, and only what the walk filled tells them apart.
 TABLES: tuple[Deployed, ...] = (
     Deployed("logs.messages", Message.into_field),
-    Deployed("fix.messages", fix_message_field),
+    Deployed("fix.bronze", fix_message_field),
+    Deployed("fix.silver", fix_message_field),
 )
 
 

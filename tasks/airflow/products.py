@@ -10,9 +10,10 @@ from marimo_operator import MarimoOperator
 
 ROOT = str(Path(__file__).resolve().parents[2])
 
-#: What the ingestion DAG publishes, and what this one waits on. Naming the
-#: Asset is the whole schedule: a run starts when `parse_fix` writes.
-UPSTREAM = Asset(name="fix.messages")
+#: What the ingestion DAG publishes last, and what this one waits on. Naming
+#: the Asset is the whole schedule: a run starts when `parse_fix_silver`
+#: writes, because a product reads the walked rows and never the parsed ones.
+UPSTREAM = Asset(name="fix.silver")
 
 #: The tables the dbt project commits, in the order its models build them.
 PUBLISHED = ("orders.events", "orders.current", "executions.fills")
@@ -24,7 +25,7 @@ DEFAULTS = json.loads(
 
 @dag(
     dag_id="rekep_products",
-    description="Build the order and execution products from the stored FIX rows.",
+    description="Build the order and execution products from the walked FIX rows.",
     schedule=[UPSTREAM],
     catchup=False,
     max_active_runs=1,

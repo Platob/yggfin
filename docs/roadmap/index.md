@@ -1,12 +1,12 @@
 # Data-product roadmap
 
-The ingestion foundation is complete when `fix.messages` is replayable,
+The ingestion foundation is complete when `fix.silver` is replayable,
 typed, auditable, and deployable. The next work is not another parser layer;
-it is a sequence of business products derived from that table.
+it is a sequence of business products derived from the walked rows.
 
 ```mermaid
 flowchart LR
-    F[("fix.messages")] --> OE[("orders.events")]
+    F[("fix.silver")] --> OE[("orders.events")]
     OE --> OC[("orders.current")]
     F --> EX[("executions.fills")]
     F --> BU[("book.updates")]
@@ -31,7 +31,8 @@ what these pages specify.
 
 ## Rules shared by every product
 
-1. Read `fix.messages` as a `RecordBatchReader`; never re-open captures.
+1. Read `fix.silver` as a `RecordBatchReader`; never re-open captures, and
+   never `fix.bronze`, which carries no chain.
 2. Retain `sourceurl`, `rownum`, and `curruuid` as source lineage.
 3. Make the row grain and key explicit before adding columns.
 4. Keep stated protocol values separate from derived identities or state.

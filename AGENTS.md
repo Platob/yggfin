@@ -95,8 +95,10 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
 The supported graph is:
 
 ```text
-filesystem URI -> parse_messages -> logs.messages -> parse_fix -> fix.messages
-fix.messages -> build_dbt -> orders.events, orders.current, executions.fills
+filesystem URI -> parse_messages   -> logs.messages
+logs.messages  -> parse_fix_bronze -> fix.bronze
+fix.bronze     -> parse_fix_silver -> fix.silver
+fix.silver     -> build_dbt        -> orders.events, orders.current, executions.fills
 ```
 
 Each task directory contains one Marimo application beside its JSON document.
@@ -106,33 +108,58 @@ each batch, keeps the lines whose `timepartition` falls in the run's window,
 and writes one schema-bearing reader directly to Iceberg. The window is
 `[start, end)`; a task given neither takes the last day up to now, and a run
 over a window replaces what an earlier run of it landed. `logs.messages` is
-keyed on `bodyhash`, the digest of the exact body bytes, so identical bytes are
-one row whatever session carried them. `parse_fix` reads the stored rows of the
-same window and passes them through the two stages one codec exposes, in this
+keyed on `currhashcode`, the content code the native read states over the
+exact line bytes, so identical lines are one row whatever session carried
+them; nothing here computes a digest beside it. A raw text row names its source
+through Yggdryl `sourceurl` and `rownum`, and itself through `curruuid`, the
+line's own identity the native read states: a message parsed out of a stored
+line names that identity as its one `srcuuids` entry, which is provenance and
+never lineage, and no walk moves it.
+
+The two FIX stages one codec exposes are two tasks over two tables, in this
 order and no other:
 
 ```text
-parse -> lifecycle
+parse -> fix.bronze, lifecycle -> fix.silver
 ```
 
-It writes `fix_schema_carrying(carrier, fix_schema(registry, "fixmsg"))` without
-a yggfin FIX model: the dictionary's row, the capture's own columns in front,
-and nothing else defined here. A FIX row is a message and not a line -- a line
-carrying two frames answers two and a line carrying none answers none -- and a
-message logged again at every hop it passes is one event, so `fix.messages` is
-keyed on `curruuid`, laid out by the hour of `unix`, and sorted within a
-partition by `unix, seqnum, curruuid`. The walk reads the fixed row alone: a
-capture's own column beside it would be read as content and give every arrival
-its own identity.
+`parse_fix_bronze` reads the stored rows of the same window off the capture
+clock and parses them, and only that: a bronze row is what the message
+implied about itself, and `seqnum`, `prevuuid` and `parentuuids` are empty on
+every one because nothing has walked yet. `parse_fix_silver` reads `fix.bronze`
+for the run's window off the event clock `currunix` -- a bronze row is already
+an event -- with the rows the parse could not date, which sit at the codec's
+pin until the walk dates them by their `TransactTime`, read by that clock
+instead. It reads each row back as the message that wrote it, walks the
+chains, and lands the walked rows. The walk reads the fixed row alone: a
+capture's own column beside it would be read as content and give every
+arrival its own identity, so the carrier's columns are held back and put in
+front again by the line each walked row names. A silver row differs from its
+bronze twin in what the walk filled -- its place, its lineage, the folded
+`creaunix`, `expirunix` and `state` -- and in the identity those re-settle to;
+a duplicate is not a successor, and the walk gives every copy of one message
+the same place, the same lineage and the same state.
+
+Both tables are one field, `fix_schema_carrying(carrier, fix_schema(registry,
+"fixmsg"))` narrowed to what a table stores, without a yggfin FIX model: the
+dictionary's row, the capture's own columns in front, and nothing else defined
+here. A FIX row is a message and not a line -- a line carrying two frames
+answers two and a line carrying none answers none -- and a message logged
+again at every hop it passes is one event, so both tables are keyed on
+`curruuid` alone, laid out by the hour of `currunix` alone, and sorted within a
+partition by `currunix, seqnum, curruuid`. Each is declared once, on the field,
+and nothing else carries either mark. A replay of a window lands the same
+rows under the same key.
 
 The codec is the whole parse surface: the dictionary and the instant an undated
 message takes are pinned on it once, and each stage after it is a call rather
 than another pin. A capture order is pinned only where a door resolves one by
 position, which is the line door; the batch door fills from a column named
-after the field, so `parse_fix` pins none and cannot go stale against a header
-it never sees. A version is not among the pins -- what a message was read at
-is what its own `beginstring` said -- and `fix_codec` refuses by name any
-keyword that is not one of its seven.
+after the field, so neither FIX task pins one and cannot go stale against a
+header it never sees. A version is not among the pins -- what a message was
+read at is what its own `beginstring` said -- and `fix_codec` refuses by name
+any keyword that is not one of its seven. The doors are named for their
+stage: `fix_parse_*` and `fix_lifecycle_*`, a line door and a batch door each.
 
 `build_dbt` runs the dbt project under `data/dbt`. dbt owns the SQL a product
 is written in and nothing else: `rekep.dbt` is the one seam, a source is one
@@ -140,13 +167,16 @@ is written in and nothing else: `rekep.dbt` is the one seam, a source is one
 the DuckDB database is `:memory:` because Iceberg holds the state. A model's
 `config()` block is its Iceberg declaration -- table, key, partition, sort
 order and the storage types SQL cannot spell -- so no second Field, catalog or
-warehouse is declared anywhere under `data/dbt`.
+warehouse is declared anywhere under `data/dbt`. A product reads `fix.silver`
+and never `fix.bronze`, because a product needs the chain and bronze carries
+none; a market fact is FIX's own field, and the staging model restates the
+products' reading of it off those fields.
 
 Airflow launches the adjacent standalone runner through the locked `uv`
 `runner` group; the operator never calls the Rekep CLI. `rekep_ingestion` is
-the two streaming stages, daily, each run over its own data interval unless
+the three streaming stages, daily, each run over its own data interval unless
 the run's conf names `start` or `end`; `rekep_products` is `build_dbt`,
-scheduled on the `fix.messages` Asset the first one publishes.
+scheduled on the `fix.silver` Asset the first one publishes last.
 
 Every task result and its closing INFO record use `rekep.logs.Stage` and agree
 on `task`, `read`, `written`, `skipped`, `sources`, `targets`, `window`, and
@@ -169,14 +199,15 @@ python/src/rekep/
   iceberg/      catalog, dataset, schema bridge, and PyIceberg FileIO
   tasks/        application configuration only
   text/         raw Message declaration
-  fix.py        the bundled registry and the three-stage pipeline surface
+  fix.py        the bundled registry and the two FIX stages over two tables
   times.py      instant readings, the run window and the ULBridge row header
   resources.py  Yggdryl binding and required byte reads
   dbt.py        the dbt-duckdb plugin: a source is a read, a model is a commit
 tasks/
   airflow/
-  parse_fix/
   parse_messages/
+  parse_fix_bronze/
+  parse_fix_silver/
   optimize_iceberg/
   build_dbt/
 data/dbt/       the dbt project: models, schemas, macros and its one profile

@@ -11,7 +11,7 @@ field = Message.into_field()
 assert isinstance(field, Field)
 assert field.name == "Message"
 assert field["sourceurl"].nullable is False
-assert field["bodyhash"].digest.sources == ["body"]
+assert field["currhashcode"].iceberg["primary_key"] == "true"
 ```
 
 ## Declaration metadata

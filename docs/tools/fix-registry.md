@@ -22,15 +22,15 @@ thing under three names, so the browser reads all three through one projection
 and the `shape` column says which of them is nested.
 
 The summary reports the counts per category, the dialects, and the message
-types. The bundled dictionary should report 7,787 definitions — 6,277 scalar
-fields, 928 components and 582 repeating groups — under no named dialect.
+types. The bundled dictionary should report 7,771 definitions -- 6,261 scalar
+fields, 928 components and 582 repeating groups -- under no named dialect.
 
 ## Message types
 
 One table above the browser lists every message type the dictionary defines,
 by the wire code `MsgType(35)` carries: its display name, its storage name,
 the identifiers the type declares, and its description. A message type is a
-component carrying `fix:msgtype`, so those are where they are counted: the
+component carrying `FIX:msgtype`, so those are where they are counted: the
 bundled dictionary defines 181 of them.
 
 ## Definition views
@@ -68,10 +68,10 @@ remain authoritative.
 
 ## Regenerate the published assets
 
-The FIX pages embed their own widgets — the
+The FIX pages embed their own widgets -- the
 [registry search](../fix/registry.md#browser),
 [decoder](../fix/decode.md#try-one-line) and
-[encoder](../fix/encode.md#build-a-message) — reading a projection of the same
+[encoder](../fix/encode.md#build-a-message) -- reading a projection of the same
 dictionary, because a browser cannot open an `IOBase` folder. Two files, so a
 page load does not carry five megabytes of code sets:
 

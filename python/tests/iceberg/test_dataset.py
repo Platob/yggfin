@@ -1157,7 +1157,7 @@ def test_an_extension_typed_key_is_replaced_by_the_bytes_it_holds(tmp_path: Path
     schema = pyarrow.schema(
         [
             pyarrow.field(
-                "id", pyarrow.uuid(), nullable=False, metadata={"iceberg:primary_key": "true"}
+                "id", pyarrow.uuid(), nullable=False, metadata={"ICEBERG:primary_key": "true"}
             ),
             pyarrow.field("size", pyarrow.int64()),
         ]
@@ -2532,21 +2532,12 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
         body=b"opaque",
     )
 
-    # The digest holder is derived on the way in, so what is handed over is
-    # the row without it: an empty default is not sixteen bytes and a literal
-    # one would be a second implementation of the digest.
-    declared = dataclasses.asdict(row)
-    declared.pop("bodyhash")
+    # Nothing is derived on the way in but `timepartition`: the line's own
+    # code is the read's to state, and a row made by hand states the default.
     target.append_arrow_table(
         pyarrow.Table.from_pylist(
-            [declared],
-            schema=pyarrow.schema(
-                [
-                    member
-                    for member in Message.into_field().into_arrow_schema()
-                    if member.name != "bodyhash"
-                ]
-            ),
+            [dataclasses.asdict(row)],
+            schema=Message.into_field().into_arrow_schema(),
         )
     )
 
@@ -2554,10 +2545,6 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
         target.identifier
     )
     stored = reopened.read_arrow_table(Message.into_field()).to_pylist()
-    # The declaration's digest holder is filled on the way in, so the stored
-    # row carries a digest the literal below cannot spell.
-    digest = stored[0].pop("bodyhash")
-    assert isinstance(digest, bytes) and len(digest) == 16
     assert stored == [
         {
             "sourceurl": "capture.log",
@@ -2570,7 +2557,11 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
             "msgseqnum": 72504,
             "pluginid": "ULBridge",
             "level": "INFO",
+            # A row made by hand rather than by the read states neither the
+            # line's code nor its identity: only the native read states them.
+            "currhashcode": 0,
             "body": b"opaque",
+            "curruuid": None,
         }
     ]
     projected = reopened.read_arrow_reader(Message.into_field(), columns=["timepartition"])
@@ -2714,7 +2705,7 @@ def test_merge_schema_adds_once_before_a_streamed_write(dataset: IcebergDataset)
     desk = pyarrow.field(
         "desk",
         pyarrow.string(),
-        metadata={b"description": b"Execution desk.", b"fix:tag": b"999"},
+        metadata={b"description": b"Execution desk.", b"FIX:tag": b"999"},
     )
     wider = field_of(
         pyarrow.schema([*Quote.into_field().into_arrow_schema(), desk]),
@@ -2741,7 +2732,7 @@ def test_merge_schema_adds_once_before_a_streamed_write(dataset: IcebergDataset)
     assert {name: after_ids[name] for name in before_ids} == before_ids
     assert after_ids["desk"] > max(before_ids.values()), "Iceberg assigned the new id"
     assert table.schema().find_field("desk").doc == "Execution desk."
-    assert dataset.field["desk"].metadata["fix:tag"] == "999"
+    assert dataset.field["desk"].metadata["FIX:tag"] == "999"
     assert table.spec() == before_spec, "schema merging does not rewrite partition layout"
     assert set(dataset.read_arrow_table().column("desk").to_pylist()) == {None, "EQ", "FX"}
 
@@ -5166,7 +5157,7 @@ def test_a_digest_projection_keeps_its_native_input_dependencies() -> None:
         payload: str
         digest: Annotated[
             int | None,
-            field_options(metadata={"digest:role": "holder", "digest:sources": '["venue"]'}),
+            field_options(metadata={"DIGEST:role": "holder", "DIGEST:sources": '["venue"]'}),
         ] = None
 
     assert _applied_projection(Digested.into_field(), ["digest"]) == Digested.into_field()
@@ -5183,7 +5174,7 @@ def test_a_partition_derived_from_a_digest_keeps_transitive_read_dependencies(
         digest: Annotated[
             int | None,
             field_options(
-                metadata={"digest:role": "holder", "digest:sources": '["venue"]'},
+                metadata={"DIGEST:role": "holder", "DIGEST:sources": '["venue"]'},
             ),
         ] = None
         part: Annotated[

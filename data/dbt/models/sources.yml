@@ -1,27 +1,31 @@
 version: 2
 
-# The two tables ingestion publishes. Each is read through the `rekep` plugin,
+# The tables ingestion publishes. Each is read through the `rekep` plugin,
 # which is one Iceberg read per source: `table` names the Iceberg table and
 # `columns` is the projection pushed into scan planning, so DuckDB holds the
-# columns the products read and not the 128 a FIX row has.
+# columns the products read and not the 123 a FIX row has.
 #
-# Both are declared here because both are the repository's published contract;
-# only `fix.messages` is read by a model today.
+# All three are declared here because all three are the repository's published
+# contract; only `fix.silver` is read by a model. A product reads the walked
+# rows and never the parsed ones: `fix.bronze` holds the same events under the
+# same identities, but nothing there has been placed in its chain yet --
+# `seqnum` and `prevuuid` are null on every row -- so a product built on it
+# would fold every order from its first event alone.
 
 sources:
   - name: fix
     description: >
-      Typed FIX rows, one per message a captured line carried.
+      Typed FIX rows, one per event however many captured lines stated it.
     schema: fix
     meta:
       plugin: rekep
     tables:
-      - name: messages
+      - name: silver
         description: >
-          `fix.messages`, keyed on `curruuid`: one row per event, however many
-          hops logged it.
+          `fix.silver`, keyed on `curruuid`: one row per event, walked, so every
+          row states the step it follows and the state its chain reached.
         meta:
-          table: fix.messages
+          table: fix.silver
           columns:
             - sourceurl
             - rownum
@@ -30,7 +34,7 @@ sources:
             - crosscode
             - prevuuid
             - seqnum
-            - unix
+            - currunix
             - sendingtime
             - transacttime
             - msgsessionid
@@ -41,19 +45,25 @@ sources:
             - origclordid
             - orderid
             - symbol
-            - symbolticker
-            - isincode
-            - miccode
+            - securityid
+            - securityidsource
+            - securityexchange
+            - exdestination
+            - lastmkt
             - side
             - ordtype
             - currency
-            - px
-            - qty
+            - price
+            - orderqty
             - cumqty
             - leavesqty
             - avgpx
             - lastqty
             - lastpx
+            - bidpx
+            - bidsize
+            - offerpx
+            - offersize
             - execid
             - tradeid
             - ordstatus
@@ -76,10 +86,10 @@ sources:
           - name: crosscode
             description: The exact chain name; empty means unknown.
           - name: prevuuid
-            description: The identity of the step this one follows in its chain.
+            description: The identity of the step this one follows in its chain, filled by the walk.
           - name: seqnum
             description: Where this step stands in its chain, filled by the walk.
-          - name: unix
+          - name: currunix
             description: The instant the event happened at, never null.
           - name: sendingtime
             description: The instant the message stated it was sent at, where it stated one.
@@ -90,19 +100,33 @@ sources:
           - name: ordstatus
             description: The order status the message reported, as the wire spells it.
           - name: state
-            description: The normalized lifecycle state the parse settled on.
-          - name: px
             description: >
-              What the message is about: its own price, else what it last
-              traded, else what it averaged, else its own side's lane.
-          - name: qty
-            description: >
-              What the message orders, else what it last traded, else the
-              lane's size.
+              The lifecycle state the chain reached at this event, folded
+              forward by the walk: OrdStatus, else ExecType, ranked so the
+              column sorts by lifecycle.
+          - name: price
+            description: The price the message stated, `Price(44)`.
+          - name: orderqty
+            description: The quantity the message ordered, `OrderQty(38)`.
           - name: lastqty
             description: The quantity this occurrence executed.
           - name: lastpx
             description: The price this occurrence executed at.
+
+      - name: bronze
+        description: >
+          `fix.bronze`, keyed on `curruuid`: the same events as `fix.silver`,
+          as the parse answered them and before any walk. No model reads it: a
+          product needs the chain, and bronze carries none.
+        meta:
+          table: fix.bronze
+        columns:
+          - name: curruuid
+            description: The event's own identity, the same bytes `fix.silver` keys it by.
+          - name: seqnum
+            description: Null on every row, because nothing has walked yet.
+          - name: prevuuid
+            description: Null on every row, for the same reason.
 
   - name: logs
     description: >
@@ -113,9 +137,9 @@ sources:
     tables:
       - name: messages
         description: >
-          `logs.messages`, keyed on `bodyhash`: identical bytes are one row
-          whatever session carried them. No model reads it yet: every product
-          here is derived from the typed FIX rows.
+          `logs.messages`, keyed on `currhashcode`: identical bytes are one
+          row whatever session carried them. No model reads it yet: every product
+          here is derived from the walked FIX rows.
         meta:
           table: logs.messages
         columns:
@@ -123,7 +147,9 @@ sources:
             description: The capture object the line was read from.
           - name: rownum
             description: The physical line number inside that object.
-          - name: bodyhash
-            description: The XXH3-128 digest of the exact body bytes, and the table's key.
+          - name: curruuid
+            description: The line's own identity, which every message parsed out of it names as its source.
+          - name: currhashcode
+            description: The content code the read states over the line's bytes, and the table's key.
           - name: body
-            description: The exact body bytes, after the row header was removed.
+            description: The whole line as the read retains it, the row header included.

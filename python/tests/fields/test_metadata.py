@@ -52,13 +52,13 @@ def test_identity_partitions_use_the_native_field_projection() -> None:
     "declaration",
     [
         lambda: partition_key(metadata={PARTITION_KEY: "day"}),
-        lambda: partition_key("day", metadata={"field:partition": "true"}),
+        lambda: partition_key("day", metadata={"FIELD:partition": "true"}),
     ],
 )
 def test_partition_annotation_rejects_the_opposite_physical_marker(
     declaration: Callable[[], object],
 ) -> None:
-    with pytest.raises(ValueError, match=r"field:partition.*iceberg:partition_key"):
+    with pytest.raises(ValueError, match=r"FIELD:partition.*ICEBERG:partition_key"):
         declaration()
 
 
@@ -66,7 +66,7 @@ def test_conflicting_physical_partition_markers_are_rejected() -> None:
     member = pyarrow.field(
         "value",
         pyarrow.string(),
-        metadata={"field:partition": "true", PARTITION_KEY: "day"},
+        metadata={"FIELD:partition": "true", PARTITION_KEY: "day"},
     )
     root = Field.from_arrow_schema(pyarrow.schema([member]), "Row")
 
@@ -82,5 +82,5 @@ def test_derived_annotation_uses_the_native_partition_protocol() -> None:
 
     assert built.partition.sources == ["event"]
     assert built.partition.transform == "day"
-    assert built.metadata["partition:sources"] == '["event"]'
-    assert built.metadata["partition:transform"] == "day"
+    assert built.metadata["PARTITION:sources"] == '["event"]'
+    assert built.metadata["PARTITION:transform"] == "day"

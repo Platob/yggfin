@@ -1,30 +1,34 @@
 # Pipeline
 
-The supported graph has two streaming tasks and two Iceberg products, and one
-build that derives business products from the second of them:
+The supported graph has three streaming tasks and three Iceberg products, and
+one build that derives business products from the last of them:
 
 ```mermaid
 flowchart LR
     U["local file, directory, or S3 prefix"] --> T["parse_messages"]
-    T --> M[("logs.messages<br/>12 columns")]
-    M --> F["parse_fix<br/>parse"]
-    R[["bundled dictionary<br/>7,787 definitions"]] -.types.-> F
-    F --> L["lifecycle"]
-    L --> X[("fix.messages<br/>128 columns")]
-    X --> B["build_dbt"]
+    T --> M[("logs.messages<br/>13 columns")]
+    M --> F["parse_fix_bronze<br/>parse"]
+    R[["bundled dictionary<br/>7,771 definitions"]] -.types.-> F
+    F --> X[("fix.bronze<br/>123 columns")]
+    X --> L["parse_fix_silver<br/>lifecycle"]
+    R -.types.-> L
+    L --> S[("fix.silver<br/>123 columns")]
+    S --> B["build_dbt"]
     B --> O[("orders.events<br/>orders.current")]
     B --> C[("executions.fills")]
 ```
 
-`parse_fix` is two native stages over one codec, in this order and no other:
-parse reads every frame a line carried and settles what it implied, and
-lifecycle reads those messages as the chains they belong to.
+The two FIX tasks are two native stages over one codec, in this order and no
+other: parse reads every frame a line carried and settles what it implied,
+and lifecycle reads those rows back as the messages that wrote them and as
+the chains they belong to. Each lands in a table of its own, under one field.
 
 | task | reads | writes | key | default behavior |
 | --- | --- | --- | --- | --- |
-| [`parse_messages`](tasks/parse-messages.md) | every physical line under `filesystem`, keeping the window's | `logs.messages` | `bodyhash` | header capture, exact body retention, the last day |
-| [`parse_fix`](tasks/parse-fix.md) | the window's rows of `logs.messages` | `fix.messages` | `curruuid` | bundled dictionary, one row per event, chains walked, the last day |
-| [`build_dbt`](tasks/build-dbt.md) | every row of `fix.messages` | `orders.events`, `orders.current`, `executions.fills` | one key per product | the dbt project under `data/dbt`, committed through the same datasets |
+| [`parse_messages`](tasks/parse-messages.md) | every physical line under `filesystem`, keeping the window's | `logs.messages` | `currhashcode` | header capture, exact line retention, the last day |
+| [`parse_fix_bronze`](tasks/parse-fix-bronze.md) | the window's rows of `logs.messages` | `fix.bronze` | `curruuid` | bundled dictionary, one row per event, no chain, the last day |
+| [`parse_fix_silver`](tasks/parse-fix-silver.md) | the window's rows of `fix.bronze`, off the event clock | `fix.silver` | `curruuid` | the chains walked, the last day |
+| [`build_dbt`](tasks/build-dbt.md) | every row of `fix.silver` | `orders.events`, `orders.current`, `executions.fills` | one key per product | the dbt project under `data/dbt`, committed through the same datasets |
 
 Each task is a Marimo application beside a JSON document that owns its
 defaults. The CLI and Airflow execute that same document; there is no separate
@@ -40,15 +44,19 @@ uv run --project python rekep task run \
   tasks/parse_messages/parse_messages.json \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
 uv run --project python rekep task run \
-  tasks/parse_fix/parse_fix.json \
+  tasks/parse_fix_bronze/parse_fix_bronze.json \
+  --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
+uv run --project python rekep task run \
+  tasks/parse_fix_silver/parse_fix_silver.json \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
 uv run --project python rekep task run \
   tasks/build_dbt/build_dbt.json
 ```
 
-The two ingestion tasks cover one window of the capture clock, the last day
-unless `start` and `end` say otherwise; the sample under `data/capture` is
-dated, so the quick start names its day. Default locations are:
+The three ingestion tasks cover one window, the last day unless `start` and
+`end` say otherwise -- the first two off the capture clock, the third off the
+event clock; the sample under `data/capture` is dated, so the quick start
+names its day. Default locations are:
 
 ```text
 input       file:data/capture
@@ -67,14 +75,15 @@ the command line.
 | --- | --- | --- | --- |
 | `filesystem` | messages | `file:data/capture` | local object/file tree or object-store prefix |
 | `rowheader` | messages | `null` | the row header each line is framed with; `null` is the bridge's own |
-| `start` | messages, FIX | `null` | the window's inclusive start; `null` is one day before `end` |
-| `end` | messages, FIX | `null` | the window's exclusive end; `null` is the instant the run starts, and a whole day is the end of that day |
+| `messages` | bronze | `logs.messages` | the stored raw table the parse reads |
+| `bronze` | silver | `fix.bronze` | the parsed table the walk reads |
+| `start` | messages, bronze, silver | `null` | the window's inclusive start; `null` is one day before `end` |
+| `end` | messages, bronze, silver | `null` | the window's exclusive end; `null` is the instant the run starts, and a whole day is the end of that day |
 | `catalog.name` | every | `rekep` | PyIceberg catalog name |
 | `catalog.properties.type` | every | `sql` | `sql`, `glue`, or another installed PyIceberg catalog |
 | `catalog.properties.uri` | every | local SQLite | SQL catalog URI; not used by Glue |
 | `catalog.properties.warehouse` | every | `data/warehouse` | local path or `s3://` Iceberg root |
-| `registry` | FIX | `null` | bundled dictionary; explicit URI overrides it |
-| `lifecycle` | FIX | `true` | walk the event chains; `false` stops after the parse |
+| `registry` | bronze, silver | `null` | bundled dictionary; an explicit URI overrides it |
 | `project` | dbt | `data/dbt` | the dbt project directory |
 | `profiles` | dbt | `null` | where `profiles.yml` is; `null` is the project itself |
 | `target` | dbt | `null` | the profile target; `null` is the profile's own |
@@ -84,25 +93,29 @@ the command line.
 
 ## Run semantics
 
-Every ingestion task covers one window, `[start, end)`, over the capture
-clock: the last day when its document names neither bound, and exactly the
-scheduler's data interval under Airflow. A line with no clock is in every
-window. Each writer replaces what its window carries on its field-declared
-primary key: the first run lands the window's rows, and a replay of the same
-window reads the same rows, writes them again, and leaves the table holding
-each once. `parse_fix` always reads the stored raw product, so dictionary and
+Every ingestion task covers one window, `[start, end)`: the last day when its
+document names neither bound, and exactly the scheduler's data interval under
+Airflow. `parse_messages` and `parse_fix_bronze` read it off the capture
+clock, and a line with no clock is in every window. `parse_fix_silver` reads
+it off the event clock `currunix`, with the rows the parse could not date --
+those at the codec's pin -- read by their transaction time instead. Each
+writer replaces what its window carries on its field-declared primary key:
+the first run lands the window's rows, and a replay of the same window reads
+the same rows, writes them again, and leaves the table holding each once.
+`parse_fix_bronze` always reads the stored raw product, so dictionary and
 parsing changes are replayed by running the window again without touching
-capture storage. `build_dbt` reads that stored product in turn: every model is
-committed on its own key, so a rebuild carries every row it built and each
-table holds one row per key.
+capture storage; `parse_fix_silver` reads `fix.bronze` in turn, so a change
+to the walk is replayed from the parsed rows. `build_dbt` reads `fix.silver`:
+every model is committed on its own key, so a rebuild carries every row it
+built and each table holds one row per key.
 
 Every successful task returns the same small result contract:
 
 ```json
 {
   "task": "parse_messages",
-  "read": 111,
-  "written": 111,
+  "read": 14,
+  "written": 14,
   "skipped": 0,
   "sources": {"capture": "file:///data/capture"},
   "targets": {"messages": "logs.messages"},
@@ -112,6 +125,24 @@ Every successful task returns the same small result contract:
 ```
 
 `window` is the interval the run covered, in epoch nanoseconds.
+
+## Sample rows
+
+Each task page shows one order of the test capture as that task lands it: the
+order the walk settles under chain `e7254b12:9f03166699` in
+`python/tests/data/ulbridge.log`, a partial fill and the fill that closed it,
+ten of its 144 lines. The fill's two lines are `e7254b12:9f0316669a` until
+the walk moves them.
+[`parse_messages`](tasks/parse-messages.md) shows the ten stored lines,
+[`parse_fix_bronze`](tasks/parse-fix-bronze.md) the ten rows the parse read
+off them, [`parse_fix_silver`](tasks/parse-fix-silver.md) the same ten walked
+into one chain, and [`build_dbt`](tasks/build-dbt.md) the order's ten events,
+its one current row and its two fills. `tools/pipeline_samples.py` runs the
+four tasks over the fixture and renders the tables into
+`docs/pipeline/tasks/samples/`, one file per page, and each page includes its
+own. The integration suite runs the tool with `--check`, which runs the four
+tasks again into a throwaway catalog, renders the tables, and fails on any
+difference.
 
 ## Deployment choices
 
@@ -124,4 +155,4 @@ Every successful task returns the same small result contract:
 | derived products | n/a | same catalog | same warehouse | [build_dbt](tasks/build-dbt.md) |
 
 Credentials belong to the process environment, workload role, or standard AWS
-configuration—not task JSON or command history.
+configuration -- not task JSON or command history.
