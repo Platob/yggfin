@@ -8,7 +8,7 @@ late messages without making one mutable row the audit trail.
 
 One source message emits one event when it carries an order identity and an
 order lifecycle fact. Messages without enough identity remain in
-`fix.messages`; they are counted as rejected derivations rather than assigned
+`fix.silver`; they are counted as rejected derivations rather than assigned
 a guessed order.
 
 ### Planned schema

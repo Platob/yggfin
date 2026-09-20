@@ -4,6 +4,7 @@ import datetime
 import re
 from pathlib import Path
 
+import pyarrow
 import pytest
 from yggdryl import IOBase
 
@@ -31,8 +32,13 @@ def test_message_declares_the_text_row_and_its_storage_columns() -> None:
         "level",
         "bodyhash",
         "body",
+        "curruuid",
     ]
     assert field["timestamp"].into_arrow().type.unit == "us"
+    assert field["curruuid"].into_arrow().type == pyarrow.binary(16)
+    # Nullable, because a table that already exists takes the column only as
+    # an optional one; the read fills it on every row regardless.
+    assert field["curruuid"].nullable is True
     assert field["timepartition"].partition.sources == ["timestamp"]
     assert field["timepartition"].iceberg["partition_key"] == "hour"
     assert field["bodyhash"].digest.sources == ["body"]
@@ -97,11 +103,20 @@ def test_the_text_reader_produces_messages_without_a_python_row_pass(tmp_path) -
         },
     ]
     assert table.column("timepartition").equals(table.column("timestamp"))
+    # The body is the whole line as the native read retains it, the row
+    # header included: the header's captures are read off it, not cut out of
+    # it, and the digest is of these same bytes.
     assert table.column("body").to_pylist() == [
-        b"Sending : 8=FIX.4.4|35=D|10=0|",
-        b"prose",
+        b"2026-08-14 00:05:01.147 [250-e7256476:9effef3e6a:72504] "
+        b"[ULBridge] (INFO) Sending : 8=FIX.4.4|35=D|10=0|",
+        b"2026-08-14 00:05:01.148 [653] [Spot_FX_TradeCapture] (WARN) prose",
     ]
     assert all(len(value) == 16 for value in table.column("bodyhash").to_pylist())
+    # And the line's own identity, stated by the read: sixteen bytes, one per
+    # line, which is what a message parsed out of the line names as its source.
+    identities = table.column("curruuid").to_pylist()
+    assert all(len(value) == 16 for value in identities)
+    assert len(set(identities)) == 2
 
 
 def test_a_line_without_the_bridge_header_is_kept_as_an_unstamped_message(tmp_path) -> None:
@@ -249,7 +264,7 @@ def test_the_columns_a_header_is_expected_to_fill_are_the_contract_s_own() -> No
     }
     # A member the read fills or a field apply derives is not a capture, and
     # says so itself rather than being remembered in a list.
-    assert Message.READ_COLUMNS == {"sourceurl", "rownum", "body"}
+    assert Message.READ_COLUMNS == {"sourceurl", "rownum", "body", "curruuid"}
     field = Message.into_field()
     assert {member.name for member in field} - Message.captures() == {
         *Message.READ_COLUMNS,

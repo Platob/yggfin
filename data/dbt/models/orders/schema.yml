@@ -56,7 +56,7 @@ models:
       - name: px
         description: >
           What the event is about: its own price, else what it last traded,
-          else what it averaged, else its own side's lane.
+          else what it averaged, read off FIX's own fields in staging.
       - name: qty
         description: The ordered quantity.
       - name: cumqty

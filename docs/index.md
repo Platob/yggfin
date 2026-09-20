@@ -25,32 +25,37 @@ pip install "rekep[iceberg]"
 
 ```bash
 rekep task run tasks/parse_messages/parse_messages.json
-rekep task run tasks/parse_fix/parse_fix.json
+rekep task run tasks/parse_fix_bronze/parse_fix_bronze.json
+rekep task run tasks/parse_fix_silver/parse_fix_silver.json
 ```
 
 The checked ULBridge fixture demonstrates the complete contract:
 
 ```text
-parse_messages  111 read, 111 written, 0 skipped  → logs.messages
-parse_fix        111 read,  71 written, 0 skipped  → fix.messages
+parse_messages    144 read, 141 written,  3 skipped  → logs.messages
+parse_fix_bronze  141 read,  53 written, 26 skipped  → fix.bronze   (79 messages)
+parse_fix_silver   53 read,  53 written,  0 skipped  → fix.silver
 ```
 
 ```mermaid
 flowchart LR
     S["capture URI<br/>file · directory · s3://"] --> T["native text reader<br/>Message field"]
-    T --> M[("logs.messages<br/>12 columns")]
-    M --> F["native FIX codec<br/>parse · lifecycle"]
-    F --> O[("fix.messages<br/>128 columns")]
+    T --> M[("logs.messages<br/>13 columns")]
+    M --> F["native FIX codec<br/>parse"]
+    F --> B[("fix.bronze<br/>123 columns")]
+    B --> L["native FIX codec<br/>lifecycle"]
+    L --> O[("fix.silver<br/>123 columns")]
 ```
 
 The text reader emits the exact `Message` schema: header captures are typed,
 `timepartition` is derived, and `bodyhash` is filled before the first Iceberg
-boundary. The FIX codec consumes that reader directly, through three stages
-over one codec: parse reads every frame a line carried, enrich fills what a
-message implied but did not carry, and lifecycle names the chains it belongs
-to. A row is a message and not a line, so the fixture's 111 lines settle as 71
-messages: a line carrying prose answers none, and a line carrying many frames
-answers one row per frame.
+boundary. The FIX codec reads that table back as a reader, through two stages
+over one codec, each landing in a table: parse reads every frame a line
+carried and settles what it implied, and lifecycle names the chains it belongs
+to. A row is a message and not a line, so the fixture's 141 stored lines settle
+as 79 messages and 53 events: a line carrying prose answers none, a line
+carrying many frames answers one row per frame, and the same message logged at
+every hop it passed is one event.
 
 ```python
 from rekep import Message
@@ -62,9 +67,10 @@ print(Message.into_field().into_arrow_schema())
 
 | you want | read |
 | --- | --- |
-| what the two tables hold | [Data products](products/index.md) |
+| what the three tables hold | [Data products](products/index.md) |
 | how the parts fit | [Architecture](overview/architecture.md) |
 | the exact task contracts | [Pipeline](pipeline/index.md) |
+| the two FIX tasks | [Parse FIX bronze](pipeline/tasks/parse-fix-bronze.md) · [Parse FIX silver](pipeline/tasks/parse-fix-silver.md) |
 | the order and execution products | [Build dbt](pipeline/tasks/build-dbt.md) |
 | the runtime FIX dictionary | [Registry](fix/registry.md) |
 | to decode or encode a frame | [Decode](fix/decode.md) · [Encode](fix/encode.md) |

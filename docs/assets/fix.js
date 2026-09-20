@@ -5,7 +5,7 @@
  * six separator spellings, the same printed-SOH unescape, the same key/value
  * bounds, the same "a checksum closes the message" rule, and the same media
  * type and direction taxonomies -- so a line decoded on this page resolves the
- * way `parse_fix` resolves it. The dictionary is `assets/fix-registry.json`,
+ * way `parse_fix_bronze` resolves it. The dictionary is `assets/fix-registry.json`,
  * generated from rekep's bundled FIX registry.
  *
  * Nothing here parses on the server, and nothing is uploaded: a pasted line
@@ -629,7 +629,7 @@
         )
       );
       if (!found.scanned.entries.length) {
-        output.appendChild(note("No FIX-shaped frame here: parse_fix leaves this record in logs.messages.", "warn"));
+        output.appendChild(note("No FIX-shaped frame here: parse_fix_bronze skips this line, and it stays in logs.messages.", "warn"));
         return;
       }
       const resolved = [];

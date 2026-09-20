@@ -1,11 +1,11 @@
 # Deploy Iceberg tables
 
-`rekep iceberg deploy` creates both current products—`logs.messages` and
-`fix.messages`—with the same runtime fields their tasks use: `Message` for the
-raw product, and `fix_message_field` for the fixed one, which answers all 128
-columns from the carrier and the dictionary alone without consuming a capture
-row. Deployment is idempotent: an existing table is reported as `present` and
-is not rewritten.
+`rekep iceberg deploy` creates the three tables ingestion writes --
+`logs.messages`, `fix.bronze` and `fix.silver` -- with the same runtime fields
+their tasks use: `Message` for the raw product and `fix_message_field` for
+both FIX tables, which answers all 123 columns from the carrier and the
+dictionary alone without consuming a capture row. Deployment is idempotent: an
+existing table is reported as `present` and is not rewritten.
 
 The products the dbt project derives are not deployed here: a model declares
 its own shape, and the dataset creates the table on the model's first commit.
@@ -35,7 +35,8 @@ Expected result shape:
   },
   "tables": {
     "logs.messages": "created",
-    "fix.messages": "created"
+    "fix.bronze": "created",
+    "fix.silver": "created"
   }
 }
 ```
@@ -58,7 +59,7 @@ Create one product only:
 
 ```bash
 uv run --project python rekep iceberg deploy \
-  tasks/parse_messages/parse_messages.json --table fix.messages
+  tasks/parse_messages/parse_messages.json --table fix.bronze
 ```
 
 ## S3 with a SQL catalog
@@ -94,7 +95,7 @@ export AWS_REGION=eu-west-1
 aws sts get-caller-identity
 ```
 
-Create both tables:
+Create the three tables:
 
 ```bash
 uv run --project python rekep iceberg deploy \
@@ -110,7 +111,7 @@ permissions for the warehouse prefix. The capture bucket additionally needs
 list/read permissions. Prefer an IAM role; do not place access keys in task
 JSON, CLI arguments, or Airflow Params.
 
-Use this parameters file for both ingestion tasks:
+Use this parameters file for the three ingestion tasks:
 
 ```json
 {
@@ -132,7 +133,10 @@ uv run --project python rekep task run \
   --parameters-file /run/rekep/aws.json \
   --parameter 'filesystem="s3://market-capture/ulbridge/2026/08/14?region=eu-west-1"'
 uv run --project python rekep task run \
-  tasks/parse_fix/parse_fix.json \
+  tasks/parse_fix_bronze/parse_fix_bronze.json \
+  --parameters-file /run/rekep/aws.json
+uv run --project python rekep task run \
+  tasks/parse_fix_silver/parse_fix_silver.json \
   --parameters-file /run/rekep/aws.json
 ```
 
@@ -151,6 +155,40 @@ uv run --project python rekep iceberg deploy \
 Properties are applied only when a table is created. Deployment deliberately
 does not mutate an existing table; use maintenance or a reviewed migration for
 that.
+
+## Migrating a warehouse that holds the retired FIX table
+
+There is no compatibility shim for the one table the two FIX tables replaced.
+Run `rekep iceberg deploy` once: it creates `fix.bronze` and `fix.silver` and
+reports `logs.messages` as `present`. The raw table's shape is unchanged but it
+now ends in `curruuid`, the line identity every FIX row names as its source,
+and a table that already exists takes that column only as the optional one it
+is declared as, through the dataset's own `add_fields`:
+
+```python
+from rekep import Message
+from rekep.iceberg import IcebergCatalog
+
+store = IcebergCatalog.from_dict(catalog)
+lines = store.dataset("logs.messages", field=Message.into_field())
+added = lines.add_fields(Message.into_field())
+lines.close()
+store.close()
+```
+
+Then replay each window through `parse_messages`, `parse_fix_bronze` and
+`parse_fix_silver`, in that order, and drop the retired table. Rows the
+replay has not reached yet carry no identity, and the parse recomputes one
+from the line's bytes and instant where the carrier states none -- equal only
+while those are, which is why the replay is the migration and not the
+fallback. A retired table the previous core wrote cannot be walked in place:
+its rows are not the pinned core's 117-column row, and `parse_fix_silver`
+reads a table named as its `bronze` only in that shape. The products are
+rebuilt by [`build_dbt`](../tasks/build-dbt.md) afterwards; drop
+`orders.events`, `orders.current` and `executions.fills` first, because the
+products' `lastpx` and `avgpx` moved from double to decimal with the
+dictionary, and a column an existing table already holds is not retyped in
+place.
 
 ## Python API
 
@@ -172,7 +210,7 @@ try:
 finally:
     catalog.close()
 
-assert set(result) == {"logs.messages", "fix.messages"}
+assert set(result) == {"logs.messages", "fix.bronze", "fix.silver"}
 ```
 
 ## Verification

@@ -80,8 +80,11 @@ def test_docs_publish_the_native_message_contracts() -> None:
         "level",
         "bodyhash",
         "body",
+        "curruuid",
     ]
-    assert "pipeline/tasks/parse-fix.md" in config
+    assert "pipeline/tasks/parse-fix-bronze.md" in config
+    assert "pipeline/tasks/parse-fix-silver.md" in config
+    assert "pipeline/tasks/parse-fix.md" not in config
     assert "pipeline/tasks/build-dbt.md" in config
     assert "market/" not in config
     assert sorted(path.name for path in (ROOT / "schemas" / "rekep").glob("*.json")) == [
@@ -110,13 +113,16 @@ def test_docs_record_the_measured_message_rates() -> None:
 
 
 def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
-    task = (DOCS / "pipeline" / "tasks" / "parse-fix.md").read_text(encoding="utf-8")
+    bronze = (DOCS / "pipeline" / "tasks" / "parse-fix-bronze.md").read_text(encoding="utf-8")
+    silver = (DOCS / "pipeline" / "tasks" / "parse-fix-silver.md").read_text(encoding="utf-8")
     schemas = (ROOT / "schemas" / "README.md").read_text(encoding="utf-8")
 
-    assert "parse_text_arrow_reader" in task
-    assert "iceberg_fix_field" in task
-    assert "fix_stored_reader" in task
-    assert "fix_schema_carrying" in task
+    assert "parse_text_arrow_reader" in bronze
+    assert "iceberg_fix_field" in bronze
+    assert "fix_stored_reader" in bronze and "fix_stored_reader" in silver
+    assert "fix_schema_carrying" in bronze
+    assert "lifecycle_arrow_reader" in silver
+    assert "fix_window_filter" in silver
     assert "not alternate implementations" in schemas
     assert "`fix-message.json`" in schemas
     assert "iceberg_contract" in schemas
@@ -144,7 +150,8 @@ def test_each_task_page_publishes_its_document_verbatim() -> None:
     """
     pages = {
         "pipeline/tasks/parse-messages.md": "parse_messages",
-        "pipeline/tasks/parse-fix.md": "parse_fix",
+        "pipeline/tasks/parse-fix-bronze.md": "parse_fix_bronze",
+        "pipeline/tasks/parse-fix-silver.md": "parse_fix_silver",
         "pipeline/tasks/build-dbt.md": "build_dbt",
     }
 

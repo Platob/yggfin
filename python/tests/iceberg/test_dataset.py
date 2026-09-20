@@ -1157,7 +1157,7 @@ def test_an_extension_typed_key_is_replaced_by_the_bytes_it_holds(tmp_path: Path
     schema = pyarrow.schema(
         [
             pyarrow.field(
-                "id", pyarrow.uuid(), nullable=False, metadata={"iceberg:primary_key": "true"}
+                "id", pyarrow.uuid(), nullable=False, metadata={"ICEBERG:primary_key": "true"}
             ),
             pyarrow.field("size", pyarrow.int64()),
         ]
@@ -2571,6 +2571,9 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
             "pluginid": "ULBridge",
             "level": "INFO",
             "body": b"opaque",
+            # A row made by hand rather than by the read states no identity:
+            # only the native text read states a line's own.
+            "curruuid": None,
         }
     ]
     projected = reopened.read_arrow_reader(Message.into_field(), columns=["timepartition"])
@@ -2714,7 +2717,7 @@ def test_merge_schema_adds_once_before_a_streamed_write(dataset: IcebergDataset)
     desk = pyarrow.field(
         "desk",
         pyarrow.string(),
-        metadata={b"description": b"Execution desk.", b"fix:tag": b"999"},
+        metadata={b"description": b"Execution desk.", b"FIX:tag": b"999"},
     )
     wider = field_of(
         pyarrow.schema([*Quote.into_field().into_arrow_schema(), desk]),
@@ -2741,7 +2744,7 @@ def test_merge_schema_adds_once_before_a_streamed_write(dataset: IcebergDataset)
     assert {name: after_ids[name] for name in before_ids} == before_ids
     assert after_ids["desk"] > max(before_ids.values()), "Iceberg assigned the new id"
     assert table.schema().find_field("desk").doc == "Execution desk."
-    assert dataset.field["desk"].metadata["fix:tag"] == "999"
+    assert dataset.field["desk"].metadata["FIX:tag"] == "999"
     assert table.spec() == before_spec, "schema merging does not rewrite partition layout"
     assert set(dataset.read_arrow_table().column("desk").to_pylist()) == {None, "EQ", "FX"}
 
@@ -5166,7 +5169,7 @@ def test_a_digest_projection_keeps_its_native_input_dependencies() -> None:
         payload: str
         digest: Annotated[
             int | None,
-            field_options(metadata={"digest:role": "holder", "digest:sources": '["venue"]'}),
+            field_options(metadata={"DIGEST:role": "holder", "DIGEST:sources": '["venue"]'}),
         ] = None
 
     assert _applied_projection(Digested.into_field(), ["digest"]) == Digested.into_field()
@@ -5183,7 +5186,7 @@ def test_a_partition_derived_from_a_digest_keeps_transitive_read_dependencies(
         digest: Annotated[
             int | None,
             field_options(
-                metadata={"digest:role": "holder", "digest:sources": '["venue"]'},
+                metadata={"DIGEST:role": "holder", "DIGEST:sources": '["venue"]'},
             ),
         ] = None
         part: Annotated[

@@ -3,20 +3,23 @@
 `tasks/airflow/pipeline.py` declares the ready-to-run `rekep_ingestion` DAG:
 
 ```text
-parse_messages -> parse_fix
-     |                |
-     v                v
-logs.messages     fix.messages
+parse_messages -> parse_fix_bronze -> parse_fix_silver
+     |                  |                   |
+     v                  v                   v
+logs.messages       fix.bronze          fix.silver
 ```
 
 It runs daily, and each run covers its own data interval: the operator hands
-the interval to both tasks as their `start` and `end`, so a day's run reads
-the day's lines under `filesystem` and replaces them in both tables. The DAG
-exposes the union of both adjacent task documents as Params. A manual run can
-therefore replace `filesystem`, `rowheader`, `start`, `end`, `catalog`,
-`registry` or `lifecycle` without creating another DAG, and a bound the run's
-conf names wins over the interval. There is no `version` Param: what a message
-was read at is what its own `beginstring` said.
+the interval to all three tasks as their `start` and `end`, so a day's run
+reads the day's lines under `filesystem` and replaces them in all three
+tables. The DAG exposes the union of the three adjacent task documents as
+Params. A manual run can therefore replace `filesystem`, `rowheader`, `start`,
+`end`, `catalog`, `messages`, `registry` or `bronze` without creating another
+DAG, and a bound the run's conf names wins over the interval. `messages` and
+`bronze` are named for the table each FIX stage reads, so one Params mapping
+over three documents cannot hand one stage the other's source. There is no
+`version` Param: what a message was read at is what its own `beginstring`
+said.
 
 ## How a task runs
 
@@ -54,7 +57,7 @@ resolves there and not in the scheduler's own directory.
 variable without putting it in Params or in task JSON.
 
 Parameters merge in one order, later winning: task document defaults, then the
-operator's `parameters`, then the DAG run's Params, then the data interval —
+operator's `parameters`, then the DAG run's Params, then the data interval --
 and only for a name the task document already declares, so a task that does
 not take `start` is never handed the scheduler's. Two exceptions keep a
 person's intent: an interval with no width, which Airflow infers for a manual
@@ -64,10 +67,10 @@ is left as named.
 ### Assets and what a run returns
 
 Each node declares one `Asset` outlet named exactly for the table it writes,
-`logs.messages` and `fix.messages`, so a downstream DAG can be scheduled on
-either. When a run finishes, the operator attaches `task`, `read`, `written`
-and `skipped` to the event of every outlet its result names as a target — a
-table this run did not write claims nothing.
+`logs.messages`, `fix.bronze` and `fix.silver`, so a downstream DAG can be
+scheduled on any of them. When a run finishes, the operator attaches `task`,
+`read`, `written` and `skipped` to the event of every outlet its result names
+as a target -- a table this run did not write claims nothing.
 
 `execute` returns the validated Stage mapping, so the same counts land in XCom
 under `return_value`. Its fields are listed in
@@ -79,19 +82,21 @@ under `return_value`. Its fields are listed in
 [`build_dbt`](tasks/build-dbt.md):
 
 ```text
-fix.messages -> build_dbt -> orders.events, orders.current, executions.fills
+fix.silver -> build_dbt -> orders.events, orders.current, executions.fills
 ```
 
-Its schedule is the `fix.messages` Asset the ingestion DAG publishes, so a
-build starts when `parse_fix` writes and the two DAGs are one route without
-either naming the other's tasks. The node declares one outlet per table the
-dbt models commit, so a third DAG can be scheduled on a product the same way.
+Its schedule is the `fix.silver` Asset the ingestion DAG publishes last, so a
+build starts when `parse_fix_silver` writes and the two DAGs are one route
+without either naming the other's tasks. A product reads the walked rows and
+never `fix.bronze`, so no build waits on the parse alone. The node declares
+one outlet per table the dbt models commit, so a third DAG can be scheduled on
+a product the same way.
 
 Its Params are the `build_dbt` document's own: `project`, `profiles`,
 `target`, `select`, `catalog` and `log_level`. A worker runs dbt out of the
 `runner` group, the same locked environment every other task runs in, and dbt
 writes `target/` and `logs/` under the project directory unless
-`DBT_TARGET_PATH` and `DBT_LOG_PATH` say otherwise — which is what the
+`DBT_TARGET_PATH` and `DBT_LOG_PATH` say otherwise -- which is what the
 operator's `environment` argument is for.
 
 ### Retries
@@ -100,8 +105,8 @@ The DAG sets no `retries`, so every task is `retries=0` and one transient S3
 or catalog error fails the run. Raising it is safe and is the recommended
 configuration: each attempt writes into its own private directory keyed on the
 try number, that directory is removed whether the attempt lands or raises, and
-both writers replace on their field-declared key — `(sourceurl, rownum)` for
-`bodyhash` for `logs.messages` and `curruuid` for `fix.messages` — so a
+all three writers replace on their field-declared key -- `bodyhash` for
+`logs.messages`, `curruuid` for `fix.bronze` and for `fix.silver` -- so a
 retry re-reads the same window and lands the same rows over whatever the
 failed attempt left.
 
@@ -195,8 +200,8 @@ Use a shared SQL service instead of SQLite for distributed workers.
 
 ## AWS Glue and S3
 
-Give scheduler/workers an IAM role and set their region. Deploy both tables
-once with the same role and settings:
+Give scheduler/workers an IAM role and set their region. Deploy the three
+tables once with the same role and settings:
 
 ```bash
 export AWS_REGION=eu-west-1
@@ -236,7 +241,7 @@ EKS web identity, or the worker's standard AWS credential chain.
 
 1. Pin and deploy one repository revision to every worker.
 2. Run `uv sync --locked` while network access is allowed.
-3. Deploy both tables and rerun deploy to see `present`.
+3. Deploy the three tables and rerun deploy to see `present`.
 4. Confirm the worker can list/read capture objects and read/write the
    warehouse prefix.
 5. Trigger one immutable capture manually, naming its day, and compare stage

@@ -2,7 +2,7 @@
 
 `build_dbt` runs the dbt project under [`data/dbt`](#the-project) and commits
 each of its products back into Iceberg. dbt owns the SQL; every read, schema
-and commit stays on the same `IcebergDataset` the two ingestion tasks write
+and commit stays on the same `IcebergDataset` the three ingestion tasks write
 through.
 
 ## Task document
@@ -40,7 +40,7 @@ checked-in project keeps its local default.
 
 ```mermaid
 flowchart LR
-    F[("fix.messages")] --> P["rekep.dbt load()"]
+    F[("fix.silver")] --> P["rekep.dbt load()"]
     P --> D["DuckDB :memory:"]
     D --> S["staged Parquet"]
     S --> C["rekep.dbt store()"]
@@ -53,7 +53,7 @@ dbt-duckdb reaches a store that is not DuckDB through a plugin, and this
 repository's plugin is `rekep.dbt`. A source is one Iceberg read, projected and
 filtered in scan planning and handed to DuckDB as one Arrow table. A model is
 built as a DuckDB table, staged as one Parquet file, and read back as an Arrow
-stream that `IcebergDataset` commits — so a commit holds a batch of a model at
+stream that `IcebergDataset` commits -- so a commit holds a batch of a model at
 a time and not the whole of it.
 
 The database is `:memory:`. DuckDB is the compute and holds nothing between
@@ -77,13 +77,13 @@ row of nulls is not a row this would commit.
 An identity the parser already named is reused rather than computed again:
 `orderkey` is `crossuuid`, the identity over the chain the message states, and
 `eventkey` is `curruuid`, the event's own. A digest is written only where SQL
-has to name something the parser had no word for — `executionkey` over the
-chain and the venue execution id — and it is MD5, which is what DuckDB spells.
+has to name something the parser had no word for -- `executionkey` over the
+chain and the venue execution id -- and it is MD5, which is what DuckDB spells.
 
 - `orders.events` takes a message that carries an order identity and an order
   lifecycle fact. A message carrying one and not the other stays in
-  `fix.messages` rather than being assigned a guessed order, and an unknown
-  chain — an empty `crosscode` — is not an order.
+  `fix.silver` rather than being assigned a guessed order, and an unknown
+  chain -- an empty `crosscode` -- is not an order.
 - `orders.current` is folded from `orders.events` alone, never from FIX. The
   winning event is the latest `eventtime`, then the latest source position, so
   a late event changes the row only through that ordering and the same events
@@ -132,9 +132,9 @@ sources:
     meta:
       plugin: rekep
     tables:
-      - name: messages
+      - name: silver
         meta:
-          table: fix.messages
+          table: fix.silver
           columns: [sourceurl, rownum, curruuid, crosscode]
 ```
 
@@ -149,8 +149,21 @@ sources:
 
 DuckDB takes a table, so a source is read into memory: a large one is narrowed
 by `columns`, `row_filter` and `limit` rather than read whole. The shipped
-project projects the 38 columns its products read out of the 128 a FIX row
+project projects the 44 columns its products read out of the 123 a FIX row
 carries.
+
+The source is `fix.silver` and never `fix.bronze`, though both are declared:
+a product needs the chain -- the step an event follows, the state its chain
+reached -- and only the walked rows carry one; bronze holds the same events
+with `seqnum` and `prevuuid` empty on every row, so a product built on it
+would fold every order from its first event alone. A market fact is FIX's own
+field, and the staging model `stg_fix_messages` restates the products' reading
+of it off those fields: `px` is `coalesce(price, lastpx, avgpx)`, `qty` is
+`coalesce(orderqty, lastqty, cumqty, leavesqty)`, `symbolticker` is
+`nullif(symbol, '[N/A]')`, `isincode` is `securityid` where
+`lower(securityidsource) in ('4', 'isin')`, `miccode` is
+`coalesce(securityexchange, exdestination, lastmkt)`, and `eventtime` is
+`coalesce(transacttime, currunix)`.
 
 ## Run it
 
@@ -158,8 +171,8 @@ carries.
 uv run --project python rekep task run tasks/build_dbt/build_dbt.json
 ```
 
-Relative locations — the project, the staging directory, the local catalog and
-warehouse — are spelled from the repository root, which is where a run starts.
+Relative locations -- the project, the staging directory, the local catalog and
+warehouse -- are spelled from the repository root, which is where a run starts.
 The task prints one result and nothing else: dbt's own console is silent and
 its events are relayed into this package's records, so `stdout` carries the
 result a route reads.
@@ -178,16 +191,16 @@ uv run --project python rekep task run tasks/build_dbt/build_dbt.json \
 ```
 
 Airflow runs the same document. The [`rekep_products`](../airflow.md#the-products-dag)
-DAG is scheduled on the `fix.messages` Asset the ingestion DAG publishes, so a
-build starts when `parse_fix` writes.
+DAG is scheduled on the `fix.silver` Asset the ingestion DAG publishes, so a
+build starts when `parse_fix_silver` writes.
 
 ## What the result says
 
 ```json
 {
   "task": "build_dbt",
-  "read": 40,
-  "written": 75,
+  "read": 29,
+  "written": 66,
   "skipped": 0,
   "sources": {"project": "data/dbt"},
   "targets": {
@@ -198,14 +211,14 @@ build starts when `parse_fix` writes.
   "window": {"start": null, "end": null},
   "elapsed_ms": 2417,
   "models": 4,
-  "tests": 36,
+  "tests": 25,
   "warned": [],
-  "rows": {"orders.events": 62, "orders.current": 6, "executions.fills": 7}
+  "rows": {"orders.events": 49, "orders.current": 9, "executions.fills": 8}
 }
 ```
 
-A build's unit of work is a node, so `read` is the nodes dbt ran — models,
-tests and all — and `skipped` is the nodes it skipped. `written` is rows: what
+A build's unit of work is a node, so `read` is the nodes dbt ran -- models,
+tests and all -- and `skipped` is the nodes it skipped. `written` is rows: what
 the plugin committed, and `rows` says which table each went to. Every shipped
 model is an overwrite, and an overwrite states the rows it carried: a replay of
 the same capture builds the same rows and lands them over the ones it landed
@@ -220,7 +233,7 @@ than a failure, and `warned` names the ones that fired. Two are declared that
 way: `every_fill_belongs_to_a_known_order`, because a capture that starts
 mid-stream holds executions whose order was accepted before its first line, and
 the accepted values of `state`, because the normalized vocabulary is the
-codec's and this repository cannot enumerate it — a state the products have no
+codec's and this repository cannot enumerate it -- a state the products have no
 reading for is worth reporting and is not a reason to stop. What the folds do
 read is pinned against the codec itself in `python/tests/test_dbt.py`.
 
@@ -234,16 +247,16 @@ data/dbt/
     iceberg.sql       the materialization that commits a model
     rekep.sql         the digest and the normalized states more than one model reads
   models/
-    sources.yml       the two published tables, and the projection each is read under
-    staging/          one narrowing of `fix.messages`, never published
+    sources.yml       the three published tables, and the projection the one a model reads is read under
+    staging/          one narrowing of `fix.silver`, never published
     orders/           orders.events and orders.current
     executions/       executions.fills
   tests/              the checks that span two products
 ```
 
 Nothing here needs `dbt deps`: there is no package file, and every macro a
-model reads is in the checkout. A build writes `data/dbt/target/` — its
-compiled project, its run artifacts and the Parquet each model was staged as —
+model reads is in the checkout. A build writes `data/dbt/target/` -- its
+compiled project, its run artifacts and the Parquet each model was staged as --
 and `data/dbt/logs/`; neither is tracked. `DBT_TARGET_PATH` and `DBT_LOG_PATH`
 move them, and the staging follows the target path, so a worker whose checkout
 is read-only writes nothing into it. That is what the Airflow operator's
@@ -257,10 +270,10 @@ the SQL projection of that specification and state where they differ:
 
 | planned | here | why |
 | --- | --- | --- |
-| `side`, `state`, `exectype` as fixed-width bytes | the normalized strings `fix.messages` carries | a storage width is a declaration, and this layer does not add one to a value it passes through |
+| `side`, `state`, `exectype` as fixed-width bytes | the normalized strings `fix.silver` carries | a storage width is a declaration, and this layer does not add one to a value it passes through |
 | `parties`, `regulatorytimestamps` | not carried | a repeating group is in the arrival record, and a list of structs through DuckDB is a conversion this seam does not own |
 | `originalexecutionkey`, `liquidity` | not carried | `ExecRefID` and `LastLiquidityInd` are not in the fixed projection yet |
-| rejected-derivation counters | not carried | what a product left behind is still countable in `fix.messages`, but nothing publishes it |
+| rejected-derivation counters | not carried | what a product left behind is still countable in `fix.silver`, but nothing publishes it |
 
 `orders.current` is unpartitioned: one row per order is the whole table, and a
 partition on a column that moves would rewrite a file every time an order

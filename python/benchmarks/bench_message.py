@@ -151,9 +151,15 @@ def verify(case: Case, rows: int) -> pyarrow.Table:
     for row, index in ((first, 0), (last, rows - 1)):
         url = row.pop("sourceurl")
         digest = row.pop("bodyhash")
+        identity = row.pop("curruuid")
+        # The body is the whole line as the read retains it, header included,
+        # so the payload written for the row closes it.
+        line = row.pop("body")
         assert isinstance(url, str) and url.endswith(case.filename)
         assert isinstance(digest, bytes) and len(digest) == 16
-        assert row == expected(index)
+        assert isinstance(identity, bytes) and len(identity) == 16
+        assert isinstance(line, bytes) and line.endswith(expected(index)["body"])
+        assert row == {key: value for key, value in expected(index).items() if key != "body"}
     return table
 
 

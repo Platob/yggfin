@@ -9,22 +9,32 @@ from typing import Any
 from yggdryl import Field
 from yggdryl import field as field_of
 
+#: The metadata keys this package writes, spelled as the core spells them: a
+#: namespace in capitals, the key after it in lower case. The core reads a
+#: namespace in any case and answers it in this one, so a key spelled here is
+#: the key a declaration reads back -- and a lookup against what a field
+#: answers needs no folding.
 DESCRIPTION = "description"
-DIGEST_ALGORITHM = "digest:algorithm"
-DIGEST_ROLE = "digest:role"
-DIGEST_SOURCES = "digest:sources"
+DIGEST_ALGORITHM = "DIGEST:algorithm"
+DIGEST_ROLE = "DIGEST:role"
+DIGEST_SOURCES = "DIGEST:sources"
 ICEBERG = "iceberg"
-PRIMARY_KEY = "iceberg:primary_key"
-PARTITION_KEY = "iceberg:partition_key"
-FIELD_ID = "iceberg:field_id"
-SORT_KEY = "iceberg:sort_key"
-SORT_ORDER = "iceberg:sort_order"
+PRIMARY_KEY = "ICEBERG:primary_key"
+PARTITION_KEY = "ICEBERG:partition_key"
+FIELD_ID = "ICEBERG:field_id"
+SORT_KEY = "ICEBERG:sort_key"
+SORT_ORDER = "ICEBERG:sort_order"
+
+#: The core's own mark for an identity partition, the one `set_partition`
+#: writes; a transform is this package's `PARTITION_KEY` beside it.
+IDENTITY_PARTITION = "FIELD:partition"
 
 #: The transform every capture table is laid out by, named once.
 #:
-#: Both published tables take it and neither states it again: `logs.messages`
-#: on the hour a line was printed in, `fix.messages` on the hour its message
-#: happened in. One hour of a busy bridge is a file a scan can skip whole, and
+#: Every published table takes it and none states it again: `logs.messages`
+#: on the hour a line was printed in, `fix.bronze` and `fix.silver` on the
+#: hour its message happened in. One hour of a busy bridge is a file a scan
+#: can skip whole, and
 #: a run's window is a whole number of them, so a replay replaces exactly the
 #: partitions it covers. Which column carries it is each table's own answer;
 #: the transform is not.
@@ -62,17 +72,26 @@ def partition_key(
     **declared: Any,
 ) -> dict[str, Any]:
     """Mark one member as an Iceberg partition column."""
-    metadata = dict(declared.pop("metadata", None) or {})
+    # A caller spells a namespace as it likes and the core reads any case, so
+    # what a caller already stated is read the same way here.
+    metadata = {
+        (IDENTITY_PARTITION if key.casefold() == IDENTITY_PARTITION.casefold() else key): value
+        for key, value in (declared.pop("metadata", None) or {}).items()
+    }
+    metadata = {
+        (PARTITION_KEY if key.casefold() == PARTITION_KEY.casefold() else key): value
+        for key, value in metadata.items()
+    }
     identity = transform is True or str(transform).casefold() == "identity"
-    existing_identity = str(metadata.get("field:partition") or "").casefold() == "true"
+    existing_identity = str(metadata.get(IDENTITY_PARTITION) or "").casefold() == "true"
     existing_transform = str(metadata.get(PARTITION_KEY) or "")
     if existing_transform.casefold() == "false":
         existing_transform = ""
     if identity and existing_transform:
-        raise ValueError("'field:partition' and 'iceberg:partition_key' are mutually exclusive")
+        raise ValueError(f"'{IDENTITY_PARTITION}' and '{PARTITION_KEY}' are mutually exclusive")
     if transform is not False and not identity and existing_identity:
-        raise ValueError("'field:partition' and 'iceberg:partition_key' are mutually exclusive")
-    metadata.pop("field:partition", None)
+        raise ValueError(f"'{IDENTITY_PARTITION}' and '{PARTITION_KEY}' are mutually exclusive")
+    metadata.pop(IDENTITY_PARTITION, None)
     metadata.pop(PARTITION_KEY, None)
     if identity:
         marker = Field("", "null")

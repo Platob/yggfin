@@ -15,12 +15,13 @@ ROOT = Path(__file__).resolve().parents[3]
 #: Every job this repository schedules, as the document that configures it.
 DOCUMENTS = sorted((ROOT / "tasks").glob("*/*.json"))
 
-#: Text ingestion, native FIX parsing, the dbt products derived from it, and
-#: generic Iceberg maintenance.
+#: Text ingestion, the two native FIX stages, the dbt products derived from
+#: the second of them, and generic Iceberg maintenance.
 NAMES = (
     "build_dbt",
     "optimize_iceberg",
-    "parse_fix",
+    "parse_fix_bronze",
+    "parse_fix_silver",
     "parse_messages",
 )
 
@@ -52,8 +53,13 @@ def test_every_document_declares_its_parameters(document: Path) -> None:
     if document.stem == "parse_messages":
         assert set(parameters) == {"filesystem", "rowheader", "start", "end", "catalog"}
         assert parameters["start"] is None and parameters["end"] is None, "the last day"
-    elif document.stem == "parse_fix":
-        assert set(parameters) == {"registry", "lifecycle", "start", "end", "catalog"}
+    elif document.stem == "parse_fix_bronze":
+        assert set(parameters) == {"messages", "registry", "start", "end", "catalog"}
+        assert parameters["messages"] == "logs.messages"
+        assert parameters["start"] is None and parameters["end"] is None, "the last day"
+    elif document.stem == "parse_fix_silver":
+        assert set(parameters) == {"bronze", "registry", "start", "end", "catalog"}
+        assert parameters["bronze"] == "fix.bronze"
         assert parameters["start"] is None and parameters["end"] is None, "the last day"
     elif document.stem == "build_dbt":
         assert set(parameters) == {

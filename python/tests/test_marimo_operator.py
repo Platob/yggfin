@@ -151,20 +151,28 @@ def commands() -> list[list[str]]:
 # -- the DAG -----------------------------------------------------------------
 
 
-def test_the_ingestion_dag_is_exactly_the_two_streamed_stages() -> None:
+def test_the_ingestion_dag_is_exactly_the_three_streamed_stages() -> None:
     dag = PIPELINE.ingestion
 
     assert dag.dag_id == "rekep_ingestion"
     assert dag.schedule == "@daily", "one run a day, covering its own interval"
-    assert set(dag.task_dict) == {"parse_messages", "parse_fix"}
+    assert set(dag.task_dict) == {"parse_messages", "parse_fix_bronze", "parse_fix_silver"}
     messages = dag.get_task("parse_messages")
-    fixed = dag.get_task("parse_fix")
-    assert messages.downstream_task_ids == {"parse_fix"}
-    assert fixed.upstream_task_ids == {"parse_messages"}
+    bronze = dag.get_task("parse_fix_bronze")
+    silver = dag.get_task("parse_fix_silver")
+    assert messages.downstream_task_ids == {"parse_fix_bronze"}
+    assert bronze.upstream_task_ids == {"parse_messages"}
+    assert bronze.downstream_task_ids == {"parse_fix_silver"}
+    assert silver.upstream_task_ids == {"parse_fix_bronze"}
     assert [asset.name for asset in messages.outlets] == ["logs.messages"]
-    assert [asset.name for asset in fixed.outlets] == ["fix.messages"]
+    assert [asset.name for asset in bronze.outlets] == ["fix.bronze"]
+    assert [asset.name for asset in silver.outlets] == ["fix.silver"]
     assert dag.params["filesystem"] == "file:data/capture"
     assert dag.params["registry"] is None
+    # Each FIX stage names the table it reads under a name of its own, so one
+    # Params mapping over three documents hands neither the other's source.
+    assert dag.params["messages"] == "logs.messages"
+    assert dag.params["bronze"] == "fix.bronze"
     assert dag.params["start"] is None and dag.params["end"] is None, "the interval fills them"
 
 
@@ -175,7 +183,7 @@ def test_the_products_dag_starts_when_the_fix_table_is_written() -> None:
 
     assert dag.dag_id == "rekep_products"
     assert set(dag.task_dict) == {"build_dbt"}
-    assert [asset.name for asset in dag.timetable.asset_condition.objects] == ["fix.messages"]
+    assert [asset.name for asset in dag.timetable.asset_condition.objects] == ["fix.silver"]
     built = dag.get_task("build_dbt")
     assert [asset.name for asset in built.outlets] == [
         "orders.events",
@@ -569,13 +577,21 @@ WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
 #: What each stage returns the first time it sees those 144 physical rows, and
 #: what a replay of the same window returns: the same rows, replaced.
 LANDED = {
-    "parse_messages": {"read": 144, "written": 122, "skipped": 22},
-    "parse_fix": {"read": 122, "written": 53, "skipped": 23},
+    "parse_messages": {"read": 144, "written": 141, "skipped": 3},
+    "parse_fix_bronze": {"read": 141, "written": 53, "skipped": 26},
+    "parse_fix_silver": {"read": 53, "written": 53, "skipped": 0},
 }
 REPLAYED = LANDED
 
-#: The table each node publishes, which is also the Asset it declares.
-PUBLISHED = {"parse_messages": "logs.messages", "parse_fix": "fix.messages"}
+#: The table each node publishes, which is also the Asset it declares, and
+#: the name each result reports it under.
+PUBLISHED = {
+    "parse_messages": "logs.messages",
+    "parse_fix_bronze": "fix.bronze",
+    "parse_fix_silver": "fix.silver",
+}
+TARGETS = {"parse_messages": "messages", "parse_fix_bronze": "bronze", "parse_fix_silver": "silver"}
+STORED = {"logs.messages": 141, "fix.bronze": 53, "fix.silver": 53}
 
 
 def counted(result: dict[str, Any]) -> dict[str, int]:
@@ -668,21 +684,19 @@ def test_the_scheduled_graph_publishes_the_bridge_fixture_and_replays_it(
 
     assert {name: counted(held["result"]) for name, held in landed.items()} == LANDED
     for name, table in PUBLISHED.items():
-        assert landed[name]["result"]["targets"] == {
-            "messages" if name == "parse_messages" else "fix": table
-        }
+        assert landed[name]["result"]["targets"] == {TARGETS[name]: table}
         # The counts ride on the Asset event, which is what a downstream DAG
         # scheduled on that table reads.
         assert landed[name]["assets"] == {
             table: {"task": name, **LANDED[name]},
         }
-    assert _rows(catalog) == {"logs.messages": 122, "fix.messages": 53}
+    assert _rows(catalog) == STORED
 
     replayed = _pass(catalog)
 
     assert {name: counted(held["result"]) for name, held in replayed.items()} == REPLAYED
-    assert _rows(catalog) == {"logs.messages": 122, "fix.messages": 53}
-    assert _snapshots(catalog) == {"logs.messages": 2, "fix.messages": 2}, (
+    assert _rows(catalog) == STORED
+    assert _snapshots(catalog) == {name: 2 for name in STORED}, (
         "a replayed schedule replaces its window in one commit per table"
     )
 
@@ -851,4 +865,4 @@ def test_a_real_dag_run_publishes_both_tables_from_its_conf(
         }
     finally:
         store.close()
-    assert stored == {"logs.messages": 122, "fix.messages": 53}
+    assert stored == STORED

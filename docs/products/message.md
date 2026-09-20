@@ -1,10 +1,10 @@
 # logs.messages
 
 `logs.messages` is the replay boundary. One row is one physical line from one
-leaf object, with the matched ULBridge header typed and the remaining body kept
-byte-for-byte — and it is keyed on `bodyhash`, the digest of those bytes, so
-identical bytes are one row whatever session carried them and however often the
-capture is re-read.
+leaf object, with the matched ULBridge header typed and the whole line kept
+byte for byte -- and it is keyed on `bodyhash`, the digest of those bytes, so
+identical lines are one row whatever session carried them and however often
+the capture is re-read.
 
 ## Complete schema
 
@@ -18,19 +18,27 @@ capture is re-read.
 | 6 | `msgsessionid` | `string` | yes | bridge session instance, filling `msgsessionid` (65032) downstream |
 | 7 | `msgctxid` | `string` | yes | message-context identifier, filling `msgctxid` (65008) downstream |
 | 8 | `msgseqnum` | `int64` | yes | context sequence number, filling `MsgSeqNum` (34) where a frame stated none |
-| 9 | `pluginid` | `string` | yes | plugin that wrote the line, filling `pluginid` (65009) downstream |
+| 9 | `pluginid` | `string` | yes | plugin that wrote the line; rides in front of a FIX row under this name, the row's own column is `msgpluginid` |
 | 10 | `level` | `string` | yes | header severity spelling |
-| 11 | `bodyhash` | `fixed_size_binary[16]` | no | XXH3-128 of exact `body` bytes; the primary key |
-| 12 | `body` | `binary` | no | every byte after the matched header |
+| 11 | `bodyhash` | `fixed_size_binary[16]` | no | XXH3-128 of the exact `body` bytes; the primary key |
+| 12 | `body` | `binary` | no | the whole line as retained, row header included |
+| 13 | `curruuid` | `fixed_size_binary[16]` | no | the line's own identity as the read states it; a message parsed out of the line names it as its `srcuuids` |
 
 The reviewed table contract is
 [`schemas/rekep/message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json):
 the Iceberg schema, partition spec and sort order this table is created with.
 The digest and derived-partition rules above are declared in
-`Message.into_field()`, which an Iceberg schema has no place for.
+`Message.into_field()`, which an Iceberg schema has no place for. `curruuid`
+is Iceberg field 13 and declared last, because a table that already exists
+takes a new column at its end.
 
 Every header capture is named for the FIX column it fills when the stored row
-goes on through the codec, so `parse_fix` needs no renaming pass of its own.
+goes on through the codec, so `parse_fix_bronze` needs no renaming pass of its
+own: `msgsessionid`, `msgctxid` and `msgseqnum` fold onto the row's columns of
+those names, and `sourceurl`, which traversal fills rather than the header,
+onto the dictionary's own. `pluginid` does not fold: the row's own column for
+the plugin is `msgpluginid`, and this capture rides in front of the row under
+the spelling the bridge's header brackets it with.
 `msgsessionid` is the session *instance* the bridge handled the line on, and
 not what the message itself says about the counterparty session it
 names for itself.
@@ -53,11 +61,12 @@ becomes:
 | `msgseqnum` | `40218` |
 | `pluginid` | `OMS_X1_TradeCapture` |
 | `level` | `INFO` |
-| `body` | `Receiving : 8=FIX.4.4\|35=8\|...` as bytes |
+| `body` | `2026-08-14 14:46:39.769 [15255-e7254b12:9f03166699:40218] [OMS_X1_TradeCapture] (INFO) Receiving : 8=FIX.4.4\|35=8\|...` as bytes, the whole line |
+| `curruuid` | the sixteen bytes the read stamps the line with |
 
-`sourceurl` and `rownum` come from traversal rather than the header. A line
-whose header does not match still has those two columns and its complete body;
-header-derived columns are null.
+`sourceurl` and `rownum` come from traversal rather than the header, and
+`curruuid` from the read itself. A line whose header does not match still has
+those three columns and its complete bytes; header-derived columns are null.
 
 ## Read with the same parser as the task
 
@@ -84,12 +93,13 @@ source.close()
 - `bodyhash` is computed during field application, not in a Python row loop.
 - Only the lines whose `timepartition` falls in the run's window are written;
   a line with no clock is in every window.
-- The writer replaces on `bodyhash` within a line's hour partition, so a replay
-  of a window lands the same lines once. A key is scoped to its partition: the
-  same bytes logged in two hours are two rows, one in each, and the same bytes
-  logged twice inside one hour are one.
-- `bodyhash` is the digest of the *body* and not the message's own `hashcode`,
-  which covers the settled event and is a column of `fix.messages`. Two
-  different lines can state one message, so the two answer different questions.
+- The writer replaces on `bodyhash`, the digest of the whole line, within the
+  line's hour partition, so a line printed twice inside one hour is one row and
+  a replay of a window lands the same lines once. Over the bundled capture, 144
+  lines are 141 rows: 3 repeat another line byte for byte.
+- `bodyhash` is the digest of the *line* and not the message's own
+  `currhashcode`, which covers the settled event and is a column of both FIX
+  tables. Two different lines can state one message, so the two answer
+  different questions.
 - Remote objects remain remote; local staging is not part of the production
   path.

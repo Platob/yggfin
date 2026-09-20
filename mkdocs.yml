@@ -56,7 +56,7 @@ nav:
   - Data products:
       - Two tables: products/index.md
       - logs.messages: products/message.md
-      - fix.messages: products/fix-message.md
+      - fix.bronze and fix.silver: products/fix-message.md
       - Field contract: contracts/types.md
       - Portable contracts: contracts/index.md
   - FIX:
@@ -72,7 +72,8 @@ nav:
   - Pipeline:
       - Overview: pipeline/index.md
       - Parse messages: pipeline/tasks/parse-messages.md
-      - Parse FIX: pipeline/tasks/parse-fix.md
+      - Parse FIX bronze: pipeline/tasks/parse-fix-bronze.md
+      - Parse FIX silver: pipeline/tasks/parse-fix-silver.md
       - Build dbt: pipeline/tasks/build-dbt.md
       - Airflow: pipeline/airflow.md
       - Run: pipeline/operations/run.md

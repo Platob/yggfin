@@ -86,7 +86,7 @@ def test_the_protocol_keys_are_the_ones_a_declaration_writes() -> None:
     assert metadata[PRIMARY_KEY] == "true"
     hour = Row.into_field().field("hour")
     assert hour.is_partition
-    assert hour.metadata["field:partition"] == "true"
+    assert hour.metadata["FIELD:partition"] == "true"
     assert PARTITION_KEY not in hour.metadata
     assert partition_key("day")["metadata"][PARTITION_KEY] == "day"
 
@@ -100,7 +100,7 @@ def test_rekep_installs_its_bundled_registry_as_the_process_default() -> None:
     bundled = fix_registry()
 
     assert registry_path().is_dir()
-    assert len(bundled) == 7787
+    assert len(bundled) == 7771
     assert global_registry() == bundled
     assert IOBase.__module__.startswith("yggdryl")
     assert TextOptions.__module__.startswith("yggdryl")

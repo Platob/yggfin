@@ -8,9 +8,9 @@ components and repeating groups without another model.
 
 | source | count | dialect |
 | --- | ---: | --- |
-| crate columns | 38 | standard, tags 65003–65054 |
-| bundled specification and the crate's own | 6,277 scalar fields | standard |
-| definitions in all | 7,787 | no named dialect |
+| crate columns | 22 | standard, tags 65003-65053 |
+| bundled specification and the crate's own | 6,261 scalar fields | standard |
+| definitions in all | 7,771 | no named dialect |
 
 Every registry holds the crate's own columns and the two standard clocks from
 construction, so a bundled dictionary is those definitions and the
@@ -21,9 +21,9 @@ from rekep.fix import fix_crate_fields, fix_registry
 
 registry = fix_registry()
 
-assert len(registry) == 7787
+assert len(registry) == 7771
 assert registry.dialects() == []
-assert len(fix_crate_fields()) == 38
+assert len(fix_crate_fields()) == 22
 ```
 
 Scalar fields are one shape of definition among four. Components and repeating
@@ -32,10 +32,10 @@ groups are declarations the same dictionary holds; a message type is what a
 
 | shape | count | read by |
 | --- | ---: | --- |
-| scalar fields | 6,277 | iterating the registry |
+| scalar fields | 6,261 | iterating the registry |
 | components | 928 | the `components` array of `registry.into_json()` |
 | repeating groups | 582 | the `groups` array of the same document |
-| message types | 181 | the components carrying `fix:msgtype` |
+| message types | 181 | the components carrying `FIX:msgtype` |
 
 Iteration walks the scalars; the dictionary's own document is what enumerates
 the other two, and a component or a group is reached directly by
@@ -49,7 +49,7 @@ from rekep.fix import fix_registry
 registry = fix_registry()
 document = json.loads(registry.into_json())
 
-assert sum(1 for _ in registry) == 6277
+assert sum(1 for _ in registry) == 6261
 assert len(document["components"]) == 928
 assert len(document["groups"]) == 582
 assert registry.msgtype("D").name == "newordersingle"
@@ -124,7 +124,7 @@ The registry is one namespace, so a bare key resolves in this order:
 
 1. a numeric key, against the tag it is;
 2. a folded name, against the canonical names and the other spellings the
-   dictionary keeps for them — every name is read the same way;
+   dictionary keeps for them -- every name is read the same way;
 3. nothing, which is an unknown pair rather than a failure.
 
 A capture is no exception: it is named for the field it fills, so the bridge's
@@ -199,26 +199,29 @@ assert {"value": "D", "name": "NewOrderSingle"}.items() <= codes[
 
 ## Runtime fields
 
-Every registry starts with the crate's own columns, in the 65003–65054 range.
-They are what the codec derives rather than what a dictionary shard stores, and
-the gaps in that range are slots it retired.
+Every registry starts with the crate's own 22 definitions, in the 65003-65053
+range: 20 scalar fields and the two maps. They are what the codec derives
+rather than what a dictionary shard stores.
 
-| tag range | columns |
+| tags | columns |
 | --- | --- |
-| 65003, 65021–65029 | the instants: settled, previous, created, snapped, recorded, expiring |
-| 65017–65018, 65039–65042 | the content codes, the identities over them, what an event descends from and where it stands |
-| 65008–65009, 65026, 65032 | what the capture said: the plugin, the message context, the source object, the session instance |
-| 65013–65015, 65033–65035, 65053–65054 | the instrument: its codes, its ticker, whether it trades, and the lifecycle state |
-| 65043–65048, 65051–65052, 65030–65031 | the market: price, quantity, unit, their previous step, the chain name, the two lanes' currencies and units |
-| 65020, 65049 | the two maps: the identifiers a message declares, and a bridge's own metadata |
+| 65003, 65021, 65023, 65025, 65053 | the instants: `currunix` settled, `prevunix` the step before, `creaunix` created, `snapunix` snapped, `expirunix` expiring |
+| 65017, 65018, 65039, 65040, 65022, 65041, 65042, 65048, 65051, 65052 | the content codes `currhashcode` and `crosshashcode`, the identities `curruuid` and `crossuuid` over them, what an event follows and descends from (`prevuuid`, `parentuuids`, `seqnum`), the chain it belongs to (`crosscode`), the line it was read from (`srcuuids`), and where it stands (`state`) |
+| 65008, 65009, 65026, 65027, 65032 | what the capture said: `msgctxid`, `msgpluginid`, `sourceurl`, `nofixentries`, `msgsessionid` |
+| 65020, 65049 | the two maps: the `identifiers` a message declares, and a bridge's own `metadata` |
+
+The gaps in the range are slots the core retired. The market traits -- `px`,
+`qty`, their previous step, the instrument codes, whether it trades -- left the
+row, because a market fact is FIX's own field: `Price(44)`, `OrderQty(38)` and
+`LastPx(31)` are columns, and `FixMsg.px` and `FixMsg.qty` answer off them.
 
 ```python
 from rekep.fix import fix_crate_fields
 
 tags = [field.fix.tag for field in fix_crate_fields()]
 
-assert len(tags) == 38
-assert min(tags) == 65003 and max(tags) == 65054
+assert len(tags) == 22
+assert min(tags) == 65003 and max(tags) == 65053
 assert 65017 in tags and 65039 in tags
 ```
 
@@ -250,7 +253,7 @@ from silently creating a narrow table.
 
 ## Browser
 
-Search the same 7,787 definitions here, by tag, name, spelling or description:
+Search the same 7,771 definitions here, by tag, name, spelling or description:
 
 <div data-fix="registry"></div>
 

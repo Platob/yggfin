@@ -11,10 +11,10 @@ message = next(iter(fix_codec(fix_registry()).parse_line(wire)))
 again = message.into_bytes(ord("|"))
 
 # The message re-emits as it now stands: the header and the event's own tags
-# in front, then everything that arrived, in arrival order.
-assert again.startswith(b"8=FIX.4.4|35=D|")
-assert again.endswith(b"11=ORD-1|55=AAPL|10=000|")
-assert all(pair in again for pair in (b"54=1", b"38=12"))
+# in front, then what arrived, then the checksum it stated.
+assert again.startswith(b"8=FIX.4.4|35=D|11=ORD-1|")
+assert again.endswith(b"|10=000|")
+assert all(pair in again for pair in (b"55=AAPL", b"54=1", b"38=12"))
 ```
 
 ## What round-trips
@@ -26,7 +26,7 @@ assert all(pair in again for pair in (b"54=1", b"38=12"))
 | nested group occurrences | yes, in normalized path spelling when decoded from packed bridge groups |
 | unknown fields | yes |
 | capture `sourceurl`, `rownum`, `pluginid`, or timestamp | no |
-| derived `curruuid`, `crossuuid`, settled instants, MIC, state | no |
+| derived `curruuid`, `crossuuid`, `currhashcode`, settled instants, state | no |
 | typed-column canonical value | only through its original arrival pair |
 
 A message constructed only from pairs has no obligation to synthesize
@@ -40,8 +40,8 @@ from rekep.fix import fix_codec, fix_registry
 
 message = next(iter(fix_codec(fix_registry()).parse_line(b"35=D|11=ORD-1|55=AAPL|")))
 
-assert message.into_bytes(ord("|")).endswith(b"11=ORD-1|55=AAPL|")
-assert message.into_bytes(1).endswith(b"11=ORD-1\x0155=AAPL\x01")
+assert message.into_bytes(ord("|")).startswith(b"8=FIX.4.4|35=D|11=ORD-1|55=AAPL|")
+assert message.into_bytes(1).startswith(b"8=FIX.4.4\x0135=D\x0111=ORD-1\x0155=AAPL\x01")
 ```
 
 Use numeric FIX input when byte-for-byte wire framing matters. Bridge rows can

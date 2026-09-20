@@ -10,7 +10,7 @@ from yggdryl import TextOptions, scalar
 
 from rekep.annotations import Self
 from rekep.convert import Convertible
-from rekep.fields import HOUR, derived_from, digest_key, partition_key, primary_key
+from rekep.fields import HOUR, derived_from, digest_key, field_options, partition_key, primary_key
 from rekep.times import ULBRIDGE_ROWHEADER, datetime_of
 
 
@@ -35,10 +35,10 @@ class Message(Convertible):
 
     Capture context, and only that: it is the clock the bridge stamped the
     *line* with, so it dates no message and never reaches one. What dates a
-    message is what the message states -- its `TransactTime`, else its
-    `SendingTime`, else the one instant the codec is pinned with -- so the
-    same bytes logged at three hops settle on one instant however each line
-    was stamped.
+    message is what the message states -- the `SendingTime` it carries, else
+    the one instant the codec is pinned with, which the walk then replaces by
+    the `TransactTime` it states -- so the same bytes logged at three hops
+    settle on one instant however each line was stamped.
     """
 
     timepartition: Annotated[
@@ -48,7 +48,7 @@ class Message(Convertible):
     ] = None
     """Timestamp partitioned by its UTC hour in Iceberg.
 
-    `logs.messages` is laid out by it and `fix.messages` carries it as an
+    `logs.messages` is laid out by it and the two FIX tables carry it as an
     ordinary column: a settled message is laid out by the instant it happened
     at, not by the instant a bridge printed the line.
     """
@@ -72,7 +72,12 @@ class Message(Convertible):
     """Bridge sequence number, filling `MsgSeqNum` (34) where a frame stated none."""
 
     pluginid: str | None = None
-    """Bridge plugin that wrote the line, filling `pluginid` (65009)."""
+    """Bridge plugin that wrote the line.
+
+    Carried in front of a FIX row under this name: the row's own column for
+    the plugin is `msgpluginid` (65009), and this capture is spelled as the
+    bridge's header brackets it.
+    """
 
     level: str | None = None
     """Severity spelling captured from the line header."""
@@ -87,19 +92,42 @@ class Message(Convertible):
     The key of `logs.messages`, and a digest of the bytes alone: identical
     bytes are one row whatever session carried them, whichever object they
     were read from and however often a capture is re-read. It is not the
-    message's `hashcode`, which covers the settled event -- its facts, its
+    message's `currhashcode`, which covers the settled event -- its facts, its
     text, its metadata and its entry tree -- and answers the same code for two
     different lines that state the same message. The bytes and the message are
     two questions, so they are two columns and neither stands in for the other.
     """
 
     body: bytes = b""
-    """Exact bytes after the matched line-header prefix.
+    """The whole line as the native read retains it, the row header included.
 
-    `logs.messages` is where they live and the only place, and so is the
-    `bodyhash` beside them: `fix.messages` holds neither, because a row there
-    is an event and both of these are one line's. It names the line it was
-    read from instead, with `sourceurl` and `rownum`.
+    The captures above are read off it, not cut out of it. `logs.messages` is
+    where the bytes live and the only place, and so is the `bodyhash` beside
+    them: neither FIX table holds either, because a row there is an event and
+    both of these are one line's. It names the line it was read from instead,
+    with `sourceurl`, `rownum` and, exactly, the line's `curruuid`.
+    """
+
+    curruuid: Annotated[bytes | None, field_options(dtype=pyarrow.binary(16))] = None
+    """The line's own identity, as the native text read states it.
+
+    A text line is an event of the graph, and the read stamps every row with
+    the sixteen columns an event opens with; this is the one of them a
+    message keeps. A message parsed out of a stored line names it here and
+    nowhere else -- as its `srcuuids`, exact provenance rather than an
+    identity recomputed from the bytes -- so a FIX row joins the line it was
+    read from on this column, whatever the line was stamped with. Not the
+    key: identical bytes are one row on `bodyhash`, and the identity a table
+    keeps is the line that landed. Sixteen ordered bytes rather than the
+    `uuid` Iceberg would store, for the reason the FIX row gives.
+
+    Declared last and nullable, because a table that already exists takes a
+    new column only at its end and only as an optional one: an Iceberg schema
+    cannot add a required column to rows that never held it. The read fills
+    it on every row; a row that states none -- one made by hand, or one a
+    table held before this column -- leaves the parse to recompute the
+    identity from the line's bytes and instant, which is equal only while
+    those are.
     """
 
     def __post_init__(self) -> None:
@@ -119,16 +147,19 @@ class Message(Convertible):
             self.body = self.body.encode("utf-8")
         elif not isinstance(self.body, bytes):
             self.body = bytes(self.body)
+        if self.curruuid is not None and not isinstance(self.curruuid, bytes):
+            self.curruuid = bytes(self.curruuid)
 
     #: What a row header does not fill, because something else does: the two
-    #: the traversal names, and the payload it frames.
-    READ_COLUMNS = frozenset({"sourceurl", "rownum", "body"})
+    #: the traversal names, the payload it frames, and the identity the read
+    #: states over the line.
+    READ_COLUMNS = frozenset({"sourceurl", "rownum", "body", "curruuid"})
 
     @classmethod
     def captures(cls) -> frozenset[str]:
         """The columns a row header is expected to capture into this contract.
 
-        Every member this class declares except the three the read itself
+        Every member this class declares except the four the read itself
         fills and the ones a field apply derives -- and a derived member says
         so, by naming the columns it is derived from, so adding one does not
         mean remembering to exclude it here.

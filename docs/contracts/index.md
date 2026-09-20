@@ -6,10 +6,14 @@ created table records itself:
 
 | snapshot | columns | runtime constructor |
 | --- | ---: | --- |
-| [`message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json) | 12 | `Message.into_field()` |
-| [`fix-message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fix-message.json) | 128 | `fix_message_field()` |
+| [`message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json) | 13 | `Message.into_field()` |
+| [`fix-message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fix-message.json) | 123 | `fix_message_field()` |
 
-Each document has three keys — `schema`, `partition-spec` and `sort-order` —
+The second declares both FIX tables, `fix.bronze` and `fix.silver`: what the
+parse answered and what the walk restated are one row, so there is one field,
+one key, one partition and one sort order, and the two are one snapshot.
+
+Each document has three keys -- `schema`, `partition-spec` and `sort-order` --
 holding a `pyiceberg.schema.Schema`, a `pyiceberg.partitioning.PartitionSpec`
 and a `pyiceberg.table.sorting.SortOrder`.
 
@@ -27,7 +31,7 @@ and a `pyiceberg.table.sorting.SortOrder`.
       }
     ],
     "schema-id": 0,
-    "identifier-field-ids": [1, 2]
+    "identifier-field-ids": [11]
   },
   "partition-spec": {
     "spec-id": 0,
@@ -95,11 +99,13 @@ Path("schemas/rekep/fix-message.json").write_text(
 )
 ```
 
-The 128 columns are 7 carried source columns and 121 the dictionary decides:
+The 123 columns are 6 carried source columns and 117 the dictionary decides:
 the specification fields it selects, the crate's own runtime columns,
-`msgdirection`, and the arrival record that closes the row — `fixentries`,
+`msgdirection`, and the arrival record that closes the row -- `fixentries`,
 under the `nofixentries` that counts it. A capture column named after the
-field it fills folds onto that field, so `sourceurl` is carried and counted
-with the dictionary's own, not beside it.
-The runtime registry remains authoritative; a registry change must produce a
-visible schema diff.
+field it fills folds onto that field, so `sourceurl`, `msgsessionid`,
+`msgctxid` and `msgseqnum` are counted with the dictionary's own and not
+beside it; the raw contract's `curruuid` is dropped as the row's own identity
+takes its name, and `pluginid` rides in front, because the row's column for
+the plugin is `msgpluginid`. The runtime registry remains authoritative; a
+registry change must produce a visible schema diff.

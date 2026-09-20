@@ -61,21 +61,26 @@ assert reader.schema.equals(Message.into_field().into_arrow_schema(), check_meta
 ```
 
 The row header is the bridge's own `ULBRIDGE_ROWHEADER`, stated by the native
-core and spelled once in `rekep.times` — pinned against the core's own text
-rather than respelled per reader — and every capture it declares is named for
+core and spelled once in `rekep.times` -- pinned against the core's own text
+rather than respelled per reader -- and every capture it declares is named for
 the column it fills: `timestamp`, `threadId`,
-`msgsessionid`, `msgctxid`, `msgseqnum`, `pluginid` and `level`. `body`
-starts immediately after the matched header. `sourceurl` and `rownum` come from
-traversal, and `bodyhash` is computed from the exact body bytes during field
-application.
+`msgsessionid`, `msgctxid`, `msgseqnum`, `pluginid` and `level`. `body` is the
+whole line, row header included: the core retains the whole record and reads
+the captures off it, and `bodyhash` is the digest of those bytes, computed
+during field application. `sourceurl` and `rownum` come from traversal, and
+`curruuid`, the last column, is the line's own identity the read states -- a
+UUIDv7 over the line's instant and the XXH3-64 of its bytes -- which a message
+parsed out of the stored line names as its one `srcuuids` entry.
 
 `msgsessionid` is the session *instance* the bridge handled the line on
-(65032) — never what the message itself says about the counterparty session it
+(65032) -- never what the message itself says about the counterparty session it
 names; two connections to one counterparty are two instances, so they are two
 facts. `msgctxid` fills 65008,
 `msgseqnum` fills `MsgSeqNum` (34) on a frame that stated none, and `sourceurl`
-fills 65026. A stored row therefore goes on through the FIX codec without one
-spelling being translated into another.
+fills 65026. `pluginid` fills nothing: it rides in front of the FIX row under
+this name, and the row's own column for the plugin is `msgpluginid`. A stored
+row therefore goes on through [`parse_fix_bronze`](parse-fix-bronze.md)
+without one spelling being translated into another.
 
 ## A bridge that writes the header its own way
 
@@ -105,7 +110,7 @@ assert read.num_rows - read.column("timestamp").null_count == 10
 
 What a header may change is the layout. What it may not change is the names:
 the columns above are the contract, and a read drops a capture no column holds
-without a word — a table that lands complete, keyed, and empty down one
+without a word -- a table that lands complete, keyed, and empty down one
 column. So the names are checked where the mismatch is still legible, and a
 header that renames or omits one is refused by name:
 
@@ -124,7 +129,7 @@ except ValueError as refusal:
 `Message.captures()` is the set it is checked against, stated by the contract
 rather than beside it.
 
-See the [complete 12-column schema](../../products/message.md#complete-schema).
+See the [complete 13-column schema](../../products/message.md#complete-schema).
 
 ## Streaming behavior
 
@@ -168,12 +173,13 @@ Under Airflow the operator hands each run its data interval as `start` and
 ## Write step
 
 The task opens `logs.messages` with `Message.into_field()` and replaces the
-reader's rows on `bodyhash`, the digest of the exact body bytes: a stored row
+reader's rows on `bodyhash`, the digest of the exact line bytes: a stored row
 carrying one of the window's keys is taken out and the window's row lands, in
 one commit per bounded chunk. A missing table is created. A replay of the
-window lands the same rows again and the table holds each line once — and two
-lines the bridge logged under different sessions with identical bytes are one
-row, because the key is of the bytes and of nothing else.
+window lands the same rows again and the table holds each line once -- and a
+line the bridge printed twice, byte for byte, is one row, because the key is
+of the bytes and of nothing else; the bundled capture's 144 physical lines are
+141 stored ones for that reason, 3 of them repeated exactly.
 
 ## Run
 

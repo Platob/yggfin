@@ -1,9 +1,9 @@
 {
-  "name": "parse_fix",
-  "application": "parse_fix.py",
+  "name": "parse_fix_silver",
+  "application": "parse_fix_silver.py",
   "parameters": {
+    "bronze": "fix.bronze",
     "registry": null,
-    "lifecycle": true,
     "start": null,
     "end": null,
     "catalog": {

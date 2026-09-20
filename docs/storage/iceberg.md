@@ -29,9 +29,9 @@ written = messages.overwrite_arrow_reader(
 ```
 
 `merge_by=True` uses the primary key declared on the native Field:
-`bodyhash` for `logs.messages`, and `curruuid`
-for `fix.messages`, where a parse answers one row per message and a source URL
-and row number alone therefore name no row. A missing table is created.
+`bodyhash` for `logs.messages`, and `curruuid` for `fix.bronze` and
+`fix.silver`, where a parse answers one row per message and a source URL and
+row number alone therefore name no row. A missing table is created.
 `commit_batch_num` and the optional `commit_row_size` bound each storage
 commit independently from input batch size, however many partitions the
 bounded chunk spans: its parts are staged one at a time and committed together.
@@ -142,7 +142,7 @@ from rekep import Field
 
 fix_field = Field.from_arrow_schema(reader.schema, name="FixMessage")
 fixes = catalog.dataset(
-    "fix.messages",
+    "fix.silver",
     field=fix_field,
     merge_schema=True,
 )
@@ -150,28 +150,31 @@ fixes.append_arrow_reader(reader, fix_field)
 ```
 
 Pass the current Field explicitly when its reader may be newer than the stored
-table. This mode is enabled by `parse_fix`; the raw `Message` contract remains
-fixed. It is additive only: existing types, nullability, comments, field IDs,
-identifier fields, partition specs, and sort orders do not change. Iceberg
-assigns IDs to additions. A column added to an existing table must be nullable
-because older rows have no value for it; the first write creates a missing
-table directly from its Field. Schema updates are table-wide even when rows are
-written to a branch. A write with no new column makes no schema commit.
+table. This mode is enabled by `parse_fix_bronze` and `parse_fix_silver`; the
+raw `Message` contract remains fixed. It is additive only: existing types,
+nullability, comments, field IDs, identifier fields, partition specs, and sort
+orders do not change. Iceberg assigns IDs to additions. A column added to an
+existing table must be nullable because older rows have no value for it; the
+first write creates a missing table directly from its Field. Schema updates
+are table-wide even when rows are written to a branch. A write with no new
+column makes no schema commit.
 
 Before either write, the native `Field` applies its declarations in dependency
-order: **cast → derived partition columns → digest holders**. Both published
-tables lay out on `timepartition` alone — the hour transform over the capture
-`timestamp` — and neither materializes a second layout column beside it.
+order: **cast → derived partition columns → digest holders**. `logs.messages`
+lays out on `timepartition` alone -- the hour transform over the capture
+`timestamp` -- and both FIX tables on `currunix` alone, the hour transform
+over the event's own instant; none materializes a second layout column
+beside it.
 
 Three declarations look similar and are not:
 
 | declaration | key | what it does |
 | --- | --- | --- |
 | `partition_key()` | `field:partition` | physical layout marker; rekep maps it to an identity Iceberg spec |
-| `partition_key("hour")` | `iceberg:partition_key` | a non-identity Iceberg transform |
-| `derived_from(...)` | `partition:sources` | an executable Arrow derivation, computing a real column |
+| `partition_key("hour")` | `ICEBERG:partition_key` | a non-identity Iceberg transform |
+| `derived_from(...)` | `PARTITION:sources` | an executable Arrow derivation, computing a real column |
 
-A derived transform such as `day` may also appear under `partition:transform`;
+A derived transform such as `day` may also appear under `PARTITION:transform`;
 it computes a separate Arrow column and does not define the table spec. The
 identity and transformed Iceberg markers are mutually exclusive -- a field
 carrying both is rejected at declaration and at spec conversion. Iceberg itself
@@ -266,6 +269,6 @@ rekep task run tasks/optimize_iceberg/optimize_iceberg.json
 | `log_level` | `DEBUG` for file and plan details |
 
 Each table reports under its full identifier -- `logs.messages`,
-`fix.messages` -- so equal table names in different namespaces cannot collide.
+`fix.silver` -- so equal table names in different namespaces cannot collide.
 
 Run long transaction checks explicitly with `pytest -m integration`.

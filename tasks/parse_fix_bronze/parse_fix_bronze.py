@@ -11,9 +11,9 @@ with app.setup:
     import pyarrow
 
     from rekep.fix import (
-        fix_arrow_reader,
         fix_codec,
         fix_message_field,
+        fix_parse_arrow_reader,
         fix_registry,
         fix_stored_reader,
     )
@@ -23,18 +23,16 @@ with app.setup:
     from rekep.text import Message
     from rekep.times import window_of
 
-    SOURCE = "logs.messages"
-    TARGET = "fix.messages"
+    TARGET = "fix.bronze"
 
 
 @app.cell(hide_code=True)
 def _():
     mo.md("""
-    # Parse FIX
+    # Parse FIX: bronze
 
-    Read one window of stored capture lines into settled FIX rows: parse every
-    frame a line carried -- which settles what it implied where it is read --
-    and then name the chains those messages belong to.
+    Read one window of stored capture lines into parsed FIX rows: every frame
+    a line carried, settled where it is read, and nothing walked.
     """)
 
 
@@ -43,12 +41,12 @@ def parameters():
     # The adjacent document owns every default. A runner passes the whole
     # mapping to `app.run(defs=...)`, which replaces this cell.
     _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
+    messages = _defaults["messages"]
     registry = _defaults["registry"]
-    lifecycle = _defaults["lifecycle"]
     start = _defaults["start"]
     end = _defaults["end"]
     catalog = _defaults["catalog"]
-    return catalog, end, lifecycle, registry, start
+    return catalog, end, messages, registry, start
 
 
 @app.cell
@@ -58,7 +56,7 @@ def _():
 
 
 @app.cell
-def _(catalog, end, lifecycle, records, registry, start):
+def _(catalog, end, messages, records, registry, start):
     _ = records
     with ExitStack() as opened:
         # The same window `parse_messages` wrote, read back off the stored
@@ -71,19 +69,17 @@ def _(catalog, end, lifecycle, records, registry, start):
         # PyIceberg 0.12 cannot plan a comparison against one.
         window = window_of(start, end)
         stage = Stage(
-            "parse_fix",
-            sources={"messages": SOURCE},
-            targets={"fix": TARGET},
+            "parse_fix_bronze",
+            sources={"messages": messages},
+            targets={"bronze": TARGET},
             window=window,
         )
         store = IcebergCatalog.from_dict(catalog)
         opened.callback(store.close)
         carrier = Message.into_field()
-        messages = store.dataset(SOURCE, field=carrier)
-        opened.callback(messages.close)
-        source = messages.read_arrow_reader(
-            carrier, row_filter=window_filter("timestamp", window)
-        )
+        lines = store.dataset(messages, field=carrier)
+        opened.callback(lines.close)
+        source = lines.read_arrow_reader(carrier, row_filter=window_filter("timestamp", window))
         opened.callback(source.close)
         counts = {"read": 0, "messages": 0}
 
@@ -98,22 +94,24 @@ def _(catalog, end, lifecycle, records, registry, start):
         )
         opened.callback(counted.close)
         # The codec is the whole parse surface: the dictionary and the instant
-        # an undated message takes are pinned on it once, and each of the two
-        # stages after it is a call. No capture order is among them -- this
-        # door reads stored rows, where a column named after a field fills it
-        # by that name, and a position is what the line door resolves. Pinning
-        # one here would be a reading of a header this task never sees, stale
-        # the moment the capture is read under one of its own.
+        # an undated message takes are pinned on it once, and the stage after
+        # it is a call. No capture order is among them -- this door reads
+        # stored rows, where a column named after a field fills it by that
+        # name, and a position is what the line door resolves. Pinning one
+        # here would be a reading of a header this task never sees, stale the
+        # moment the capture is read under one of its own.
         codec = fix_codec(fix_registry(registry))
-        # The published field is what the whole pipeline answers, read from the
-        # dictionary alone rather than from the first batch -- so an empty
-        # capture creates the same table a full one does.
+        # The published field is what both FIX tables are declared with, read
+        # from the dictionary alone rather than from the first batch -- so an
+        # empty window creates the same table a full one does.
         field = fix_message_field(codec, carrier)
-        # parse -> lifecycle, over the stored capture's batches. A row is a
-        # message, so one line carrying two frames answers two -- and one
-        # message logged at three hops answers three rows of one identity,
-        # which is what the key below folds.
-        parsed = fix_arrow_reader(codec, counted, lifecycle=lifecycle)
+        # The parse alone, over the stored capture's batches, and no walk: a
+        # row is a message, so one line carrying two frames answers two -- and
+        # one message logged at three hops answers three rows of one identity,
+        # which is what the key below folds. `seqnum` and `prevuuid` are empty
+        # on every row, because nothing has placed a message in its chain yet;
+        # that is `parse_fix_silver`'s reading of this table.
+        parsed = fix_parse_arrow_reader(codec, counted)
         opened.callback(parsed.close)
 
         def _parsed():
@@ -130,17 +128,16 @@ def _(catalog, end, lifecycle, records, registry, start):
         # Iceberg stores, then the field applied in its native order.
         applied = fix_stored_reader(answered, field)
         opened.callback(applied.close)
-        fixes = store.dataset(TARGET, field=field, merge_schema=True)
-        opened.callback(fixes.close)
+        bronze = store.dataset(TARGET, field=field, merge_schema=True)
+        opened.callback(bronze.close)
         # What the window answers replaces what the table held under the same
         # `curruuid`, so a replay lands the same events again and a message
         # logged at every hop it passed lands once. A key is scoped to its
-        # partition and the partition is the hour of `unix`, which is the
+        # partition and the partition is the hour of `currunix`, which is the
         # event's own instant: every restatement of one event carries the same
-        # one, so they meet. An event whose `unix` moves between two runs --
-        # a dictionary that reads its clock differently -- lands in a second
-        # hour, where the first copy's key is not in scope and is not replaced.
-        written = fixes.overwrite_arrow_reader(applied, field, merge_by=True)
+        # one, so they meet. A message the parse could not date sits at the
+        # codec's pin -- one hour, one partition -- until the walk dates it.
+        written = bronze.overwrite_arrow_reader(applied, field, merge_by=True)
         # A row is a message, not a line: one line carrying two frames answers
         # two and one carrying none answers nothing, so what the write left
         # out -- a restatement of an identity already landed -- is counted
@@ -163,29 +160,25 @@ def _(outcome):
 
 
 @app.cell
-def datasets(catalog, result):
-    # What the two datasets look like after the run: how each is laid out, and
-    # one chain read in the order the walk gave it. A presentation cell -- the
-    # runner publishes `result` and nothing else -- and it runs headless, so a
-    # layout that stopped being what this task declares fails the run here
-    # rather than in a table nobody opened.
+def datasets(catalog, messages, result):
+    # What the two datasets look like after the run: how each is laid out. A
+    # presentation cell -- the runner publishes `result` and nothing else --
+    # and it runs headless, so a layout that stopped being what this task
+    # declares fails the run here rather than in a table nobody opened.
     with ExitStack() as shown:
         _store = IcebergCatalog.from_dict(catalog)
         shown.callback(_store.close)
         _layout = {}
-        for _name in (SOURCE, TARGET):
+        for _name in (messages, TARGET):
+            if not _store.table_exists(_name):
+                continue
             _dataset = _store.dataset(_name)
             shown.callback(_dataset.close)
-            if not _dataset.exists:
-                continue
             _table = _dataset.iceberg_table
             _layout[_name] = {
                 "rows": _dataset.read_arrow_table().num_rows,
                 "partitions": sorted(
-                    {
-                        str(_file["partition"])
-                        for _file in _dataset.data_files().to_pylist()
-                    }
+                    {str(_file["partition"]) for _file in _dataset.data_files().to_pylist()}
                 ),
                 "spec": [str(_field) for _field in _table.spec().fields],
                 "key": sorted(
@@ -193,26 +186,9 @@ def datasets(catalog, result):
                     for _held in _table.schema().identifier_field_ids
                 ),
             }
-        _chain = None
-        if TARGET in _layout and _layout[TARGET]["rows"]:
-            _fixes = _store.dataset(TARGET)
-            shown.callback(_fixes.close)
-            # `unix, seqnum` is the order the walk gave a chain, and the widest
-            # chain is the one worth showing.
-            _rows = _fixes.read_arrow_table().select(
-                ("crosscode", "unix", "seqnum", "curruuid", "prevuuid", "px", "prevpx")
-            )
-            _codes = _rows.column("crosscode").to_pylist()
-            _widest = max(set(_codes), key=_codes.count)
-            _chain = (
-                _rows.filter(pyarrow.compute.equal(_rows.column("crosscode"), _widest))
-                .sort_by([("unix", "ascending"), ("seqnum", "ascending")])
-                .to_pylist()
-            )
     layout = _layout
-    chain = _chain
-    mo.vstack([mo.tree(layout), mo.ui.table(chain or [], selection=None)])
-    return chain, layout
+    mo.tree(layout)
+    return (layout,)
 
 
 if __name__ == "__main__":
