@@ -24,8 +24,10 @@ Its content SHA-256, as `sha256sum` prints it, is:
 | `fix.bronze` rows | 53 | one row per event as parsed, keyed on `curruuid` |
 | `fix.silver` rows | 53 | the same events walked: the walk restates them and adds none |
 
-Over the parse's own rows the widest chain is `e7254b12:9f0316669a`: 35
-messages, 21 events, with 6 as the last step the walk numbered. A chain is
+The widest chain is `e7254b12:9f0316669a`. The parse states it 37 times and
+settles those statements on 23 rows; the walk moves two of them into
+`e7254b12:9f03166699` and leaves 35 statements, 21 events and 6 as the last
+step it numbered. A chain is
 named by the bridge's `msgsessionid:msgctxid`. `python/tests/test_fix.py`
 holds every chain's counts; they are the same numbers
 `cargo run --example fix_capture` prints in a core checkout.

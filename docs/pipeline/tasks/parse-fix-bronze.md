@@ -68,8 +68,9 @@ A bronze row is that and nothing more. What a message implied about the message
 `prevuuid` and `prevunix` are null and `parentuuids` is empty on every row
 this task writes; a message read back off a bronze row stands at step zero of
 a chain no walk has named. What the parse did settle is on every row: `state`
-is what the message states and `creaunix` is the instant its chain opened at,
-before any fold. A bronze row is dated by the `SendingTime(52)` the message
+is the state the message reached, read where it states one and settled where
+it states none, and `creaunix` is the row's own instant, the one `currunix`
+carries, before any fold. A bronze row is dated by the `SendingTime(52)` the message
 stated, else it sits at the codec's pin -- see
 [the pin](#a-key-is-scoped-to-its-partition) below. The walk is
 [`parse_fix_silver`](parse-fix-silver.md), and it reads this table.
@@ -180,9 +181,11 @@ A message is then logged again at every hop it passes, and each of those
 arrivals is a restatement of one event rather than a second one: they settle on
 one `curruuid`, which is a UUIDv7 over the instant the event settled on and the
 code of its content. The bundled capture makes the gap visible -- its
-`e7254b12:9f0316669a` chain is stated 35 times and those statements are 21
-events, and over the whole capture 141 stored lines carry 79 messages that are
-53 events. A day's run over it reads 141, answers 79, writes 53 and skips 26,
+`e7254b12:9f0316669a` chain is stated 37 times and those statements are 23
+rows here, and over the whole capture 141 stored lines carry 79 messages that
+are 53 events. The walk moves two of those 23 into another chain, so the
+counts this chain answers after it are the ones
+[`parse_fix_silver`](parse-fix-silver.md) states. A day's run over it reads 141, answers 79, writes 53 and skips 26,
 and the 26 are restatements of an identity already landed, counted against the
 messages rather than the lines.
 
@@ -294,47 +297,46 @@ none of them.
 ## Sample rows
 
 The sample is chain `e7254b12:9f03166699` of `python/tests/data/ulbridge.log`,
-a partial fill and the fill that closed the order: ten lines, as
-`parse_fix_bronze` lands them in `fix.bronze`. An identity is shown by its
-last eight hex digits behind a leading `…`, and the stored value is sixteen
-bytes; a null is an empty cell.
+a partial fill and the fill that closed the order: ten lines in `rownum`
+order, as `parse_fix_bronze` lands them in `fix.bronze`. An identity is shown
+by its last eight hex digits behind a leading `…`, and the stored value is
+sixteen bytes; a null is an empty cell.
 
 --8<-- "docs/pipeline/tasks/samples/parse-fix-bronze.md"
 
-Ten lines answer ten messages, one frame each. `msgdirection` reads `R` on
-rows 6 and 35, the two frames the bridge received, and `S` on its own eight
-lines. `sendingtime` is set on those two alone, because the bridge's
+Ten lines answer ten messages, one frame each, and the first table is what the
+parse read off them and what it settled. `msgdirection` reads `R` on rows 6
+and 35, the two frames the bridge received, and `S` on its own eight lines.
+`ordstatus` is read where the message spells it -- `1` on row 6, off `39=1`,
+and `partfilled` on rows 7, 8, 9, 10, 11, 15 and 22, where the bridge spells
+the field as a word -- and settled where no message does: rows 35 and 36 read
+`2`, filled, though line 35 states no status at all and line 36 spells
+`ORDERSTATE=partfilled`, a key the dictionary does not read as
+`OrdStatus(39)`. The two `execid` values are the order's two venue
+executions. `lastqty` beside them is each execution's own, `21` and `57`,
+while `cumqty` and `leavesqty` are the order's running totals: `340` and
+`260` on the eight rows from 6 to 22, `600` and `0` on rows 35 and 36.
+
+`sendingtime` is set on the two received frames alone, because the bridge's
 key=value form carries no `SendingTime(52)`, and `currunix` follows it:
 `2026-08-14 12:46:39.761` on row 6, `.762` on row 35, and the pin
-`1970-01-01 00:00:00.000` on the other eight. An identity is settled over
-that instant and the message's content code, and its first 48 bits are the
-instant, so the two dated rows' `curruuid` begin `01a0004f6a…` and the eight
-pinned ones begin with zeros.
+`1970-01-01 00:00:00.000` on the other eight. A `curruuid`'s first 48 bits
+are that instant, so row 6's begins `01a0004f6a91…`, row 35's
+`01a0004f6a92…`, and the eight pinned ones begin with zeros.
 
-`transacttime` is the `TransactTime(60)` each message stated, and the second
-table is what the parse does not read it for: `seqnum`, `prevuuid`,
-`prevunix` and `parentuuids` are empty on all ten rows, and filling them is
-[`parse_fix_silver`](parse-fix-silver.md#sample-rows)'s. Row 6 states the tag
-to the microsecond, `12:46:39.743016`, the eight bridge lines state
-`12:46:39.743`, and row 35 states a bare date, so its column reads
-`2026-08-14 00:00:00.000`. What that bare date costs a product is on
-[`build_dbt`](build-dbt.md#sample-rows).
+`transacttime` is the `TransactTime(60)` each message stated, and the parse
+reads it for nothing. Row 6 states the tag to the microsecond,
+`12:46:39.743016`, the eight bridge lines state `12:46:39.743`, and row 35
+states a bare date, so its column reads `2026-08-14 00:00:00.000`. What that
+bare date costs a product is on [`build_dbt`](build-dbt.md#sample-rows).
 
-`crosscode` is the bridge's `msgsessionid:msgctxid` as parsed, so the fill is
-a chain of its own here: `e7254b12:9f03166699` on the first eight rows and
+The second table is the event columns, and the four it leaves empty are the
+walk's, on [`parse_fix_silver`](parse-fix-silver.md#sample-rows). `crosscode`
+is the bridge's `msgsessionid:msgctxid` as parsed, so the fill is a chain of
+its own here: `e7254b12:9f03166699` on the eight rows from 6 to 22, and
 `e7254b12:9f0316669a` on rows 35 and 36. `srcuuids` names the stored line
 each message was parsed out of, row 6 naming `…7eeab44c`, the identity
 [`parse_messages`](parse-messages.md#sample-rows) shows against that line.
-
-The first table is what the parse read and what it settled. `ordstatus` is
-read where the message spells it -- `1` on row 6, off `39=1`, and
-`partfilled` on rows 7, 8, 9, 10, 11, 15 and 22, where the bridge spells the
-field as a word -- and settled where no message does: rows 35 and 36 read
-`2`, filled, which neither line states, and which is the reading `state`
-gives as `80FILLED`. The two `execid` values are the order's two venue
-executions, and the quantities beside them are the order's rather than each
-execution's: `00011377089XEEA0` puts `21` into a `cumqty` of `340`, and
-`00011377090XEEA0` puts `57` into `600`, leaving `0`.
 
 `tools/pipeline_samples.py` regenerates the file from a run over the fixture,
 and the integration suite checks it with `--check`.
