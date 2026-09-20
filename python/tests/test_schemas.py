@@ -11,7 +11,6 @@ from rekep.fields import Field
 from rekep.fix import (
     FIXMSG,
     PAYLOAD,
-    TEXT_DIGEST,
     UNSTORED,
     fix_carrier,
     fix_message_field,
@@ -59,9 +58,9 @@ def test_a_contract_is_the_three_things_iceberg_stores() -> None:
     assert [member["name"] for member in document["schema"]["fields"]] == [
         member.name for member in Message.into_field()
     ]
-    # One row per line's bytes, whatever session carried it: `bodyhash` is the
-    # digest of the bytes and the whole key. The line's own identity is the
-    # last column, and not the key.
+    # One row per line's bytes, whatever session carried it: `currhashcode`
+    # is the code the read states over them and the whole key. The line's own
+    # identity is the last column, and not the key.
     assert document["schema"]["identifier-field-ids"] == [11]
     assert document["schema"]["fields"][-1]["name"] == "curruuid"
     assert document["schema"]["fields"][-1]["type"] == "fixed[16]"
@@ -92,7 +91,7 @@ def test_contract_matches_the_message_declaration() -> None:
     # the published shape loses `DIGEST:*` and `PARTITION:sources` and gains an
     # `ICEBERG:field_id` on every column. Types, names and nullability agree.
     assert published.into_arrow_schema().equals(declared.into_arrow_schema())
-    assert primary_keys(published) == primary_keys(declared) == ["bodyhash"]
+    assert primary_keys(published) == primary_keys(declared) == ["currhashcode"]
     assert partition_keys(published) == partition_keys(declared) == {"timepartition": "hour"}
     assert metrics_for(published) == metrics_for(declared)
 
@@ -101,18 +100,20 @@ def test_a_contract_does_not_carry_what_only_arrow_metadata_states() -> None:
     """The cost of the format, as an assertion rather than as prose.
 
     Each of these is asserted against the runtime declaration instead:
-    `test_message.py` owns the digest and derived-partition contract, and
+    `test_message.py` owns the derived-partition contract, and
     `test_the_fix_declaration_keeps_its_registry_metadata` below owns the tags.
     """
     published = load_contract()
 
     assert derived_keys(Message.into_field()) == {"timepartition": ("timestamp",)}
     assert derived_keys(published) == {}
-    assert [member.name for member in Message.into_field() if member.digest.is_holder()] == [
-        "bodyhash"
-    ]
+    # Nothing here computes a digest any more: the key is the code the read
+    # states, so neither shape holds one.
+    assert [member.name for member in Message.into_field() if member.digest.is_holder()] == []
     assert [member.name for member in published if member.digest.is_holder()] == []
-    assert published.into_arrow_schema().field("bodyhash").metadata[b"ICEBERG:field_id"] == b"11"
+    assert published.into_arrow_schema().field("currhashcode").metadata[b"ICEBERG:field_id"] == (
+        b"11"
+    )
     # A column's description survives as Iceberg's `doc`; the struct's own does
     # not, and neither do the `python:*` keys naming the class that declared it.
     assert Message.into_field().metadata["description"].startswith("One ULBridge text line")
@@ -145,7 +146,7 @@ def test_the_fix_contract_is_what_the_current_dictionary_answers() -> None:
         member.name for member in declared if member.name not in UNSTORED
     ]
     assert len(fixed) == 123 == len(fix_schema(fix_registry(), FIXMSG)) + 6
-    assert len(fix_parse_field()) == 125 == len(fixed) + len(UNSTORED)
+    assert len(fix_parse_field()) == 124 == len(fixed) + len(UNSTORED)
 
 
 def test_the_stored_row_holds_none_of_the_text_it_was_read_from() -> None:
@@ -159,11 +160,14 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from() -> None:
     parsed = fix_parse_field().into_arrow_schema()
     logged = Message.into_field().into_arrow_schema()
 
-    assert UNSTORED == ("body", "bodyhash") == (PAYLOAD, TEXT_DIGEST)
+    assert UNSTORED == ("body",) == (PAYLOAD,)
     for column in UNSTORED:
         assert column not in stored.names, column
         assert column in parsed.names, f"the parse still carries {column}"
         assert column in logged.names, f"and the raw row still holds {column}"
+    # The line's own code needs no dropping: the fixed row takes that name for
+    # the event's code, so the carried one is folded onto it and never rides.
+    assert "currhashcode" in logged.names and "currhashcode" in stored.names
     # What is left to reach the line with: where it was read from, and where
     # in it -- and, exactly, the line's own identity as the message's one
     # source. The carried `rownum` and the dictionary's `sourceurl` are both
@@ -174,8 +178,8 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from() -> None:
     assert stored.field("sourceurl").type == pyarrow.string()
     assert stored.field("srcuuids").type.field(0).type == pyarrow.binary(16)
     assert logged.field("curruuid").type == pyarrow.binary(16)
-    # The digest is still the raw row's key -- it just is not carried here.
-    assert primary_keys(Message.into_field()) == [TEXT_DIGEST]
+    # The line's code is still the raw row's key -- it just is not carried here.
+    assert primary_keys(Message.into_field()) == ["currhashcode"]
     assert not [member.name for member in fix_message_field() if member.digest.is_holder()], (
         "no column here is a digest this shape computes"
     )
@@ -251,7 +255,7 @@ def test_the_fix_declaration_keeps_its_registry_metadata() -> None:
 
 def test_raw_message_contract_keeps_the_captures_the_bridge_names() -> None:
     message = load_contract()
-    assert primary_keys(message) == ["bodyhash"]
+    assert primary_keys(message) == ["currhashcode"]
     assert partition_keys(message) == {"timepartition": "hour"}
     assert [member.name for member in message][4:10] == [
         "threadId",

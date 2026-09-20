@@ -12,6 +12,7 @@ from pyiceberg.expressions import And, EqualTo, GreaterThanOrEqual, IsNull, Less
 from yggdryl import Field, IOBase
 from yggdryl.fix import fix_schema, fix_schema_carrying
 
+from rekep.fields import stored_arrow_reader
 from rekep.fix import (
     CHAIN_STEP,
     EVENT_CLOCK,
@@ -20,7 +21,6 @@ from rekep.fix import (
     PAYLOAD,
     SORT_COLUMNS,
     SOURCES,
-    TEXT_DIGEST,
     TRANSACTION_CLOCK,
     UNDATED,
     UNSTORED,
@@ -36,7 +36,6 @@ from rekep.fix import (
     fix_parse_lines,
     fix_registry,
     fix_row_messages,
-    fix_stored_reader,
     fix_text_options,
     fix_window_filter,
     iceberg_fix_field,
@@ -82,12 +81,13 @@ EVENTS = sum(events for _, events, _ in CHAINS.values())
 
 #: The fixed row the pinned core states, and the crate's own block in it: the
 #: sixteen event columns among them, `state` and `expirunix` the two a walk
-#: folds forward. With the raw contract's eight carried columns in front the
-#: parse answers 125, and the table stores 123: `body` and `bodyhash` are the
-#: line's and stay in `logs.messages`.
+#: folds forward. With the raw contract's seven carried columns in front the
+#: parse answers 124, and the table stores 123: `body` is the line's and stays
+#: in `logs.messages`, and the line's own `currhashcode` never rides at all --
+#: the fixed row takes that name for the event's code.
 ROW = 117
 CRATE = 22
-CARRIED = 8
+CARRIED = 7
 PARSED = ROW + CARRIED
 STORED = PARSED - len(UNSTORED)
 
@@ -145,7 +145,7 @@ def _bronze(handle: IOBase) -> pyarrow.Table:
     """One capture through the first stage, as `fix.bronze` stores it."""
     codec = _codec()
     reader = handle.read_arrow_reader(options=Message.text_options())
-    return fix_stored_reader(
+    return stored_arrow_reader(
         fix_parse_arrow_reader(codec, reader), fix_message_field(codec)
     ).read_all()
 
@@ -153,7 +153,7 @@ def _bronze(handle: IOBase) -> pyarrow.Table:
 def _silver(bronze: pyarrow.Table) -> pyarrow.Table:
     """The second stage over stored bronze rows, as `fix.silver` stores it."""
     codec = _codec()
-    return fix_stored_reader(
+    return stored_arrow_reader(
         fix_lifecycle_arrow_reader(codec, _reader(bronze)), fix_message_field(codec)
     ).read_all()
 
@@ -249,10 +249,16 @@ def test_the_published_row_is_the_dictionarys_with_the_capture_in_front() -> Non
         "threadId",
         "pluginid",
         "level",
-        "bodyhash",
         "body",
     ]
-    for folded in ("sourceurl", "msgsessionid", "msgctxid", "msgseqnum", "curruuid"):
+    for folded in (
+        "sourceurl",
+        "msgsessionid",
+        "msgctxid",
+        "msgseqnum",
+        "curruuid",
+        "currhashcode",
+    ):
         assert [member.name for member in declared].count(folded) == 1, folded
     # `pluginid` rides in front rather than folding: the row's own column for
     # the plugin is `msgpluginid`, and the raw contract spells the capture as
@@ -266,7 +272,7 @@ def test_the_capture_has_no_layout_of_its_own_in_this_table() -> None:
     carrying its columns must not carry either statement in with them."""
     carried = fix_carrier().into_arrow_schema()
 
-    assert primary_keys(Message.into_field()) == ["bodyhash"]
+    assert primary_keys(Message.into_field()) == ["currhashcode"]
     assert partition_keys(Message.into_field()) == {"timepartition": "hour"}
     assert not [
         member.name
@@ -274,8 +280,9 @@ def test_the_capture_has_no_layout_of_its_own_in_this_table() -> None:
         for key in member.metadata or {}
         if key.decode() in ("ICEBERG:primary_key", "ICEBERG:partition_key")
     ]
-    # What a column *is* survives: the digest still names the bytes it reads.
-    assert fix_carrier()["bodyhash"].digest.sources == ["body"]
+    # What a column *is* survives: the payload keeps the type and nullability
+    # the raw contract gave it, and only the table's own marks come off.
+    assert fix_carrier()["body"].dtype == Message.into_field()["body"].dtype
     # Every mark a table's layout is stated with comes off, not the two the
     # raw contract happens to use: an identity partition and a sort key too.
     venue = pyarrow.field("venue", pyarrow.string(), metadata={"FIELD:partition": "true"})
@@ -400,12 +407,12 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from(bronze) -> None:
     stored = fix_message_field().into_arrow_schema()
     parsed = fix_parse_field().into_arrow_schema()
 
-    assert UNSTORED == (PAYLOAD, TEXT_DIGEST) == ("body", "bodyhash")
+    assert UNSTORED == (PAYLOAD,) == ("body",)
     for column in UNSTORED:
         assert column not in bronze.column_names, column
         assert column not in stored.names, column
-        # The parse still reads its payload and still carries the digest -- it
-        # is the stored row that keeps neither.
+        # The parse still reads its payload; it is the stored row that keeps
+        # neither the bytes nor a line's own code.
         assert column in parsed.names, column
     # What names the line instead, filled on every row a capture read answers.
     assert bronze.column("sourceurl").null_count == 0
@@ -462,15 +469,13 @@ def test_a_content_code_above_the_signed_range_is_read_and_not_refused() -> None
             columns.append(pyarrow.array([b"8=FIX.4.4|35=D|10=0|"], member.type))
         elif member.name == "rownum":
             columns.append(pyarrow.array([1], member.type))
-        elif member.name == "bodyhash":
-            columns.append(pyarrow.array([b"\x00" * 16], member.type))
         else:
             columns.append(pyarrow.nulls(1, member.type))
     source = pyarrow.RecordBatchReader.from_batches(
         parsed, [pyarrow.RecordBatch.from_arrays(columns, schema=parsed)]
     )
 
-    held = fix_stored_reader(source, field).read_all()
+    held = stored_arrow_reader(source, field).read_all()
 
     assert held.schema.field("currhashcode").type == pyarrow.int64()
     assert held.column("currhashcode").to_pylist() == [code - 2**64]
@@ -552,7 +557,7 @@ def test_a_message_names_the_stored_line_it_was_parsed_out_of(lines, bronze) -> 
     assert set(_sources(bronze)) <= named
     # The same identities off a carrier that states none -- the column absent,
     # or present and empty on the rows a table held before it had one.
-    unstated = fix_stored_reader(
+    unstated = stored_arrow_reader(
         fix_parse_arrow_reader(_codec(), _reader(lines.drop_columns(["curruuid"]))),
         fix_message_field(),
     ).read_all()
@@ -569,7 +574,7 @@ def test_a_message_names_the_stored_line_it_was_parsed_out_of(lines, bronze) -> 
             pyarrow.binary(16),
         ),
     )
-    partly = fix_stored_reader(
+    partly = stored_arrow_reader(
         fix_parse_arrow_reader(_codec(), _reader(halved)), fix_message_field()
     ).read_all()
     assert _sources(partly) == _sources(bronze)
@@ -862,11 +867,11 @@ def test_the_walk_over_stored_rows_is_the_walk_over_the_parses_own(bronze) -> No
     stored = bronze.sort_by(layout)
     assert stored.column("rownum").to_pylist() != bronze.column("rownum").to_pylist()
 
-    over_parse = fix_stored_reader(fix_lifecycle_arrow_reader(codec, _reader(parsed)), field)
-    over_stored = fix_stored_reader(
+    over_parse = stored_arrow_reader(fix_lifecycle_arrow_reader(codec, _reader(parsed)), field)
+    over_stored = stored_arrow_reader(
         fix_lifecycle_arrow_reader(codec, fix_arrival_reader(_reader(stored))), field
     )
-    as_laid_out = fix_stored_reader(fix_lifecycle_arrow_reader(codec, _reader(stored)), field)
+    as_laid_out = stored_arrow_reader(fix_lifecycle_arrow_reader(codec, _reader(stored)), field)
 
     assert over_stored.read_all().equals(over_parse.read_all())
     assert _chains(as_laid_out.read_all()) != CHAINS

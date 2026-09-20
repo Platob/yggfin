@@ -48,8 +48,9 @@ flowchart LR
 ```
 
 The text reader emits the exact `Message` schema: header captures are typed,
-`timepartition` is derived, and `bodyhash` is filled before the first Iceberg
-boundary. The FIX codec reads that table back as a reader, through two stages
+`timepartition` is derived, and the line's own `currhashcode` and `curruuid`
+arrive with the read rather than being computed after it. The FIX codec reads
+that table back as a reader, through two stages
 over one codec, each landing in a table: parse reads every frame a line
 carried and settles what it implied, and lifecycle names the chains it belongs
 to. A row is a message and not a line, so the fixture's 141 stored lines settle

@@ -4,7 +4,7 @@ Quality is represented in rows rather than hidden in parser control flow.
 
 | signal | question |
 | --- | --- |
-| `bodyhash` | did the exact captured line change? |
+| a line's `currhashcode` | did the exact captured line change? |
 | `currhashcode` | did the settled event change? |
 | `curruuid` | which event is this, whichever hop logged it, and which instant the walk settled it on? |
 | `fixentries` | exactly which pairs arrived, in what order? |
@@ -13,9 +13,10 @@ Quality is represented in rows rather than hidden in parser control flow.
 
 ## Distinct digests
 
-`bodyhash` digests the whole line, row header included, because it hashes
-`Message.body` as the read retains it, and it is what `logs.messages` is keyed
-on: identical lines are one row whatever session carried them.
+A line's `currhashcode` codes the whole line, row header included, because
+the read states it over `Message.body` as it retains it, and it is what
+`logs.messages` is keyed on: identical lines are one row whatever session
+carried them.
 
 `currhashcode` is the event's content code -- XXH3-64 over its facts, its text,
 its metadata, the stated header cells and the entry tree, and never the row's

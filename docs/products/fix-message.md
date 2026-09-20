@@ -24,7 +24,7 @@ forward. A product reads `fix.silver` and never `fix.bronze`.
 | partition | `currunix`, Iceberg `hour` transform |
 | sort order | `currunix`, then `seqnum`, then `curruuid` |
 | columns | 123 with the bundled dictionary |
-| the line it was read from | `sourceurl`, `rownum` and `srcuuids`; the bytes and their digest are `logs.messages`' |
+| the line it was read from | `sourceurl`, `rownum` and `srcuuids`; the bytes and the line's own content code are `logs.messages`' |
 | event identity | `curruuid`, and `crossuuid` for the chain it stands in; both stored as the sixteen bytes they are |
 | content code | `currhashcode`, over the event's facts, text, metadata and entry tree |
 | lossless protocol record | `fixentries`, under the `nofixentries` that counts it |
@@ -258,14 +258,15 @@ ran, so the identity is the same on every replay.
 
 ## The row names the text; it does not hold it
 
-Neither `body` nor `bodyhash` is a column here. `logs.messages` holds the exact
-line and the digest of it; this row holds `sourceurl` and `rownum`, which name
+`body` is not a column here, and the `currhashcode` this row carries is the
+event's own, never the line's. `logs.messages` holds the exact line and the
+line's own content code; this row holds `sourceurl` and `rownum`, which name
 the line it was read from, and `srcuuids`, which is that line's own
 `curruuid`.
 
-The reason is the grain. A row here is an *event*, and both the bytes and their
-digest are a *line's*: a message logged at four hops is four lines -- four
-different bodies, four different digests -- and one row, so either column
+The reason is the grain. A row here is an *event*, and both the bytes and the
+line's code are a *line's*: a message logged at four hops is four lines -- four
+different bodies, four different line codes -- and one row, so either column
 would be one arrival's answer standing in for the event's. In the bundled
 capture, 19 of the 53 events were stated by more than one line -- fourteen by
 two, four by three, one by five -- so a carried copy would have been one
@@ -286,7 +287,7 @@ that named no source say so; a capture read fills it on every row, along with
 
 `fixentries` and never a stored payload. `FixCodec.write_arrow_reader` and
 `FixMsg.into_bytes` rebuild from the arrival record, so dropping the text
-columns takes nothing the wire is rebuilt from: over the bundled capture the 79
+column takes nothing the wire is rebuilt from: over the bundled capture the 79
 messages re-emit the same 111,593 bytes read back off the parse's row with
 `body` beside it and off the stored row without it.
 
@@ -410,5 +411,6 @@ assert schema.field("msgtype").metadata[b"FIX:tag"] == b"35"
 assert schema.field("curruuid").metadata[b"ICEBERG:primary_key"] == b"true"
 assert schema.field("currunix").metadata[b"ICEBERG:partition_key"] == b"hour"
 assert schema.names[-3:] == ["metadata", "nofixentries", "fixentries"]
-assert not {"body", "bodyhash"} & set(schema.names)
+assert "body" not in schema.names
+assert schema.field("currhashcode").metadata[b"FIX:tag"] == b"65017"
 ```

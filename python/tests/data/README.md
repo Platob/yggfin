@@ -18,7 +18,7 @@ Its content SHA-256, as `sha256sum` prints it, is:
 | reading | count | why |
 | --- | ---: | --- |
 | physical lines | 144 | one row of the text read each |
-| stored lines | 141 | `logs.messages` is keyed on `bodyhash`, the digest of the whole line, and 3 lines repeat another byte for byte |
+| stored lines | 141 | `logs.messages` is keyed on `currhashcode`, the code the read states over the whole line, and 3 lines repeat another byte for byte |
 | messages the codec answers | 79 | a line can carry two frames and a line carrying none answers nothing |
 | settled events | 53 | a message logged at several hops restates one event |
 | `fix.bronze` rows | 53 | one row per event as parsed, keyed on `curruuid` |

@@ -10,7 +10,14 @@ from yggdryl import TextOptions, scalar
 
 from rekep.annotations import Self
 from rekep.convert import Convertible
-from rekep.fields import HOUR, derived_from, digest_key, field_options, partition_key, primary_key
+from rekep.fields import (
+    HOUR,
+    Field,
+    derived_from,
+    field_options,
+    partition_key,
+    primary_key,
+)
 from rekep.times import ULBRIDGE_ROWHEADER, datetime_of
 
 
@@ -18,10 +25,10 @@ from rekep.times import ULBRIDGE_ROWHEADER, datetime_of
 class Message(Convertible):
     """One ULBridge text line, before the FIX codec reads its body.
 
-    Every column but `timepartition` and `bodyhash` is named for what the
-    native text read already calls it, and the bridge's own captures are named
-    for the FIX columns they fill -- so a stored row goes on through the codec
-    without one spelling being translated into another.
+    Every column but `timepartition` is named for what the native text read
+    already calls it, and the bridge's own captures are named for the FIX
+    columns they fill -- so a stored row goes on through the codec without one
+    spelling being translated into another.
     """
 
     sourceurl: str = ""
@@ -82,30 +89,40 @@ class Message(Convertible):
     level: str | None = None
     """Severity spelling captured from the line header."""
 
-    bodyhash: Annotated[
-        bytes,
-        digest_key(["body"], dtype=pyarrow.binary(16)),
+    currhashcode: Annotated[
+        int,
+        field_options(dtype=pyarrow.int64()),
         primary_key(),
-    ] = b""
-    """XXH3-128 digest of the exact *body* bytes, computed beside them on the read.
+    ] = 0
+    """The line's own content code, as the native text read states it.
 
-    The key of `logs.messages`, and a digest of the bytes alone: identical
-    bytes are one row whatever session carried them, whichever object they
-    were read from and however often a capture is re-read. It is not the
-    message's `currhashcode`, which covers the settled event -- its facts, its
-    text, its metadata and its entry tree -- and answers the same code for two
-    different lines that state the same message. The bytes and the message are
-    two questions, so they are two columns and neither stands in for the other.
+    The key of `logs.messages`. A text line is an event of the graph and the
+    read codes its content, so identical bytes answer one code whatever
+    session carried them, whichever object they were read from and however
+    often a capture is re-read -- and nothing here computes a second digest
+    beside the one the read already states.
+
+    It is the line's code and not a message's. A FIX row's `currhashcode`
+    covers the settled event -- its facts, its text, its metadata and its
+    entry tree -- so two lines that state one message share that code and not
+    this one, which is why a FIX row holds neither this column nor the bytes
+    it was read from.
+
+    A content code is unsigned and the read states it that way. Iceberg's
+    only sixty-four-bit integer is signed, so this contract declares the type
+    a table holds and `read_field` widens it back for the read alone: the same
+    eight bytes cross the boundary through
+    `rekep.fields.stored_arrow_reader`, and half of them read back negative.
     """
 
     body: bytes = b""
     """The whole line as the native read retains it, the row header included.
 
     The captures above are read off it, not cut out of it. `logs.messages` is
-    where the bytes live and the only place, and so is the `bodyhash` beside
-    them: neither FIX table holds either, because a row there is an event and
-    both of these are one line's. It names the line it was read from instead,
-    with `sourceurl`, `rownum` and, exactly, the line's `curruuid`.
+    where the bytes live and the only place, and so is the code beside them:
+    neither FIX table holds either, because a row there is an event and both
+    of these are one line's. It names the line it was read from instead, with
+    `sourceurl`, `rownum` and, exactly, the line's `curruuid`.
     """
 
     curruuid: Annotated[bytes | None, field_options(dtype=pyarrow.binary(16))] = None
@@ -117,8 +134,8 @@ class Message(Convertible):
     nowhere else -- as its `srcuuids`, exact provenance rather than an
     identity recomputed from the bytes -- so a FIX row joins the line it was
     read from on this column, whatever the line was stamped with. Not the
-    key: identical bytes are one row on `bodyhash`, and the identity a table
-    keeps is the line that landed. Sixteen ordered bytes rather than the
+    key: identical bytes are one row on `currhashcode`, and the identity a
+    table keeps is the line that landed. Sixteen ordered bytes rather than the
     `uuid` Iceberg would store, for the reason the FIX row gives.
 
     Declared last and nullable, because a table that already exists takes a
@@ -151,15 +168,15 @@ class Message(Convertible):
             self.curruuid = bytes(self.curruuid)
 
     #: What a row header does not fill, because something else does: the two
-    #: the traversal names, the payload it frames, and the identity the read
-    #: states over the line.
-    READ_COLUMNS = frozenset({"sourceurl", "rownum", "body", "curruuid"})
+    #: the traversal names, the payload it frames, and the identity and code
+    #: the read states over the line.
+    READ_COLUMNS = frozenset({"sourceurl", "rownum", "body", "curruuid", "currhashcode"})
 
     @classmethod
     def captures(cls) -> frozenset[str]:
         """The columns a row header is expected to capture into this contract.
 
-        Every member this class declares except the four the read itself
+        Every member this class declares except the five the read itself
         fills and the ones a field apply derives -- and a derived member says
         so, by naming the columns it is derived from, so adding one does not
         mean remembering to exclude it here.
@@ -170,6 +187,29 @@ class Message(Convertible):
             if member.name not in cls.READ_COLUMNS
             and not member.partition.sources
             and not member.digest.sources
+        )
+
+    @classmethod
+    def read_field(cls) -> Field:
+        """This contract as the read states it, rather than as a table holds it.
+
+        One column apart: a content code is unsigned and the read answers it
+        that way, while Iceberg's only sixty-four-bit integer is signed. The
+        read is given the wide type, because a code above 2**63 has no `int64`
+        to be cast to and the native apply refuses it rather than wrapping;
+        `rekep.fields.stored_arrow_reader` views the same eight bytes back
+        into the stored type on the way to the table.
+        """
+        declared = cls.into_field().into_arrow_schema()
+        return Field.from_arrow_schema(
+            pyarrow.schema(
+                [
+                    member.with_type(pyarrow.uint64()) if member.name == "currhashcode" else member
+                    for member in declared
+                ],
+                metadata=declared.metadata,
+            ),
+            name=cls.__name__,
         )
 
     @classmethod
@@ -195,7 +235,7 @@ class Message(Convertible):
         options.rowheader = ULBRIDGE_ROWHEADER if rowheader is None else rowheader
         options.timezone = "UTC"
         options.safe = False
-        options.field = cls.into_field()
+        options.field = cls.read_field()
         if rowheader is not None:
             cls._check_captures(options)
         return options

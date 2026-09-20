@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from typing import Any
 
+import pyarrow
 from yggdryl import Field
 from yggdryl import field as field_of
 
@@ -175,6 +176,65 @@ def leaf_names(source: Field) -> list[str]:
     ]
 
 
+def stored_arrow_reader(
+    source: pyarrow.RecordBatchReader,
+    field: Field,
+) -> pyarrow.RecordBatchReader:
+    """Any stage's rows as a table stores them, ready for the write.
+
+    The one storage boundary every task crosses: the text read's rows on
+    their way into `logs.messages`, the parse's into `fix.bronze`, the walk's
+    into `fix.silver`. Projecting onto `field` is most of it, and the field
+    apply does that for free -- a column the stage carried and the table does
+    not declare is dropped here rather than written.
+
+    The rest exists for one column type. A content code is an unsigned
+    sixty-four-bit integer and Iceberg's only sixty-four-bit integer is
+    signed, so a code above 2**63 has no `int64` to be cast to: the native
+    cast refuses it rather than wrapping, and PyIceberg's own metrics refuse
+    it a second time when it packs the column's bounds. The same eight bytes
+    read as signed are the code, so the column is *viewed* rather than
+    converted: one zero-copy reinterpretation per batch, no row pass, and a
+    filter on either side names the same rows.
+
+    The field apply runs after it, in its native order, so the cast, the
+    derived partitions and the digests still happen where they always did.
+    """
+    stored = field.into_arrow_schema()
+    unsigned = [
+        member.name
+        for member in source.schema
+        if pyarrow.types.is_unsigned_integer(member.type)
+        and member.name in stored.names
+        and pyarrow.types.is_signed_integer(stored.field(member.name).type)
+    ]
+    if not unsigned:
+        return field.apply_arrow_reader(source, safe=False, nullability="strict")
+    viewed = pyarrow.schema(
+        [
+            member.with_type(stored.field(member.name).type) if member.name in unsigned else member
+            for member in source.schema
+        ],
+        metadata=source.schema.metadata,
+    )
+
+    def _viewed() -> Iterator[pyarrow.RecordBatch]:
+        for batch in source:
+            columns = [
+                batch.column(index).view(viewed.field(index).type)
+                if viewed.field(index).name in unsigned
+                else batch.column(index)
+                for index in range(batch.num_columns)
+            ]
+            yield pyarrow.RecordBatch.from_arrays(columns, schema=viewed)
+
+    return field.apply_arrow_reader(
+        pyarrow.RecordBatchReader.from_batches(viewed, _viewed()),
+        safe=False,
+        nullability="strict",
+    )
+
+
 __all__ = [
     "DESCRIPTION",
     "DIGEST_ALGORITHM",
@@ -196,4 +256,5 @@ __all__ = [
     "primary_key",
     "replace_field",
     "sort_key",
+    "stored_arrow_reader",
 ]

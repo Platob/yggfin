@@ -66,8 +66,9 @@ rather than respelled per reader -- and every capture it declares is named for
 the column it fills: `timestamp`, `threadId`,
 `msgsessionid`, `msgctxid`, `msgseqnum`, `pluginid` and `level`. `body` is the
 whole line, row header included: the core retains the whole record and reads
-the captures off it, and `bodyhash` is the digest of those bytes, computed
-during field application. `sourceurl` and `rownum` come from traversal, and
+the captures off it. `currhashcode` is the content code the read states over
+those bytes, and it is the key: nothing here computes a digest beside it.
+`sourceurl` and `rownum` come from traversal, and
 `curruuid`, the last column, is the line's own identity the read states -- a
 UUIDv7 over the XXH3-64 of its bytes, at no instant, because the read dates no
 line -- which a message parsed out of the stored line names as its one
@@ -174,7 +175,8 @@ Under Airflow the operator hands each run its data interval as `start` and
 ## Write step
 
 The task opens `logs.messages` with `Message.into_field()` and replaces the
-reader's rows on `bodyhash`, the digest of the exact line bytes: a stored row
+reader's rows on `currhashcode`, the code the read states over the exact line
+bytes: a stored row
 carrying one of the window's keys is taken out and the window's row lands, in
 one commit per bounded chunk. A missing table is created. A replay of the
 window lands the same rows again and the table holds each line once -- and a
@@ -188,7 +190,9 @@ The sample is chain `e7254b12:9f03166699` of `python/tests/data/ulbridge.log`,
 a partial fill and the fill that closed the order: the ten lines a FIX message
 was parsed out of, as `parse_messages` lands them in `logs.messages`. An
 identity is shown by its last eight hex digits behind a leading `…`, and the
-stored value is sixteen bytes; `bodyhash` is shown by its first eight.
+stored value is sixteen bytes. `currhashcode` is shown whole, and a table
+stores it as the signed integer Iceberg has, so half the codes read back
+negative.
 
 --8<-- "docs/pipeline/tasks/samples/parse-messages.md"
 

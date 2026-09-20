@@ -247,17 +247,13 @@ def messages_page(lines: pyarrow.Table) -> str:
         "pluginid",
         "level",
     ]
-    identities = ["rownum", "bodyhash", "curruuid", "body"]
+    identities = ["rownum", "currhashcode", "curruuid", "body"]
     return "\n\n".join(
         [
             f"**The header captures of the {lines.num_rows} lines**",
             table(captures, rows(lines, captures)),
-            "**What each line is: its digest, its identity, and what it printed after the header**",
-            table(
-                identities,
-                rows(lines, identities),
-                {"bodyhash": lambda value: f"{value.hex()[:8]}…", "body": prose},
-            ),
+            "**What each line is: its code, its identity, and what it printed after the header**",
+            table(identities, rows(lines, identities), {"body": prose}),
         ]
     )
 

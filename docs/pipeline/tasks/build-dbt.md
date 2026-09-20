@@ -77,8 +77,10 @@ row of nulls is not a row this would commit.
 An identity the parser already named is reused rather than computed again:
 `orderkey` is `crossuuid`, the identity over the chain the message states, and
 `eventkey` is `curruuid`, the event's own. A digest is written only where SQL
-has to name something the parser had no word for -- `executionkey` over the
-chain and the venue execution id -- and it is MD5, which is what DuckDB spells.
+has to name something the parser had no word for -- `executionkey`, over the
+chain and the venue execution id, and only where the message states one: where
+it states none the event's own identity names the occurrence. It is MD5, which
+is what DuckDB spells.
 
 - `orders.events` takes a message that carries an order identity and an order
   lifecycle fact. A message carrying one and not the other stays in
@@ -92,7 +94,8 @@ chain and the venue execution id -- and it is MD5, which is what DuckDB spells.
   for what it executed. A status-only report states neither and does not become
   a zero fill. A bridge relays one execution into every chain it belongs to and
   logs the copy it received beside the copy it sent, so the occurrence is
-  scoped by its chain and the earliest source position wins.
+  scoped by its chain and the earliest `eventtime` wins, then the earliest
+  source position among the copies that share one.
 
 ## What a model declares
 
@@ -149,8 +152,9 @@ sources:
 
 DuckDB takes a table, so a source is read into memory: a large one is narrowed
 by `columns`, `row_filter` and `limit` rather than read whole. The shipped
-project projects the 44 columns its products read out of the 123 a FIX row
-carries.
+project projects 44 of the 123 columns a FIX row carries; a model names 39 of
+them, and the other five are projected against the products the roadmap
+states rather than the ones built here.
 
 The source is `fix.silver` and never `fix.bronze`, though both are declared:
 a product needs the chain -- the step an event follows, the state its chain
@@ -254,35 +258,36 @@ received frame with microseconds on its tag, comes last at `12:46:39.743016`,
 and row 35 comes first at `2026-08-14 00:00:00.000`, because its
 `TransactTime(60)` was a bare date, as
 [`parse_fix_bronze`](parse-fix-bronze.md#sample-rows) shows. `prevuuid` and
-`seqnum` are as the walk left them, and they read as two successions: row 7
-is a head, rows 8, 9, 10, 11, 15 and 22 are its steps 1 to 6, and row 36 is
-step 7, following `…f16b9d55`, row 22's key; row 6 is a head, and row 35 is
-its step 1, following `…91130359`. The walk that gave them those steps is on
-[`parse_fix_silver`](parse-fix-silver.md#sample-rows). `cumqty` and
-`leavesqty` read `600` and `0` on rows 35 and 36, the two restatements of the
-fill, where `state` reads `80FILLED`, and `340` and `260` on the other eight.
+`seqnum` are as the walk left them, so the ten read as the two successions
+[`parse_fix_silver`](parse-fix-silver.md#sample-rows) shows: row 36 follows
+`…f16b9d55`, row 22's key, and row 35 follows `…91130359`, row 6's. `cumqty`
+and
+`leavesqty` read `600` and `0` on rows 35 and 36, the fill as the bridge
+received it and as it restated it, where `state` reads `80FILLED`, and `340`
+and `260` on the other eight.
 `clordid` is empty on those two rows, because neither line states a
 `ClOrdID(11)`, and `avgpx` is empty on row 36.
 
 The second table is the one row the ten events fold to. `orderkey` is
 `…b7b57111`, the chain's `crossuuid`, and `eventcount` is `10`.
 `last_eventkey` is `…91130359`: row 6's `12:46:39.743016` is the latest
-`eventtime` of the ten, later than the fill's midnight, so row 6 wins the
-fold and the row reads `state` `40PARTFILL`, `cumqty` `340` and `leavesqty`
-`260` although the venue reported the order filled. That is what the capture
-states, and reading a bare-date `TransactTime` as no instant is not done
-here. `openedat` is `2026-08-14 00:00:00.000`, the earliest `eventtime`,
+`eventtime` of the ten, sixteen microseconds past row 36's `12:46:39.743`,
+which is the later of the fill's two events -- row 35 sits at midnight on a
+bare-date `TransactTime`. So row 6 wins the fold and the row reads `state`
+`40PARTFILL`, `cumqty` `340` and `leavesqty` `260` although the venue
+reported the order filled. That is what the capture states, and reading a
+bare-date `TransactTime` as no instant is not done here. `openedat` is
+`2026-08-14 00:00:00.000`, the earliest `eventtime`,
 since no event of this order is in an opening state; `closedat` is
 `12:46:39.743`, the latest terminal event, row 36's; `updatedat` is row 6's
 instant.
 
-The third table is the two venue executions, one row each. `00011377089XEEA0`,
-`21` at `83.08`, is keyed to row 7's event `…caf49857` and not to row 6's:
-the earliest `eventtime` wins among the copies of one execution, and the
-bridge's `.743` is earlier than the received frame's `.743016`.
-`00011377090XEEA0`, `57` at `83.08`, is row 35's, at midnight, in state
-`80FILLED`. Both read `isincode` `CH0012221716`, `miccode` `XSWX` and
-`currency` `CHF`.
+The third table is the two venue executions, one row each. Eight rows of the
+chain carry `00011377089XEEA0`, and the occurrence is keyed to row 7's event
+`…caf49857`: the model orders the copies by `eventtime`, then by source
+position, so row 6's `.743016` loses to the seven at `.743` and `rownum` picks
+the first of those. `00011377090XEEA0`, `57` at `83.08`, is row 35's, at
+midnight, in state `80FILLED`.
 
 `tools/pipeline_samples.py` regenerates the file from a run over the fixture,
 and the integration suite checks it with `--check`.

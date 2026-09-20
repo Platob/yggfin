@@ -129,7 +129,7 @@ flowchart LR
     W --> L["lifecycle_arrow_reader"]
     D[["fix_codec(fix_registry())"]] --> L
     L --> C["carried columns put back"]
-    C --> A["fix_stored_reader"]
+    C --> A["stored_arrow_reader"]
     N[["fix_message_field"]] --> A
     A --> S[("fix.silver")]
 ```
@@ -141,13 +141,13 @@ is the parsed row restated, so both tables are one field, one key, one
 partition and one sort order, declared once.
 
 ```python
+from rekep.fields import stored_arrow_reader
 from rekep.fix import (
     fix_arrival_reader,
     fix_codec,
     fix_lifecycle_arrow_reader,
     fix_message_field,
     fix_registry,
-    fix_stored_reader,
     fix_window_filter,
 )
 from rekep.iceberg import IcebergCatalog
@@ -173,7 +173,7 @@ rows = store.dataset(bronze, field=field).read_arrow_reader(
     field, row_filter=fix_window_filter(window)
 )
 walked = fix_lifecycle_arrow_reader(codec, fix_arrival_reader(rows))
-applied = fix_stored_reader(walked, field)
+applied = stored_arrow_reader(walked, field)
 written = store.dataset("fix.silver", field=field, merge_schema=True).overwrite_arrow_reader(
     applied, field, merge_by=True
 )
@@ -190,8 +190,8 @@ files by the transaction clock they hold. Over the bundled capture a day's run
 reads all 53 bronze rows, the 37 pinned ones among them, and a window the
 capture falls outside reads none.
 
-`fix_stored_reader` is the storage boundary bronze crossed, crossed again on
-the way out: the content codes read as the signed integers Iceberg stores,
+`stored_arrow_reader` is the storage boundary bronze crossed, crossed again
+on the way out: the content codes read as the signed integers Iceberg stores,
 then the field applied in its native order. The walk answers one row per row,
 so `read` counts bronze rows and `skipped` is what the write left out, a copy
 of an identity already landed. Over the bundled capture a day's run reads 53,

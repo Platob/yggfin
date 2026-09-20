@@ -44,8 +44,9 @@ without parsing again.
 
 ## Replays are ordinary runs
 
-`logs.messages` replaces on `bodyhash`; `fix.bronze` and `fix.silver` replace
-on `curruuid`, because a bridge logs one message again at every hop it passes.
+`logs.messages` replaces on `currhashcode`; `fix.bronze` and `fix.silver`
+replace on `curruuid`, because a bridge logs one message again at every hop
+it passes.
 A run parses one window, `[start, end)` -- the last day up to now when a task
 is given neither bound -- and reprocessing the same window reads the same rows
 and lands them over the ones it landed before: the table holds each key once,

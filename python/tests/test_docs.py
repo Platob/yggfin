@@ -78,7 +78,7 @@ def test_docs_publish_the_native_message_contracts() -> None:
         "msgseqnum",
         "pluginid",
         "level",
-        "bodyhash",
+        "currhashcode",
         "body",
         "curruuid",
     ]
@@ -93,6 +93,8 @@ def test_docs_publish_the_native_message_contracts() -> None:
     ]
     # An Iceberg contract carries no Arrow metadata, so FIX vocabulary can only
     # leak into the raw product as a column -- which is what this looks for.
+    # `currhashcode` is the one name both shapes use, and it is the core's
+    # own: a line has a content code exactly as an event does.
     assert '"name": "body"' in schema
     assert '"name": "msgtype"' not in schema
 
@@ -119,7 +121,7 @@ def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
 
     assert "parse_text_arrow_reader" in bronze
     assert "iceberg_fix_field" in bronze
-    assert "fix_stored_reader" in bronze and "fix_stored_reader" in silver
+    assert "stored_arrow_reader" in bronze and "stored_arrow_reader" in silver
     assert "fix_schema_carrying" in bronze
     assert "lifecycle_arrow_reader" in silver
     assert "fix_window_filter" in silver

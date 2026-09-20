@@ -108,8 +108,9 @@ each batch, keeps the lines whose `timepartition` falls in the run's window,
 and writes one schema-bearing reader directly to Iceberg. The window is
 `[start, end)`; a task given neither takes the last day up to now, and a run
 over a window replaces what an earlier run of it landed. `logs.messages` is
-keyed on `bodyhash`, the digest of the exact line bytes, so identical lines
-are one row whatever session carried them. A raw text row names its source
+keyed on `currhashcode`, the content code the native read states over the
+exact line bytes, so identical lines are one row whatever session carried
+them; nothing here computes a digest beside it. A raw text row names its source
 through Yggdryl `sourceurl` and `rownum`, and itself through `curruuid`, the
 line's own identity the native read states: a message parsed out of a stored
 line names that identity as its one `srcuuids` entry, which is provenance and

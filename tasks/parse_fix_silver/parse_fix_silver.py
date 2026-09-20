@@ -10,13 +10,13 @@ with app.setup:
     import marimo as mo
     import pyarrow
 
+    from rekep.fields import stored_arrow_reader
     from rekep.fix import (
         fix_arrival_reader,
         fix_codec,
         fix_lifecycle_arrow_reader,
         fix_message_field,
         fix_registry,
-        fix_stored_reader,
         fix_window_filter,
     )
     from rekep.iceberg import IcebergCatalog
@@ -113,7 +113,7 @@ def _(bronze, catalog, end, records, registry, start):
         # The storage boundary, the same one bronze crossed: the content codes
         # read as the signed integers Iceberg stores, then the field applied
         # in its native order.
-        applied = fix_stored_reader(walked, field)
+        applied = stored_arrow_reader(walked, field)
         opened.callback(applied.close)
         silver = store.dataset(TARGET, field=field, merge_schema=True)
         opened.callback(silver.close)

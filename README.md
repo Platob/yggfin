@@ -75,8 +75,9 @@ window lands its rows over what an earlier run of the same window landed, so a
 replay leaves each table holding each row once.
 
 `logs.messages` stores one physical line with its exact bytes, row header
-included, and its source position, keyed on `bodyhash`, the digest of the whole
-line: identical lines are one row whatever session carried them. `fix.bronze`
+included, and its source position, keyed on `currhashcode`, the content code
+the read states over the whole line: identical lines are one row whatever
+session carried them. `fix.bronze`
 stores one row per *event* as the parse answered it -- typed columns, the
 complete arrival record, and the identities the parse settled -- and
 `fix.silver` the same events walked; both are keyed on `curruuid`, because a

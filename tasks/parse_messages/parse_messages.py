@@ -11,6 +11,7 @@ with app.setup:
     import pyarrow
 
     from rekep import IOBase
+    from rekep.fields import stored_arrow_reader
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
     from rekep.tasks import Task
@@ -95,10 +96,15 @@ def _(catalog, end, filesystem, records, rowheader, start):
                 counts["read"] += batch.num_rows
                 yield batch.filter(within(batch.column("timepartition"), window))
 
-        parsed = pyarrow.RecordBatchReader.from_batches(
-            field.into_arrow_schema(),
+        read = pyarrow.RecordBatchReader.from_batches(
+            Message.read_field().into_arrow_schema(),
             _batches(),
         )
+        opened.callback(read.close)
+        # The read states a line's content code unsigned and Iceberg's only
+        # sixty-four-bit integer is signed, so the same eight bytes are viewed
+        # rather than converted on the way to the table.
+        parsed = stored_arrow_reader(read, field)
         opened.callback(parsed.close)
         # What the window carries replaces what the table held for the same
         # `(sourceurl, rownum)`: a replay of the window lands the same rows

@@ -137,8 +137,8 @@ sources:
     tables:
       - name: messages
         description: >
-          `logs.messages`, keyed on `bodyhash`: identical bytes are one row
-          whatever session carried them. No model reads it yet: every product
+          `logs.messages`, keyed on `currhashcode`: identical bytes are one
+          row whatever session carried them. No model reads it yet: every product
           here is derived from the walked FIX rows.
         meta:
           table: logs.messages
@@ -149,7 +149,7 @@ sources:
             description: The physical line number inside that object.
           - name: curruuid
             description: The line's own identity, which every message parsed out of it names as its source.
-          - name: bodyhash
-            description: The XXH3-128 digest of the exact body bytes, and the table's key.
+          - name: currhashcode
+            description: The content code the read states over the line's bytes, and the table's key.
           - name: body
             description: The whole line as the read retains it, the row header included.

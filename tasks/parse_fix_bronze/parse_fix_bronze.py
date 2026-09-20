@@ -10,12 +10,12 @@ with app.setup:
     import marimo as mo
     import pyarrow
 
+    from rekep.fields import stored_arrow_reader
     from rekep.fix import (
         fix_codec,
         fix_message_field,
         fix_parse_arrow_reader,
         fix_registry,
-        fix_stored_reader,
     )
     from rekep.iceberg import IcebergCatalog, window_filter
     from rekep.logs import Stage, configure
@@ -126,7 +126,7 @@ def _(catalog, end, messages, records, registry, start):
         opened.callback(answered.close)
         # The storage boundary: the content codes read as the signed integers
         # Iceberg stores, then the field applied in its native order.
-        applied = fix_stored_reader(answered, field)
+        applied = stored_arrow_reader(answered, field)
         opened.callback(applied.close)
         bronze = store.dataset(TARGET, field=field, merge_schema=True)
         opened.callback(bronze.close)

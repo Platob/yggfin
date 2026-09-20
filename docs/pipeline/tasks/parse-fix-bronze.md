@@ -82,7 +82,7 @@ flowchart LR
     M[("logs.messages")] --> R["RecordBatchReader"]
     R --> P["parse_text_arrow_reader"]
     D[["fix_codec(fix_registry())"]] --> P
-    P --> A["fix_stored_reader"]
+    P --> A["stored_arrow_reader"]
     N[["fix_message_field"]] --> A
     A --> F[("fix.bronze")]
 ```
@@ -102,7 +102,7 @@ the same folded name.
 The published field is read from the dictionary alone, before the first batch.
 `fix_schema(registry, "fixmsg")` is the 117-column row the dictionary
 publishes and `fix_schema_carrying` is the supported way to put a capture's
-own columns in front of it, so `fix_parse_field(codec, carrier)` is the 125
+own columns in front of it, so `fix_parse_field(codec, carrier)` is the 124
 columns the codec writes and `fix_message_field(codec, carrier)` is that row as
 a table stores it, 123 columns -- `iceberg_fix_field` narrows the second from
 the first, and declares the key, the partition and the sort order on it once.
@@ -111,12 +111,12 @@ contract is the field the task actually writes. Both FIX tables are declared
 with this one field.
 
 ```python
+from rekep.fields import stored_arrow_reader
 from rekep.fix import (
     fix_codec,
     fix_message_field,
     fix_parse_arrow_reader,
     fix_registry,
-    fix_stored_reader,
 )
 from rekep.iceberg import IcebergCatalog, window_filter
 from rekep.text import Message
@@ -142,7 +142,7 @@ lines = store.dataset(messages, field=carrier).read_arrow_reader(
     carrier, row_filter=window_filter("timestamp", window)
 )
 parsed = fix_parse_arrow_reader(codec, lines)
-applied = fix_stored_reader(parsed, field)
+applied = stored_arrow_reader(parsed, field)
 written = store.dataset("fix.bronze", field=field, merge_schema=True).overwrite_arrow_reader(
     applied, field, merge_by=True
 )
@@ -158,12 +158,12 @@ comparison against one.
 
 `fix_parse_arrow_reader` is the codec's `parse_text_arrow_reader`, and its
 rows land in the parse's own shape: the carrier's columns first, the
-dictionary's after, `body` and `bodyhash` still among them. Narrowing that
-shape to what a table stores belongs to the storage boundary, which is
-`fix_stored_reader`: the content codes read as the signed integers Iceberg
-stores, then `field.apply_arrow_reader(safe=False, nullability="strict")` in
-its native order, which drops the two text columns because the field does not
-declare them. `parse_fix_silver` crosses the same boundary on its way out.
+dictionary's after, `body` still among them. Narrowing that shape to what a
+table stores belongs to the storage boundary, which is `stored_arrow_reader`:
+the content codes read as the signed integers Iceberg stores, then
+`field.apply_arrow_reader(safe=False, nullability="strict")` in its native
+order, which drops that one text column because the field does not declare it.
+`parse_fix_silver` crosses the same boundary on its way out.
 
 See [Decode rules](../../fix/decode.md) for numeric FIX, ULLINK, packed groups,
 configuration JSON, FIXML, registry translation, source-column fill, and
@@ -192,16 +192,17 @@ messages rather than the lines.
 That is why `fix.bronze` is keyed on `curruuid` alone. Keying on where a line
 was read from is what made one message three rows.
 
-`logs.messages` is keyed on `bodyhash`, the digest of the exact line bytes, so
-identical lines are one row whatever session carried them. The two digests
-answer two questions and neither stands in for the other: `bodyhash` is of the
-bytes, and the row's own `currhashcode` is of the settled event -- its facts,
-its text, its metadata and its entry tree -- so two different lines stating the
-same message share a `currhashcode` and not a `bodyhash`. Neither the bytes nor
-their digest is stored here; a row names the line it was read from with
-`sourceurl`, `rownum` and, exactly, `srcuuids`: the stored line's own
-`curruuid`, which the read stated and the parse copied. That is provenance,
-never lineage, and no walk moves it.
+`logs.messages` is keyed on `currhashcode`, the line's own content code, which
+the read states over the exact line bytes, so identical lines are one row
+whatever session carried them. The two codes answer two questions and neither
+stands in for the other: the line's `currhashcode` is of the bytes, and the
+row's own `currhashcode` is of the settled event -- its facts, its text, its
+metadata and its entry tree -- so two different lines stating the same message
+share the event's code and not the line's. Neither the bytes nor the line's
+code is stored here; a row names the line it was read from with `sourceurl`,
+`rownum` and, exactly, `srcuuids`: the stored line's own `curruuid`, which the
+read stated and the parse copied. That is provenance, never lineage, and no
+walk moves it.
 
 ## A key is scoped to its partition
 
@@ -291,7 +292,7 @@ none of them.
 - A content code -- `currhashcode`, `crosshashcode` -- is an unsigned 64-bit
   integer and Iceberg's only 64-bit integer is signed. The same eight bytes
   read as signed are the code, so the column says `int64` and
-  `fix_stored_reader` views rather than converts: half the codes read back
+  `stored_arrow_reader` views rather than converts: half the codes read back
   negative and name the same rows.
 
 ## Sample rows

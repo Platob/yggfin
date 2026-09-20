@@ -25,6 +25,7 @@ from rekep.fields.field import (
     primary_key,
     replace_field,
     sort_key,
+    stored_arrow_reader,
 )
 
 __all__ = [
@@ -52,4 +53,5 @@ __all__ = [
     "replace_field",
     "scalar",
     "sort_key",
+    "stored_arrow_reader",
 ]

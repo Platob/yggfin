@@ -24,9 +24,9 @@ line. For example:
 
 becomes one `Message` whose `timestamp`, `threadId`, `msgsessionid`,
 `msgctxid`, `msgseqnum`, `pluginid`, and `level` are read off the header and
-whose `body` is the line itself, header included. `bodyhash` digests those
-bytes and `curruuid` is the identity the read states over the line; both are
-settled before `logs.messages` is written.
+whose `body` is the line itself, header included. `currhashcode` codes those
+bytes and `curruuid` is the identity the read states over the line; the read
+states both, before `logs.messages` is written.
 
 Every capture is named for the column it fills, and the row header is the one
 `ULBRIDGE_ROWHEADER` every reader takes, pinned against the native core's own
@@ -302,7 +302,7 @@ batch = pyarrow.RecordBatch.from_pylist(
             "msgseqnum": 7,
             "pluginid": "OMS",
             "level": "INFO",
-            "bodyhash": b"\x00" * 16,
+            "currhashcode": 0,
             "body": b"Receiving : 8=FIX.4.4|35=D|55=AAPL|10=000|",
             "curruuid": b"\x00" * 16,
         }
@@ -316,7 +316,7 @@ table = parsed.read_all()
 
 assert table.column("symbol").to_pylist() == ["AAPL"]
 assert table.column("msgseqnum").to_pylist() == [7]
-assert table.num_columns == 125
+assert table.num_columns == 124
 assert table.schema.names[-3:] == ["metadata", "nofixentries", "fixentries"]
 ```
 
@@ -394,7 +394,7 @@ batch = pyarrow.RecordBatch.from_pylist(
             "msgseqnum": None,
             "pluginid": "OMS",
             "level": "INFO",
-            "bodyhash": b"\x00" * 16,
+            "currhashcode": 0,
             "body": body,
             "curruuid": b"\x00" * 16,
         }
@@ -409,7 +409,7 @@ table = parsed.read_all()
 
 assert table.column("rownum").to_pylist() == [1, 3, 3]
 assert table.column("symbol").to_pylist() == ["AAPL", "AAPL", "HOLN"]
-assert table.num_columns == 125
+assert table.num_columns == 124
 
 parsed.close()
 ```

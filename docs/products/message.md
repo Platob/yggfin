@@ -2,9 +2,9 @@
 
 `logs.messages` is the replay boundary. One row is one physical line from one
 leaf object, with the matched ULBridge header typed and the whole line kept
-byte for byte -- and it is keyed on `bodyhash`, the digest of those bytes, so
-identical lines are one row whatever session carried them and however often
-the capture is re-read.
+byte for byte -- and it is keyed on `currhashcode`, the content code the read
+states over those bytes, so identical lines are one row whatever session
+carried them and however often the capture is re-read.
 
 ## Complete schema
 
@@ -20,17 +20,17 @@ the capture is re-read.
 | 8 | `msgseqnum` | `int64` | yes | context sequence number, filling `MsgSeqNum` (34) where a frame stated none |
 | 9 | `pluginid` | `string` | yes | plugin that wrote the line; rides in front of a FIX row under this name, the row's own column is `msgpluginid` |
 | 10 | `level` | `string` | yes | header severity spelling |
-| 11 | `bodyhash` | `fixed_size_binary[16]` | no | XXH3-128 of the exact `body` bytes; the primary key |
+| 11 | `currhashcode` | `int64` | no | the line's own content code, as the read states it; a table stores the same eight bytes signed; the primary key |
 | 12 | `body` | `binary` | no | the whole line as retained, row header included |
 | 13 | `curruuid` | `fixed_size_binary[16]` | no | the line's own identity as the read states it; a message parsed out of the line names it as its `srcuuids` |
 
 The reviewed table contract is
 [`schemas/rekep/message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json):
 the Iceberg schema, partition spec and sort order this table is created with.
-The digest and derived-partition rules above are declared in
-`Message.into_field()`, which an Iceberg schema has no place for. `curruuid`
-is Iceberg field 13 and declared last, because a table that already exists
-takes a new column at its end.
+The derived-partition rule above is declared in `Message.into_field()`, which
+an Iceberg schema has no place for. `curruuid` is Iceberg field 13 and
+declared last, because a table that already exists takes a new column at its
+end.
 
 Every header capture is named for the FIX column it fills when the stored row
 goes on through the codec, so `parse_fix_bronze` needs no renaming pass of its
@@ -77,12 +77,16 @@ source = IOBase.from_uri("file:python/tests/data/ulbridge.log")
 reader = source.read_arrow_reader(options=Message.text_options())
 first = next(iter(reader)).slice(0, 1)
 
-assert first.schema.equals(Message.into_field().into_arrow_schema(), check_metadata=True)
+assert first.schema.equals(Message.read_field().into_arrow_schema(), check_metadata=True)
 assert first.column("rownum")[0].as_py() == 1
 
 reader.close()
 source.close()
 ```
+
+The read answers `Message.read_field()`, which is the contract above with
+`currhashcode` widened to the `uint64` a content code is stated as; the same
+eight bytes land in the stored `int64`.
 
 ## Operational behavior
 
@@ -90,16 +94,17 @@ source.close()
   path order; one leaf is open at a time.
 - gzip and zstd are decompressed while streaming. Concatenated gzip members
   remain subject to the decoder support documented on the task page.
-- `bodyhash` is computed during field application, not in a Python row loop.
+- `currhashcode` arrives with the read, which states it over every line:
+  nothing here computes it, during field application or in a Python row loop.
 - Only the lines whose `timepartition` falls in the run's window are written;
   a line with no clock is in every window.
-- The writer replaces on `bodyhash`, the digest of the whole line, within the
-  line's hour partition, so a line printed twice inside one hour is one row and
-  a replay of a window lands the same lines once. Over the bundled capture, 144
-  lines are 141 rows: 3 repeat another line byte for byte.
-- `bodyhash` is the digest of the *line* and not the message's own
-  `currhashcode`, which covers the settled event and is a column of both FIX
-  tables. Two different lines can state one message, so the two answer
-  different questions.
+- The writer replaces on `currhashcode`, the code of the whole line, within
+  the line's hour partition, so a line printed twice inside one hour is one row
+  and a replay of a window lands the same lines once. Over the bundled capture,
+  144 lines are 141 rows: 3 repeat another line byte for byte.
+- This `currhashcode` is the code of the *line* and not the message's own,
+  which covers the settled event and is a column of both FIX tables. Two
+  different lines can state one message, so the two codes answer different
+  questions.
 - Remote objects remain remote; local staging is not part of the production
   path.

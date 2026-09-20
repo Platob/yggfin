@@ -22,9 +22,9 @@ front of it, and yggfin defines neither:
 fix_schema_carrying(fix_carrier(Message.into_field()), fix_schema(registry, "fixmsg"))
 ```
 
-That expression is the row the *parse* answers, 125 columns: 117 from the
-dictionary and 8 from the carrier -- `rownum`, `timestamp`, `timepartition`,
-`threadId`, `pluginid`, `level`, `bodyhash`, `body`. The carrier's other five
+That expression is the row the *parse* answers, 124 columns: 117 from the
+dictionary and 7 from the carrier -- `rownum`, `timestamp`, `timepartition`,
+`threadId`, `pluginid`, `level`, `body`. The carrier's other six
 do not ride in front. Four are named for the fields they fill, so
 `sourceurl`, `msgsessionid`, `msgctxid` and `msgseqnum` fold onto the row's
 own columns; the carrier's `curruuid` is dropped as the row's own identity
@@ -34,9 +34,9 @@ takes its name, and reaches the row as the message's one `srcuuids` entry.
 
 The row the *table stores* is that minus the capture's own text columns, so
 123: the six carried and the 117. `body` is what the codec reads each message
-out of and `bodyhash` is the digest of those bytes, and both are facts about
-one *line* while a row there is an *event*: a message logged at four hops is
-four lines and one row, so either column would be one arrival's answer
+out of, and it is a fact about one *line* while a row there is an *event*: a
+message logged at four hops is four lines and one row, so the column would be
+one arrival's answer
 standing in for the event's. `logs.messages` holds all of them, and the row
 names the line it was read from with `sourceurl`, `rownum` and `srcuuids`.
 

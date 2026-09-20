@@ -105,7 +105,7 @@ The DAG sets no `retries`, so every task is `retries=0` and one transient S3
 or catalog error fails the run. Raising it is safe and is the recommended
 configuration: each attempt writes into its own private directory keyed on the
 try number, that directory is removed whether the attempt lands or raises, and
-all three writers replace on their field-declared key -- `bodyhash` for
+all three writers replace on their field-declared key -- `currhashcode` for
 `logs.messages`, `curruuid` for `fix.bronze` and for `fix.silver` -- so a
 retry re-reads the same window and lands the same rows over whatever the
 failed attempt left.

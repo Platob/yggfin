@@ -104,20 +104,19 @@ SOURCES = "srcuuids"
 #: naming another payload column answers that one instead.
 PAYLOAD = "body"
 
-#: The digest of those bytes, as the raw text row names it.
-TEXT_DIGEST = "bodyhash"
 
-#: The two capture columns neither FIX table stores: the bytes and the digest
-#: of them.
+#: The capture column neither FIX table stores: the bytes themselves.
 #:
-#: Both are facts about one *line*, and a row here is an *event*. One message
-#: logged at four hops is four lines -- four different bodies, four different
-#: digests -- and one row, so either column would be one arrival's answer
-#: standing in for the event's. `logs.messages` holds every one of them; a row
-#: here names the line it was read from with `sourceurl` and `rownum`, and what
-#: it is re-emitted from is `fixentries`, the arrival record, which rebuilds
-#: the message and never the line that carried it.
-UNSTORED = (PAYLOAD, TEXT_DIGEST)
+#: They are a fact about one *line*, and a row here is an *event*. One message
+#: logged at four hops is four lines -- four different bodies -- and one row,
+#: so the column would be one arrival's answer standing in for the event's.
+#: `logs.messages` holds every one of them; a row here names the line it was
+#: read from with `sourceurl` and `rownum`, and what it is re-emitted from is
+#: `fixentries`, the arrival record, which rebuilds the message and never the
+#: line that carried it. The line's own `currhashcode` needs no dropping: the
+#: fixed row takes that name for the event's code, so `fix_schema_carrying`
+#: drops the carried one rather than duplicating it.
+UNSTORED = (PAYLOAD,)
 
 #: What the lifecycle walk filled for a message's place in its chain. A chain
 #: read in `currunix, seqnum` order is the order the venue described, and the
@@ -291,7 +290,7 @@ def fix_parse_arrow_reader(
     what `fix_parse_field` states, so nothing crosses back through the message
     shape to be written again. That shape still carries the capture's own text
     columns; dropping them, and narrowing the rest to what a table stores, is
-    the storage boundary's job and `fix_stored_reader` is where that happens.
+    the storage boundary's job and `stored_arrow_reader` is where that happens.
 
     Nothing here has walked: `seqnum`, `prevuuid`, `prevunix` and
     `parentuuids` are empty on every row this answers, and a message read back
@@ -328,7 +327,7 @@ def fix_row_messages(
     capture's own column beside them would be read as content the message
     never carried. A stored row is widened first, because the walk and the
     message read the row as the dictionary types it and a table holds the
-    narrowing `fix_stored_reader` gave it.
+    narrowing `stored_arrow_reader` gave it.
     """
     return codec.messages(_dictionary_rows(codec, source))
 
@@ -448,7 +447,7 @@ def _dictionary_rows(
 ) -> pyarrow.RecordBatchReader:
     """`source` narrowed to the fixed row's own columns, typed as it types them.
 
-    The reverse of `fix_stored_reader`, for a row read back off a table: the
+    The reverse of `stored_arrow_reader`, for a row read back off a table: the
     content codes stored as the signed integers Iceberg has are viewed as the
     unsigned ones they are -- the same eight bytes, no row pass -- and the
     dictionary's field then widens the rest in its native order, an identity
@@ -533,74 +532,14 @@ def fix_window_filter(window: tuple[datetime.datetime, datetime.datetime]) -> An
     return Or(dated, pinned)
 
 
-def fix_stored_reader(
-    source: pyarrow.RecordBatchReader,
-    field: Field,
-) -> pyarrow.RecordBatchReader:
-    """Either stage's rows as a table stores them, ready for the write.
-
-    The data half of `iceberg_fix_field`, and the storage boundary both FIX
-    tables share: the parse's rows on their way into `fix.bronze`, the walk's
-    on their way into `fix.silver`. Projecting onto `field` is most of it, and
-    the field apply does that for free: the text columns the parse carried
-    are not declared, so they are dropped here rather than written, and
-    `logs.messages` stays the one place the bytes and their digest live.
-
-    The rest exists for one column type.
-    A content code is an unsigned sixty-four-bit integer and Iceberg's only
-    sixty-four-bit integer is signed, so a code above 2**63 has no `int64` to
-    be cast to -- the native cast refuses it rather than wrapping, and
-    PyIceberg's own metrics refuse it a second time when it packs the column's
-    bounds. The same eight bytes read as signed are the code, so the column is
-    *viewed* rather than converted: one zero-copy reinterpretation per batch,
-    no row pass, and a filter on either side names the same rows.
-
-    The field apply runs after it, in its native order, so the cast, the
-    derived partitions and the digests still happen where they always did.
-    """
-    stored = field.into_arrow_schema()
-    unsigned = [
-        member.name
-        for member in source.schema
-        if pyarrow.types.is_unsigned_integer(member.type)
-        and member.name in stored.names
-        and pyarrow.types.is_signed_integer(stored.field(member.name).type)
-    ]
-    if not unsigned:
-        return field.apply_arrow_reader(source, safe=False, nullability="strict")
-    viewed = pyarrow.schema(
-        [
-            member.with_type(stored.field(member.name).type) if member.name in unsigned else member
-            for member in source.schema
-        ],
-        metadata=source.schema.metadata,
-    )
-
-    def _viewed() -> Iterator[pyarrow.RecordBatch]:
-        for batch in source:
-            columns = [
-                batch.column(index).view(viewed.field(index).type)
-                if viewed.field(index).name in unsigned
-                else batch.column(index)
-                for index in range(batch.num_columns)
-            ]
-            yield pyarrow.RecordBatch.from_arrays(columns, schema=viewed)
-
-    return field.apply_arrow_reader(
-        pyarrow.RecordBatchReader.from_batches(viewed, _viewed()),
-        safe=False,
-        nullability="strict",
-    )
-
-
 def fix_carrier(carrier: Field | None = None) -> Field:
     """A capture's own columns as the parse carries them in front of the row.
 
     The raw `Message` contract with its own table's layout taken off: a
     carried column states what the capture saw, and both FIX tables are keyed
     and partitioned by the event instead. `logs.messages` is keyed on the
-    line's bytes -- `bodyhash` -- and laid out by the hour the line was
-    printed in; `fix.bronze` and `fix.silver` are keyed on `curruuid` and laid
+    line's own content code -- its `currhashcode` -- and laid out by the hour
+    the line was printed in; `fix.bronze` and `fix.silver` are keyed on `curruuid` and laid
     out by the hour the event happened in, because one message logged at
     three hops is three lines and one row. Leaving either marking on would
     publish a second key and a second partition spec that nothing here means.
@@ -608,18 +547,20 @@ def fix_carrier(carrier: Field | None = None) -> Field:
     A carried column whose folded name the fixed row already takes is dropped
     by `fix_schema_carrying` rather than duplicated, which is what naming a
     capture after the field it fills is for: `sourceurl`, `msgsessionid`,
-    `msgctxid` and `msgseqnum` are the message's own columns, and the line's
+    `msgctxid` and `msgseqnum` are the message's own columns, the line's
     `curruuid` is dropped as the event's own identity takes its name -- it
-    reaches the row as the message's one source, `srcuuids`, and nowhere
-    else. `rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`,
-    `level`, `bodyhash` and `body` ride in front: `pluginid` among them,
-    because the row's own column for the plugin is `msgpluginid` and the raw
-    contract spells its capture as the bridge does.
+    reaches the row as the message's one source, `srcuuids`, and nowhere else
+    -- and the line's `currhashcode` is dropped the same way, because the
+    fixed row takes that name for the code of the event. `rownum`,
+    `timestamp`, `timepartition`, `threadId`, `pluginid`, `level` and `body`
+    ride in front: `pluginid` among them, because the row's own column for the
+    plugin is `msgpluginid` and the raw contract spells its capture as the
+    bridge does.
 
-    Eight here and six in the table: `UNSTORED` -- the payload the parse reads
-    every message out of, and the digest of it -- rides through the parse and
-    is dropped at the storage boundary, because both are a line's and a stored
-    row is an event's.
+    Seven here and six in the table: `UNSTORED` -- the payload the parse reads
+    every message out of -- rides through the parse and is dropped at the
+    storage boundary, because the bytes are a line's and a stored row is an
+    event's.
     """
     if carrier is None:
         from rekep.text import Message
@@ -680,7 +621,7 @@ def fix_message_field(
     return iceberg_fix_field(
         fix_parse_field(codec, carrier, name=name).into_arrow_schema(),
         name,
-        UNSTORED if codec is None else (codec.payload_column, TEXT_DIGEST),
+        UNSTORED if codec is None else (codec.payload_column,),
     )
 
 
@@ -795,7 +736,6 @@ __all__ = [
     "PAYLOAD",
     "SORT_COLUMNS",
     "SOURCES",
-    "TEXT_DIGEST",
     "TRANSACTION_CLOCK",
     "UNDATED",
     "UNSTORED",
@@ -820,7 +760,6 @@ __all__ = [
     "fix_schema",
     "fix_schema_carrying",
     "fix_schema_tags",
-    "fix_stored_reader",
     "fix_text_options",
     "fix_window_filter",
     "global_registry",

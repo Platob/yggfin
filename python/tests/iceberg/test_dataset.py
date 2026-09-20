@@ -2532,21 +2532,12 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
         body=b"opaque",
     )
 
-    # The digest holder is derived on the way in, so what is handed over is
-    # the row without it: an empty default is not sixteen bytes and a literal
-    # one would be a second implementation of the digest.
-    declared = dataclasses.asdict(row)
-    declared.pop("bodyhash")
+    # Nothing is derived on the way in but `timepartition`: the line's own
+    # code is the read's to state, and a row made by hand states the default.
     target.append_arrow_table(
         pyarrow.Table.from_pylist(
-            [declared],
-            schema=pyarrow.schema(
-                [
-                    member
-                    for member in Message.into_field().into_arrow_schema()
-                    if member.name != "bodyhash"
-                ]
-            ),
+            [dataclasses.asdict(row)],
+            schema=Message.into_field().into_arrow_schema(),
         )
     )
 
@@ -2554,10 +2545,6 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
         target.identifier
     )
     stored = reopened.read_arrow_table(Message.into_field()).to_pylist()
-    # The declaration's digest holder is filled on the way in, so the stored
-    # row carries a digest the literal below cannot spell.
-    digest = stored[0].pop("bodyhash")
-    assert isinstance(digest, bytes) and len(digest) == 16
     assert stored == [
         {
             "sourceurl": "capture.log",
@@ -2570,9 +2557,10 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
             "msgseqnum": 72504,
             "pluginid": "ULBridge",
             "level": "INFO",
+            # A row made by hand rather than by the read states neither the
+            # line's code nor its identity: only the native read states them.
+            "currhashcode": 0,
             "body": b"opaque",
-            # A row made by hand rather than by the read states no identity:
-            # only the native text read states a line's own.
             "curruuid": None,
         }
     ]

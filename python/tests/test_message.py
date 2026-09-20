@@ -30,7 +30,7 @@ def test_message_declares_the_text_row_and_its_storage_columns() -> None:
         "msgseqnum",
         "pluginid",
         "level",
-        "bodyhash",
+        "currhashcode",
         "body",
         "curruuid",
     ]
@@ -41,8 +41,13 @@ def test_message_declares_the_text_row_and_its_storage_columns() -> None:
     assert field["curruuid"].nullable is True
     assert field["timepartition"].partition.sources == ["timestamp"]
     assert field["timepartition"].iceberg["partition_key"] == "hour"
-    assert field["bodyhash"].digest.sources == ["body"]
-    assert field["bodyhash"].digest.algorithm == "xxh3-128"
+    # The key is the code the read states, not a digest computed beside it:
+    # this contract holds the type a table stores and `read_field` widens the
+    # one column the read answers unsigned.
+    assert not [member.name for member in field if member.digest.is_holder()]
+    assert field["currhashcode"].into_arrow().type == pyarrow.int64()
+    assert Message.read_field()["currhashcode"].into_arrow().type == pyarrow.uint64()
+    assert [member.name for member in Message.read_field()] == [member.name for member in field]
 
 
 def test_message_text_options_own_the_complete_native_read() -> None:
@@ -53,7 +58,7 @@ def test_message_text_options_own_the_complete_native_read() -> None:
     assert options.rowheader == ULBRIDGE_ROWHEADER
     assert str(options.timezone) == "UTC"
     assert options.safe is False
-    assert options.field == Message.into_field()
+    assert options.field == Message.read_field()
     assert options.capture_names == (
         "timestamp",
         "threadId",
@@ -79,7 +84,7 @@ def test_the_text_reader_produces_messages_without_a_python_row_pass(tmp_path) -
     finally:
         reader.close()
 
-    assert table.schema.equals(Message.into_field().into_arrow_schema(), check_metadata=True)
+    assert table.schema.equals(Message.read_field().into_arrow_schema(), check_metadata=True)
     assert table.select(
         ("rownum", "timestamp", "threadId", "msgsessionid", "msgctxid", "msgseqnum", "pluginid")
     ).to_pylist() == [
@@ -105,13 +110,15 @@ def test_the_text_reader_produces_messages_without_a_python_row_pass(tmp_path) -
     assert table.column("timepartition").equals(table.column("timestamp"))
     # The body is the whole line as the native read retains it, the row
     # header included: the header's captures are read off it, not cut out of
-    # it, and the digest is of these same bytes.
+    # it, and the code the read states is over these same bytes.
     assert table.column("body").to_pylist() == [
         b"2026-08-14 00:05:01.147 [250-e7256476:9effef3e6a:72504] "
         b"[ULBridge] (INFO) Sending : 8=FIX.4.4|35=D|10=0|",
         b"2026-08-14 00:05:01.148 [653] [Spot_FX_TradeCapture] (WARN) prose",
     ]
-    assert all(len(value) == 16 for value in table.column("bodyhash").to_pylist())
+    codes = table.column("currhashcode")
+    assert codes.type == pyarrow.uint64() and codes.null_count == 0
+    assert len(set(codes.to_pylist())) == 2
     # And the line's own identity, stated by the read: sixteen bytes, one per
     # line, which is what a message parsed out of the line names as its source.
     identities = table.column("curruuid").to_pylist()
@@ -181,7 +188,7 @@ def test_the_raw_read_is_the_bridge_read_the_codec_is_pinned_against() -> None:
     )
     assert str(raw.timezone) == str(bridge.timezone)
     # The one difference, and the reason there are two: the field.
-    assert raw.field == Message.into_field()
+    assert raw.field == Message.read_field()
     assert bridge.field != raw.field
 
 
@@ -264,12 +271,16 @@ def test_the_columns_a_header_is_expected_to_fill_are_the_contract_s_own() -> No
     }
     # A member the read fills or a field apply derives is not a capture, and
     # says so itself rather than being remembered in a list.
-    assert Message.READ_COLUMNS == {"sourceurl", "rownum", "body", "curruuid"}
+    assert Message.READ_COLUMNS == {
+        "sourceurl",
+        "rownum",
+        "body",
+        "curruuid",
+        "currhashcode",
+    }
     field = Message.into_field()
     assert {member.name for member in field} - Message.captures() == {
         *Message.READ_COLUMNS,
         "timepartition",
-        "bodyhash",
     }
     assert field["timepartition"].partition.sources == ["timestamp"]
-    assert field["bodyhash"].digest.sources == ["body"]

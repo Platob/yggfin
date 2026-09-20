@@ -35,9 +35,9 @@ WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
 
 #: What the bridge fixture's 144 physical rows produce, first run.
 #:
-#: `logs.messages` is keyed on `bodyhash`, the digest of the whole line, so
-#: the 3 lines that repeat another line byte for byte are one row each with
-#: the line they repeat. A FIX row is a message and not a line -- prose
+#: `logs.messages` is keyed on `currhashcode`, the code the read states over
+#: the whole line, so the 3 lines that repeat another line byte for byte are
+#: one row each with the line they repeat. A FIX row is a message and not a line -- prose
 #: answers none and a line carrying two frames answers two -- and
 #: `fix.bronze` is keyed on `curruuid`, so the 79 messages those 141 lines
 #: carry settle on the 53 events the capture describes. The walk restates
@@ -400,8 +400,10 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
         stored = fixes.read_arrow_table(field)
         assert stored.num_rows == 1
         assert stored.num_columns == 123
-        # The row names the line; `logs.messages` holds it.
-        assert not {"body", "bodyhash"} & set(stored.column_names)
+        # The row names the line; `logs.messages` holds the bytes. The
+        # `currhashcode` here is the event's own code and not the line's.
+        assert "body" not in stored.column_names
+        assert "currhashcode" in stored.column_names
         assert stored.schema.field("timestamp").type == pyarrow.timestamp("us", tz="UTC")
         assert stored.select(("sourceurl", "rownum")).to_pylist() == [
             {"sourceurl": "file:///mock/fix.log", "rownum": 1}
@@ -588,7 +590,7 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
         # an event's: the row names the line it was read from and
         # `logs.messages` holds the text. That join resolves, one stored line
         # per row.
-        assert not {"body", "bodyhash"} & set(fixes.column_names)
+        assert "body" not in fixes.column_names
         lines = ran.table("logs.messages")
         at = set(
             zip(
@@ -648,7 +650,7 @@ def test_both_fix_tables_are_laid_out_exactly_alike_by_the_event(ran: Ran) -> No
             "sort": [("currunix", "identity"), ("seqnum", "identity"), ("curruuid", "identity")],
         }, name
         assert ran.partitions(name) == {"currunix": "hour"}
-    assert ran.layout("logs.messages")["key"] == {"bodyhash"}
+    assert ran.layout("logs.messages")["key"] == {"currhashcode"}
     assert ran.layout("logs.messages")["spec"] == [("timepartition", "hour")]
 
 
@@ -754,19 +756,19 @@ def test_identical_lines_are_one_stored_line(ran: Ran) -> None:
     lines = ran.table("logs.messages")
 
     assert lines.num_rows == STORED["logs.messages"] < 144
-    digests = lines.column("bodyhash").to_pylist()
-    assert all(len(digest) == 16 for digest in digests)
-    assert len(set(digests)) == lines.num_rows
+    codes = lines.column("currhashcode").to_pylist()
+    assert lines.schema.field("currhashcode").type == pyarrow.int64()
+    assert len(set(codes)) == lines.num_rows
     assert len(set(lines.column("curruuid").to_pylist())) == lines.num_rows
     # A key is scoped to its partition, which here is the hour the line was
     # printed in: the same bytes logged twice inside one hour are one row.
     within = lines.append_column(
         "hour", pyarrow.compute.floor_temporal(lines.column("timepartition"), unit="hour")
     )
-    grouped = within.group_by(["hour", "bodyhash"]).aggregate([([], "count_all")])
+    grouped = within.group_by(["hour", "currhashcode"]).aggregate([([], "count_all")])
     assert grouped.num_rows == lines.num_rows
     assert ran.partitions("logs.messages") == {"timepartition": "hour"}
-    assert ran.layout("logs.messages")["key"] == {"bodyhash"}
+    assert ran.layout("logs.messages")["key"] == {"currhashcode"}
 
 
 def test_a_chain_read_back_in_order_states_what_each_step_follows(ran: Ran) -> None:

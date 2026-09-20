@@ -25,7 +25,7 @@ the chains they belong to. Each lands in a table of its own, under one field.
 
 | task | reads | writes | key | default behavior |
 | --- | --- | --- | --- | --- |
-| [`parse_messages`](tasks/parse-messages.md) | every physical line under `filesystem`, keeping the window's | `logs.messages` | `bodyhash` | header capture, exact line retention, the last day |
+| [`parse_messages`](tasks/parse-messages.md) | every physical line under `filesystem`, keeping the window's | `logs.messages` | `currhashcode` | header capture, exact line retention, the last day |
 | [`parse_fix_bronze`](tasks/parse-fix-bronze.md) | the window's rows of `logs.messages` | `fix.bronze` | `curruuid` | bundled dictionary, one row per event, no chain, the last day |
 | [`parse_fix_silver`](tasks/parse-fix-silver.md) | the window's rows of `fix.bronze`, off the event clock | `fix.silver` | `curruuid` | the chains walked, the last day |
 | [`build_dbt`](tasks/build-dbt.md) | every row of `fix.silver` | `orders.events`, `orders.current`, `executions.fills` | one key per product | the dbt project under `data/dbt`, committed through the same datasets |

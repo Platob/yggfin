@@ -29,7 +29,7 @@ written = messages.overwrite_arrow_reader(
 ```
 
 `merge_by=True` uses the primary key declared on the native Field:
-`bodyhash` for `logs.messages`, and `curruuid` for `fix.bronze` and
+`currhashcode` for `logs.messages`, and `curruuid` for `fix.bronze` and
 `fix.silver`, where a parse answers one row per message and a source URL and
 row number alone therefore name no row. A missing table is created.
 `commit_batch_num` and the optional `commit_row_size` bound each storage
@@ -231,8 +231,9 @@ never in committed task documents.
 ## Message schema replacement
 
 The current raw contract uses `sourceurl`, `rownum`, the ULBridge header
-fields, `bodyhash`, and a derived `timepartition` with an Iceberg `hour`
-transform. Recreate an older messages table from `Message.into_field()` and
+fields, the line's own `currhashcode` and `curruuid`, and a derived
+`timepartition` with an Iceberg `hour` transform. Recreate an older messages
+table from `Message.into_field()` and
 reingest its source captures; rekep carries no legacy name, timestamp-type,
 digest-name, or partition-layout compatibility path.
 

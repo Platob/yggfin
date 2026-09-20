@@ -74,24 +74,24 @@
       },
       {
         "id": 11,
-        "name": "bodyhash",
-        "type": "fixed[16]",
+        "name": "currhashcode",
+        "type": "long",
         "required": true,
-        "doc": "XXH3-128 digest of the exact *body* bytes, computed beside them on the read. The key of `logs.messages`, and a digest of the bytes alone: identical bytes are one row whatever session carried them, whichever object they were read from and however often a capture is re-read. It is not the message's `currhashcode`, which covers the settled event -- its facts, its text, its metadata and its entry tree -- and answers the same code for two different lines that state the same message. The bytes and the message are two questions, so they are two columns and neither stands in for the other."
+        "doc": "The line's own content code, as the native text read states it. The key of `logs.messages`. A text line is an event of the graph and the read codes its content, so identical bytes answer one code whatever session carried them, whichever object they were read from and however often a capture is re-read -- and nothing here computes a second digest beside the one the read already states. It is the line's code and not a message's. A FIX row's `currhashcode` covers the settled event -- its facts, its text, its metadata and its entry tree -- so two lines that state one message share that code and not this one, which is why a FIX row holds neither this column nor the bytes it was read from. A content code is unsigned and the read states it that way. Iceberg's only sixty-four-bit integer is signed, so this contract declares the type a table holds and `read_field` widens it back for the read alone: the same eight bytes cross the boundary through `rekep.fields.stored_arrow_reader`, and half of them read back negative."
       },
       {
         "id": 12,
         "name": "body",
         "type": "binary",
         "required": true,
-        "doc": "The whole line as the native read retains it, the row header included. The captures above are read off it, not cut out of it. `logs.messages` is where the bytes live and the only place, and so is the `bodyhash` beside them: neither FIX table holds either, because a row there is an event and both of these are one line's. It names the line it was read from instead, with `sourceurl`, `rownum` and, exactly, the line's `curruuid`."
+        "doc": "The whole line as the native read retains it, the row header included. The captures above are read off it, not cut out of it. `logs.messages` is where the bytes live and the only place, and so is the code beside them: neither FIX table holds either, because a row there is an event and both of these are one line's. It names the line it was read from instead, with `sourceurl`, `rownum` and, exactly, the line's `curruuid`."
       },
       {
         "id": 13,
         "name": "curruuid",
         "type": "fixed[16]",
         "required": false,
-        "doc": "The line's own identity, as the native text read states it. A text line is an event of the graph, and the read stamps every row with the sixteen columns an event opens with; this is the one of them a message keeps. A message parsed out of a stored line names it here and nowhere else -- as its `srcuuids`, exact provenance rather than an identity recomputed from the bytes -- so a FIX row joins the line it was read from on this column, whatever the line was stamped with. Not the key: identical bytes are one row on `bodyhash`, and the identity a table keeps is the line that landed. Sixteen ordered bytes rather than the `uuid` Iceberg would store, for the reason the FIX row gives. Declared last and nullable, because a table that already exists takes a new column only at its end and only as an optional one: an Iceberg schema cannot add a required column to rows that never held it. The read fills it on every row; a row that states none -- one made by hand, or one a table held before this column -- leaves the parse to recompute the identity from the line's bytes and instant, which is equal only while those are."
+        "doc": "The line's own identity, as the native text read states it. A text line is an event of the graph, and the read stamps every row with the sixteen columns an event opens with; this is the one of them a message keeps. A message parsed out of a stored line names it here and nowhere else -- as its `srcuuids`, exact provenance rather than an identity recomputed from the bytes -- so a FIX row joins the line it was read from on this column, whatever the line was stamped with. Not the key: identical bytes are one row on `currhashcode`, and the identity a table keeps is the line that landed. Sixteen ordered bytes rather than the `uuid` Iceberg would store, for the reason the FIX row gives. Declared last and nullable, because a table that already exists takes a new column only at its end and only as an optional one: an Iceberg schema cannot add a required column to rows that never held it. The read fills it on every row; a row that states none -- one made by hand, or one a table held before this column -- leaves the parse to recompute the identity from the line's bytes and instant, which is equal only while those are."
       }
     ],
     "schema-id": 0,
