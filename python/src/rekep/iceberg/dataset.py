@@ -53,7 +53,7 @@ from rekep.iceberg.fields import (
     partition_keys,
     sort_keys,
 )
-from rekep.times import UTC
+from rekep.times import EPOCH, UTC
 
 if sys.version_info < (3, 11):  # pragma: no cover - the builtin is 3.11's
     from exceptiongroup import BaseExceptionGroup
@@ -2505,15 +2505,17 @@ def window_filter(column: str, window: tuple[datetime.datetime, datetime.datetim
     """The rows a window covers, as the predicate a scan prunes by.
 
     The reading `rekep.times.within` gives an Arrow column, for a stored one:
-    `start <= column < end`, and the rows carrying no value in it, which
-    belong to every window. Over a partition source, Iceberg projects the
-    bounds through the transform and opens only the partitions the window
-    touches.
+    `start <= column < end`, and the rows that state no instant in it -- the
+    `EPOCH` pin a read settles a record it could not date at, and a null for
+    a column that admits one -- which belong to every window. Over a
+    partition source, Iceberg projects the bounds through the transform and
+    opens only the partitions the window touches and the pin's own.
     """
-    from pyiceberg.expressions import And, GreaterThanOrEqual, IsNull, LessThan, Or
+    from pyiceberg.expressions import And, EqualTo, GreaterThanOrEqual, IsNull, LessThan, Or
 
     lower, upper = window
-    return Or(And(GreaterThanOrEqual(column, lower), LessThan(column, upper)), IsNull(column))
+    covered = And(GreaterThanOrEqual(column, lower), LessThan(column, upper))
+    return Or(covered, Or(EqualTo(column, EPOCH), IsNull(column)))
 
 
 def _key_bounds(

@@ -27,12 +27,13 @@ the three tables below have and the gate the roadmap still holds them to.
 | [`fix.bronze`](fixmsg.md) | one parsed event, however many lines stated it | `curruuid` | the parse's answer, no chain |
 | [`fix.silver`](fixmsg.md) | one walked event, identities settled at lifecycle time | `curruuid` | the chain filled, what the products read |
 
-`logs.messages` is partitioned by the hour of the capture clock,
-`timepartition`; the two FIX tables by the hour of the event's own instant,
-`currunix`. Only `logs.messages` keeps `body`, and its `currhashcode` is the
-line's own code rather than the event's the two FIX tables carry. A FIX row
-names raw lines only through `srcuuids`, and adds the event's `curruuid`, its
-normalized identifiers, message direction, and parsed or residual facts.
+All three are laid out by the hour of `currunix` alone -- on a raw row the
+instant the read settled over the line, on a FIX row the one the event settled
+on -- so what tells them apart is the key above and not the layout. Only
+`logs.messages` keeps `body`, and its `currhashcode` is the line's own code
+rather than the event's the two FIX tables carry. A FIX row names raw lines
+only through `srcuuids`, and adds the event's `curruuid`, its normalized
+identifiers, message direction, and parsed or residual facts.
 
 ## Read products
 

@@ -75,8 +75,8 @@ CRATE = 29
 PARSED_EVENTS = 51
 
 #: One line the bridge header matches, and one it does not: the second spells
-#: its fraction `,148`, which the row header does not read, so the row carries
-#: no clock at all and the message inside it states none either.
+#: its fraction `,148`, which the row header does not read, so the row settles
+#: at the epoch pin and the message inside it states no clock either.
 BRIEF = (
     b"2026-08-14 00:05:01.147 [250-e7256476:9effef3e6a:72504] [ULBridge] (INFO) "
     b"Sending : 8=FIX.4.4|35=D|11=A1|55=AAPL|10=0|\n"
@@ -239,17 +239,7 @@ def test_the_published_row_is_the_dictionarys_native_shape() -> None:
         "figicode",
     }
     names = [member.name for member in declared]
-    for capture in (
-        "sourceurl",
-        "rownum",
-        "timestamp",
-        "timepartition",
-        "threadId",
-        "threadid",
-        "pluginid",
-        "level",
-        "body",
-    ):
+    for capture in ("sourceurl", "rownum", "threadId", "threadid", "level", "body"):
         assert capture not in names, capture
     assert {"msgsessionid", "msgctxid", "msgseqnum", "msgpluginid"} <= set(names)
     assert len(declared) == ROW
@@ -359,17 +349,7 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from(bronze) -> None:
     stored = fix_message_field().into_arrow_schema()
     parsed = fix_parse_field().into_arrow_schema()
 
-    for column in (
-        "sourceurl",
-        "rownum",
-        "timestamp",
-        "timepartition",
-        "threadId",
-        "threadid",
-        "pluginid",
-        "level",
-        "body",
-    ):
+    for column in ("sourceurl", "rownum", "threadId", "threadid", "level", "body"):
         assert column not in bronze.column_names, column
         assert column not in stored.names, column
         assert column not in parsed.names, column
@@ -495,12 +475,12 @@ def test_the_parse_places_no_message_in_a_chain(bronze) -> None:
 def test_a_message_names_the_stored_line_it_was_parsed_out_of(lines, bronze) -> None:
     """Provenance, never lineage.
 
-    `logs.messages` carries the line's own `curruuid`, the read states it, and
-    the batch door reads it as each message's one source. A carrier stating
-    none leaves the parse to recompute it from the line's bytes and instant,
-    which answers the same identity only while both are the same -- here they
-    are, so the two agree, and the stored column is what makes the join exact
-    rather than coincidental.
+    `logs.messages` states the line's own `curruuid` on every row, and the
+    batch door reads it back -- viewed from the sixteen bytes a table keys on
+    to the identity the read states -- as each message's one source. That
+    view is what makes the join exact: a carrier stating no identity leaves
+    the parse to recompute one from the line's content alone, at the undated
+    pin, which is the line's own only where the line was undated too.
     """
     assert lines.num_rows == LINES
     assert lines.column("curruuid").null_count == 0
@@ -509,14 +489,22 @@ def test_a_message_names_the_stored_line_it_was_parsed_out_of(lines, bronze) -> 
 
     assert all(len(held) == 1 for held in sources), "one line per message"
     assert set(_sources(bronze)) <= named
-    # The same identities off a carrier that states none -- the column absent,
-    # or present and empty on the rows a table held before it had one.
+    # The identity the line landed under, not one the code alone implies: a
+    # carrier that states none answers the pin's identity instead, which is
+    # the whole reason the column is stated on every row the read produces.
     unstated = stored_arrow_reader(
         fix_parse_arrow_reader(_codec(), _reader(lines.drop_columns(["curruuid"]))),
         fix_message_field(),
     ).read_all()
-    assert _sources(unstated) == _sources(bronze)
-    assert unstated.column(MESSAGE_KEY).to_pylist() == bronze.column(MESSAGE_KEY).to_pylist()
+    dated = [
+        held
+        for held, source in zip(_sources(unstated), _sources(bronze), strict=True)
+        if held != source
+    ]
+    assert dated and all(held.startswith(bytes(6)) for held in dated), "the pin's own identity"
+    assert set(dated).isdisjoint(named)
+    # And a table half of whose rows predate the column: each message names
+    # the identity its own line stated, and the pin's where it stated none.
     halved = lines.set_column(
         lines.column_names.index("curruuid"),
         "curruuid",
@@ -531,7 +519,9 @@ def test_a_message_names_the_stored_line_it_was_parsed_out_of(lines, bronze) -> 
     partly = stored_arrow_reader(
         fix_parse_arrow_reader(_codec(), _reader(halved)), fix_message_field()
     ).read_all()
-    assert _sources(partly) == _sources(bronze)
+    stated = [held in named for held in _sources(partly)]
+    assert any(stated) and not all(stated), "each message reads what its own row stated"
+    assert set(_sources(partly)) <= named | set(_sources(unstated))
 
 
 def test_every_restatement_of_an_event_settles_on_one_identity(bronze) -> None:
@@ -590,9 +580,10 @@ def test_the_bridge_bracket_fills_the_columns_it_names(bronze) -> None:
     assert bronze.column("msgsessionid").null_count < bronze.num_rows
     assert bronze.column("msgctxid").null_count < bronze.num_rows
     assert bronze.column("msgseqnum").null_count < bronze.num_rows
-    # The native plugin field remains part of the row; raw capture `pluginid`
-    # is not projected beside it.
-    assert bronze.column("msgpluginid").null_count == bronze.num_rows
+    # The plugin the bridge logged the line under, which the header captures
+    # as the field it fills: a capture named anything else leaves this column
+    # empty on every row, which is what the name is for.
+    assert bronze.column("msgpluginid").null_count < bronze.num_rows
 
 
 def test_the_two_doors_read_the_same_capture_as_the_same_messages() -> None:

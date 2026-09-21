@@ -11,6 +11,7 @@ with app.setup:
     import pyarrow
     from rekep.fields import stored_arrow_reader
     from rekep.fix import (
+        EVENT_CLOCK,
         fix_codec,
         fix_message_field,
         fix_parse_arrow_reader,
@@ -60,13 +61,12 @@ def _(catalog, codec_options, end, messages, records, registry, start):
     _ = records
     with ExitStack() as opened:
         # The same window `parse_messages` wrote, read back off the stored
-        # capture: `[start, end)` over the capture clock itself, with the lines
-        # that carry no clock beside them, because a line the reader could not
-        # stamp belongs to every window. It prunes: a file holds one hour of
-        # that clock, so its own stored bounds answer the window without the
-        # predicate having to name the partition column -- which it must not,
-        # because a capture line with no clock lands in the null partition and
-        # PyIceberg 0.12 cannot plan a comparison against one.
+        # capture: `[start, end)` over `currunix`, the event the read settled
+        # over each line, with the lines at the epoch pin beside them, because
+        # a line the reader could not stamp belongs to every window. It is the
+        # partition column itself and it is never null, so Iceberg projects
+        # the bounds through the hour transform and opens the partitions the
+        # window touches and the pin's own hour, and nothing else.
         window = window_of(start, end)
         stage = Stage(
             "parse_fix_bronze",
@@ -79,7 +79,7 @@ def _(catalog, codec_options, end, messages, records, registry, start):
         carrier = Message.into_field()
         lines = store.dataset(messages, field=carrier)
         opened.callback(lines.close)
-        source = lines.read_arrow_reader(carrier, row_filter=window_filter("timestamp", window))
+        source = lines.read_arrow_reader(carrier, row_filter=window_filter(EVENT_CLOCK, window))
         opened.callback(source.close)
         counts = {"read": 0, "messages": 0}
 

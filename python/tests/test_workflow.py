@@ -202,15 +202,16 @@ def test_the_workflow_publishes_ulbridge_and_a_replay_writes_nothing(ran: Ran) -
     assert ran.rows() == STORED
     messages = ran.table("logs.messages")
     assert messages.schema.equals(Message.into_field().into_arrow_schema(), check_metadata=False)
-    assert messages.schema.field("timestamp").type == pyarrow.timestamp("us", tz="UTC")
-    timestamps = {
-        row["rownum"]: row["timestamp"]
-        for row in messages.select(("rownum", "timestamp")).to_pylist()
+    assert messages.schema.field(EVENT_CLOCK).type == pyarrow.timestamp("us", tz="UTC")
+    instants = {
+        row["rownum"]: row[EVENT_CLOCK]
+        for row in messages.select(("rownum", EVENT_CLOCK)).to_pylist()
     }
-    assert timestamps[1] == datetime.datetime(2026, 8, 14, 14, 46, 39, 769000, tzinfo=UTC)
-    # A line the row header did not match carries no clock, and its row says
+    assert instants[1] == datetime.datetime(2026, 8, 14, 14, 46, 39, 769000, tzinfo=UTC)
+    # A line the row header did not match settles at the pin, and its row says
     # so rather than being dropped or dated by the run.
-    assert any(timestamp is None for timestamp in timestamps.values())
+    assert any(instant == EPOCH for instant in instants.values())
+    assert messages.column("curruuid").null_count == 0
 
     replay = ran.workflow()
     assert {name: counted(result) for name, result in replay.items()} == REPLAY
@@ -245,7 +246,7 @@ def test_a_window_the_capture_falls_outside_reads_every_line_and_writes_none(ran
     unstamped = result["written"]
     assert 0 < unstamped < 144
     assert ran.rows() == {"logs.messages": unstamped}
-    assert ran.table("logs.messages").column("timestamp").null_count == unstamped
+    assert ran.table("logs.messages").column(EVENT_CLOCK).to_pylist() == [EPOCH] * unstamped
 
     bronze = ran.task("parse_fix_bronze")
     assert bronze["read"] == unstamped
@@ -265,7 +266,7 @@ def test_a_window_replaces_only_the_lines_it_covers(ran: Ran) -> None:
     ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
     stored = ran.table("logs.messages")
     cut = datetime.datetime(2026, 8, 14, 14, 46, 40, tzinfo=UTC)
-    clock = stored.column("timestamp")
+    clock = stored.column(EVENT_CLOCK)
     later = stored.filter(pyarrow.compute.greater_equal(clock, cut)).num_rows
     assert 0 < later < STORED["logs.messages"], "the fixture straddles this cut"
 
@@ -379,7 +380,7 @@ def test_a_narrow_dictionary_still_answers_every_event(ran: Ran, tmp_path: Path)
     # precision Iceberg v2 holds.
     assert bronze.schema.field("sendingtime").type == pyarrow.timestamp("us", tz="UTC")
     assert bronze.schema.field(EVENT_CLOCK).type == pyarrow.timestamp("us", tz="UTC")
-    assert "timestamp" not in bronze.column_names
+    assert not {"sourceurl", "rownum", "body"} & set(bronze.column_names)
     assert bronze.column("srcuuids").null_count == 0
     # The walk is another matter: a chain is read off what a message is, and
     # a dictionary that cannot name a message's type places none of them. The
@@ -428,23 +429,21 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
         assert "body" not in stored.column_names
         assert "currhashcode" in stored.column_names
         assert "srcuuids" in stored.column_names
-        assert not {"sourceurl", "rownum", "timestamp", "timepartition"} & set(stored.column_names)
+        assert not {"sourceurl", "rownum", "body", "level"} & set(stored.column_names)
     finally:
         fixes.close()
         store.close()
 
 
-def test_a_raw_table_of_the_previous_shape_takes_the_lines_identity_and_a_replay_fills_it(
-    ran: Ran,
-) -> None:
-    """The migration of a `logs.messages` that predates `curruuid`: the column
-    is added through the dataset -- which is why it is declared optional,
-    because Iceberg adds no required column to rows that never held it -- and
-    a replay of the window fills it on every row."""
+def test_a_raw_table_of_the_previous_shape_is_a_table_of_its_own(ran: Ran) -> None:
+    """The event the read settles is stated on every row, so a table that
+    never held it is not this one: Iceberg adds no required column to rows
+    that never had it, and the dataset refuses rather than landing a table
+    half of whose rows state no instant, no identity and no code."""
     declared = Message.into_field().into_arrow_schema()
     previous = Field.from_arrow_schema(
         pyarrow.schema(
-            [member for member in declared if member.name != "curruuid"],
+            [member for member in declared if member.name not in {EVENT_CLOCK, "curruuid"}],
             metadata=declared.metadata,
         ),
         name="logs.messages",
@@ -455,18 +454,11 @@ def test_a_raw_table_of_the_previous_shape_takes_the_lines_identity_and_a_replay
         lines.create_with_field(previous)
         lines.close()
         lines = store.dataset("logs.messages", field=Message.into_field())
-        assert lines.add_fields(Message.into_field()) == ["curruuid"]
+        with pytest.raises(ValueError, match="cannot add required column"):
+            lines.add_fields(Message.into_field())
         lines.close()
     finally:
         store.close()
-
-    result = ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
-
-    assert counted(result) == FIRST["parse_messages"]
-    stored = ran.table("logs.messages")
-    assert stored.column_names[-1] == "curruuid"
-    assert stored.column("curruuid").null_count == 0
-    assert ran.task("parse_fix_bronze", **WINDOW)["written"] == STORED["fix.bronze"]
 
 
 def test_a_capture_missing_altogether_is_reported(ran: Ran, tmp_path: Path) -> None:
@@ -535,17 +527,17 @@ def test_messages_stream_through_hour_partitions(
     try:
         spec = messages.iceberg_table.spec()
         assert [(field.name, str(field.transform)) for field in spec.fields] == [
-            ("timepartition_hour", "hour")
+            ("currunix_hour", "hour")
         ]
         assert {
-            row["partition"]["timepartition_hour"] for row in messages.data_files().to_pylist()
+            row["partition"]["currunix_hour"] for row in messages.data_files().to_pylist()
         } == {int(first.timestamp() // 3600), int(second.timestamp() // 3600)}
 
         rows = []
-        for timestamp in (first, second):
-            assert messages.scan_plan(EqualTo("timepartition", timestamp))["skipped"] == 1
+        for instant in (first, second):
+            assert messages.scan_plan(EqualTo(EVENT_CLOCK, instant))["skipped"] == 1
             reader = messages.read_arrow_reader(
-                Message.into_field(), row_filter=EqualTo("timepartition", timestamp)
+                Message.into_field(), row_filter=EqualTo(EVENT_CLOCK, instant)
             )
             try:
                 assert isinstance(reader, pyarrow.RecordBatchReader)
@@ -556,9 +548,8 @@ def test_messages_stream_through_hour_partitions(
         messages.close()
         store.close()
 
-    assert {row["timestamp"] for row in rows} == {first, second}
-    assert {row["timepartition"] for row in rows} == {first, second}
-    assert {row["pluginid"] for row in rows} == {"ULBridge"}
+    assert {row[EVENT_CLOCK] for row in rows} == {first, second}
+    assert {row["msgpluginid"] for row in rows} == {"ULBridge"}
     # The same bytes under two clocks are two lines with two identities.
     assert len({row["curruuid"] for row in rows}) == 2
 
@@ -597,11 +588,8 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
         assert not {
             "sourceurl",
             "rownum",
-            "timestamp",
-            "timepartition",
             "threadId",
             "threadid",
-            "pluginid",
             "level",
             "body",
         } & set(fixes.column_names)
@@ -649,8 +637,10 @@ def test_both_fix_tables_are_laid_out_exactly_alike_by_the_event(ran: Ran) -> No
             "sort": [("currunix", "identity"), ("seqnum", "identity"), ("curruuid", "identity")],
         }, name
         assert ran.partitions(name) == {"currunix": "hour"}
+    # The raw line is laid out by the same clock under the same transform;
+    # what tells the tables apart is the key, which is the line's own code.
     assert ran.layout("logs.messages")["key"] == {"currhashcode"}
-    assert ran.layout("logs.messages")["spec"] == [("timepartition", "hour")]
+    assert ran.layout("logs.messages")["spec"] == [(EVENT_CLOCK, "hour")]
 
 
 def test_the_lineage_holds_across_the_three_steps(ran: Ran) -> None:
@@ -676,11 +666,8 @@ def test_the_lineage_holds_across_the_three_steps(ran: Ran) -> None:
         assert not {
             "sourceurl",
             "rownum",
-            "timestamp",
-            "timepartition",
             "threadId",
             "threadid",
-            "pluginid",
             "level",
             "body",
         } & set(rows.column_names)
@@ -758,11 +745,11 @@ def test_identical_lines_are_one_stored_line(ran: Ran) -> None:
     # A key is scoped to its partition, which here is the hour the line was
     # printed in: the same bytes logged twice inside one hour are one row.
     within = lines.append_column(
-        "hour", pyarrow.compute.floor_temporal(lines.column("timepartition"), unit="hour")
+        "hour", pyarrow.compute.floor_temporal(lines.column(EVENT_CLOCK), unit="hour")
     )
     grouped = within.group_by(["hour", "currhashcode"]).aggregate([([], "count_all")])
     assert grouped.num_rows == lines.num_rows
-    assert ran.partitions("logs.messages") == {"timepartition": "hour"}
+    assert ran.partitions("logs.messages") == {EVENT_CLOCK: "hour"}
     assert ran.layout("logs.messages")["key"] == {"currhashcode"}
 
 

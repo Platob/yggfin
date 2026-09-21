@@ -2682,20 +2682,21 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
         catalog_properties=catalog_properties(tmp_path),
     )
     row = Message(
+        currunix="2026-08-14 09:30:00.123",
         sourceurl="capture.log",
         rownum=7,
-        timestamp="2026-08-14 09:30:00.123",
         threadId=250,
         msgsessionid="e7256476",
         msgctxid="9effef3e6a",
         msgseqnum=72504,
-        pluginid="ULBridge",
+        msgpluginid="ULBridge",
         level="INFO",
-        body=b"opaque",
+        body="opaque",
     )
 
-    # Nothing is derived on the way in but `timepartition`: the line's own
-    # code is the read's to state, and a row made by hand states the default.
+    # Nothing is derived on the way in: the table is laid out by the event
+    # the row already carries, and the line's own code and identity are the
+    # read's to state, so a row made by hand states the defaults.
     target.append_arrow_table(
         pyarrow.Table.from_pylist(
             [dataclasses.asdict(row)],
@@ -2709,27 +2710,26 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
     stored = reopened.read_arrow_table(Message.into_field()).to_pylist()
     assert stored == [
         {
+            "currunix": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC),
+            # A row made by hand rather than by the read states neither the
+            # line's identity nor its code: only the native read states them.
+            "curruuid": bytes(16),
+            "currhashcode": 0,
             "sourceurl": "capture.log",
             "rownum": 7,
-            "timestamp": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC),
-            "timepartition": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC),
+            "body": "opaque",
             "threadId": 250,
             "msgsessionid": "e7256476",
             "msgctxid": "9effef3e6a",
             "msgseqnum": 72504,
-            "pluginid": "ULBridge",
+            "msgpluginid": "ULBridge",
             "level": "INFO",
-            # A row made by hand rather than by the read states neither the
-            # line's code nor its identity: only the native read states them.
-            "currhashcode": 0,
-            "body": b"opaque",
-            "curruuid": None,
         }
     ]
-    projected = reopened.read_arrow_reader(Message.into_field(), columns=["timepartition"])
+    projected = reopened.read_arrow_reader(Message.into_field(), columns=["currunix"])
     try:
-        assert projected.schema.names == ["timepartition"]
-        assert projected.read_all().column("timepartition").to_pylist() == [
+        assert projected.schema.names == ["currunix"]
+        assert projected.read_all().column("currunix").to_pylist() == [
             datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC)
         ]
     finally:

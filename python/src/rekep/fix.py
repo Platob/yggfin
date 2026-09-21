@@ -16,6 +16,7 @@ only the preceding hour plus its job window and publishes its window's rows.
 from __future__ import annotations
 
 import datetime
+import functools
 import json
 import os
 from collections.abc import Iterable, Iterator
@@ -61,10 +62,11 @@ FIXMSG = "fixmsg"
 #: arrival under an identity already held is a restatement, not a second row.
 MESSAGE_KEY = "curruuid"
 
-#: The instant both tables are laid out by: the one the event happened at,
-#: which is what the message stated and never what a line was printed at. The
-#: core's own name for it, and the first of the sixteen columns every event's
-#: schema opens with.
+#: The instant every table here is laid out by, and the core's own name for
+#: it: the first of the sixteen columns every event's schema opens with. On a
+#: FIX row it is what the message stated and never what a line was printed
+#: at; on a raw one it is what the line was printed at, because there a line
+#: is the event. Each read settles its own, and the hour of it is the layout.
 EVENT_CLOCK = "currunix"
 
 #: The clock the walk dates a message by where the parse could not: the
@@ -78,6 +80,12 @@ TRANSACTION_CLOCK = "transacttime"
 #: else. Source location and capture context remain on `logs.messages`,
 #: reached through these identities; no walk moves them.
 SOURCES = "srcuuids"
+
+#: The capture column a parse reads the line's own identity off, and puts in
+#: `srcuuids`. `logs.messages` stores it as the sixteen ordered bytes Arrow
+#: can key, sort and merge on, so the parse is handed it back at the type the
+#: read states before it is asked to read it.
+CAPTURE_KEY = "curruuid"
 
 #: What the lifecycle walk filled for a message's place in its chain. A chain
 #: read in `currunix, seqnum` order is the order the venue described, and the
@@ -150,13 +158,15 @@ def fix_text_options(
 ) -> TextOptions:
     """The bridge text read every stage of this pipeline is pinned against.
 
-    Every capture a row header declares is named for the field it fills, so
-    `capture_names` alone is what tells the codec which bracket part is which
-    and nothing maps a spelling onto a tag. `rowheader` reads a bridge writing
-    those same facts in a layout of its own; the default is the one this
-    package ships. A reader that also stores its rows takes the header through
-    `Message.text_options`, which additionally checks the names against the
-    columns that hold them.
+    Every capture a row header declares is named for what the native read
+    fills from it -- a field for `msgpluginid`, `msgsessionid`, `msgctxid`
+    and `msgseqnum`, the settled `currunix` for `mtime` -- so `capture_names`
+    alone is what tells the codec which bracket part is which and nothing
+    maps a spelling onto a tag. `rowheader` reads a bridge writing those same
+    facts in a layout of its own; the default is the one this package ships.
+    A reader that also stores its rows takes the header through
+    `Message.text_options`, which additionally checks those names against the
+    ones its contract is filled from.
     """
     options = TextOptions()
     options.start_rownum = 1
@@ -214,14 +224,15 @@ def fix_parse_arrow_reader(
 
     The native parser consumes capture columns to resolve each message and
     puts the raw line's `curruuid` in `srcuuids`. Project its result to the
-    dictionary's fixed row: capture location, clocks, header and body remain
-    on `logs.messages`, reachable through that source identity. Projection
-    shares the parsed column buffers and works for empty readers too.
+    dictionary's fixed row: where the line was read from, what it was printed
+    at and the line itself remain on `logs.messages`, reachable through that
+    source identity. Projection shares the parsed column buffers and works
+    for empty readers too.
 
     Nothing has walked: `seqnum`, `prevuuid`, `prevunix` and `parentuuids`
     are empty. One source row answers one row per frame it contains.
     """
-    return _dictionary_rows(codec, codec.parse_text_arrow_reader(source))
+    return _dictionary_rows(codec, codec.parse_text_arrow_reader(_carried_rows(source)))
 
 
 def fix_lifecycle_messages(codec: FixCodec, messages: Iterable[FixMsg]) -> Iterator[FixMsg]:
@@ -322,6 +333,45 @@ def _dictionary_rows(
         safe=False,
         nullability="strict",
     )
+
+
+def _carried_rows(source: pyarrow.RecordBatchReader) -> pyarrow.RecordBatchReader:
+    """`source` with the line's identity viewed back to the type the read states.
+
+    The reverse of the raw table's own narrowing, and the reason that
+    narrowing is safe: a stored `curruuid` is the sixteen ordered bytes
+    Iceberg keys and sorts on, and a parse handed those bytes reads no
+    identity at all -- it recomputes one from the line's content, at the
+    undated pin, which is the line's own only by accident. Viewed back, the
+    parse names the line that landed, so `srcuuids` is a join and not a
+    coincidence. The bytes are the same bytes; nothing is copied or cast.
+    """
+    held = source.schema
+    if CAPTURE_KEY not in held.names:
+        return source
+    stated = _capture_key_type()
+    carried = held.field(CAPTURE_KEY)
+    # The view is the stored narrowing read back and nothing else: a column
+    # the read already states, or one holding anything but those sixteen
+    # bytes, is the parse's to read as it finds it.
+    if carried.type != stated.storage_type:
+        return source
+    place = held.get_field_index(CAPTURE_KEY)
+    viewed = held.set(place, carried.with_type(stated))
+
+    def _viewed() -> Iterator[pyarrow.RecordBatch]:
+        for batch in source:
+            columns = list(batch.columns)
+            columns[place] = pyarrow.ExtensionArray.from_storage(stated, columns[place])
+            yield pyarrow.RecordBatch.from_arrays(columns, schema=viewed)
+
+    return pyarrow.RecordBatchReader.from_batches(viewed, _viewed())
+
+
+@functools.cache
+def _capture_key_type() -> pyarrow.DataType:
+    """The type the native text read states a line's own identity at."""
+    return TextOptions().source_field().into_arrow_schema().field(CAPTURE_KEY).type
 
 
 def _row_columns(codec: FixCodec, schema: pyarrow.Schema) -> list[str]:
@@ -480,6 +530,7 @@ def _stored(dtype: pyarrow.DataType) -> pyarrow.DataType:
 
 
 __all__ = [
+    "CAPTURE_KEY",
     "CHAIN_STEP",
     "EVENT_CLOCK",
     "FIXMSG",

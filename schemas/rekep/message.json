@@ -4,109 +4,102 @@
     "fields": [
       {
         "id": 1,
-        "name": "sourceurl",
-        "type": "string",
+        "name": "currunix",
+        "type": "timestamptz",
         "required": true,
-        "doc": "Canonical URI of the source text object, stored only on the raw line."
+        "doc": "When the line happened, as the native text read settles it. The event clock of the graph, and what `logs.messages` is laid out by: the hour of it and nothing beside it, exactly as both FIX tables are laid out by the hour of theirs. The row already carries the instant, so a materialized copy of it would be a second owner of one fact. It is the clock the bridge stamped the *line* with, read off the header's `mtime` capture, so it dates no message and never reaches one. What dates a message is what the message states -- the `SendingTime` it carries, else the one instant the codec is pinned with, which the walk then replaces by the `TransactTime` it states -- so the same bytes logged at three hops settle on one instant however each line was stamped. A line the header could not date settles at `EPOCH`, the same pin an undated message takes in `fix.bronze`: one hour of one partition, read back into every window, and the same instant on every re-read of those bytes -- which is what keeps the identity below a replay answers again."
       },
       {
         "id": 2,
-        "name": "rownum",
-        "type": "long",
+        "name": "curruuid",
+        "type": "fixed[16]",
         "required": true,
-        "doc": "1-based physical line number within the source object."
+        "doc": "The line's own identity, as the native text read states it. A text line is an event of the graph, and the read stamps every row with the columns an event opens with; this is the one of them a message keeps. A message parsed out of a stored line names it here and nowhere else -- as its `srcuuids`, exact provenance rather than an identity recomputed from the bytes -- so a FIX row joins the line it was read from on this column, whatever the line was stamped with. Not the key: identical bytes are one row on `currhashcode`, and the identity a table keeps is the line that landed. A UUIDv7 over the instant above and the code below, held as sixteen ordered bytes rather than the `uuid` Iceberg would store, for the reason the FIX row gives. A row made by hand rather than by the read states the sixteen zero bytes, which name no line."
       },
       {
         "id": 3,
-        "name": "timestamp",
-        "type": "timestamptz",
-        "required": false,
-        "doc": "UTC instant captured from the line header, at microsecond resolution. Capture context, and only that: it is the clock the bridge stamped the *line* with, so it dates no message and never reaches one. What dates a message is what the message states -- the `SendingTime` it carries, else the one instant the codec is pinned with, which the walk then replaces by the `TransactTime` it states -- so the same bytes logged at three hops settle on one instant however each line was stamped."
-      },
-      {
-        "id": 4,
-        "name": "timepartition",
-        "type": "timestamptz",
-        "required": false,
-        "doc": "Timestamp partitioned by its UTC hour in Iceberg. `logs.messages` is laid out by it. FIX tables omit the capture clock and partition by the native event instant `currunix`."
-      },
-      {
-        "id": 5,
-        "name": "threadId",
-        "type": "long",
-        "required": false,
-        "doc": "Bridge thread identifier captured from the line header."
-      },
-      {
-        "id": 6,
-        "name": "msgsessionid",
-        "type": "string",
-        "required": false,
-        "doc": "Bridge session instance the line was handled on, filling `msgsessionid` (65032). The session *instance*, which is the bracket's own first part -- never what the message says about the counterparty session it names. Two connections to one counterparty are two instances, so they are two facts, and the event's own capture record holds this one."
-      },
-      {
-        "id": 7,
-        "name": "msgctxid",
-        "type": "string",
-        "required": false,
-        "doc": "Bridge message-context identifier, filling `msgctxid` (65008)."
-      },
-      {
-        "id": 8,
-        "name": "msgseqnum",
-        "type": "long",
-        "required": false,
-        "doc": "Bridge sequence number, filling `MsgSeqNum` (34) where a frame stated none."
-      },
-      {
-        "id": 9,
-        "name": "pluginid",
-        "type": "string",
-        "required": false,
-        "doc": "Bridge plugin that wrote the line. Stored only on the raw line. The native FIX field `msgpluginid` (65009) has its own meaning; this differently named capture does not fill it."
-      },
-      {
-        "id": 10,
-        "name": "level",
-        "type": "string",
-        "required": false,
-        "doc": "Severity spelling captured from the line header."
-      },
-      {
-        "id": 11,
         "name": "currhashcode",
         "type": "long",
         "required": true,
         "doc": "The line's own content code, as the native text read states it. The key of `logs.messages`. A text line is an event of the graph and the read codes its content, so identical bytes answer one code whatever session carried them, whichever object they were read from and however often a capture is re-read -- and nothing here computes a second digest beside the one the read already states. It is the line's code and not a message's. A FIX row's `currhashcode` covers the settled event -- its facts, its text, its metadata and its entry tree -- so two lines that state one message share that code and not this one, which is why a FIX row holds neither this column nor the bytes it was read from. A content code is unsigned and the read states it that way. Iceberg's only sixty-four-bit integer is signed, so this contract declares the type a table holds and `read_field` widens it back for the read alone: the same eight bytes cross the boundary through `rekep.fields.stored_arrow_reader`, and half of them read back negative."
       },
       {
-        "id": 12,
-        "name": "body",
-        "type": "binary",
+        "id": 4,
+        "name": "sourceurl",
+        "type": "string",
         "required": true,
-        "doc": "The whole line as the native read retains it, the row header included. The captures above are read off it, not cut out of it. `logs.messages` is where the bytes live and the only place, and so is the code beside them: neither FIX table holds either, because a row there is an event and both of these are one line's. A FIX row names the raw line's `curruuid` in `srcuuids`; capture details are looked up on that raw identity."
+        "doc": "Canonical URI of the source text object, stored only on the raw line."
       },
       {
-        "id": 13,
-        "name": "curruuid",
-        "type": "fixed[16]",
+        "id": 5,
+        "name": "rownum",
+        "type": "long",
+        "required": true,
+        "doc": "1-based physical line number within the source object."
+      },
+      {
+        "id": 6,
+        "name": "body",
+        "type": "string",
+        "required": true,
+        "doc": "The whole line as the native read retains it, the row header included. Text, because that is what the read decoded it to. The captures below are read off it, not cut out of it. `logs.messages` is where the line lives and the only place, and so is the code beside it: neither FIX table holds either, because a row there is an event and both of these are one line's. A FIX row names the raw line's `curruuid` in `srcuuids`; capture details are looked up on that raw identity."
+      },
+      {
+        "id": 7,
+        "name": "threadId",
+        "type": "long",
         "required": false,
-        "doc": "The line's own identity, as the native text read states it. A text line is an event of the graph, and the read stamps every row with the sixteen columns an event opens with; this is the one of them a message keeps. A message parsed out of a stored line names it here and nowhere else -- as its `srcuuids`, exact provenance rather than an identity recomputed from the bytes -- so a FIX row joins the line it was read from on this column, whatever the line was stamped with. Not the key: identical bytes are one row on `currhashcode`, and the identity a table keeps is the line that landed. Sixteen ordered bytes rather than the `uuid` Iceberg would store, for the reason the FIX row gives. Declared last and nullable, because a table that already exists takes a new column only at its end and only as an optional one: an Iceberg schema cannot add a required column to rows that never held it. The read fills it on every row; a row that states none -- one made by hand, or one a table held before this column -- leaves the parse to recompute the identity from the line's bytes and instant, which is equal only while those are."
+        "doc": "Bridge thread identifier captured from the line header."
+      },
+      {
+        "id": 8,
+        "name": "msgsessionid",
+        "type": "string",
+        "required": false,
+        "doc": "Bridge session instance the line was handled on, filling `msgsessionid` (65032). The session *instance*, which is the bracket's own first part -- never what the message says about the counterparty session it names. Two connections to one counterparty are two instances, so they are two facts, and the event's own capture record holds this one."
+      },
+      {
+        "id": 9,
+        "name": "msgctxid",
+        "type": "string",
+        "required": false,
+        "doc": "Bridge message-context identifier, filling `msgctxid` (65008)."
+      },
+      {
+        "id": 10,
+        "name": "msgseqnum",
+        "type": "long",
+        "required": false,
+        "doc": "Bridge sequence number, filling `MsgSeqNum` (34) where a frame stated none."
+      },
+      {
+        "id": 11,
+        "name": "msgpluginid",
+        "type": "string",
+        "required": false,
+        "doc": "Bridge plugin that wrote the line, filling `msgpluginid` (65009). The crate's own field: the plugin that logged the line inside a bridge, as the bridge names it. A parse reads it off the line under this name and no other, so a header capturing it as anything else leaves the column empty on every FIX row it produces."
+      },
+      {
+        "id": 12,
+        "name": "level",
+        "type": "string",
+        "required": false,
+        "doc": "Severity spelling captured from the line header."
       }
     ],
     "schema-id": 0,
     "identifier-field-ids": [
-      11
+      3
     ]
   },
   "partition-spec": {
     "spec-id": 0,
     "fields": [
       {
-        "source-id": 4,
+        "source-id": 1,
         "field-id": 1000,
         "transform": "hour",
-        "name": "timepartition_hour"
+        "name": "currunix_hour"
       }
     ]
   },

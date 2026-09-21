@@ -13,79 +13,64 @@ from rekep.convert import Convertible
 from rekep.fields import (
     HOUR,
     Field,
-    derived_from,
     field_options,
     partition_key,
     primary_key,
 )
-from rekep.times import ULBRIDGE_ROWHEADER, datetime_of
+from rekep.times import EPOCH, ULBRIDGE_ROWHEADER, datetime_of
 
 
 @scalar(slots=True)
 class Message(Convertible):
     """One ULBridge text line, before the FIX codec reads its body.
 
-    Every column but `timepartition` is named for what the native text read
-    already calls it, and the bridge's own captures are named for the FIX
-    columns they fill -- so a stored row goes on through the codec without one
-    spelling being translated into another.
+    Every column is one the native text read already states, under the name
+    the read states it with: the event it settles over the line, the two
+    columns its traversal names, the line itself, and the bridge's own
+    captures named for the fields a parse fills from them -- so a stored row
+    goes on through the codec without one spelling being translated into
+    another, and nothing here is a second reading of a fact the read has
+    already settled.
     """
 
-    sourceurl: str = ""
-    """Canonical URI of the source text object, stored only on the raw line."""
+    currunix: Annotated[datetime.datetime, partition_key(HOUR)] = EPOCH
+    """When the line happened, as the native text read settles it.
 
-    rownum: int = 0
-    """1-based physical line number within the source object."""
+    The event clock of the graph, and what `logs.messages` is laid out by:
+    the hour of it and nothing beside it, exactly as both FIX tables are laid
+    out by the hour of theirs. The row already carries the instant, so a
+    materialized copy of it would be a second owner of one fact.
 
-    timestamp: datetime.datetime | None = None
-    """UTC instant captured from the line header, at microsecond resolution.
+    It is the clock the bridge stamped the *line* with, read off the header's
+    `mtime` capture, so it dates no message and never reaches one. What dates
+    a message is what the message states -- the `SendingTime` it carries,
+    else the one instant the codec is pinned with, which the walk then
+    replaces by the `TransactTime` it states -- so the same bytes logged at
+    three hops settle on one instant however each line was stamped.
 
-    Capture context, and only that: it is the clock the bridge stamped the
-    *line* with, so it dates no message and never reaches one. What dates a
-    message is what the message states -- the `SendingTime` it carries, else
-    the one instant the codec is pinned with, which the walk then replaces by
-    the `TransactTime` it states -- so the same bytes logged at three hops
-    settle on one instant however each line was stamped.
+    A line the header could not date settles at `EPOCH`, the same pin an
+    undated message takes in `fix.bronze`: one hour of one partition, read
+    back into every window, and the same instant on every re-read of those
+    bytes -- which is what keeps the identity below a replay answers again.
     """
 
-    timepartition: Annotated[
-        datetime.datetime | None,
-        partition_key(HOUR),
-        derived_from("timestamp"),
-    ] = None
-    """Timestamp partitioned by its UTC hour in Iceberg.
+    curruuid: Annotated[bytes, field_options(dtype=pyarrow.binary(16))] = bytes(16)
+    """The line's own identity, as the native text read states it.
 
-    `logs.messages` is laid out by it. FIX tables omit the capture clock and
-    partition by the native event instant `currunix`.
+    A text line is an event of the graph, and the read stamps every row with
+    the columns an event opens with; this is the one of them a message keeps.
+    A message parsed out of a stored line names it here and nowhere else --
+    as its `srcuuids`, exact provenance rather than an identity recomputed
+    from the bytes -- so a FIX row joins the line it was read from on this
+    column, whatever the line was stamped with.
+
+    Not the key: identical bytes are one row on `currhashcode`, and the
+    identity a table keeps is the line that landed. A UUIDv7 over the instant
+    above and the code below, held as sixteen ordered bytes rather than the
+    `uuid` Iceberg would store, for the reason the FIX row gives. A row made
+    by hand rather than by the read states the sixteen zero bytes, which name
+    no line.
     """
-
-    threadId: int | None = None
-    """Bridge thread identifier captured from the line header."""
-
-    msgsessionid: str | None = None
-    """Bridge session instance the line was handled on, filling `msgsessionid` (65032).
-
-    The session *instance*, which is the bracket's own first part -- never
-    what the message says about the counterparty session it names. Two
-    connections to one counterparty are two instances, so they are two facts,
-    and the event's own capture record holds this one.
-    """
-
-    msgctxid: str | None = None
-    """Bridge message-context identifier, filling `msgctxid` (65008)."""
-
-    msgseqnum: int | None = None
-    """Bridge sequence number, filling `MsgSeqNum` (34) where a frame stated none."""
-
-    pluginid: str | None = None
-    """Bridge plugin that wrote the line.
-
-    Stored only on the raw line. The native FIX field `msgpluginid` (65009)
-    has its own meaning; this differently named capture does not fill it.
-    """
-
-    level: str | None = None
-    """Severity spelling captured from the line header."""
 
     currhashcode: Annotated[
         int,
@@ -113,78 +98,108 @@ class Message(Convertible):
     `rekep.fields.stored_arrow_reader`, and half of them read back negative.
     """
 
-    body: bytes = b""
+    sourceurl: str = ""
+    """Canonical URI of the source text object, stored only on the raw line."""
+
+    rownum: int = 0
+    """1-based physical line number within the source object."""
+
+    body: str = ""
     """The whole line as the native read retains it, the row header included.
 
-    The captures above are read off it, not cut out of it. `logs.messages` is
-    where the bytes live and the only place, and so is the code beside them:
-    neither FIX table holds either, because a row there is an event and both
-    of these are one line's. A FIX row names the raw line's `curruuid` in
-    `srcuuids`; capture details are looked up on that raw identity.
+    Text, because that is what the read decoded it to. The captures below are
+    read off it, not cut out of it. `logs.messages` is where the line lives
+    and the only place, and so is the code beside it: neither FIX table holds
+    either, because a row there is an event and both of these are one line's.
+    A FIX row names the raw line's `curruuid` in `srcuuids`; capture details
+    are looked up on that raw identity.
     """
 
-    curruuid: Annotated[bytes | None, field_options(dtype=pyarrow.binary(16))] = None
-    """The line's own identity, as the native text read states it.
+    threadId: int | None = None
+    """Bridge thread identifier captured from the line header."""
 
-    A text line is an event of the graph, and the read stamps every row with
-    the sixteen columns an event opens with; this is the one of them a
-    message keeps. A message parsed out of a stored line names it here and
-    nowhere else -- as its `srcuuids`, exact provenance rather than an
-    identity recomputed from the bytes -- so a FIX row joins the line it was
-    read from on this column, whatever the line was stamped with. Not the
-    key: identical bytes are one row on `currhashcode`, and the identity a
-    table keeps is the line that landed. Sixteen ordered bytes rather than the
-    `uuid` Iceberg would store, for the reason the FIX row gives.
+    msgsessionid: str | None = None
+    """Bridge session instance the line was handled on, filling `msgsessionid` (65032).
 
-    Declared last and nullable, because a table that already exists takes a
-    new column only at its end and only as an optional one: an Iceberg schema
-    cannot add a required column to rows that never held it. The read fills
-    it on every row; a row that states none -- one made by hand, or one a
-    table held before this column -- leaves the parse to recompute the
-    identity from the line's bytes and instant, which is equal only while
-    those are.
+    The session *instance*, which is the bracket's own first part -- never
+    what the message says about the counterparty session it names. Two
+    connections to one counterparty are two instances, so they are two facts,
+    and the event's own capture record holds this one.
     """
+
+    msgctxid: str | None = None
+    """Bridge message-context identifier, filling `msgctxid` (65008)."""
+
+    msgseqnum: int | None = None
+    """Bridge sequence number, filling `MsgSeqNum` (34) where a frame stated none."""
+
+    msgpluginid: str | None = None
+    """Bridge plugin that wrote the line, filling `msgpluginid` (65009).
+
+    The crate's own field: the plugin that logged the line inside a bridge,
+    as the bridge names it. A parse reads it off the line under this name and
+    no other, so a header capturing it as anything else leaves the column
+    empty on every FIX row it produces.
+    """
+
+    level: str | None = None
+    """Severity spelling captured from the line header."""
 
     def __post_init__(self) -> None:
         """Normalize the raw scalar values once."""
         self.sourceurl = str(self.sourceurl)
         self.rownum = int(self.rownum)
-        if self.timestamp is not None:
-            timestamp = datetime_of(self.timestamp)
-            if timestamp is None:
-                raise ValueError(f"timestamp={self.timestamp!r} is not an instant")
-            self.timestamp = timestamp
+        currunix = datetime_of(self.currunix)
+        if currunix is None:
+            raise ValueError(f"currunix={self.currunix!r} is not an instant")
+        self.currunix = currunix
+        if not isinstance(self.curruuid, bytes):
+            self.curruuid = bytes(self.curruuid)
         if self.threadId is not None:
             self.threadId = int(self.threadId)
         if self.msgseqnum is not None:
             self.msgseqnum = int(self.msgseqnum)
-        if isinstance(self.body, str):
-            self.body = self.body.encode("utf-8")
-        elif not isinstance(self.body, bytes):
-            self.body = bytes(self.body)
-        if self.curruuid is not None and not isinstance(self.curruuid, bytes):
-            self.curruuid = bytes(self.curruuid)
+        if isinstance(self.body, (bytes, bytearray, memoryview)):
+            # As the read decodes a line: a byte no encoding explains is
+            # replaced rather than raised on, so a row built from the same
+            # bytes by hand is the row the read would have answered.
+            self.body = bytes(self.body).decode("utf-8", "replace")
+        elif not isinstance(self.body, str):
+            self.body = str(self.body)
+
+    #: The capture that fills no column of its own: the record clock, which
+    #: the read settles `currunix` from rather than storing twice. A header
+    #: names it `mtime` because that is the column the native read fills with
+    #: it, and this contract keeps the settled instant alone.
+    RECORD_CLOCK = "mtime"
 
     #: What a row header does not fill, because something else does: the two
-    #: the traversal names, the payload it frames, and the identity and code
-    #: the read states over the line.
-    READ_COLUMNS = frozenset({"sourceurl", "rownum", "body", "curruuid", "currhashcode"})
+    #: the traversal names, the payload it frames, and the event the read
+    #: settles over the line.
+    READ_COLUMNS = frozenset(
+        {"sourceurl", "rownum", "body", "currunix", "curruuid", "currhashcode"}
+    )
 
     @classmethod
     def captures(cls) -> frozenset[str]:
         """The columns a row header is expected to capture into this contract.
 
-        Every member this class declares except the five the read itself
-        fills and the ones a field apply derives -- and a derived member says
-        so, by naming the columns it is derived from, so adding one does not
-        mean remembering to exclude it here.
+        Every member this class declares except the ones the read itself
+        settles and the ones a field apply derives -- and a derived member
+        says so, by naming the columns it is derived from, so adding one does
+        not mean remembering to exclude it here. The record clock is the one
+        capture no column holds, because the column it fills is the settled
+        `currunix` and not a second copy of the reading.
         """
         return frozenset(
-            member.name
-            for member in cls.into_field()
-            if member.name not in cls.READ_COLUMNS
-            and not member.partition.sources
-            and not member.digest.sources
+            {cls.RECORD_CLOCK}
+            | {
+                member.name
+                for member in cls.into_field()
+                if member.name not in cls.READ_COLUMNS
+                and not member.partition.sources
+                and not member.digest.sources
+            }
         )
 
     @classmethod
@@ -222,10 +237,11 @@ class Message(Convertible):
 
         `rowheader` reads a bridge that writes these same facts in a layout of
         its own: a different clock precision, a bracket ordered differently, a
-        level this logger omits. What it may not do is rename them. The
-        columns are the contract, and a capture named anything else is dropped
-        in silence by the read -- a whole column of nulls and no error -- so
-        the names are checked here, where the mismatch is still legible.
+        level this logger omits. What it may not do is rename them. The names
+        the read fills from are the contract, and a capture named anything
+        else is dropped in silence -- a whole column of nulls and no error, or
+        a clock that settles nothing -- so they are checked here, where the
+        mismatch is still legible.
         """
         options = TextOptions()
         options.start_rownum = 1
@@ -240,7 +256,7 @@ class Message(Convertible):
 
     @classmethod
     def _check_captures(cls, options: TextOptions) -> None:
-        """Refuse a header whose captures are not this contract's columns."""
+        """Refuse a header whose captures are not the ones this read fills from."""
         declared = cls.captures()
         found = frozenset(options.capture_names)
         if found == declared:
@@ -248,11 +264,15 @@ class Message(Convertible):
         unknown = sorted(found - declared)
         missing = sorted(declared - found)
         said = [f"captures nothing for {', '.join(missing)}" if missing else ""]
-        said += [f"captures {', '.join(unknown)}, which no column holds" if unknown else ""]
+        said += [
+            f"captures {', '.join(unknown)}, which this read fills nothing from"
+            if unknown
+            else ""
+        ]
         raise ValueError(f"row header {' and '.join(part for part in said if part)}")
 
     @classmethod
     def from_text(cls, text: str | bytes, **declared: Any) -> Self:
         """Build one raw record without interpreting its body."""
-        declared["body"] = text.encode("utf-8") if isinstance(text, str) else bytes(text)
+        declared["body"] = text.decode("utf-8", "replace") if isinstance(text, bytes) else text
         return cls(**declared)
