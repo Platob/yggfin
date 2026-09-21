@@ -5,7 +5,7 @@ the published tables. Runtime constructors remain the source of truth.
 
 | snapshot | runtime constructor | tables | stored columns |
 | --- | --- | --- | ---: |
-| `rekep/message.json` | `Message.into_field()` | `logs.messages` | 13 |
+| `rekep/message.json` | `Message.into_field()` | `logs.messages` | 12 |
 | `rekep/fixmsg.json` | `fix_message_field()` | `fix.bronze`, `fix.silver` | 123 |
 
 `fixmsg.json` is named **FixMsg**. It is generated from the live FIX registry,
@@ -15,10 +15,12 @@ output and is never edited as an alternate schema.
 ## Where the FIX row comes from
 
 The native FIX row has 123 columns. Parse, storage, reconstruction, and
-lifecycle all use that exact **FixMsg** shape. Capture columns such as
-`sourceurl`, `rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`,
-`level`, and `body` belong only to `logs.messages`; FixMsg also contains no
-lowercase `threadid`. A FIX row reaches its raw
+lifecycle all use that exact **FixMsg** shape. `sourceurl`, `rownum`,
+`threadId`, `level`, and `body` belong only to `logs.messages`; FixMsg also
+contains no lowercase `threadid`. The bridge's `msgsessionid`, `msgctxid`,
+`msgseqnum`, and `msgpluginid` are not capture columns at all -- they are
+native FixMsg fields a raw line fills, so they stand on both shapes under one
+spelling and nothing translates between them. A FIX row reaches its raw
 line through `srcuuids`, whose values join to `logs.messages.curruuid`.
 
 The native row contains 29 crate fields. These include `msgcat` (`MsgCat`), the seven
@@ -47,11 +49,11 @@ result with the checked-in snapshot.
 
 ```bash
 uv run --project python rekep fields dump \
-  --name message \
+  --pyclass rekep.text:Message \
   --target schemas/rekep/message.json
 
 uv run --project python rekep fields dump \
-  --name fixmsg \
+  --pyclass rekep.fix:fix_message_field \
   --target schemas/rekep/fixmsg.json
 ```
 

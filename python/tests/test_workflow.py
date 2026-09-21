@@ -529,9 +529,10 @@ def test_messages_stream_through_hour_partitions(
         assert [(field.name, str(field.transform)) for field in spec.fields] == [
             ("currunix_hour", "hour")
         ]
-        assert {
-            row["partition"]["currunix_hour"] for row in messages.data_files().to_pylist()
-        } == {int(first.timestamp() // 3600), int(second.timestamp() // 3600)}
+        assert {row["partition"]["currunix_hour"] for row in messages.data_files().to_pylist()} == {
+            int(first.timestamp() // 3600),
+            int(second.timestamp() // 3600),
+        }
 
         rows = []
         for instant in (first, second):

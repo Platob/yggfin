@@ -22,7 +22,7 @@ the partition it is replacing.
 The bundled registry produces 123 native columns. Parsing stored capture rows,
 writing bronze, reconstructing messages, and walking silver all use this same
 shape. `sourceurl`, `rownum`, `threadId`, `level` and `body` are raw to
-`logs.messages` and stay there; the bridge's other captures -- `msgsessionid`,
+`logs.messages` and stay there; the header's other four -- `msgsessionid`,
 `msgctxid`, `msgseqnum` and `msgpluginid` -- are columns of this shape too,
 which is why a raw line fills them under the names it already stored.
 

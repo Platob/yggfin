@@ -163,14 +163,18 @@ The current FIX contract creates a new table with its 123 native columns.
 `merge_schema=True` cannot retire columns from an existing table, so before
 replaying an older FIX table use PyIceberg `table.update_schema()` to delete
 `sourceurl`, `rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`,
-and `level`; the raw values remain in `logs.messages`.
+and `level`. `sourceurl`, `rownum`, `threadId` and `level` are raw values and
+remain in `logs.messages`; the other three are retired outright, because a
+line's instant is `currunix` and the plugin it names is `msgpluginid`, a native
+FixMsg column the parse fills.
 
 Before either write, the native `Field` applies its declarations in dependency
-order: **cast → derived partition columns → digest holders**. `logs.messages`
-lays out on `timepartition` alone -- the hour transform over the capture
-`timestamp` -- and both FIX tables on `currunix` alone, the hour transform
-over the event's own instant; none materializes a second layout column
-beside it.
+order: **cast → derived partition columns → digest holders**. All three tables
+lay out on `currunix` alone, the hour transform over the event's own instant --
+what the message stated on a FIX row, what the read settled over the line on a
+raw one -- and none materializes a second layout column beside it. The
+`Message` contract derives nothing at all: every column of it is one the read
+already states.
 
 Three declarations look similar and are not:
 
@@ -249,12 +253,15 @@ never in committed task documents.
 
 ## Message schema replacement
 
-The current raw contract uses `sourceurl`, `rownum`, the ULBridge header
-fields, the line's own `currhashcode` and `curruuid`, and a derived
-`timepartition` with an Iceberg `hour` transform. Recreate an older messages
-table from `Message.into_field()` and
-reingest its source captures; rekep carries no legacy name, timestamp-type,
-digest-name, or partition-layout compatibility path.
+The current raw contract is the generic event layout: `currunix`, `curruuid`
+and `currhashcode` as the read states them, `sourceurl` and `rownum` from the
+traversal, the line itself, and the ULBridge header captures beside them. It
+derives nothing, and the table is laid out by the hour of `currunix` alone.
+Recreate an older messages table from `Message.into_field()` and reingest its
+source captures: three columns are gone, a required column is added and every
+field id is renumbered, so there is no additive widening to evolve into --
+and rekep carries no legacy name, timestamp-type, digest-name, or
+partition-layout compatibility path.
 
 ## Maintenance
 

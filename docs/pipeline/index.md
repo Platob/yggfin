@@ -6,7 +6,7 @@ one build that derives business products from the last of them:
 ```mermaid
 flowchart LR
     U["local file, directory, or S3 prefix"] --> T["parse_messages"]
-    T --> M[("logs.messages<br/>13 columns")]
+    T --> M[("logs.messages<br/>12 columns")]
     M --> F["parse_fix_bronze<br/>parse"]
     R[["bundled dictionary<br/>7,778 definitions"]] -.types.-> F
     F --> X[("fix.bronze<br/>123 columns")]
@@ -54,9 +54,10 @@ uv run --project python rekep task run \
 ```
 
 The three ingestion tasks cover one window, the last day unless `start` and
-`end` say otherwise -- the first two off the capture clock, the third off the
-event clock; the sample under `data/capture` is dated, so the quick start
-names its day. Default locations are:
+`end` say otherwise -- all three off `currunix`, the event clock, which the
+text read settles over a line and the codec settles over a message; the sample
+under `data/capture` is dated, so the quick start names its day. Default
+locations are:
 
 ```text
 input       file:data/capture
@@ -96,14 +97,15 @@ the command line.
 
 Every ingestion task covers one window, `[start, end)`: the last day when its
 document names neither bound, and exactly the scheduler's data interval under
-Airflow. `parse_messages` and `parse_fix_bronze` read it off the capture
-clock, and a line with no clock is in every window. `parse_fix_silver` reads
-the previous hour plus the job window in `currunix, seqnum, curruuid` order,
-including unresolved epoch rows. The prior hour is context only; output is
-filtered to the job window plus still-undated rows, and future expiry rows are
-excluded. Each writer replaces what its window carries on its field-declared primary key:
-the first run lands the window's rows, and a replay of the same window reads
-the same rows, writes them again, and leaves the table holding each once.
+Airflow. `parse_messages` and `parse_fix_bronze` read it off `currunix`, and a
+line the header could not date sits at the epoch pin, which every window
+covers. `parse_fix_silver` reads the previous hour plus the job window in
+`currunix, seqnum, curruuid` order, including unresolved epoch rows. The prior
+hour is context only; output is filtered to the job window plus still-undated
+rows, and future expiry rows are excluded. Each writer replaces what its
+window carries on its field-declared primary key: the first run lands the
+window's rows, and a replay of the same window reads the same rows, writes
+them again, and leaves the table holding each once.
 `parse_fix_bronze` always reads the stored raw product, so dictionary and
 parsing changes are replayed by running the window again without touching
 capture storage; `parse_fix_silver` reads `fix.bronze` in turn, so a change

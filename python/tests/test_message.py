@@ -258,8 +258,7 @@ def test_a_header_of_its_own_reads_a_bridge_that_writes_the_clock_differently() 
     [
         (
             ULBRIDGE_ROWHEADER.replace(r"(?P<level>[A-Z]+)", r"(?P<severity>[A-Z]+)"),
-            "captures nothing for level and captures severity, "
-            "which this read fills nothing from",
+            "captures nothing for level and captures severity, which this read fills nothing from",
         ),
         (
             ULBRIDGE_ROWHEADER.replace(r" \((?P<level>[A-Z]+)\) ", r" \([A-Z]+\) "),

@@ -34,13 +34,13 @@ order.
 
 ## Raw before interpreted
 
-`logs.messages` preserves exact line bytes. `fix.bronze` interprets every line
-and stores lifted columns plus residual `fixentries`, under the
-`nofixentries` that counts them. Unknown and unrepresentable pairs remain
-residual; successfully lifted values are not duplicated. `fix.silver`
-restates those canonical rows with their chains walked. A parser update is
-replayed from `logs.messages`; a lifecycle change replays the semantic bronze
-rows without parsing the capture again.
+`logs.messages` keeps the whole line as text, because that is what the read
+decoded it to. `fix.bronze` interprets every line and stores lifted columns
+plus residual `fixentries`, under the `nofixentries` that counts them. Unknown
+and unrepresentable pairs remain residual; successfully lifted values are not
+duplicated. `fix.silver` restates those canonical rows with their chains
+walked. A parser update is replayed from `logs.messages`; a lifecycle change
+replays the semantic bronze rows without parsing the capture again.
 
 ## Replays are ordinary runs
 

@@ -20,7 +20,7 @@ assert field["currhashcode"].iceberg["primary_key"] == "true"
 | --- | --- |
 | `primary_key()` | marks a non-null Iceberg identity column |
 | `partition_key("hour")` | declares an Iceberg transform |
-| `derived_from("timestamp")` | names the source of a computed field |
+| `derived_from("at")` | names the source of a computed field |
 | `digest_key(["body"])` | declares a digest holder and exact inputs |
 | `sort_key("desc")` | declares physical sort intent |
 

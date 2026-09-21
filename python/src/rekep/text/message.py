@@ -265,9 +265,7 @@ class Message(Convertible):
         missing = sorted(declared - found)
         said = [f"captures nothing for {', '.join(missing)}" if missing else ""]
         said += [
-            f"captures {', '.join(unknown)}, which this read fills nothing from"
-            if unknown
-            else ""
+            f"captures {', '.join(unknown)}, which this read fills nothing from" if unknown else ""
         ]
         raise ValueError(f"row header {' and '.join(part for part in said if part)}")
 

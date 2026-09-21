@@ -3,7 +3,7 @@
 `logs.messages` is the replay boundary. One row is one physical line from one
 leaf object, with the matched ULBridge header typed and the whole line kept as
 the read decoded it -- and it is keyed on `currhashcode`, the content code the
-read states over those bytes, so identical lines are one row whatever session
+read states over that line, so identical lines are one row whatever session
 carried them and however often the capture is re-read.
 
 ## Complete schema

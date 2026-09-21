@@ -124,10 +124,10 @@ assert dated(read) == 10
 ```
 
 What a header may change is the layout. What it may not change is the names:
-the captures above are the contract, and a read drops one the contract does
-not name without a word -- a table that lands complete, keyed, and empty down
-one column. So the names are checked where the mismatch is still legible, and
-a header that renames or omits one is refused by name:
+the names the read fills from are the contract, and a capture named anything
+else is dropped in silence -- a whole column of nulls and no error, or a clock
+that settles nothing. So the names are checked where the mismatch is still
+legible, and a header that renames or omits one is refused by name:
 
 ```python
 from rekep import Message
@@ -138,7 +138,7 @@ try:
     Message.text_options(renamed)
 except ValueError as refusal:
     assert "captures nothing for level" in str(refusal)
-    assert "captures severity, which no column holds" in str(refusal)
+    assert "captures severity, which this read fills nothing from" in str(refusal)
 ```
 
 `Message.captures()` is the set it is checked against, stated by the contract
@@ -170,8 +170,8 @@ the table is laid out by -- falls in `[start, end)`, and those at the epoch
 pin, where a header that could not date a line leaves it. The pin is in every
 window, so a header that did not match loses no line. The window is the last
 day, ending at the instant the run starts, when the document names neither
-bound; `start` and `end` read the way every instant here does, and
-`end` naming a whole day means the end of that day.
+bound; `start` and `end` read the way every instant here does, and `end`
+naming a whole day means the end of that day.
 
 ```python
 from rekep.times import window_of

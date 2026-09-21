@@ -49,16 +49,18 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   physical-line batching.
 - A raw text row names its source only through Yggdryl `sourceurl` and
   `rownum`.
-- Every capture a row header declares is named for the column it fills, so
-  `capture_names` alone tells the codec which bracket part is which. Never map
-  a capture spelling onto a tag.
+- Every capture a row header declares is named for what the native read fills
+  from it -- a column for each of the bracket's own facts, and the settled
+  `currunix` for `mtime`, the record clock -- so `capture_names` alone tells
+  the codec which bracket part is which. Never map a capture spelling onto a
+  tag.
 - `ULBRIDGE_ROWHEADER` is the default and the only one spelled here. A bridge
   writing the same facts in a layout of its own is read by naming its header
   in the task document, never by a second constant: the layout is a parameter
   and the capture names are the contract. `Message.text_options` refuses a
-  header that renames or omits one, because the read drops a capture no column
-  holds in silence and the table lands complete, keyed, and empty down one
-  column.
+  header that renames or omits one, because the read drops a capture it fills
+  nothing from in silence -- a table that lands complete, keyed and empty down
+  one column, or one whose clock settled nothing.
 - Streams open one leaf at a time with bounded transport read-ahead and
   row-bounded batches. One record is unbounded until Yggdryl provides an
   error-on-overflow byte limit that preserves exact bodies.
@@ -107,10 +109,14 @@ fix.silver     -> build_dbt        -> orders.events, orders.current, executions.
 Each task directory contains one Marimo application beside its JSON document.
 `parse_messages` passes `filesystem` to `IOBase.from_uri`, frames each line
 under the `rowheader` its document names, applies `Message.into_field()` to
-each batch, keeps the lines whose `timepartition` falls in the run's window,
+each batch, keeps the lines whose `currunix` falls in the run's window,
 and writes one schema-bearing reader directly to Iceberg. The window is
 `[start, end)`; a task given neither takes the last day up to now, and a run
-over a window replaces what an earlier run of it landed. `logs.messages` is
+over a window replaces what an earlier run of it landed. `currunix` is the
+instant the read settles over the line, read off the header's `mtime` capture,
+and a line the header could not date settles at `EPOCH`, which every window
+covers -- so a header that matched nothing loses no line, and the table is laid
+out by the hour of that instant and nothing beside it. `logs.messages` is
 keyed on `currhashcode`, the content code the native read states over the
 exact line bytes, so identical lines are one row whatever session carried
 them; nothing here computes a digest beside it. A raw text row names its source
@@ -127,10 +133,11 @@ order and no other:
 parse -> fix.bronze, lifecycle -> fix.silver
 ```
 
-`parse_fix_bronze` reads the stored rows of the same window off the capture
-clock and parses them, and only that: a bronze row is what the message
-implied about itself, and `seqnum`, `prevuuid` and `parentuuids` are empty on
-every one because nothing has walked yet. `parse_fix_silver` reads the previous
+`parse_fix_bronze` reads the stored rows of the same window off `currunix`,
+the event the read settled over each line, and parses them, and only that: a
+bronze row is what the message implied about itself, and `seqnum`, `prevuuid`
+and `parentuuids` are empty on every one because nothing has walked yet.
+`parse_fix_silver` reads the previous
 hour and the run's window from `fix.bronze`, including undated epoch rows, in
 `currunix, seqnum, curruuid` order. The previous hour is context only: it lands
 the job window plus still-undated rows and excludes future expiry events. This
@@ -144,8 +151,11 @@ the same place, the same lineage and the same state.
 
 Both tables use the native `fix_message_field(codec)` field directly,
 without a yggfin FIX model. Parse, storage, reconstruction,
-and lifecycle all use the same 123-column **FixMsg** contract. Capture columns
-and `body` remain only in `logs.messages`; `srcuuids` joins a FIX row to the raw
+and lifecycle all use the same 123-column **FixMsg** contract. `sourceurl`,
+`rownum`, `threadId`, `level` and `body` remain only in `logs.messages`; the
+bridge's `msgsessionid`, `msgctxid`, `msgseqnum` and `msgpluginid` are native
+FixMsg fields a raw line fills, so they stand on both shapes under one spelling
+and nothing translates between them. `srcuuids` joins a FIX row to the raw
 row's `curruuid`.
 The native row contains 29 crate fields; code vocabularies live centrally and
 fields reference them through `FIX:codeset`. `fixentries` is residual and does

@@ -21,9 +21,10 @@ uv run python benchmarks/bench_message.py
 
 *native* drains header-framed text batches without an output field. *`Message`*
 installs `Message.read_field()` on that same native reader, adding conversion
-to `timestamp[us, UTC]`, derivation of `timepartition`, and strict final
-verification. The contract path measured 9–10% below framing
-alone on this run; there is no Python row pass between them.
+to `timestamp[us, UTC]` and strict final verification. It derives nothing,
+because every column of the contract is one the read already states. The
+contract path measured 9–10% below framing alone on this run; there is no
+Python row pass between them.
 
 The remaining product work is [on the roadmap](../roadmap/index.md). Staging a
 remote object locally does not help ingestion: an earlier diagnostic that
@@ -44,7 +45,7 @@ snapshots.
 | 3 | 30,048 | 14,229 |
 
 ```text
-partition   timepartition_hour: hour → epoch hours 496296-496298
+partition   currunix_hour: hour → epoch hours 496296-496298
 pruning     a one-hour filter read 100,000 rows from one file, pruned two
 compression 1.82 MiB gzip → 12.58 MiB decoded, three batches
 ```
