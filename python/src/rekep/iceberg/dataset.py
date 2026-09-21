@@ -1751,6 +1751,16 @@ class IcebergDataset(Dataset):
         self, older_than: datetime.timedelta, *, metadata: bool
     ) -> list[tuple[Any, str, str, int]]:
         """`orphan_files`, as `(filesystem, path, location, size)`."""
+        bucket = self.store.table_bucket
+        if bucket is not None:
+            # A sweep is a listing of the store measured against this table's
+            # live set, and under an S3 Tables table bucket neither half is
+            # ours: the service writes and deletes files as it compacts, and
+            # the bucket behind a table is not one this account lists. So the
+            # ownership a sweep must settle cannot be settled here, and the
+            # answer is no files rather than a guess or an AccessDenied.
+            LOGGER.info("%s leaves its files to %s", self.identifier, bucket)
+            return []
         table = self.iceberg_table
         cutoff = datetime.datetime.now(UTC) - older_than
         # One live set guards every listing. `write.data.path` may overlap the

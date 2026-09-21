@@ -1,6 +1,12 @@
 """Iceberg: catalogs, tables as datasets, and the field projection behind them."""
 
-from rekep.iceberg.catalog import IcebergCatalog, IcebergNamespace
+from rekep.iceberg.catalog import (
+    S3_TABLES,
+    IcebergCatalog,
+    IcebergNamespace,
+    TableBucket,
+    table_bucket_of,
+)
 from rekep.iceberg.dataset import IcebergDataset, window_filter
 from rekep.iceberg.fields import (
     CONTRACT_KEYS,
@@ -23,6 +29,8 @@ __all__ = [
     "IcebergCatalog",
     "IcebergDataset",
     "IcebergNamespace",
+    "S3_TABLES",
+    "TableBucket",
     "derived_keys",
     "iceberg_contract",
     "iceberg_contract_field",
@@ -35,5 +43,6 @@ __all__ = [
     "partition_keys",
     "primary_keys",
     "sort_keys",
+    "table_bucket_of",
     "window_filter",
 ]

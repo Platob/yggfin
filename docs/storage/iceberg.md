@@ -252,6 +252,38 @@ Configure warehouse S3 behavior with standard catalog properties:
 Credentials belong in the provider chain or secret-backed `s3.*` properties,
 never in committed task documents.
 
+AWS S3 Tables is the one type rekep resolves itself, because a table bucket is
+served by an Iceberg REST catalog AWS hosts -- at two endpoints, which the
+`warehouse` chooses between, since each names the bucket its own way:
+
+| `warehouse` | endpoint | signed for |
+| --- | --- | --- |
+| `arn:aws:s3tables:<region>:<account>:bucket/<name>` | `https://s3tables.<region>.amazonaws.com/iceberg` | `s3tables` |
+| `<account>:s3tablescatalog/<name>` | `https://glue.<region>.amazonaws.com/iceberg` | `glue` |
+
+```json
+{
+  "catalog": {
+    "name": "production",
+    "properties": {
+      "type": "s3tables",
+      "warehouse": "arn:aws:s3tables:eu-west-1:123456789012:bucket/market-tables"
+    }
+  }
+}
+```
+
+The ARN states its region; the Glue name does not, so that one is stated as
+`rest.signing-region` or in the worker's AWS environment. Anything else the
+warehouse does not decide -- `uri` for a VPC or FIPS endpoint, another signing
+region, explicit `s3.*` settings -- is kept exactly as stated.
+`IcebergCatalog.table_bucket` answers the warehouse for such a catalog and
+`None` for every other, which is how maintenance knows whose files it is
+looking at and why a drop there purges. The extra is `rekep[s3tables]`:
+pyiceberg signs those REST calls through boto3. Which door to take, and what
+Lake Formation asks for behind the Glue one, is in
+[AWS S3 Tables](../pipeline/operations/deploy.md#aws-s3-tables).
+
 ## Message schema replacement
 
 The current raw contract is the generic event layout: `currunix`, `curruuid`
@@ -280,6 +312,10 @@ messages.optimize(
 
 Compaction rewrites small files. Cleanup expires old snapshots and removes only
 files unreachable from every retained ref after the configured grace period.
+Under an S3 Tables table bucket it removes nothing: the service writes and
+deletes those files as it compacts, and the bucket behind a table is not one
+the account lists, so no listing here can settle a file's ownership. The sweep
+reports `deleted: 0` and records which bucket keeps its files.
 The checked maintenance job exposes the same controls:
 
 ```bash
