@@ -10,6 +10,7 @@ from yggdryl import IOBase
 
 from rekep import Message
 from rekep.fix import fix_text_options
+from rekep.iceberg import primary_keys
 from rekep.text.message import decoded
 from rekep.times import EPOCH, ULBRIDGE_ROWHEADER
 
@@ -54,9 +55,10 @@ def test_message_declares_the_text_row_and_its_storage_columns() -> None:
     # second copy of it to partition by.
     assert field["currunix"].iceberg["partition_key"] == "hour"
     assert not [member.name for member in field if member.partition.sources]
-    # The key is the code the read states, not a digest computed beside it:
-    # this contract holds the type a table stores and `read_field` widens the
-    # one column the read answers unsigned.
+    assert primary_keys(field) == ["curruuid"]
+    # The content code is not a second identity. This contract holds the type
+    # a table stores and `read_field` widens the one column the read answers
+    # unsigned.
     assert not [member.name for member in field if member.digest.is_holder()]
     assert field["currhashcode"].into_arrow().type == pyarrow.int64()
     assert Message.read_field()["currhashcode"].into_arrow().type == pyarrow.uint64()

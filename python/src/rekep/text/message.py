@@ -91,7 +91,11 @@ class Message(Convertible):
     bytes -- which is what keeps the identity below a replay answers again.
     """
 
-    curruuid: Annotated[bytes, field_options(dtype=pyarrow.binary(16))] = bytes(16)
+    curruuid: Annotated[
+        bytes,
+        field_options(dtype=pyarrow.binary(16)),
+        primary_key(),
+    ] = bytes(16)
     """The line's own identity, as the native text read states it.
 
     A text line is an event of the graph, and the read stamps every row with
@@ -101,26 +105,22 @@ class Message(Convertible):
     from the bytes -- so a FIX row joins the line it was read from on this
     column, whatever the line was stamped with.
 
-    Not the key: identical bytes are one row on `currhashcode`, and the
-    identity a table keeps is the line that landed. A UUIDv7 over the instant
-    above and the code below, held as sixteen ordered bytes rather than the
-    `uuid` Iceberg would store, for the reason the FIX row gives. A row made
-    by hand rather than by the read states the sixteen zero bytes, which name
-    no line.
+    The only key of `logs.messages`; `currhashcode` remains content metadata.
+    Held as sixteen ordered bytes rather than the `uuid` Iceberg would store,
+    for the reason the FIX row gives. A row made by hand rather than by the
+    read states the sixteen zero bytes, which name no line.
     """
 
     currhashcode: Annotated[
         int,
         field_options(dtype=pyarrow.int64()),
-        primary_key(),
     ] = 0
     """The line's own content code, as the native text read states it.
 
-    The key of `logs.messages`. A text line is an event of the graph and the
-    read codes its content, so identical bytes answer one code whatever
-    session carried them, whichever object they were read from and however
-    often a capture is re-read -- and nothing here computes a second digest
-    beside the one the read already states.
+    A text line is an event of the graph and the read codes its content, so
+    identical bytes answer one code -- and nothing here computes a second
+    digest beside the one the read already states. It is content metadata,
+    not table identity; `curruuid` is the only key.
 
     It is the line's code and not a message's. A FIX row's `currhashcode`
     covers the settled event -- its facts, its text, its metadata and its

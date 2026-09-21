@@ -2,17 +2,17 @@
 
 `logs.messages` is the replay boundary. One row is one physical line from one
 leaf object, with the matched ULBridge header typed and the whole line kept as
-the read decoded it -- and it is keyed on `currhashcode`, the content code the
-read states over that line, so identical lines are one row whatever session
-carried them and however often the capture is re-read.
+the read decoded it. Its sole key is `curruuid`, the source-line identity the
+native read states; `currhashcode` remains the exact-content code for audit and
+comparison, not a second identity declaration.
 
 ## Complete schema
 
 | # | column | Arrow type | null | contract |
 | -: | --- | --- | :---: | --- |
 | 1 | `currunix` | `timestamp[us, UTC]` | no | the instant the read settles over the line; Iceberg hour partition |
-| 2 | `curruuid` | `fixed_size_binary[16]` | no | the line's own identity as the read states it; a message parsed out of the line names it as its `srcuuids` |
-| 3 | `currhashcode` | `int64` | no | the line's own content code, as the read states it; a table stores the same eight bytes signed; the primary key |
+| 2 | `curruuid` | `fixed_size_binary[16]` | no | the only primary key; the line's own identity as the read states it; a parsed message names it as its `srcuuids` |
+| 3 | `currhashcode` | `int64` | no | the line's own content code, as the read states it; a table stores the same eight bytes signed |
 | 4 | `sourceurl` | `string` | no | canonical source URI of this raw line |
 | 5 | `rownum` | `int64` | no | 1-based physical line number |
 | 6 | `body` | `string` | no | the whole line as retained, row header included |
@@ -31,8 +31,9 @@ Nothing above is derived from anything else. The layout is the hour of
 theirs, and the row already carries that instant, so no column beside it holds
 a second copy of the fact. `curruuid` is Iceberg field 2 and required, because
 the read stamps it on every row it produces. A `logs.messages` written under
-the older shape is not evolved into this one -- three columns gone, a required
-column added, every field id renumbered -- it is created.
+the older shape is not evolved into this one -- whether its columns predate
+the native event layout or only its identifier is still `currhashcode` -- it
+is recreated and reingested from the capture.
 
 `sourceurl`, `rownum`, `msgthreadid`, `loglevel` and `body` are raw to this
 product alone. `msgsessionid`, `msgctxid`, `msgseqnum` and `msgpluginid` are
@@ -103,10 +104,13 @@ eight bytes land in the stored `int64`.
 - Only the lines whose `currunix` falls in the run's window are written; a line
   the header could not date sits at the epoch pin, which is in every window, so
   no window loses it.
-- The writer replaces on `currhashcode`, the code of the whole line, within
-  the line's hour partition, so a line printed twice inside one hour is one row
-  and a replay of a window lands the same lines once. Over the bundled capture,
-  144 lines are 141 rows: 3 repeat another line byte for byte.
+- The writer replaces on `curruuid` within the line's hour partition. A new
+  key takes the append commit path; a replay rewrites only files that contain
+  a matching key.
+- Native 0.1.8 gives the bundled capture's three exact repeated lines the same
+  legacy UUID, so 144 physical lines currently land as 141 rows. The next
+  native identity includes source and physical sequence, making those UUIDs
+  distinct without turning `currhashcode` into a key.
 - This `currhashcode` is the code of the *line* and not the message's own,
   which covers the settled event and is a column of both FIX tables. Two
   different lines can state one message, so the two codes answer different

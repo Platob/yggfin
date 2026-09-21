@@ -328,6 +328,12 @@ held it -- so drop the raw table before the replay rather than looking for a
 migration of it. The capture is what it was read from, and the capture is
 still there.
 
+The same recreate-and-replay rule applies to the immediately preceding shape
+whose columns already match but whose identifier field is `currhashcode`.
+Iceberg schema merge does not replace identifier fields: the current table has
+`curruuid` as its sole identifier, while `currhashcode` is ordinary content
+metadata.
+
 Then replay each window through `parse_messages`, `parse_fix_bronze` and
 `parse_fix_silver`, in that order, and drop the retired FIX table. The first
 run creates `logs.messages` in the shape above, so the raw table is created

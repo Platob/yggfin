@@ -14,14 +14,14 @@
         "name": "curruuid",
         "type": "fixed[16]",
         "required": true,
-        "doc": "The line's own identity, as the native text read states it. A text line is an event of the graph, and the read stamps every row with the columns an event opens with; this is the one of them a message keeps. A message parsed out of a stored line names it here and nowhere else -- as its `srcuuids`, exact provenance rather than an identity recomputed from the bytes -- so a FIX row joins the line it was read from on this column, whatever the line was stamped with. Not the key: identical bytes are one row on `currhashcode`, and the identity a table keeps is the line that landed. A UUIDv7 over the instant above and the code below, held as sixteen ordered bytes rather than the `uuid` Iceberg would store, for the reason the FIX row gives. A row made by hand rather than by the read states the sixteen zero bytes, which name no line."
+        "doc": "The line's own identity, as the native text read states it. A text line is an event of the graph, and the read stamps every row with the columns an event opens with; this is the one of them a message keeps. A message parsed out of a stored line names it here and nowhere else -- as its `srcuuids`, exact provenance rather than an identity recomputed from the bytes -- so a FIX row joins the line it was read from on this column, whatever the line was stamped with. The only key of `logs.messages`; `currhashcode` remains content metadata. Held as sixteen ordered bytes rather than the `uuid` Iceberg would store, for the reason the FIX row gives. A row made by hand rather than by the read states the sixteen zero bytes, which name no line."
       },
       {
         "id": 3,
         "name": "currhashcode",
         "type": "long",
         "required": true,
-        "doc": "The line's own content code, as the native text read states it. The key of `logs.messages`. A text line is an event of the graph and the read codes its content, so identical bytes answer one code whatever session carried them, whichever object they were read from and however often a capture is re-read -- and nothing here computes a second digest beside the one the read already states. It is the line's code and not a message's. A FIX row's `currhashcode` covers the settled event -- its facts, its text, its metadata and its entry tree -- so two lines that state one message share that code and not this one, which is why a FIX row holds neither this column nor the bytes it was read from. A content code is unsigned and the read states it that way. Iceberg's only sixty-four-bit integer is signed, so this contract declares the type a table holds and `read_field` widens it back for the read alone: the same eight bytes cross the boundary through `rekep.fields.stored_arrow_reader`, and half of them read back negative."
+        "doc": "The line's own content code, as the native text read states it. A text line is an event of the graph and the read codes its content, so identical bytes answer one code -- and nothing here computes a second digest beside the one the read already states. It is content metadata, not table identity; `curruuid` is the only key. It is the line's code and not a message's. A FIX row's `currhashcode` covers the settled event -- its facts, its text, its metadata and its entry tree -- so two lines that state one message share that code and not this one, which is why a FIX row holds neither this column nor the bytes it was read from. A content code is unsigned and the read states it that way. Iceberg's only sixty-four-bit integer is signed, so this contract declares the type a table holds and `read_field` widens it back for the read alone: the same eight bytes cross the boundary through `rekep.fields.stored_arrow_reader`, and half of them read back negative."
       },
       {
         "id": 4,
@@ -89,7 +89,7 @@
     ],
     "schema-id": 0,
     "identifier-field-ids": [
-      3
+      2
     ]
   },
   "partition-spec": {

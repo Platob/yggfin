@@ -189,14 +189,15 @@ Under Airflow the operator hands each run its data interval as `start` and
 ## Write step
 
 The task opens `logs.messages` with `Message.into_field()` and replaces the
-reader's rows on `currhashcode`, the code the read states over the exact line
-bytes: a stored row
+reader's rows on `curruuid`, the source-line identity: a stored row
 carrying one of the window's keys is taken out and the window's row lands, in
-one commit per bounded chunk. A missing table is created. A replay of the
-window lands the same rows again and the table holds each line once -- and a
-line the bridge printed twice, byte for byte, is one row, because the key is
-of the bytes and of nothing else; the bundled capture's 144 physical lines are
-141 stored ones for that reason, 3 of them repeated exactly.
+one commit per bounded chunk. A missing table is created. If no existing file
+can contain a key, this keyed write commits as an append; a matching replay is
+an overwrite of only the affected files. The released native 0.1.8 identity
+still collapses the fixture's three exact repeated lines, so its 144 physical
+lines currently land as 141 rows. The next native identity includes source
+and physical sequence, making those UUIDs distinct without adding a composite
+or content-code key.
 
 ## Sample rows
 

@@ -55,10 +55,9 @@ def test_a_contract_is_the_three_things_iceberg_stores() -> None:
     assert [member["name"] for member in document["schema"]["fields"]] == [
         member.name for member in Message.into_field()
     ]
-    # One row per line's bytes, whatever session carried it: `currhashcode`
-    # is the code the read states over them and the whole key. The line's own
-    # identity is a column of its own, stated on every row, and not the key.
-    assert document["schema"]["identifier-field-ids"] == [3]
+    # The line identity is the whole key; the exact-byte content code remains
+    # an ordinary column the native read states beside it.
+    assert document["schema"]["identifier-field-ids"] == [2]
     assert document["schema"]["fields"][1]["name"] == "curruuid"
     assert document["schema"]["fields"][1]["type"] == "fixed[16]"
     assert document["schema"]["fields"][1]["required"] is True, "the read states it on every row"
@@ -89,7 +88,7 @@ def test_contract_matches_the_message_declaration() -> None:
     # the published shape loses `DIGEST:*` and `PARTITION:sources` and gains an
     # `ICEBERG:field_id` on every column. Types, names and nullability agree.
     assert published.into_arrow_schema().equals(declared.into_arrow_schema())
-    assert primary_keys(published) == primary_keys(declared) == ["currhashcode"]
+    assert primary_keys(published) == primary_keys(declared) == ["curruuid"]
     assert partition_keys(published) == partition_keys(declared) == {"currunix": "hour"}
     assert metrics_for(published) == metrics_for(declared)
 
@@ -105,8 +104,8 @@ def test_a_contract_does_not_carry_what_only_arrow_metadata_states() -> None:
     # Nothing is derived on either side: the table is laid out by the event
     # the row already carries, so no column is computed from another.
     assert derived_keys(Message.into_field()) == derived_keys(published) == {}
-    # Nothing here computes a digest any more: the key is the code the read
-    # states, so neither shape holds one.
+    # Nothing here computes a digest: both identity and content code arrive
+    # from the native read, so neither shape holds a derived digest.
     assert [member.name for member in Message.into_field() if member.digest.is_holder()] == []
     assert [member.name for member in published if member.digest.is_holder()] == []
     assert published.into_arrow_schema().field("currhashcode").metadata[b"ICEBERG:field_id"] == (
@@ -159,9 +158,9 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from() -> None:
     assert "body" in logged.names
     assert stored.field("srcuuids").type.field(0).type == pyarrow.binary(16)
     assert logged.field("curruuid").type == pyarrow.binary(16)
-    # The line's code remains the raw row's key, while the fixed row carries
-    # its event code under the same native name.
-    assert primary_keys(Message.into_field()) == ["currhashcode"]
+    # Raw and fixed rows each declare only their own identity; the content
+    # code remains an ordinary quality/audit column on both shapes.
+    assert primary_keys(Message.into_field()) == ["curruuid"]
     assert not [member.name for member in fix_message_field() if member.digest.is_holder()], (
         "no column here is a digest this shape computes"
     )
@@ -227,7 +226,7 @@ def test_the_fix_declaration_keeps_its_registry_metadata() -> None:
 
 def test_raw_message_contract_keeps_the_captures_the_bridge_names() -> None:
     message = load_contract()
-    assert primary_keys(message) == ["currhashcode"]
+    assert primary_keys(message) == ["curruuid"]
     assert partition_keys(message) == {"currunix": "hour"}
     assert [member.name for member in message][6:] == [
         "msgthreadid",

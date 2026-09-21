@@ -23,7 +23,7 @@ the three tables below have and the gate the roadmap still holds them to.
 
 | product | row grain | key | purpose |
 | --- | --- | --- | --- |
-| [`logs.messages`](message.md) | one physical source line | `currhashcode` | exact replayable capture record |
+| [`logs.messages`](message.md) | one physical source line | `curruuid` | exact replayable capture record |
 | [`fix.bronze`](fixmsg.md) | one parsed event, however many lines stated it | `curruuid` | the parse's answer, no chain |
 | [`fix.silver`](fixmsg.md) | one walked event, identities settled at lifecycle time | `curruuid` | the chain filled, what the products read |
 
@@ -87,8 +87,7 @@ flattened to one provenance row each. The join is exact provenance rather than a
 through the parse and moved by no walk. Capture location and bytes come only
 from the joined raw row.
 
-The line's `currhashcode` is an exact-byte identity and `curruuid` is a
-settled-event identity: sixteen ordered bytes over the message's settled
-instant and its named content. The roadmap uses both: source corrections track
-the former; protocol deduplication and downstream event identity use the
-latter.
+The line's `currhashcode` is an exact-byte content code. Raw and FIX rows both
+use a column named `curruuid` as their sole key, but at different grains: the
+raw value identifies the source line, while a FIX value identifies the settled
+event. `srcuuids` is the explicit join from the latter to the former.

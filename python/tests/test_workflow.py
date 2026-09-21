@@ -35,15 +35,16 @@ WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
 
 #: What the bridge fixture's 144 physical rows produce, first run.
 #:
-#: `logs.messages` is keyed on `currhashcode`, the code the read states over
-#: the whole line, so the 3 lines that repeat another line byte for byte are
-#: one row each with the line they repeat. A FIX row is a message and not a line -- prose
+#: `logs.messages` is keyed on `curruuid`. Native 0.1.8 gives the 3 exact
+#: repeated lines the same legacy UUID, so each remains one row with the line
+#: it repeats; the next native identity includes source and physical sequence.
+#: A FIX row is a message and not a line -- prose
 #: answers none and a line carrying two frames answers two -- and
 #: `fix.bronze` is keyed on `curruuid`, so the 79 messages those 141 lines
 #: carry settle on 51 events the capture describes. The walk adds one expiry,
 #: so `fix.silver` reads 51 and writes 52. The gaps
-#: are the point of the keys: the same bytes are one line and the same
-#: message logged at every hop is one event.
+#: are the point of the keys: one raw identity is one line and the same message
+#: logged at every hop is one event.
 FIRST = {
     "parse_messages": {"read": 144, "written": 141, "skipped": 3},
     "parse_fix_bronze": {"read": 141, "written": 51, "skipped": 28},
@@ -463,6 +464,7 @@ def test_a_raw_table_of_the_previous_shape_is_a_table_of_its_own(ran: Ran) -> No
         with pytest.raises(ValueError, match=f"cannot add required column: {EVENT_CLOCK}"):
             lines.add_fields(Message.into_field())
         lines.close()
+        store.drop_table("logs.messages", purge=True)
     finally:
         store.close()
 
@@ -643,9 +645,9 @@ def test_both_fix_tables_are_laid_out_exactly_alike_by_the_event(ran: Ran) -> No
             "sort": [("currunix", "identity"), ("seqnum", "identity"), ("curruuid", "identity")],
         }, name
         assert ran.partitions(name) == {"currunix": "hour"}
-    # The raw line is laid out by the same clock under the same transform;
-    # what tells the tables apart is the key, which is the line's own code.
-    assert ran.layout("logs.messages")["key"] == {"currhashcode"}
+    # The raw line is laid out by the same clock under the same transform and
+    # keyed by its own identity, at a different grain from the FIX identity.
+    assert ran.layout("logs.messages")["key"] == {"curruuid"}
     assert ran.layout("logs.messages")["spec"] == [(EVENT_CLOCK, "hour")]
 
 
@@ -736,9 +738,8 @@ def test_a_message_logged_at_every_hop_lands_once(ran: Ran) -> None:
         ), f"the second write of {name} replaced its rows with the same identities"
 
 
-def test_identical_lines_are_one_stored_line(ran: Ran) -> None:
-    """`logs.messages` is keyed on the bytes of the whole line, so a line the
-    bridge printed twice is one row -- and the line's identity is one too."""
+def test_the_released_native_identity_deduplicates_exact_repeats(ran: Ran) -> None:
+    """Native 0.1.8 gives exact repeats one UUID; the table obeys that key."""
     ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
     lines = ran.table("logs.messages")
 
@@ -748,14 +749,14 @@ def test_identical_lines_are_one_stored_line(ran: Ran) -> None:
     assert len(set(codes)) == lines.num_rows
     assert len(set(lines.column("curruuid").to_pylist())) == lines.num_rows
     # A key is scoped to its partition, which here is the hour the line was
-    # printed in: the same bytes logged twice inside one hour are one row.
+    # printed in.
     within = lines.append_column(
         "hour", pyarrow.compute.floor_temporal(lines.column(EVENT_CLOCK), unit="hour")
     )
-    grouped = within.group_by(["hour", "currhashcode"]).aggregate([([], "count_all")])
+    grouped = within.group_by(["hour", "curruuid"]).aggregate([([], "count_all")])
     assert grouped.num_rows == lines.num_rows
     assert ran.partitions("logs.messages") == {EVENT_CLOCK: "hour"}
-    assert ran.layout("logs.messages")["key"] == {"currhashcode"}
+    assert ran.layout("logs.messages")["key"] == {"curruuid"}
 
 
 def test_a_chain_read_back_in_order_states_what_each_step_follows(ran: Ran) -> None:

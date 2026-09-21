@@ -44,9 +44,10 @@ replays the semantic bronze rows without parsing the capture again.
 
 ## Replays are ordinary runs
 
-`logs.messages` replaces on `currhashcode`; `fix.bronze` and `fix.silver`
-replace on `curruuid`, because a bridge logs one message again at every hop
-it passes.
+All three ingestion tables replace on their sole `curruuid` key. On the raw
+table it identifies one source line; on the FIX tables it identifies one
+settled event, because a bridge may log that event again at every hop it
+passes.
 A run parses one window, `[start, end)` -- the last day up to now when a task
 is given neither bound -- and reprocessing the same window reads the same rows
 and lands them over the ones it landed before: the table holds each key once,

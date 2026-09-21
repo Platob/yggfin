@@ -84,10 +84,10 @@ window lands its rows over what an earlier run of the same window landed, so a
 replay leaves each table holding each row once.
 
 `logs.messages` stores one physical line as the read decoded it, row header
-included, and its source position, keyed on `currhashcode`, the content code
-the read states over the whole line: identical lines are one row whatever
-session carried them. All three tables are laid out by the hour of `currunix`
-alone. On a raw row that instant is what the native text read settles over the
+included, and its source position, keyed only on `curruuid`, the line identity
+the native read states. `currhashcode` is its exact-content code, not a second
+key. All three tables are laid out by the hour of `currunix` alone. On a raw
+row that instant is what the native text read settles over the
 line -- the line's own clock where the header dated it, else `EPOCH`, so the
 same bytes answer the same instant on every re-read of a capture. A line at
 that pin is in every window, so no window loses a line the header could not

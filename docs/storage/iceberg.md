@@ -28,10 +28,11 @@ written = messages.overwrite_arrow_reader(
 )
 ```
 
-`merge_by=True` uses the primary key declared on the native Field:
-`currhashcode` for `logs.messages`, and `curruuid` for `fix.bronze` and
-`fix.silver`. A parse answers one row per message; capture location remains on
-the raw table and does not identify an event row. A missing table is created.
+`merge_by=True` uses the primary key declared on the native Field. It is
+`curruuid` alone for `logs.messages`, `fix.bronze`, and `fix.silver`; the raw
+UUID identifies a source line and the FIX UUID identifies a settled event. A
+parse answers one row per message; capture location remains on the raw table
+and does not identify an event row. A missing table is created.
 `commit_batch_num` and the optional `commit_row_size` bound each storage
 commit independently from input batch size, however many partitions the
 bounded chunk spans: its parts are staged one at a time and committed together.
@@ -57,6 +58,14 @@ the run carried rather than what it changed. A key that recurs within a chunk
 keeps its first row; one that recurs in a later chunk replaces the row the
 earlier chunk landed. A null or NaN key is refused, because no join finds the
 row it would replace.
+
+The replace path is also the optimized append path. It prunes manifests and
+files with the incoming partition and `curruuid` bounds. If none contains a
+matching key, the commit is an Iceberg append; only an actual match becomes an
+overwrite that rewrites the affected file. This keeps first-seen windows on
+the cheap append operation without making retries blind. Iceberg identifier
+fields describe identity but do not enforce uniqueness, so calling blind
+`append_arrow_reader` for an idempotent pipeline would duplicate a replay.
 
 ### What a commit holds
 
@@ -289,7 +298,10 @@ Lake Formation asks for behind the Glue one, is in
 The current raw contract is the generic event layout: `currunix`, `curruuid`
 and `currhashcode` as the read states them, `sourceurl` and `rownum` from the
 traversal, the line itself, and the ULBridge header captures beside them. It
-derives nothing, and the table is laid out by the hour of `currunix` alone.
+derives nothing, is keyed only by `curruuid`, and is laid out by the hour of
+`currunix` alone. Iceberg identifier fields cannot be changed by additive
+schema merge, so a `logs.messages` table created with `currhashcode` as its
+identifier must be recreated and reingested from the capture.
 Recreate an older messages table from `Message.into_field()` and reingest its
 source captures: three columns are gone, a required column is added and every
 field id is renumbered, so there is no additive widening to evolve into --

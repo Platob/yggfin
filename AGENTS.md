@@ -126,9 +126,9 @@ instant the read settles over the line, read off the header's `mtime` capture,
 and a line the header could not date settles at `EPOCH`, which every window
 covers -- so a header that matched nothing loses no line, and the table is laid
 out by the hour of that instant and nothing beside it. `logs.messages` is
-keyed on `currhashcode`, the content code the native read states over the
-exact line bytes, so identical lines are one row whatever session carried
-them; nothing here computes a digest beside it. A raw text row names its source
+keyed on `curruuid` alone, the line identity the native read states;
+`currhashcode` remains its exact-content code and is not a second key. Nothing
+here computes a digest beside it. A raw text row names its source
 through Yggdryl `sourceurl` and `rownum`, and itself through `curruuid`, the
 line's own identity the native read states. A message parsed out of a stored
 line records that identity in `srcuuids`, which joins to the raw row's

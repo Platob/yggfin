@@ -9,7 +9,6 @@ with app.setup:
 
     import marimo as mo
     import pyarrow
-
     from rekep import IOBase
     from rekep.fields import stored_arrow_reader
     from rekep.iceberg import IcebergCatalog
@@ -35,7 +34,9 @@ def _():
 def parameters():
     # The adjacent document owns every default. A runner passes the whole
     # mapping to `app.run(defs=...)`, which replaces this cell.
-    _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
+    _defaults = Task.from_json(
+        str(pathlib.Path(__file__).with_suffix(".json"))
+    ).parameters
     filesystem = _defaults["filesystem"]
     rowheader = _defaults["rowheader"]
     start = _defaults["start"]
@@ -109,7 +110,7 @@ def _(catalog, end, filesystem, records, rowheader, start):
         parsed = stored_arrow_reader(read, field)
         opened.callback(parsed.close)
         # What the window carries replaces what the table held under the same
-        # `currhashcode`, the key the field declares, within the hour of
+        # `curruuid`, the sole key the field declares, within the hour of
         # `currunix` it falls in: a replay of the window lands the same rows
         # again, so the table holds each line once however often it runs.
         written = messages.overwrite_arrow_reader(parsed, field, merge_by=True)
