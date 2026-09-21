@@ -226,4 +226,4 @@ def test_documentation_labels_the_standalone_tool_and_uv_entrypoint() -> None:
     assert "7,778" in page
     assert "Field.explode_fields()" in page
     assert "Field.into_json(indent=2)" in page
-    assert "empty Arrow reader" in page
+    assert "registry-dependent `FixMsg` projection" in page

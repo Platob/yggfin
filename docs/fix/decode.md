@@ -256,7 +256,7 @@ include `default_sending_time`, `separator`, `payload_column`, `capture_names`,
 affects code spelling, not column identity. The batch defaults are 32,768 rows
 and 128 MiB; `threads` defaults to the available CPU count and zero means one.
 Prefix stripping belongs to `TextOptions.lstrip`, which accepts a list of
-anchored regular expressions such as `[r"^\\s*-->\\s*"]`; it changes the
+anchored regular expressions such as `[r"^\s*-->\s*"]`; it changes the
 retained raw `body` and therefore its identity. It is not a codec option and
 the FIX tasks do not enable it. Native FIX already locates frames after
 whitespace or `-->`; preserving header captures behind any earlier prefix

@@ -59,9 +59,9 @@ stages an S3 object on local disk.
 A stored line names its source through the object URI and the 1-based
 physical row number, and itself through `curruuid`, the identity the native
 read states over it. A message parsed out of that line records the identity in
-`srcuuids`; repeated arrivals may add source identities, and no walk changes
-what they mean. The join across the products is exact provenance rather than a
-recomputation:
+`srcuuids`, which joins to the raw row's `curruuid`; no walk changes what the
+identity means. The join across the products is exact provenance rather than
+a recomputation:
 
 ```text
 fix.bronze(srcuuids[*]) -> logs.messages(curruuid)

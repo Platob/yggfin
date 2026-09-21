@@ -116,9 +116,9 @@ exact line bytes, so identical lines are one row whatever session carried
 them; nothing here computes a digest beside it. A raw text row names its source
 through Yggdryl `sourceurl` and `rownum`, and itself through `curruuid`, the
 line's own identity the native read states. A message parsed out of a stored
-line records that identity in `srcuuids`, which is provenance and never
-lineage; repeated arrivals may contribute more than one source identity, and
-no walk changes what any identity means.
+line records that identity in `srcuuids`, which joins to the raw row's
+`curruuid`; it is provenance, never lineage, and no walk changes what the
+identity means.
 
 The two FIX stages one codec exposes are two tasks over two tables, in this
 order and no other:
