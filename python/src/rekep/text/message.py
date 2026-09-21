@@ -19,6 +19,41 @@ from rekep.fields import (
 )
 from rekep.times import EPOCH, ULBRIDGE_ROWHEADER, datetime_of
 
+#: What bytes that are not UTF-8 read as, and the one place it is spelled: the
+#: C1 range as windows-1252 fills it, and the five bytes that standard leaves
+#: undefined as the control they stand for. `latin-1` decodes every other byte
+#: to itself, so the two together are the whole mapping.
+_WINDOWS_1252 = str.maketrans(
+    {
+        code: bytes([code]).decode("cp1252") if code not in (0x81, 0x8D, 0x8F, 0x90, 0x9D) else code
+        for code in range(0x80, 0xA0)
+    }
+)
+
+
+def decoded(raw: bytes) -> str:
+    """`raw` as the native text read decodes a record: UTF-8, and windows-1252
+    for each run of bytes that is not.
+
+    One line is not written in one encoding -- a bridge relays what a venue
+    sent it -- so the fallback is per run and not per record: a record holding
+    both answers both, and nothing is refused or filled with replacement
+    characters. A row built by hand out of the same bytes is therefore the row
+    the read would have answered, which is the whole point of building one.
+    """
+    read: list[str] = []
+    index = 0
+    while index < len(raw):
+        try:
+            read.append(raw[index:].decode("utf-8"))
+            break
+        except UnicodeDecodeError as unexplained:
+            read.append(raw[index : index + unexplained.start].decode("utf-8"))
+            run = raw[index + unexplained.start : index + unexplained.end]
+            read.append(run.decode("latin-1").translate(_WINDOWS_1252))
+            index += unexplained.end
+    return "".join(read)
+
 
 @scalar(slots=True)
 class Message(Convertible):
@@ -160,10 +195,7 @@ class Message(Convertible):
         if self.msgseqnum is not None:
             self.msgseqnum = int(self.msgseqnum)
         if isinstance(self.body, (bytes, bytearray, memoryview)):
-            # As the read decodes a line: a byte no encoding explains is
-            # replaced rather than raised on, so a row built from the same
-            # bytes by hand is the row the read would have answered.
-            self.body = bytes(self.body).decode("utf-8", "replace")
+            self.body = decoded(bytes(self.body))
         elif not isinstance(self.body, str):
             self.body = str(self.body)
 
@@ -236,12 +268,13 @@ class Message(Convertible):
         raw text row stays readable without the dictionary behind it.
 
         `rowheader` reads a bridge that writes these same facts in a layout of
-        its own: a different clock precision, a bracket ordered differently, a
-        level this logger omits. What it may not do is rename them. The names
-        the read fills from are the contract, and a capture named anything
-        else is dropped in silence -- a whole column of nulls and no error, or
-        a clock that settles nothing -- so they are checked here, where the
-        mismatch is still legible.
+        its own: a different clock precision, a bracket ordered differently,
+        other text around them. What it may not do is state a different set of
+        facts. The names the read fills from are the contract, and a header
+        that renames one leaves it dropped in silence -- a whole column of
+        nulls and no error, or a clock that settles nothing -- while one that
+        omits it leaves a column no bridge fills. Both are checked here, where
+        the mismatch is still legible.
         """
         options = TextOptions()
         options.start_rownum = 1
@@ -272,5 +305,5 @@ class Message(Convertible):
     @classmethod
     def from_text(cls, text: str | bytes, **declared: Any) -> Self:
         """Build one raw record without interpreting its body."""
-        declared["body"] = text.decode("utf-8", "replace") if isinstance(text, bytes) else text
+        declared["body"] = decoded(text) if isinstance(text, bytes) else text
         return cls(**declared)

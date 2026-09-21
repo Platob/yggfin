@@ -120,7 +120,7 @@ sources:
 
   - name: logs
     description: >
-      Raw capture lines, one per physical line, with their exact body bytes.
+      Raw capture lines, one per physical line, each as the read decoded it.
     schema: logs
     meta:
       plugin: rekep

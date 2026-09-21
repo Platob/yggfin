@@ -10,6 +10,7 @@ from yggdryl import IOBase
 
 from rekep import Message
 from rekep.fix import fix_text_options
+from rekep.text.message import decoded
 from rekep.times import EPOCH, ULBRIDGE_ROWHEADER
 
 #: The zone every instant here is spelled in.
@@ -149,7 +150,10 @@ def test_a_line_without_the_bridge_header_is_kept_as_an_unstamped_message(tmp_pa
     # is the same instant on every re-read of these bytes and the same one an
     # undated message takes in `fix.bronze`, and states an identity over it.
     assert row["currunix"] == EPOCH
-    assert len(row["curruuid"]) == 16
+    # The pin's own identity, stated over the line: a UUIDv7 whose instant is
+    # the pin and whose rest is that line's code -- not the zero identity a
+    # row built anywhere but the read would carry.
+    assert row["curruuid"].startswith(bytes(6)) and row["curruuid"] != bytes(16)
     assert all(
         row[name] is None
         for name in (
@@ -183,6 +187,42 @@ def test_message_instance_normalizes_scalar_inputs() -> None:
     )
     assert (message.threadId, message.msgseqnum) == (250, 72504)
     assert message.body == "body"
+
+
+#: What a bridge writes that is not UTF-8, and what the read makes of it: a
+#: record in one encoding, a record in the other, the bytes windows-1252
+#: fills the C1 range with, and the five it leaves undefined.
+ENCODED = (
+    "caf\u00e9 \u20ac".encode(),
+    "caf\u00e9".encode("latin-1"),
+    b"\x80\x93\x92",
+    b"\x81\x8d\x8f\x90\x9d",
+    b"\xff\xfe",
+    # One record in both encodings at once, which is what a relayed line is:
+    # the fallback is per run of bytes and not per record.
+    b"caf\xc3\xa9 caf\xe9",
+)
+
+
+@pytest.mark.parametrize("payload", ENCODED, ids=[repr(held) for held in ENCODED])
+def test_a_body_built_by_hand_is_the_text_the_read_would_have_answered(payload, tmp_path) -> None:
+    """A capture is not written in one encoding, and the read decodes each
+    record in the one it is in rather than refusing it or filling it with
+    replacement characters. A row built out of the same bytes says the same."""
+    line = b"2026-08-14 00:05:01.147 [77-e7256476:9effef3e6a:72503] [P] (INFO) " + payload
+    source = tmp_path / "encoded.log"
+    source.write_bytes(line + b"\n")
+
+    reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=Message.text_options())
+    try:
+        stored = reader.read_all().column("body")[0].as_py()
+    finally:
+        reader.close()
+
+    assert Message.from_text(line).body == stored
+    assert decoded(payload) == stored[-len(decoded(payload)) :]
+    # Never the replacement character: the bytes are read, not papered over.
+    assert "\ufffd" not in stored
 
 
 def test_a_message_made_by_hand_states_the_event_that_names_no_line() -> None:

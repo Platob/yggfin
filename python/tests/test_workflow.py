@@ -211,7 +211,11 @@ def test_the_workflow_publishes_ulbridge_and_a_replay_writes_nothing(ran: Ran) -
     # A line the row header did not match settles at the pin, and its row says
     # so rather than being dropped or dated by the run.
     assert any(instant == EPOCH for instant in instants.values())
-    assert messages.column("curruuid").null_count == 0
+    # The read states an identity over every line, and states a different one
+    # for every line: the column is not a constant the declaration filled in.
+    identities = messages.column("curruuid").to_pylist()
+    assert len(set(identities)) == messages.num_rows
+    assert bytes(16) not in identities
 
     replay = ran.workflow()
     assert {name: counted(result) for name, result in replay.items()} == REPLAY
@@ -454,7 +458,9 @@ def test_a_raw_table_of_the_previous_shape_is_a_table_of_its_own(ran: Ran) -> No
         lines.create_with_field(previous)
         lines.close()
         lines = store.dataset("logs.messages", field=Message.into_field())
-        with pytest.raises(ValueError, match="cannot add required column"):
+        # Named, so the refusal is the one this test means and not another
+        # required column reached first.
+        with pytest.raises(ValueError, match=f"cannot add required column: {EVENT_CLOCK}"):
             lines.add_fields(Message.into_field())
         lines.close()
     finally:
