@@ -82,8 +82,8 @@ the command line.
 | `end` | messages, bronze, silver | `null` | the window's exclusive end; `null` is the instant the run starts, and a whole day is the end of that day |
 | `catalog.name` | every | `rekep` | PyIceberg catalog name |
 | `catalog.properties.type` | every | `sql` | `sql`, `glue`, `s3tables`, or another installed PyIceberg catalog |
-| `catalog.properties.uri` | every | local SQLite | SQL catalog URI; not used by Glue, and derived from the ARN by `s3tables` |
-| `catalog.properties.warehouse` | every | `data/warehouse` | local path, `s3://` Iceberg root, or an S3 Tables bucket ARN |
+| `catalog.properties.uri` | every | local SQLite | SQL catalog URI; not used by Glue, and derived from the warehouse by `s3tables` |
+| `catalog.properties.warehouse` | every | `data/warehouse` | local path, `s3://` Iceberg root, or the S3 Tables bucket ARN or `<account>:s3tablescatalog/<name>` |
 | `registry` | bronze, silver | `null` | bundled dictionary; an explicit URI overrides it |
 | `codec_options` | bronze, silver | `null` | native defaults; an object is forwarded unchanged to `FixCodec` |
 | `project` | dbt | `data/dbt` | the dbt project directory |
@@ -148,7 +148,7 @@ difference.
 | single host | local | SQLite | local | [Deploy locally](operations/deploy.md#local-sqlite-and-files) |
 | object-store development | S3 | SQLite | S3 | [S3 with SQL catalog](operations/deploy.md#s3-with-a-sql-catalog) |
 | AWS production | S3 | AWS Glue | S3 | [AWS Glue](operations/deploy.md#aws-glue-and-s3) |
-| AWS managed tables | S3 | S3 Tables | the table bucket | [AWS S3 Tables](operations/deploy.md#aws-s3-tables) |
+| AWS managed tables | S3 | S3 Tables, at its own or the Glue endpoint | the table bucket | [AWS S3 Tables](operations/deploy.md#aws-s3-tables) |
 | scheduled | any above | same task parameters | same warehouse | [Airflow](airflow.md) |
 | derived products | n/a | same catalog | same warehouse | [build_dbt](tasks/build-dbt.md) |
 

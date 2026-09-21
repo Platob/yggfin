@@ -142,17 +142,27 @@ uv run --project python rekep task run \
 
 ## AWS S3 Tables
 
-A table bucket *is* an Iceberg REST catalog, hosted and maintained by AWS, and
-its ARN is the whole of its configuration: the partition, the region and the
-account are all in it. So `type: s3tables` takes the ARN as its `warehouse`
-and resolves the rest -- the regional endpoint
-`https://s3tables.<region>.amazonaws.com/iceberg`, SigV4 signing for the
-`s3tables` service, and that region for the table files. There is no warehouse
-prefix to name, because a table bucket has no location of yours in it.
+A table bucket is served by an Iceberg REST catalog AWS hosts and maintains,
+and AWS serves it at two endpoints. `type: s3tables` is one type for both,
+because the choice is not a second setting: each endpoint names the bucket
+differently, so the `warehouse` is what says which door a run knocks at.
 
-Install the extra -- pyiceberg signs those REST calls through boto3, which the
-Iceberg extra does not pull -- then authenticate the way every other AWS mode
-here does:
+| door | `warehouse` | endpoint | signed for | governs access |
+| --- | --- | --- | --- | --- |
+| S3 Tables | `arn:aws:s3tables:<region>:<account>:bucket/<name>` | `https://s3tables.<region>.amazonaws.com/iceberg` | `s3tables` | IAM alone |
+| AWS Glue | `<account>:s3tablescatalog/<name>` | `https://glue.<region>.amazonaws.com/iceberg` | `glue` | IAM and Lake Formation |
+
+Take the Glue door when the bucket is already integrated with the AWS
+analytics services -- Lake Formation grants, cross-account access, and the
+same tables in Athena, Redshift, EMR and QuickSight. Take the S3 Tables door
+for a worker that owns its bucket outright and reaches it with IAM and
+nothing else. Both land the same rows in the same tables.
+
+Everything else follows from that one value: the endpoint, the SigV4 signing
+name, the signing region, and the region the table files are in. Install the
+extra -- pyiceberg signs those REST calls through boto3, which the Iceberg
+extra does not pull -- and authenticate the way every other AWS mode here
+does:
 
 ```bash
 uv sync --project python --extra s3tables
@@ -160,7 +170,9 @@ export AWS_REGION=eu-west-1
 aws sts get-caller-identity
 ```
 
-Create the three tables:
+### The S3 Tables endpoint
+
+The ARN states the region, so the ARN is the whole configuration:
 
 ```bash
 uv run --project python rekep iceberg deploy \
@@ -168,8 +180,6 @@ uv run --project python rekep iceberg deploy \
   --property type=s3tables \
   --property warehouse=arn:aws:s3tables:eu-west-1:123456789012:bucket/market-tables
 ```
-
-Use this parameters file for the three ingestion tasks and for `build_dbt`:
 
 ```json
 {
@@ -186,11 +196,58 @@ Use this parameters file for the three ingestion tasks and for `build_dbt`:
 The worker needs the S3 Tables namespace and table actions on that bucket,
 plus `s3tables:GetTableData` and `s3tables:PutTableData` for the rows
 themselves; the endpoint vends the credentials each table's files are read and
-written with. The capture bucket still needs its own list and read
-permissions. Prefer an IAM role; do not place access keys in task JSON, CLI
-arguments, or Airflow Params.
+written with.
 
-Everything the ARN does not decide stays the operator's, under the standard
+### The AWS Glue endpoint
+
+Integrate the table bucket with the AWS analytics services first: that mounts
+it in the Glue Data Catalog as the federated catalog `s3tablescatalog/<name>`,
+which is the name this door takes, and it puts Lake Formation in front of
+every table. Grant the worker's role what it has to do there -- creating the
+namespaces and tables `rekep iceberg deploy` creates, and reading and writing
+the ones ingestion fills -- and enable full table access for external engines,
+which is what lets Lake Formation vend credentials to a client like this one.
+
+```json
+{
+  "catalog": {
+    "name": "rekep",
+    "properties": {
+      "type": "s3tables",
+      "warehouse": "123456789012:s3tablescatalog/market-tables",
+      "rest.signing-region": "eu-west-1"
+    }
+  }
+}
+```
+
+This name carries no region, so one is stated: `rest.signing-region` here, or
+`AWS_REGION` in the worker's environment, or the profile or instance the
+worker runs under. Nothing guesses one -- the wrong region signs for a catalog
+that is not this one -- and a run that finds none says so and names where to
+put it.
+
+The role needs the Glue Iceberg REST actions on that catalog and
+`lakeformation:GetDataAccess` for the credentials Lake Formation vends,
+beside the S3 Tables data actions above.
+
+### Either door
+
+The catalog goes in a parameters file, for the three ingestion tasks and for
+`build_dbt`:
+
+```bash
+uv run --project python rekep task run \
+  tasks/parse_messages/parse_messages.json \
+  --parameters-file /run/rekep/aws.json \
+  --parameter 'filesystem="s3://market-capture/ulbridge/2026/08/14?region=eu-west-1"'
+```
+
+The capture bucket still needs its own list and read permissions. Prefer an
+IAM role; do not place access keys in task JSON, CLI arguments, or Airflow
+Params.
+
+What the warehouse does not decide stays the operator's, under the standard
 property names, and is kept exactly as written -- a VPC endpoint or a FIPS one
 as `uri`, another `rest.signing-region`, explicit `s3.*` credentials:
 
@@ -212,15 +269,20 @@ letters, digits and underscores, which `logs`, `fix`, `orders` and
 `executions` already are. Deployment, ingestion, the dbt build and their
 replays are otherwise exactly what they are on any other catalog.
 
-The one difference is maintenance: the service compacts these tables and
-expires their snapshots on a schedule of its own, and the bucket behind a
-table is not one this account lists. A sweep can therefore settle no file's
-ownership, so [`optimize_iceberg`](../../storage/iceberg.md#maintenance)
-deletes nothing here -- it reports `deleted: 0` and records which bucket keeps
-its files -- while the compaction and snapshot expiry it asks for still commit
-through the catalog like any other Iceberg table. Set `remove_orphans` to
-`false` to say so in the document as well, and consider leaving the pass
-itself to the service.
+Two things differ, and both because the service owns the files:
+
+- Maintenance sweeps nothing. S3 Tables compacts these tables and expires
+  their snapshots on a schedule of its own, and the bucket behind a table is
+  not one this account lists, so a sweep can settle no file's ownership:
+  [`optimize_iceberg`](../../storage/iceberg.md#maintenance) deletes nothing
+  here, reports `deleted: 0` and records which bucket keeps its files, while
+  the compaction and snapshot expiry it asks for still commit through the
+  catalog. Set `remove_orphans` to `false` to say so in the document as well,
+  and consider leaving the pass itself to the service.
+- A drop takes the data with it. What a drop may ask for is the table's to
+  decide and not the door's: an S3 Tables table answers a drop that would keep
+  its files with a 400, so `drop_table` purges on a table bucket whether or
+  not it was asked to.
 
 ## Table properties and branches
 

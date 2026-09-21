@@ -253,9 +253,13 @@ Credentials belong in the provider chain or secret-backed `s3.*` properties,
 never in committed task documents.
 
 AWS S3 Tables is the one type rekep resolves itself, because a table bucket is
-an Iceberg REST catalog AWS hosts and its ARN states where: the `warehouse` is
-the ARN, and the regional endpoint, SigV4 signing for `s3tables`, and the
-region the table files are in follow from it.
+served by an Iceberg REST catalog AWS hosts -- at two endpoints, which the
+`warehouse` chooses between, since each names the bucket its own way:
+
+| `warehouse` | endpoint | signed for |
+| --- | --- | --- |
+| `arn:aws:s3tables:<region>:<account>:bucket/<name>` | `https://s3tables.<region>.amazonaws.com/iceberg` | `s3tables` |
+| `<account>:s3tablescatalog/<name>` | `https://glue.<region>.amazonaws.com/iceberg` | `glue` |
 
 ```json
 {
@@ -269,12 +273,16 @@ region the table files are in follow from it.
 }
 ```
 
-Anything the ARN does not decide -- `uri` for a VPC or FIPS endpoint, another
-`rest.signing-region`, explicit `s3.*` settings -- is kept exactly as stated.
-`IcebergCatalog.table_bucket` answers the ARN for such a catalog and `None`
-for every other, which is how maintenance knows whose files it is looking at.
-The extra is `rekep[s3tables]`: pyiceberg signs those REST calls through
-boto3.
+The ARN states its region; the Glue name does not, so that one is stated as
+`rest.signing-region` or in the worker's AWS environment. Anything else the
+warehouse does not decide -- `uri` for a VPC or FIPS endpoint, another signing
+region, explicit `s3.*` settings -- is kept exactly as stated.
+`IcebergCatalog.table_bucket` answers the warehouse for such a catalog and
+`None` for every other, which is how maintenance knows whose files it is
+looking at and why a drop there purges. The extra is `rekep[s3tables]`:
+pyiceberg signs those REST calls through boto3. Which door to take, and what
+Lake Formation asks for behind the Glue one, is in
+[AWS S3 Tables](../pipeline/operations/deploy.md#aws-s3-tables).
 
 ## Message schema replacement
 

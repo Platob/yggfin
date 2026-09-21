@@ -67,9 +67,11 @@ REKEP_DBT_CATALOG='{"name": "rekep", "properties": {"type": "glue", "warehouse":
   uv run --project python dbt build --project-dir data/dbt --profiles-dir data/dbt
 ```
 
-An AWS S3 Tables bucket is named the same way, by its ARN alone:
-`{"name": "rekep", "properties": {"type": "s3tables", "warehouse":
-"arn:aws:s3tables:eu-west-1:123456789012:bucket/market-tables"}}`.
+An AWS S3 Tables bucket is named the same way, by the name the endpoint
+serving it takes: `{"name": "rekep", "properties": {"type": "s3tables",
+"warehouse": "arn:aws:s3tables:eu-west-1:123456789012:bucket/market-tables"}}`
+at the S3 Tables endpoint, or `"123456789012:s3tablescatalog/market-tables"`
+with `"rest.signing-region"` at the Glue one.
 
 A model's `config()` block is its Iceberg declaration -- `table`, `mode`,
 `primary_key`, `not_null`, `partition_by`, `sort_by` and `arrow_types` -- and a

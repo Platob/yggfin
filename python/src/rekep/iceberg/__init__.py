@@ -4,6 +4,7 @@ from rekep.iceberg.catalog import (
     S3_TABLES,
     IcebergCatalog,
     IcebergNamespace,
+    TableBucket,
     table_bucket_of,
 )
 from rekep.iceberg.dataset import IcebergDataset, window_filter
@@ -29,6 +30,7 @@ __all__ = [
     "IcebergDataset",
     "IcebergNamespace",
     "S3_TABLES",
+    "TableBucket",
     "derived_keys",
     "iceberg_contract",
     "iceberg_contract_field",

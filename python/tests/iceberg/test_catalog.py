@@ -161,13 +161,121 @@ def test_a_table_bucket_arn_is_left_exactly_as_written() -> None:
 
 
 def test_s3_tables_without_a_table_bucket_says_so() -> None:
-    """The ARN is the configuration, so a warehouse prefix is a document to fix."""
-    catalog = IcebergCatalog(
-        properties={"type": "s3tables", "warehouse": "s3://market-warehouse/rekep"}
-    )
+    """The warehouse is the configuration, so a prefix is a document to fix."""
+    with pytest.raises(ValueError, match="s3tablescatalog"):
+        IcebergCatalog(properties={"type": "s3tables", "warehouse": "s3://market/rekep"})
 
-    with pytest.raises(ValueError, match="arn:aws:s3tables:"):
-        _ = catalog.table_bucket
+
+#: The same bucket, as the Glue endpoint names it once the table bucket is
+#: integrated and mounted under the `s3tablescatalog` federated catalog.
+GLUE_TABLE_BUCKET = "123456789012:s3tablescatalog/market-tables"
+
+
+def test_a_federated_table_bucket_resolves_the_glue_rest_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The other door onto the same bucket: Glue's, signed for Glue."""
+    seen = _loaded(monkeypatch)
+
+    catalog = IcebergCatalog(
+        name="rekep",
+        properties={
+            "type": "s3tables",
+            "warehouse": GLUE_TABLE_BUCKET,
+            "rest.signing-region": "eu-west-1",
+        },
+    )
+    _ = catalog.catalog
+
+    assert seen["type"] == "rest"
+    assert seen["warehouse"] == GLUE_TABLE_BUCKET
+    assert seen["uri"] == "https://glue.eu-west-1.amazonaws.com/iceberg"
+    assert seen["rest.sigv4-enabled"] == "true"
+    assert seen["rest.signing-name"] == "glue"
+    assert seen["s3.region"] == "eu-west-1"
+    assert catalog.table_bucket == GLUE_TABLE_BUCKET
+
+
+def test_a_federated_table_bucket_is_not_resolved_against_the_directory() -> None:
+    """It begins with digits, so the local-path rule must not claim it."""
+    catalog = IcebergCatalog(properties={"type": "s3tables", "warehouse": GLUE_TABLE_BUCKET})
+
+    assert catalog.properties["warehouse"] == GLUE_TABLE_BUCKET
+
+
+def test_a_federated_table_bucket_takes_the_region_from_the_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`AWS_REGION` is read here because botocore's session does not read it."""
+    seen = _loaded(monkeypatch)
+    monkeypatch.delenv("AWS_DEFAULT_REGION", raising=False)
+    monkeypatch.setenv("AWS_REGION", "us-east-2")
+
+    _ = IcebergCatalog(properties={"type": "s3tables", "warehouse": GLUE_TABLE_BUCKET}).catalog
+
+    assert seen["uri"] == "https://glue.us-east-2.amazonaws.com/iceberg"
+    assert seen["rest.signing-region"] == "us-east-2"
+
+
+def test_a_federated_table_bucket_without_a_region_says_where_to_state_one(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Nothing here guesses one: the wrong region signs for another catalog."""
+    from rekep.iceberg import catalog as module
+
+    monkeypatch.delenv("AWS_REGION", raising=False)
+    monkeypatch.delenv("AWS_DEFAULT_REGION", raising=False)
+    monkeypatch.setattr(module, "_environment_region", lambda: None)
+    store = IcebergCatalog(properties={"type": "s3tables", "warehouse": GLUE_TABLE_BUCKET})
+
+    with pytest.raises(ValueError, match="rest.signing-region"):
+        _ = store.catalog
+
+
+def test_a_bucket_is_listed_one_level_deep() -> None:
+    """S3 Tables namespaces are one deep; walking asks per namespace for nothing."""
+
+    class Fake:
+        def __init__(self) -> None:
+            self.parents: list[tuple[str, ...]] = []
+
+        def list_namespaces(self, *under: str) -> list[tuple[str, ...]]:
+            self.parents.append(under)
+            return [("logs",), ("fix",)]
+
+    bucket = IcebergCatalog(properties={"type": "s3tables", "warehouse": TABLE_BUCKET})
+    bucket.__dict__["catalog"] = (listed := Fake())
+
+    assert bucket.namespaces(recursive=True) == ["logs", "fix"]
+    assert listed.parents == [()]
+
+
+def test_dropping_a_table_in_a_bucket_takes_its_data() -> None:
+    """S3 Tables refuses a drop that would keep the files, so this never asks."""
+
+    class Fake:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        def table_exists(self, _name: str) -> bool:
+            return True
+
+        def drop_table(self, _name: str) -> None:
+            self.calls.append("drop")
+
+        def purge_table(self, _name: str) -> None:
+            self.calls.append("purge")
+
+    bucket = IcebergCatalog(properties={"type": "s3tables", "warehouse": TABLE_BUCKET})
+    bucket.__dict__["catalog"] = (in_bucket := Fake())
+    elsewhere = IcebergCatalog(properties={"type": "sql"})
+    elsewhere.__dict__["catalog"] = (in_sql := Fake())
+
+    bucket.drop_table("logs.messages")
+    elsewhere.drop_table("logs.messages")
+
+    assert in_bucket.calls == ["purge"]
+    assert in_sql.calls == ["drop"]
 
 
 def test_only_an_s3_tables_catalog_is_a_table_bucket() -> None:

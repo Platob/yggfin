@@ -7,7 +7,7 @@ import os
 import re
 from collections.abc import Iterator, Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from yggdryl import Uri, Url
 
@@ -24,83 +24,155 @@ if TYPE_CHECKING:
 #: PyIceberg's native PyArrow streams, with yggfin's output ownership boundary.
 PYARROW_FILE_IO = "rekep.iceberg.file_io.IcebergFileIO"
 
-#: AWS S3 Tables. A table bucket *is* an Iceberg REST catalog, hosted by AWS,
-#: so this type is the one yggfin resolves itself: it loads pyiceberg's REST
-#: catalog against the bucket's regional endpoint, signed for `s3tables`. The
-#: bucket ARN states the partition, the region and the account, which is why
-#: it is the whole configuration and there is no second place to spell one.
+#: AWS S3 Tables. A table bucket is served by an Iceberg REST catalog AWS
+#: hosts, so this type is the one yggfin resolves itself: it loads pyiceberg's
+#: REST catalog against the right regional endpoint, signed for the right
+#: service. Which front door is not a second setting -- the warehouse states
+#: it, because the two endpoints take the bucket under different names.
 S3_TABLES = "s3tables"
 
-#: A table bucket ARN, `arn:<partition>:s3tables:<region>:<account>:bucket/<name>`.
+#: The S3 Tables endpoint's own name for a bucket: the table bucket ARN, which
+#: states the region as well. `https://s3tables.<region>.amazonaws.com/iceberg`
+#: serves it, signed for `s3tables`, and Lake Formation is not in that path.
 _TABLE_BUCKET = re.compile(
-    r"^arn:(?P<partition>aws[a-z0-9-]*):s3tables:(?P<region>[a-z0-9-]+)"
+    r"^arn:aws[a-z0-9-]*:s3tables:(?P<region>[a-z0-9-]+)"
     r":(?P<account>\d{12}):bucket/(?P<bucket>[a-z0-9][a-z0-9-]{1,61}[a-z0-9])$"
 )
 
-#: The domain a partition's regional endpoints hang off. Everything outside
-#: this mapping is on the commercial one, `aws-us-gov` included.
-_PARTITION_DOMAINS = {"aws-cn": "amazonaws.com.cn"}
+#: The Glue endpoint's name for the same bucket, once the table bucket is
+#: integrated with the AWS analytics services and mounted under the
+#: `s3tablescatalog` federated catalog: `<account>:s3tablescatalog/<bucket>`,
+#: optionally deeper. `https://glue.<region>.amazonaws.com/iceberg` serves it,
+#: signed for `glue`, and Lake Formation governs and vends for it. The name
+#: carries no region, so that one comes from the AWS configuration.
+_GLUE_TABLE_BUCKET = re.compile(
+    r"^(?P<account>\d{12}):s3tablescatalog/(?P<bucket>[a-z0-9][a-z0-9-]{1,61}[a-z0-9])"
+    r"(?P<under>(?:/[a-z0-9_-]+)*)$"
+)
+
+#: Where a region's AWS endpoints live. Only China is spelled: a `us-gov-` or
+#: `us-iso-` region is reached by naming `uri` outright.
+_CHINA_DOMAIN = "amazonaws.com.cn"
 _AWS_DOMAIN = "amazonaws.com"
+
+#: Properties an operator may have stated the region under, in the order they
+#: are read for the Glue door. The S3 Tables door reads none of them: its ARN
+#: says which region the bucket is in.
+_REGION_PROPERTIES = ("rest.signing-region", "glue.region", "s3.region")
+
+#: Where a region is read from the environment. `AWS_REGION` is here because
+#: botocore is not: its session resolves `AWS_DEFAULT_REGION`, a profile and
+#: the instance metadata, and `AWS_REGION` -- what a container, a Lambda and
+#: this project's own deployment examples set -- is not among them.
+_REGION_VARIABLES = ("AWS_REGION", "AWS_DEFAULT_REGION")
 
 _SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 _WINDOWS_PATH = re.compile(r"^(?:[A-Za-z]:[\\/]|\\\\)")
 
 
+class TableBucket(NamedTuple):
+    """One S3 Tables bucket, as the endpoint that serves it names it."""
+
+    #: The warehouse, exactly as that endpoint takes it.
+    warehouse: str
+
+    #: The SigV4 signing name, which is also the endpoint's subdomain:
+    #: `s3tables` for the S3 Tables endpoint, `glue` for the Glue one.
+    service: str
+
+    #: The region the warehouse itself states, or None where it states none.
+    region: str | None
+
+
 def table_bucket_of(properties: Mapping[str, Any]) -> str | None:
     """The S3 Tables table bucket `properties` names, or None for any other."""
-    parsed = _table_bucket(properties)
-    return None if parsed is None else parsed.group(0)
+    bucket = _table_bucket(properties)
+    return None if bucket is None else bucket.warehouse
 
 
-def _table_bucket(properties: Mapping[str, Any]) -> re.Match[str] | None:
-    """The table bucket ARN these properties name, parsed, or None.
+def _table_bucket(properties: Mapping[str, Any]) -> TableBucket | None:
+    """The table bucket these properties name, and the door it names it at.
 
-    Raises where the type says `s3tables` and the warehouse is not a table
-    bucket ARN: the ARN is the configuration, so a missing one is a document
-    to fix rather than a REST endpoint to guess.
+    Raises where the type says `s3tables` and the warehouse is neither name a
+    bucket has: the warehouse is the configuration, so an unrecognized one is
+    a document to fix rather than an endpoint to guess.
     """
     declared = properties.get("type")
     if not isinstance(declared, str) or declared.strip().casefold() != S3_TABLES:
         return None
     warehouse = str(properties.get("warehouse") or "").strip()
-    parsed = _TABLE_BUCKET.match(warehouse)
-    if parsed is None:
-        raise ValueError(
-            f"an {S3_TABLES} catalog is its table bucket: warehouse must be "
-            "arn:aws:s3tables:<region>:<account>:bucket/<name>, "
-            f"not {warehouse!r}"
-        )
-    return parsed
+    if parsed := _TABLE_BUCKET.match(warehouse):
+        return TableBucket(parsed.group(0), S3_TABLES, parsed["region"])
+    if parsed := _GLUE_TABLE_BUCKET.match(warehouse):
+        return TableBucket(parsed.group(0), "glue", None)
+    raise ValueError(
+        f"an {S3_TABLES} catalog is its table bucket, named as the endpoint "
+        "serving it names it: arn:aws:s3tables:<region>:<account>:bucket/<name> "
+        "for the S3 Tables endpoint, or <account>:s3tablescatalog/<name> for "
+        f"the Glue one; not {warehouse!r}"
+    )
 
 
 def _s3_tables_properties(properties: Mapping[str, str]) -> dict[str, str]:
     """PyIceberg's REST configuration for the table bucket these name.
 
-    Only what the ARN decides is filled, and each of it with `setdefault`: a
-    private or FIPS endpoint, another signing region, and explicit credentials
-    stay the operator's to state, under the standard property names.
+    Only what the warehouse decides is filled, and each of it with
+    `setdefault`: a private or FIPS endpoint, another signing region, and
+    explicit credentials stay the operator's to state, under the standard
+    property names.
     """
-    parsed = _table_bucket(properties)
-    if parsed is None:
+    bucket = _table_bucket(properties)
+    if bucket is None:
         return dict(properties)
     # pyiceberg signs the REST calls with botocore and resolves credentials
     # through a boto3 session; neither comes with the Iceberg extra.
     require("boto3", S3_TABLES)
-    region = parsed["region"]
-    domain = _PARTITION_DOMAINS.get(parsed["partition"], _AWS_DOMAIN)
+    region = bucket.region or _stated_region(properties)
+    domain = _CHINA_DOMAIN if region.startswith("cn-") else _AWS_DOMAIN
     resolved = dict(properties)
     resolved["type"] = "rest"
-    # The ARN as it parsed: pyiceberg sends the warehouse to the endpoint, and
-    # a document may have spelled it with space around it.
-    resolved["warehouse"] = parsed.group(0)
-    resolved.setdefault("uri", f"https://s3tables.{region}.{domain}/iceberg")
+    # The warehouse as it parsed: pyiceberg sends it to the endpoint, and a
+    # document may have spelled it with space around it.
+    resolved["warehouse"] = bucket.warehouse
+    resolved.setdefault("uri", f"https://{bucket.service}.{region}.{domain}/iceberg")
     resolved.setdefault("rest.sigv4-enabled", "true")
-    resolved.setdefault("rest.signing-name", S3_TABLES)
+    resolved.setdefault("rest.signing-name", bucket.service)
     resolved.setdefault("rest.signing-region", region)
-    # The table bucket is in the ARN's region, and the credentials the endpoint
-    # vends are for the files in it.
+    # The bucket is in that region, and so are the files the endpoint vends
+    # credentials for.
     resolved.setdefault("s3.region", region)
     return resolved
+
+
+def _stated_region(properties: Mapping[str, str]) -> str:
+    """The region for a warehouse that names none: the AWS configuration's.
+
+    The Glue door takes the bucket as `<account>:s3tablescatalog/<bucket>`,
+    which says nothing about where either is. A region is stated once, under a
+    property or in the environment every AWS client here already reads, and
+    never guessed: the wrong one signs for a catalog that is not this one.
+    """
+    for name in _REGION_PROPERTIES:
+        if stated := str(properties.get(name) or "").strip():
+            return stated
+    if environment := _environment_region():
+        return environment
+    raise ValueError(
+        f"an {S3_TABLES} catalog at the Glue endpoint states its region: set "
+        "rest.signing-region on the catalog, or AWS_REGION in the worker's "
+        "environment"
+    )
+
+
+def _environment_region() -> str | None:
+    """The region the AWS environment states, or None."""
+    for name in _REGION_VARIABLES:
+        if stated := os.environ.get(name, "").strip():
+            return stated
+    import boto3
+
+    # A profile, a config file, or the instance the worker runs on.
+    return boto3.Session().region_name
 
 
 def _file_location(location: str) -> str:
@@ -136,7 +208,11 @@ class IcebergCatalog(Convertible):
         if not self.name:
             raise ValueError("an Iceberg catalog name must be non-empty")
         self.properties = dict(self.properties)
-        if warehouse := self.properties.get("warehouse"):
+        warehouse = self.properties.get("warehouse")
+        # A table bucket is named, not located: `123456789012:s3tablescatalog/x`
+        # is no more a relative path than the ARN is, and resolving it against
+        # the working directory produced a `file://` URL for the endpoint.
+        if warehouse and table_bucket_of(self.properties) is None:
             self.properties["warehouse"] = _file_location(warehouse)
         self.__dict__["_location_guard"] = threading.RLock()
 
@@ -214,10 +290,14 @@ class IcebergCatalog(Convertible):
         `trading.eu` -- so `recursive=True` walks down. It costs one call per
         namespace found, which is free on SQLite and a round trip each on REST
         or Glue; the default stays the single call.
+
+        A table bucket has no second level to walk: S3 Tables namespaces are
+        one deep, whichever endpoint serves them, so the walk there would be
+        one round trip per namespace to be told so.
         """
         found = self.catalog.list_namespaces(*((under,) if under else ()))
         names = [".".join(levels) for levels in found]
-        if not recursive:
+        if not recursive or self.table_bucket:
             return names
         below = [name for parent in names for name in self.namespaces(parent, recursive=True)]
         return list(dict.fromkeys(names + below))
@@ -278,10 +358,15 @@ class IcebergCatalog(Convertible):
         return self.catalog.load_table(name)
 
     def drop_table(self, name: str, *, purge: bool = False, missing_ok: bool = True) -> None:
-        """Drop a table, optionally deleting its files with it."""
+        """Drop a table, optionally deleting its files with it.
+
+        A table in a bucket has one drop and it takes the data: S3 Tables owns
+        those files, so it answers a drop that asks to keep them with a 400.
+        `purge` is a choice everywhere else.
+        """
         if missing_ok and not self.table_exists(name):
             return
-        if purge:
+        if purge or self.table_bucket:
             self.catalog.purge_table(name)
         else:
             self.catalog.drop_table(name)

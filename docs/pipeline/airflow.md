@@ -313,10 +313,11 @@ EKS web identity, or the worker's standard AWS credential chain.
 
 ## AWS S3 Tables
 
-A table bucket is named by its ARN and nothing else; the runner's group
-carries the extra that signs its REST calls. Deploy it as described in
-[AWS S3 Tables](operations/deploy.md#aws-s3-tables), then trigger with that
-catalog:
+A table bucket is named by the endpoint that serves it -- its ARN at the S3
+Tables endpoint, `<account>:s3tablescatalog/<name>` at the Glue one -- and the
+runner's group carries the extra that signs those REST calls. Deploy it as
+described in [AWS S3 Tables](operations/deploy.md#aws-s3-tables), then trigger
+with that catalog:
 
 ```bash
 uv run --project "$REKEP_ROOT/python" --group airflow airflow dags trigger \
@@ -335,8 +336,11 @@ uv run --project "$REKEP_ROOT/python" --group airflow airflow dags trigger \
   }'
 ```
 
-`rekep_products` reads the same catalog out of its own document, so both DAGs
-name one table bucket or neither does.
+Behind the Glue endpoint the conf is
+`"warehouse":"123456789012:s3tablescatalog/market-tables"` with
+`"rest.signing-region":"eu-west-1"`, and the worker's role needs its Lake
+Formation grants. `rekep_products` reads the same catalog out of its own
+document, so both DAGs name one table bucket or neither does.
 
 ## Production checklist
 
