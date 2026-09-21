@@ -16,6 +16,10 @@ from rekep.times import EPOCH, ULBRIDGE_ROWHEADER
 #: The zone every instant here is spelled in.
 UTC = datetime.timezone.utc
 
+#: What a UUIDv7 carries below its instant and its variant bits: the sixty-two
+#: a random one fills, and the ones the read fills with the content code.
+RANDOM = (1 << 62) - 1
+
 
 def test_message_declares_the_text_row_and_its_storage_columns() -> None:
     field = Message.into_field()
@@ -151,9 +155,13 @@ def test_a_line_without_the_bridge_header_is_kept_as_an_unstamped_message(tmp_pa
     # undated message takes in `fix.bronze`, and states an identity over it.
     assert row["currunix"] == EPOCH
     # The pin's own identity, stated over the line: a UUIDv7 whose instant is
-    # the pin and whose rest is that line's code -- not the zero identity a
-    # row built anywhere but the read would carry.
-    assert row["curruuid"].startswith(bytes(6)) and row["curruuid"] != bytes(16)
+    # the pin and whose rest is that line's own code -- so an undated line is
+    # still told from every other one, and not the zero identity a row built
+    # anywhere but the read would carry.
+    identity = row["curruuid"]
+    assert identity != bytes(16) and identity.startswith(bytes(6))
+    assert identity[6] >> 4 == 7, "a UUIDv7, at the pin"
+    assert int.from_bytes(identity[8:], "big") & RANDOM == row["currhashcode"] & RANDOM
     assert all(
         row[name] is None
         for name in (
