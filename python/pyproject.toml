@@ -44,8 +44,14 @@ iceberg = ["pyiceberg[pyiceberg-core,sql-sqlite]>=0.12"]
 # without this -- and it is the one thing a full S3 run needs that the code
 # itself does not provide.
 glue = ["pyiceberg[glue]>=0.12"]
+# AWS S3 Tables as the catalog. A table bucket is an Iceberg REST catalog AWS
+# hosts, and its calls are signed with SigV4 -- which pyiceberg does through
+# botocore, and resolves credentials for through a boto3 session. Neither
+# comes with the Iceberg extra, so `type: s3tables` raises ImportError at the
+# first catalog call without this.
+s3tables = ["pyiceberg[rest-sigv4]>=0.12"]
 polars = ["polars>=1.36"]
-all = ["rekep[glue,iceberg,polars]"]
+all = ["rekep[glue,iceberg,polars,s3tables]"]
 
 [project.scripts]
 # Publishing a declaration and checking one loads are things CI and a
@@ -67,7 +73,7 @@ dev = [
     "ruff>=0.6",
     # `tomllib` is 3.11's, and the packaging test reads this file with it.
     "tomli>=2.0; python_version < '3.11'",
-    "rekep[iceberg,polars]",
+    "rekep[iceberg,polars,s3tables]",
 ]
 # What either task runner needs to execute a Marimo document: Marimo imports
 # the application and runs its cells, and Glue is the catalog a production
@@ -89,7 +95,7 @@ runner = [
     "marimo>=0.16,<1",
     "dbt-core>=1.10,<2",
     "dbt-duckdb>=1.9,<2",
-    "rekep[glue,iceberg,polars]",
+    "rekep[glue,iceberg,polars,s3tables]",
 ]
 # What the Airflow DAG and its operator are tested against. Airflow is an
 # orchestrator this repository is deployed into, never a runtime dependency of

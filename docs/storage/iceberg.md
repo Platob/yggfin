@@ -252,6 +252,30 @@ Configure warehouse S3 behavior with standard catalog properties:
 Credentials belong in the provider chain or secret-backed `s3.*` properties,
 never in committed task documents.
 
+AWS S3 Tables is the one type rekep resolves itself, because a table bucket is
+an Iceberg REST catalog AWS hosts and its ARN states where: the `warehouse` is
+the ARN, and the regional endpoint, SigV4 signing for `s3tables`, and the
+region the table files are in follow from it.
+
+```json
+{
+  "catalog": {
+    "name": "production",
+    "properties": {
+      "type": "s3tables",
+      "warehouse": "arn:aws:s3tables:eu-west-1:123456789012:bucket/market-tables"
+    }
+  }
+}
+```
+
+Anything the ARN does not decide -- `uri` for a VPC or FIPS endpoint, another
+`rest.signing-region`, explicit `s3.*` settings -- is kept exactly as stated.
+`IcebergCatalog.table_bucket` answers the ARN for such a catalog and `None`
+for every other, which is how maintenance knows whose files it is looking at.
+The extra is `rekep[s3tables]`: pyiceberg signs those REST calls through
+boto3.
+
 ## Message schema replacement
 
 The current raw contract is the generic event layout: `currunix`, `curruuid`
@@ -280,6 +304,10 @@ messages.optimize(
 
 Compaction rewrites small files. Cleanup expires old snapshots and removes only
 files unreachable from every retained ref after the configured grace period.
+Under an S3 Tables table bucket it removes nothing: the service writes and
+deletes those files as it compacts, and the bucket behind a table is not one
+the account lists, so no listing here can settle a file's ownership. The sweep
+reports `deleted: 0` and records which bucket keeps its files.
 The checked maintenance job exposes the same controls:
 
 ```bash

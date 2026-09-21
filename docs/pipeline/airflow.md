@@ -311,6 +311,33 @@ uv run --project "$REKEP_ROOT/python" --group airflow airflow dags trigger \
 Do not pass AWS keys in `--conf`. Use an EC2 instance profile, ECS task role,
 EKS web identity, or the worker's standard AWS credential chain.
 
+## AWS S3 Tables
+
+A table bucket is named by its ARN and nothing else; the runner's group
+carries the extra that signs its REST calls. Deploy it as described in
+[AWS S3 Tables](operations/deploy.md#aws-s3-tables), then trigger with that
+catalog:
+
+```bash
+uv run --project "$REKEP_ROOT/python" --group airflow airflow dags trigger \
+  rekep_ingestion \
+  --conf '{
+    "filesystem":"s3://market-capture/ulbridge/2026/08/14?region=eu-west-1",
+    "start":"2026-08-14",
+    "end":"2026-08-14",
+    "catalog":{
+      "name":"rekep",
+      "properties":{
+        "type":"s3tables",
+        "warehouse":"arn:aws:s3tables:eu-west-1:123456789012:bucket/market-tables"
+      }
+    }
+  }'
+```
+
+`rekep_products` reads the same catalog out of its own document, so both DAGs
+name one table bucket or neither does.
+
 ## Production checklist
 
 1. Pin and deploy one repository revision to every worker.

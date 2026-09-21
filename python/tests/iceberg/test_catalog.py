@@ -75,6 +75,107 @@ def test_standard_s3_properties_reach_pyiceberg_unchanged(
     assert {name: seen[name] for name in properties} == properties
 
 
+#: One table bucket, in the partition, region and account its ARN states.
+TABLE_BUCKET = "arn:aws:s3tables:eu-west-1:123456789012:bucket/market-tables"
+
+
+def _loaded(monkeypatch: pytest.MonkeyPatch) -> dict[str, str]:
+    """The properties pyiceberg is handed when a catalog here is loaded."""
+    import pyiceberg.catalog
+
+    seen: dict[str, str] = {}
+
+    def load(name: str, **properties: str) -> object:
+        seen.update(properties)
+        return object()
+
+    monkeypatch.setattr(pyiceberg.catalog, "load_catalog", load)
+    return seen
+
+
+def test_a_table_bucket_arn_resolves_the_s3_tables_rest_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`s3tables` is the REST catalog AWS hosts; the ARN states where it is."""
+    seen = _loaded(monkeypatch)
+
+    catalog = IcebergCatalog(
+        name="rekep", properties={"type": "s3tables", "warehouse": TABLE_BUCKET}
+    )
+    _ = catalog.catalog
+
+    assert seen["type"] == "rest"
+    assert seen["warehouse"] == TABLE_BUCKET
+    assert seen["uri"] == "https://s3tables.eu-west-1.amazonaws.com/iceberg"
+    assert seen["rest.sigv4-enabled"] == "true"
+    assert seen["rest.signing-name"] == "s3tables"
+    assert seen["rest.signing-region"] == "eu-west-1"
+    assert seen["s3.region"] == "eu-west-1"
+    # The type the document names is what the document still says it is.
+    assert catalog.properties["type"] == "s3tables"
+    assert catalog.table_bucket == TABLE_BUCKET
+
+
+def test_a_table_bucket_keeps_every_setting_the_operator_states(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A private endpoint, another signing region, explicit keys: all stated."""
+    seen = _loaded(monkeypatch)
+
+    _ = IcebergCatalog(
+        properties={
+            "type": "s3tables",
+            "warehouse": TABLE_BUCKET,
+            "uri": "https://vpce-0abc.s3tables.eu-west-1.vpce.amazonaws.com/iceberg",
+            "rest.signing-region": "eu-west-2",
+            "s3.region": "eu-west-2",
+        }
+    ).catalog
+
+    assert seen["uri"] == "https://vpce-0abc.s3tables.eu-west-1.vpce.amazonaws.com/iceberg"
+    assert seen["rest.signing-region"] == "eu-west-2"
+    assert seen["s3.region"] == "eu-west-2"
+    assert seen["rest.signing-name"] == "s3tables"
+
+
+def test_a_table_bucket_in_another_partition_keeps_its_domain(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen = _loaded(monkeypatch)
+
+    _ = IcebergCatalog(
+        properties={
+            "type": "s3tables",
+            "warehouse": "arn:aws-cn:s3tables:cn-north-1:123456789012:bucket/market",
+        }
+    ).catalog
+
+    assert seen["uri"] == "https://s3tables.cn-north-1.amazonaws.com.cn/iceberg"
+
+
+def test_a_table_bucket_arn_is_left_exactly_as_written() -> None:
+    """`arn:` is a scheme, so nothing resolves it against the working directory."""
+    catalog = IcebergCatalog(properties={"type": "s3tables", "warehouse": TABLE_BUCKET})
+
+    assert catalog.properties["warehouse"] == TABLE_BUCKET
+
+
+def test_s3_tables_without_a_table_bucket_says_so() -> None:
+    """The ARN is the configuration, so a warehouse prefix is a document to fix."""
+    catalog = IcebergCatalog(
+        properties={"type": "s3tables", "warehouse": "s3://market-warehouse/rekep"}
+    )
+
+    with pytest.raises(ValueError, match="arn:aws:s3tables:"):
+        _ = catalog.table_bucket
+
+
+def test_only_an_s3_tables_catalog_is_a_table_bucket() -> None:
+    catalog = IcebergCatalog(properties={"type": "glue", "warehouse": TABLE_BUCKET})
+
+    assert catalog.table_bucket is None
+
+
 def test_relative_local_locations_become_absolute_file_uris(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -493,6 +594,8 @@ def test_an_unknown_mtime_is_spared_by_the_orphan_grace(
     dataset = object.__new__(IcebergDataset)
     dataset.__dict__.update(
         iceberg_table=object(),
+        # The sweep asks its catalog who owns the files before it lists any.
+        store=IcebergCatalog(properties={"type": "sql"}),
         refresh=lambda: dataset,
         _live=lambda _table: (set(), set()),
         _data_path=lambda _table: "file:///root",
@@ -502,6 +605,26 @@ def test_an_unknown_mtime_is_spared_by_the_orphan_grace(
     assert dataset._orphans(datetime.timedelta(0), metadata=False)[0][1] == (
         "root/uncommitted.parquet"
     )
+
+
+def test_a_table_bucket_keeps_its_own_files(caplog: pytest.LogCaptureFixture) -> None:
+    """S3 Tables owns the files under a table; a sweep here settles nothing."""
+    import logging
+
+    from rekep.iceberg.dataset import IcebergDataset
+
+    dataset = IcebergDataset(
+        name="messages",
+        namespace="logs",
+        field=Quote.into_field(),
+        catalog_name="rekep",
+        catalog_properties={"type": "s3tables", "warehouse": TABLE_BUCKET},
+    )
+
+    with caplog.at_level(logging.INFO, logger="rekep.iceberg.dataset"):
+        # Neither the catalog nor the table is opened to answer this.
+        assert dataset.orphan_files() == []
+    assert TABLE_BUCKET in caplog.text
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows path normalization")

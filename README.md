@@ -123,7 +123,7 @@ The reviewed contracts are [Message](schemas/rekep/message.json) and
 spec and sort order PyIceberg records for `logs.messages` and the one both FIX
 tables share.
 The [pipeline guide](docs/pipeline/index.md) covers local files, S3, AWS Glue,
-Airflow, and operations; the [data-product guide](docs/products/index.md)
+AWS S3 Tables, Airflow, and operations; the [data-product guide](docs/products/index.md)
 defines every published column.
 
 Development:

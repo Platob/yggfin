@@ -92,6 +92,11 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
 - Preserve supplied Iceberg ids and assign missing ids.
 - Keep PyIceberg's configured `FileIO` and native PyArrow streams at the table
   boundary. Standard `s3.*` catalog properties own endpoints and credentials.
+- `type: s3tables` is the one catalog type resolved here, because a table
+  bucket is an Iceberg REST catalog AWS hosts and its ARN is the whole
+  configuration: the `warehouse` ARN states the endpoint, the signing region
+  and the file region, and every other property stays as written. The service
+  owns the files under a table bucket, so no sweep deletes one there.
 - Maintenance reports settled changes and never deletes a file whose ownership
   is ambiguous.
 

@@ -24,8 +24,83 @@ if TYPE_CHECKING:
 #: PyIceberg's native PyArrow streams, with yggfin's output ownership boundary.
 PYARROW_FILE_IO = "rekep.iceberg.file_io.IcebergFileIO"
 
+#: AWS S3 Tables. A table bucket *is* an Iceberg REST catalog, hosted by AWS,
+#: so this type is the one yggfin resolves itself: it loads pyiceberg's REST
+#: catalog against the bucket's regional endpoint, signed for `s3tables`. The
+#: bucket ARN states the partition, the region and the account, which is why
+#: it is the whole configuration and there is no second place to spell one.
+S3_TABLES = "s3tables"
+
+#: A table bucket ARN, `arn:<partition>:s3tables:<region>:<account>:bucket/<name>`.
+_TABLE_BUCKET = re.compile(
+    r"^arn:(?P<partition>aws[a-z0-9-]*):s3tables:(?P<region>[a-z0-9-]+)"
+    r":(?P<account>\d{12}):bucket/(?P<bucket>[a-z0-9][a-z0-9-]{1,61}[a-z0-9])$"
+)
+
+#: The domain a partition's regional endpoints hang off. Everything outside
+#: this mapping is on the commercial one, `aws-us-gov` included.
+_PARTITION_DOMAINS = {"aws-cn": "amazonaws.com.cn"}
+_AWS_DOMAIN = "amazonaws.com"
+
 _SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 _WINDOWS_PATH = re.compile(r"^(?:[A-Za-z]:[\\/]|\\\\)")
+
+
+def table_bucket_of(properties: Mapping[str, Any]) -> str | None:
+    """The S3 Tables table bucket `properties` names, or None for any other."""
+    parsed = _table_bucket(properties)
+    return None if parsed is None else parsed.group(0)
+
+
+def _table_bucket(properties: Mapping[str, Any]) -> re.Match[str] | None:
+    """The table bucket ARN these properties name, parsed, or None.
+
+    Raises where the type says `s3tables` and the warehouse is not a table
+    bucket ARN: the ARN is the configuration, so a missing one is a document
+    to fix rather than a REST endpoint to guess.
+    """
+    declared = properties.get("type")
+    if not isinstance(declared, str) or declared.strip().casefold() != S3_TABLES:
+        return None
+    warehouse = str(properties.get("warehouse") or "").strip()
+    parsed = _TABLE_BUCKET.match(warehouse)
+    if parsed is None:
+        raise ValueError(
+            f"an {S3_TABLES} catalog is its table bucket: warehouse must be "
+            "arn:aws:s3tables:<region>:<account>:bucket/<name>, "
+            f"not {warehouse!r}"
+        )
+    return parsed
+
+
+def _s3_tables_properties(properties: Mapping[str, str]) -> dict[str, str]:
+    """PyIceberg's REST configuration for the table bucket these name.
+
+    Only what the ARN decides is filled, and each of it with `setdefault`: a
+    private or FIPS endpoint, another signing region, and explicit credentials
+    stay the operator's to state, under the standard property names.
+    """
+    parsed = _table_bucket(properties)
+    if parsed is None:
+        return dict(properties)
+    # pyiceberg signs the REST calls with botocore and resolves credentials
+    # through a boto3 session; neither comes with the Iceberg extra.
+    require("boto3", S3_TABLES)
+    region = parsed["region"]
+    domain = _PARTITION_DOMAINS.get(parsed["partition"], _AWS_DOMAIN)
+    resolved = dict(properties)
+    resolved["type"] = "rest"
+    # The ARN as it parsed: pyiceberg sends the warehouse to the endpoint, and
+    # a document may have spelled it with space around it.
+    resolved["warehouse"] = parsed.group(0)
+    resolved.setdefault("uri", f"https://s3tables.{region}.{domain}/iceberg")
+    resolved.setdefault("rest.sigv4-enabled", "true")
+    resolved.setdefault("rest.signing-name", S3_TABLES)
+    resolved.setdefault("rest.signing-region", region)
+    # The table bucket is in the ARN's region, and the credentials the endpoint
+    # vends are for the files in it.
+    resolved.setdefault("s3.region", region)
+    return resolved
 
 
 def _file_location(location: str) -> str:
@@ -74,7 +149,9 @@ class IcebergCatalog(Convertible):
         Loading reads configuration and may open a connection, and every table
         here lives in the same one. `py-io-impl` defaults to Arrow's FileIO;
         a named implementation is wrapped so failed commits still own every
-        output they created.
+        output they created. A `s3tables` type resolves here rather than in
+        `__post_init__`, so a bucket named by a later `--property` resolves
+        too.
         """
         loaded = self.__dict__.get("catalog")
         if loaded is not None:
@@ -86,7 +163,7 @@ class IcebergCatalog(Convertible):
             require("pyiceberg", "iceberg")
             from pyiceberg.catalog import load_catalog
 
-            properties = self._tracked_file_io_properties(self.properties)
+            properties = self._tracked_file_io_properties(_s3_tables_properties(self.properties))
             loaded = load_catalog(self.name, **properties)
             self.__dict__["catalog"] = loaded
             return loaded
@@ -104,6 +181,17 @@ class IcebergCatalog(Convertible):
         else:
             configured.setdefault("py-io-impl", PYARROW_FILE_IO)
         return configured
+
+    @property
+    def table_bucket(self) -> str | None:
+        """The S3 Tables table bucket this catalog is, or None for any other.
+
+        A table bucket's files are the service's: S3 Tables compacts them and
+        expires their snapshots on a schedule of its own, and the bucket
+        behind a table is not one this account lists. Maintenance reads this
+        and leaves the sweep to whoever owns the files.
+        """
+        return table_bucket_of(self.properties)
 
     def close(self) -> None:
         """Release a loaded catalog without opening an unused one."""

@@ -140,6 +140,88 @@ uv run --project python rekep task run \
   --parameters-file /run/rekep/aws.json
 ```
 
+## AWS S3 Tables
+
+A table bucket *is* an Iceberg REST catalog, hosted and maintained by AWS, and
+its ARN is the whole of its configuration: the partition, the region and the
+account are all in it. So `type: s3tables` takes the ARN as its `warehouse`
+and resolves the rest -- the regional endpoint
+`https://s3tables.<region>.amazonaws.com/iceberg`, SigV4 signing for the
+`s3tables` service, and that region for the table files. There is no warehouse
+prefix to name, because a table bucket has no location of yours in it.
+
+Install the extra -- pyiceberg signs those REST calls through boto3, which the
+Iceberg extra does not pull -- then authenticate the way every other AWS mode
+here does:
+
+```bash
+uv sync --project python --extra s3tables
+export AWS_REGION=eu-west-1
+aws sts get-caller-identity
+```
+
+Create the three tables:
+
+```bash
+uv run --project python rekep iceberg deploy \
+  --catalog rekep \
+  --property type=s3tables \
+  --property warehouse=arn:aws:s3tables:eu-west-1:123456789012:bucket/market-tables
+```
+
+Use this parameters file for the three ingestion tasks and for `build_dbt`:
+
+```json
+{
+  "catalog": {
+    "name": "rekep",
+    "properties": {
+      "type": "s3tables",
+      "warehouse": "arn:aws:s3tables:eu-west-1:123456789012:bucket/market-tables"
+    }
+  }
+}
+```
+
+The worker needs the S3 Tables namespace and table actions on that bucket,
+plus `s3tables:GetTableData` and `s3tables:PutTableData` for the rows
+themselves; the endpoint vends the credentials each table's files are read and
+written with. The capture bucket still needs its own list and read
+permissions. Prefer an IAM role; do not place access keys in task JSON, CLI
+arguments, or Airflow Params.
+
+Everything the ARN does not decide stays the operator's, under the standard
+property names, and is kept exactly as written -- a VPC endpoint or a FIPS one
+as `uri`, another `rest.signing-region`, explicit `s3.*` credentials:
+
+```json
+{
+  "catalog": {
+    "name": "rekep",
+    "properties": {
+      "type": "s3tables",
+      "warehouse": "arn:aws:s3tables:eu-west-1:123456789012:bucket/market-tables",
+      "uri": "https://vpce-0abc123.s3tables.eu-west-1.vpce.amazonaws.com/iceberg"
+    }
+  }
+}
+```
+
+A table bucket's namespaces are one level deep and spelled in lowercase
+letters, digits and underscores, which `logs`, `fix`, `orders` and
+`executions` already are. Deployment, ingestion, the dbt build and their
+replays are otherwise exactly what they are on any other catalog.
+
+The one difference is maintenance: the service compacts these tables and
+expires their snapshots on a schedule of its own, and the bucket behind a
+table is not one this account lists. A sweep can therefore settle no file's
+ownership, so [`optimize_iceberg`](../../storage/iceberg.md#maintenance)
+deletes nothing here -- it reports `deleted: 0` and records which bucket keeps
+its files -- while the compaction and snapshot expiry it asks for still commit
+through the catalog like any other Iceberg table. Set `remove_orphans` to
+`false` to say so in the document as well, and consider leaving the pass
+itself to the service.
+
 ## Table properties and branches
 
 ```bash
