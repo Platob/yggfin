@@ -62,10 +62,12 @@ class Message(Convertible):
     Every column is one the native text read already states, under the name
     the read states it with: the event it settles over the line, the two
     columns its traversal names, the line itself, and the bridge's own
-    captures named for the fields a parse fills from them -- so a stored row
-    goes on through the codec without one spelling being translated into
-    another, and nothing here is a second reading of a fact the read has
-    already settled.
+    captures. Four of those are named for the fields a parse fills from them,
+    so a stored row goes on through the codec without one spelling being
+    translated into another; the two the graph names nothing for --
+    `msgthreadid` and `loglevel` -- take the same spelling anyway, because a
+    column is read by what it holds and not by where it ends up. Nothing here
+    is a second reading of a fact the read has already settled.
     """
 
     currunix: Annotated[datetime.datetime, partition_key(HOUR)] = EPOCH
@@ -150,8 +152,14 @@ class Message(Convertible):
     are looked up on that raw identity.
     """
 
-    threadId: int | None = None
-    """Bridge thread identifier captured from the line header."""
+    msgthreadid: int | None = None
+    """Bridge thread the line was handled on, captured from its header.
+
+    The graph names no thread and neither does the dictionary, so this column
+    and `loglevel` stay on `logs.messages` and reach a FIX row only through
+    `srcuuids`. They are spelled like the bracket's other parts regardless:
+    what a column holds is what names it.
+    """
 
     msgsessionid: str | None = None
     """Bridge session instance the line was handled on, filling `msgsessionid` (65032).
@@ -177,8 +185,8 @@ class Message(Convertible):
     empty on every FIX row it produces.
     """
 
-    level: str | None = None
-    """Severity spelling captured from the line header."""
+    loglevel: str | None = None
+    """Severity the bridge logged the line at, as its header spells it."""
 
     def __post_init__(self) -> None:
         """Normalize the raw scalar values once."""
@@ -190,8 +198,8 @@ class Message(Convertible):
         self.currunix = currunix
         if not isinstance(self.curruuid, bytes):
             self.curruuid = bytes(self.curruuid)
-        if self.threadId is not None:
-            self.threadId = int(self.threadId)
+        if self.msgthreadid is not None:
+            self.msgthreadid = int(self.msgthreadid)
         if self.msgseqnum is not None:
             self.msgseqnum = int(self.msgseqnum)
         if isinstance(self.body, (bytes, bytearray, memoryview)):

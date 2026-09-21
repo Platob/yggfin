@@ -46,10 +46,10 @@
       },
       {
         "id": 7,
-        "name": "threadId",
+        "name": "msgthreadid",
         "type": "long",
         "required": false,
-        "doc": "Bridge thread identifier captured from the line header."
+        "doc": "Bridge thread the line was handled on, captured from its header. The graph names no thread and neither does the dictionary, so this column and `loglevel` stay on `logs.messages` and reach a FIX row only through `srcuuids`. They are spelled like the bracket's other parts regardless: what a column holds is what names it."
       },
       {
         "id": 8,
@@ -81,10 +81,10 @@
       },
       {
         "id": 12,
-        "name": "level",
+        "name": "loglevel",
         "type": "string",
         "required": false,
-        "doc": "Severity spelling captured from the line header."
+        "doc": "Severity the bridge logged the line at, as its header spells it."
       }
     ],
     "schema-id": 0,

@@ -239,7 +239,7 @@ def test_the_published_row_is_the_dictionarys_native_shape() -> None:
         "figicode",
     }
     names = [member.name for member in declared]
-    for capture in ("sourceurl", "rownum", "threadId", "threadid", "level", "body"):
+    for capture in ("sourceurl", "rownum", "msgthreadid", "loglevel", "body"):
         assert capture not in names, capture
     assert {"msgsessionid", "msgctxid", "msgseqnum", "msgpluginid"} <= set(names)
     assert len(declared) == ROW
@@ -349,7 +349,7 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from(bronze) -> None:
     stored = fix_message_field().into_arrow_schema()
     parsed = fix_parse_field().into_arrow_schema()
 
-    for column in ("sourceurl", "rownum", "threadId", "threadid", "level", "body"):
+    for column in ("sourceurl", "rownum", "msgthreadid", "loglevel", "body"):
         assert column not in bronze.column_names, column
         assert column not in stored.names, column
         assert column not in parsed.names, column

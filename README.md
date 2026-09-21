@@ -103,8 +103,8 @@ event from its `TransactTime`, while synthetic expiry keeps its exact deadline.
 The 123-column **FixMsg** row is the native parse, storage, and lifecycle
 shape. It reconstructs canonical message semantics
 from lifted columns and residual `fixentries`; lifted values are not duplicated
-as a second arrival record. `sourceurl`, `rownum`, `threadId`, `level`, and
-`body` remain only in `logs.messages`, while the bridge's `msgsessionid`,
+as a second arrival record. `sourceurl`, `rownum`, `msgthreadid`, `loglevel`,
+and `body` remain only in `logs.messages`, while the bridge's `msgsessionid`,
 `msgctxid`, `msgseqnum`, and `msgpluginid` are native FixMsg fields a raw line
 fills; `srcuuids` joins a FIX row back to raw
 `curruuid`. `crosscode` uses the first available business

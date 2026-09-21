@@ -128,12 +128,12 @@ def expected(index: int) -> dict[str, object]:
     return {
         "currunix": datetime_of(mtime(index)),
         "rownum": index + 1,
-        "threadId": index % 16 + 1,
+        "msgthreadid": index % 16 + 1,
         "msgsessionid": f"{index % 2**32:08x}",
         "msgctxid": f"{index % 2**40:010x}",
         "msgseqnum": index,
         "msgpluginid": f"feed-{index % 4}",
-        "level": "WARN" if index % 7 == 0 else "INFO",
+        "loglevel": "WARN" if index % 7 == 0 else "INFO",
         "body": body(index),
     }
 

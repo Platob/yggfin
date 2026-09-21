@@ -158,13 +158,14 @@ that.
 
 A newly deployed FIX table has exactly the 123 native FixMsg columns. Because
 schema merge is additive, an existing table that still has `sourceurl`,
-`rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`, or `level`
-must delete those columns through a reviewed PyIceberg `update_schema()`
-transaction before its windows are replayed. `sourceurl`, `rownum`, `threadId`
-and `level` are raw facts and remain in `logs.messages`. The other three are
-retired outright: a line's own instant is `currunix` and the table is laid out
-by the hour of it rather than by a column beside it, and the plugin a line
-names is `msgpluginid`, a native FixMsg column the parse fills.
+`rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`, or `level` --
+the names that table holds them under -- must delete those columns through a
+reviewed PyIceberg `update_schema()` transaction before its windows are
+replayed. `sourceurl`, `rownum`, `msgthreadid` and `loglevel` are the raw
+facts and remain in `logs.messages`, the last two under those spellings. The
+other three are retired outright: a line's own instant is `currunix` and the
+table is laid out by the hour of it rather than by a column beside it, and the
+plugin a line names is `msgpluginid`, a native FixMsg column the parse fills.
 
 ## Migrating a warehouse that holds the retired FIX table
 

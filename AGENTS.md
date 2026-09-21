@@ -50,10 +50,10 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
 - A raw text row names its source only through Yggdryl `sourceurl` and
   `rownum`.
 - Every capture a row header declares is named for what the native read fills
-  from it -- a column for each of the bracket's own facts, and the settled
-  `currunix` for `mtime`, the record clock -- so `capture_names` alone tells
-  the codec which bracket part is which. Never map a capture spelling onto a
-  tag.
+  from it -- one lowercase column for each of the bracket's own facts, named
+  for the fact it holds, and the settled `currunix` for `mtime`, the record
+  clock -- so `capture_names` alone tells the codec which bracket part is
+  which. Never map a capture spelling onto a tag.
 - `ULBRIDGE_ROWHEADER` is the default and the only one spelled here. A bridge
   writing the same facts in a layout of its own is read by naming its header
   in the task document, never by a second constant: the layout is a parameter
@@ -152,11 +152,11 @@ the same place, the same lineage and the same state.
 Both tables use the native `fix_message_field(codec)` field directly,
 without a yggfin FIX model. Parse, storage, reconstruction,
 and lifecycle all use the same 123-column **FixMsg** contract. `sourceurl`,
-`rownum`, `threadId`, `level` and `body` remain only in `logs.messages`; the
-bridge's `msgsessionid`, `msgctxid`, `msgseqnum` and `msgpluginid` are native
-FixMsg fields a raw line fills, so they stand on both shapes under one spelling
-and nothing translates between them. `srcuuids` joins a FIX row to the raw
-row's `curruuid`.
+`rownum`, `msgthreadid`, `loglevel` and `body` remain only in `logs.messages`;
+the bridge's `msgsessionid`, `msgctxid`, `msgseqnum` and `msgpluginid` are
+native FixMsg fields a raw line fills, so they stand on both shapes under one
+spelling and nothing translates between them. `srcuuids` joins a FIX row to
+the raw row's `curruuid`.
 The native row contains 29 crate fields; code vocabularies live centrally and
 fields reference them through `FIX:codeset`. `fixentries` is residual and does
 not duplicate successfully lifted scalars or complete groups. A reconstructed

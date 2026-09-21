@@ -62,10 +62,10 @@ assert reader.schema.equals(Message.read_field().into_arrow_schema(), check_meta
 
 The row header is the bridge's own `ULBRIDGE_ROWHEADER`, stated by the native
 core and spelled once in `rekep.times` -- pinned against the core's own text
-rather than respelled per reader. It captures `mtime`, `threadId`,
-`msgsessionid`, `msgctxid`, `msgseqnum`, `msgpluginid` and `level`, each named
-for what the native read fills from it. `mtime` fills no column of its own: it
-is the record clock, and naming it that is what makes the read settle
+rather than respelled per reader. It captures `mtime`, `msgthreadid`,
+`msgsessionid`, `msgctxid`, `msgseqnum`, `msgpluginid` and `loglevel`, each
+named for what the native read fills from it. `mtime` fills no column of its
+own: it is the record clock, and naming it that is what makes the read settle
 `currunix` from it, so the line's instant is stated once rather than read
 twice. `body` is the whole line, row header included, as text the read decoded
 it to: the core retains the whole record and reads the captures off it.
@@ -78,7 +78,7 @@ UUIDv7 over the settled instant and that content code, on every row the read
 produces -- which a message parsed out of the stored line names as its one
 `srcuuids` entry.
 
-`sourceurl`, `rownum`, `threadId`, `level` and `body` are raw to
+`sourceurl`, `rownum`, `msgthreadid`, `loglevel` and `body` are raw to
 `logs.messages` and stay there. The other four are FixMsg columns a raw line
 fills: `msgsessionid` (65032), `msgctxid` (65008) and `msgpluginid` (65009)
 are the crate's own fields, and `msgseqnum` fills `MsgSeqNum` (34) where a
@@ -133,11 +133,11 @@ legible, and a header that renames or omits one is refused by name:
 from rekep import Message
 from rekep.times import ULBRIDGE_ROWHEADER
 
-renamed = ULBRIDGE_ROWHEADER.replace(r"(?P<level>[A-Z]+)", r"(?P<severity>[A-Z]+)")
+renamed = ULBRIDGE_ROWHEADER.replace(r"(?P<loglevel>[A-Z]+)", r"(?P<severity>[A-Z]+)")
 try:
     Message.text_options(renamed)
 except ValueError as refusal:
-    assert "captures nothing for level" in str(refusal)
+    assert "captures nothing for loglevel" in str(refusal)
     assert "captures severity, which this read fills nothing from" in str(refusal)
 ```
 

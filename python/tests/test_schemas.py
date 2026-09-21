@@ -149,7 +149,7 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from() -> None:
     parsed = fix_parse_field().into_arrow_schema()
     logged = Message.into_field().into_arrow_schema()
 
-    for column in ("sourceurl", "rownum", "threadId", "threadid", "level", "body"):
+    for column in ("sourceurl", "rownum", "msgthreadid", "loglevel", "body"):
         assert column not in stored.names, column
         assert column not in parsed.names, column
     # The bracket's own facts are native fields a raw line fills, so they are
@@ -230,12 +230,12 @@ def test_raw_message_contract_keeps_the_captures_the_bridge_names() -> None:
     assert primary_keys(message) == ["currhashcode"]
     assert partition_keys(message) == {"currunix": "hour"}
     assert [member.name for member in message][6:] == [
-        "threadId",
+        "msgthreadid",
         "msgsessionid",
         "msgctxid",
         "msgseqnum",
         "msgpluginid",
-        "level",
+        "loglevel",
     ]
     assert [int(member.iceberg["field_id"]) for member in message] == list(range(1, 13))
     # The event the read settles opens the row, exactly as it opens a FIX one.

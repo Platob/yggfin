@@ -34,12 +34,12 @@ def test_message_declares_the_text_row_and_its_storage_columns() -> None:
         "sourceurl",
         "rownum",
         "body",
-        "threadId",
+        "msgthreadid",
         "msgsessionid",
         "msgctxid",
         "msgseqnum",
         "msgpluginid",
-        "level",
+        "loglevel",
     ]
     assert field["currunix"].into_arrow().type.unit == "us"
     assert field["curruuid"].into_arrow().type == pyarrow.binary(16)
@@ -74,12 +74,12 @@ def test_message_text_options_own_the_complete_native_read() -> None:
     assert options.field == Message.read_field()
     assert options.capture_names == (
         "mtime",
-        "threadId",
+        "msgthreadid",
         "msgsessionid",
         "msgctxid",
         "msgseqnum",
         "msgpluginid",
-        "level",
+        "loglevel",
     )
 
 
@@ -98,13 +98,13 @@ def test_the_text_reader_produces_messages_without_a_python_row_pass(tmp_path) -
         reader.close()
 
     assert table.schema.equals(Message.read_field().into_arrow_schema(), check_metadata=True)
-    assert table.select(
-        ("rownum", "currunix", "threadId", "msgsessionid", "msgctxid", "msgseqnum", "msgpluginid")
-    ).to_pylist() == [
+    settled = ("rownum", "currunix", "msgthreadid")
+    bracket = ("msgsessionid", "msgctxid", "msgseqnum", "msgpluginid")
+    assert table.select(settled + bracket).to_pylist() == [
         {
             "rownum": 1,
             "currunix": datetime.datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC),
-            "threadId": 250,
+            "msgthreadid": 250,
             "msgsessionid": "e7256476",
             "msgctxid": "9effef3e6a",
             "msgseqnum": 72504,
@@ -113,7 +113,7 @@ def test_the_text_reader_produces_messages_without_a_python_row_pass(tmp_path) -
         {
             "rownum": 2,
             "currunix": datetime.datetime(2026, 8, 14, 0, 5, 1, 148000, tzinfo=UTC),
-            "threadId": 653,
+            "msgthreadid": 653,
             "msgsessionid": None,
             "msgctxid": None,
             "msgseqnum": None,
@@ -165,12 +165,12 @@ def test_a_line_without_the_bridge_header_is_kept_as_an_unstamped_message(tmp_pa
     assert all(
         row[name] is None
         for name in (
-            "threadId",
+            "msgthreadid",
             "msgsessionid",
             "msgctxid",
             "msgseqnum",
             "msgpluginid",
-            "level",
+            "loglevel",
         )
     )
 
@@ -179,7 +179,7 @@ def test_message_instance_normalizes_scalar_inputs() -> None:
     message = Message.from_text(
         b"body",
         currunix="2026-08-14 02:05:01.147250+02:00",
-        threadId="250",
+        msgthreadid="250",
         msgseqnum="72504",
     )
 
@@ -193,7 +193,7 @@ def test_message_instance_normalizes_scalar_inputs() -> None:
         147250,
         tzinfo=UTC,
     )
-    assert (message.threadId, message.msgseqnum) == (250, 72504)
+    assert (message.msgthreadid, message.msgseqnum) == (250, 72504)
     assert message.body == "body"
 
 
@@ -305,12 +305,13 @@ def test_a_header_of_its_own_reads_a_bridge_that_writes_the_clock_differently() 
     ("spelled", "refused"),
     [
         (
-            ULBRIDGE_ROWHEADER.replace(r"(?P<level>[A-Z]+)", r"(?P<severity>[A-Z]+)"),
-            "captures nothing for level and captures severity, which this read fills nothing from",
+            ULBRIDGE_ROWHEADER.replace(r"(?P<loglevel>[A-Z]+)", r"(?P<severity>[A-Z]+)"),
+            "captures nothing for loglevel and captures severity, "
+            "which this read fills nothing from",
         ),
         (
-            ULBRIDGE_ROWHEADER.replace(r" \((?P<level>[A-Z]+)\) ", r" \([A-Z]+\) "),
-            "captures nothing for level",
+            ULBRIDGE_ROWHEADER.replace(r" \((?P<loglevel>[A-Z]+)\) ", r" \([A-Z]+\) "),
+            "captures nothing for loglevel",
         ),
     ],
     ids=["renamed", "dropped"],
@@ -333,12 +334,12 @@ def test_the_columns_a_header_is_expected_to_fill_are_the_contract_s_own() -> No
     # failing test rather than a silently empty one.
     assert Message.captures() == {
         "mtime",
-        "threadId",
+        "msgthreadid",
         "msgsessionid",
         "msgctxid",
         "msgseqnum",
         "msgpluginid",
-        "level",
+        "loglevel",
     }
     # A member the read settles or a field apply derives is not a capture,
     # and says so itself rather than being remembered in a list.

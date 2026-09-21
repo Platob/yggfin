@@ -15,9 +15,9 @@ and one `currunix, seqnum, curruuid` sort order.
 ## FIX row composition
 
 The registry constructs one 123-column native row used by parse, storage, and
-lifecycle. `sourceurl`, `rownum`, `threadId`, `level` and `body` remain solely
-in `logs.messages`; a FIX row names its raw source through `srcuuids`. The
-bridge captures beside them -- `msgsessionid`, `msgctxid`, `msgseqnum` and
+lifecycle. `sourceurl`, `rownum`, `msgthreadid`, `loglevel` and `body` remain
+solely in `logs.messages`; a FIX row names its raw source through `srcuuids`.
+The bridge captures beside them -- `msgsessionid`, `msgctxid`, `msgseqnum` and
 `msgpluginid` -- are crate fields of this row in their own right, which a raw
 line fills, so a stored row goes on through the codec without one spelling
 being translated into another. The native row's 29 crate fields include

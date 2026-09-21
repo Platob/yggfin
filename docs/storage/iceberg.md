@@ -163,10 +163,11 @@ The current FIX contract creates a new table with its 123 native columns.
 `merge_schema=True` cannot retire columns from an existing table, so before
 replaying an older FIX table use PyIceberg `table.update_schema()` to delete
 `sourceurl`, `rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`,
-and `level`. `sourceurl`, `rownum`, `threadId` and `level` are raw values and
-remain in `logs.messages`; the other three are retired outright, because a
-line's instant is `currunix` and the plugin it names is `msgpluginid`, a native
-FixMsg column the parse fills.
+and `level` -- the names that table holds them under. `sourceurl`, `rownum`,
+`msgthreadid` and `loglevel` are the raw values and remain in `logs.messages`,
+the last two under those spellings; the other three are retired outright,
+because a line's instant is `currunix` and the plugin it names is
+`msgpluginid`, a native FixMsg column the parse fills.
 
 Before either write, the native `Field` applies its declarations in dependency
 order: **cast → derived partition columns → digest holders**. All three tables

@@ -57,9 +57,9 @@ and `[n/a]`, after trimming and case folding. `null_values` replaces that set.
 ## Read, parse, narrow, write
 
 `fix_message_field(codec)` is the native 123-column row used directly by the
-parse door and `fix.bronze`. `sourceurl`, `rownum`, `threadId`, `level` and
-`body` are raw to `logs.messages` and remain there, so no carried or unstored
-schema is constructed. The reviewed **FixMsg** contract is
+parse door and `fix.bronze`. `sourceurl`, `rownum`, `msgthreadid`, `loglevel`
+and `body` are raw to `logs.messages` and remain there, so no carried or
+unstored schema is constructed. The reviewed **FixMsg** contract is
 [`schemas/rekep/fixmsg.json`](../../contracts/index.md).
 
 The dataset is keyed by `curruuid`, partitioned by hour of `currunix`, and sorted by

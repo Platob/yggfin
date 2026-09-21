@@ -16,12 +16,13 @@ output and is never edited as an alternate schema.
 
 The native FIX row has 123 columns. Parse, storage, reconstruction, and
 lifecycle all use that exact **FixMsg** shape. `sourceurl`, `rownum`,
-`threadId`, `level`, and `body` belong only to `logs.messages`; FixMsg also
-contains no lowercase `threadid`. The bridge's `msgsessionid`, `msgctxid`,
-`msgseqnum`, and `msgpluginid` are not capture columns at all -- they are
-native FixMsg fields a raw line fills, so they stand on both shapes under one
-spelling and nothing translates between them. A FIX row reaches its raw
-line through `srcuuids`, whose values join to `logs.messages.curruuid`.
+`msgthreadid`, `loglevel`, and `body` belong only to `logs.messages`;
+`msgthreadid` and `loglevel` are spelled one way and FixMsg holds neither.
+The bridge's `msgsessionid`, `msgctxid`, `msgseqnum`, and `msgpluginid` are
+not capture columns at all -- they are native FixMsg fields a raw line fills,
+so they stand on both shapes under one spelling and nothing translates between
+them. A FIX row reaches its raw line through `srcuuids`, whose values join to
+`logs.messages.curruuid`.
 
 The native row contains 29 crate fields. These include `msgcat` (`MsgCat`), the seven
 lifted identifier-code columns `isincode`, `cficode`, `cusipcode`, `sedolcode`,

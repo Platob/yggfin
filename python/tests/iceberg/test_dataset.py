@@ -2685,12 +2685,12 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
         currunix="2026-08-14 09:30:00.123",
         sourceurl="capture.log",
         rownum=7,
-        threadId=250,
+        msgthreadid=250,
         msgsessionid="e7256476",
         msgctxid="9effef3e6a",
         msgseqnum=72504,
         msgpluginid="ULBridge",
-        level="INFO",
+        loglevel="INFO",
         body="opaque",
     )
 
@@ -2718,12 +2718,12 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
             "sourceurl": "capture.log",
             "rownum": 7,
             "body": "opaque",
-            "threadId": 250,
+            "msgthreadid": 250,
             "msgsessionid": "e7256476",
             "msgctxid": "9effef3e6a",
             "msgseqnum": 72504,
             "msgpluginid": "ULBridge",
-            "level": "INFO",
+            "loglevel": "INFO",
         }
     ]
     projected = reopened.read_arrow_reader(Message.into_field(), columns=["currunix"])

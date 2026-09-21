@@ -433,7 +433,7 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
         assert "body" not in stored.column_names
         assert "currhashcode" in stored.column_names
         assert "srcuuids" in stored.column_names
-        assert not {"sourceurl", "rownum", "body", "level"} & set(stored.column_names)
+        assert not {"sourceurl", "rownum", "body", "loglevel"} & set(stored.column_names)
     finally:
         fixes.close()
         store.close()
@@ -595,9 +595,8 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
         assert not {
             "sourceurl",
             "rownum",
-            "threadId",
-            "threadid",
-            "level",
+            "msgthreadid",
+            "loglevel",
             "body",
         } & set(fixes.column_names)
         lines = ran.table("logs.messages")
@@ -673,9 +672,8 @@ def test_the_lineage_holds_across_the_three_steps(ran: Ran) -> None:
         assert not {
             "sourceurl",
             "rownum",
-            "threadId",
-            "threadid",
-            "level",
+            "msgthreadid",
+            "loglevel",
             "body",
         } & set(rows.column_names)
 

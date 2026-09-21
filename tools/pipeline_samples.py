@@ -273,12 +273,12 @@ def messages_page(lines: pyarrow.Table) -> str:
     captures = [
         "rownum",
         "currunix",
-        "threadId",
+        "msgthreadid",
         "msgsessionid",
         "msgctxid",
         "msgseqnum",
         "msgpluginid",
-        "level",
+        "loglevel",
     ]
     identities = ["rownum", "currhashcode", "curruuid", "body"]
     return "\n\n".join(

@@ -22,8 +22,8 @@ line. For example:
 [OMS_X1_TradeCapture] (INFO) Receiving : 8=FIX.4.4|35=8|55=ABBN.S|...
 ```
 
-becomes one `Message` whose `threadId`, `msgsessionid`, `msgctxid`,
-`msgseqnum`, `msgpluginid`, and `level` are read off the header and whose
+becomes one `Message` whose `msgthreadid`, `msgsessionid`, `msgctxid`,
+`msgseqnum`, `msgpluginid`, and `loglevel` are read off the header and whose
 `body` is the line itself, header included, as text. `currunix` is the instant
 the read settles over the line, `currhashcode` codes its content and
 `curruuid` is the identity the read states over it; the read states all three,
@@ -317,12 +317,12 @@ batch = pyarrow.RecordBatch.from_pylist(
             "sourceurl": "file:///capture.log",
             "rownum": 1,
             "body": "Receiving : 8=FIX.4.4|35=D|55=AAPL|10=000|",
-            "threadId": None,
+            "msgthreadid": None,
             "msgsessionid": None,
             "msgctxid": None,
             "msgseqnum": 7,
             "msgpluginid": "OMS",
-            "level": "INFO",
+            "loglevel": "INFO",
         }
     ],
     schema=schema,
@@ -342,8 +342,8 @@ The input batch is the raw 12-column `Message` contract, in the native event
 layout's own order. The output is exactly the native 123-column FixMsg
 contract: it holds neither `body` nor a column raw to a line. The input line's
 `curruuid` becomes a `srcuuids` provenance entry, so `sourceurl`, `rownum`,
-`threadId`, `level` and the line's own text remain available by joining back to
-`logs.messages`. The parse reads those stored sixteen bytes back as the
+`msgthreadid`, `loglevel` and the line's own text remain available by joining
+back to `logs.messages`. The parse reads those stored sixteen bytes back as the
 identity the read stated over the line rather than recomputing one, so the join
 is exact.
 
@@ -409,12 +409,12 @@ batch = pyarrow.RecordBatch.from_pylist(
             "sourceurl": "file:///capture.log",
             "rownum": rownum,
             "body": body,
-            "threadId": None,
+            "msgthreadid": None,
             "msgsessionid": None,
             "msgctxid": None,
             "msgseqnum": None,
             "msgpluginid": "OMS",
-            "level": "INFO",
+            "loglevel": "INFO",
         }
         for rownum, body in enumerate(lines, start=1)
     ],

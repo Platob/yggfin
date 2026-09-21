@@ -16,12 +16,12 @@ carried them and however often the capture is re-read.
 | 4 | `sourceurl` | `string` | no | canonical source URI of this raw line |
 | 5 | `rownum` | `int64` | no | 1-based physical line number |
 | 6 | `body` | `string` | no | the whole line as retained, row header included |
-| 7 | `threadId` | `int64` | yes | bridge thread identifier |
+| 7 | `msgthreadid` | `int64` | yes | bridge thread identifier |
 | 8 | `msgsessionid` | `string` | yes | bridge session instance; native FIX input under the same meaning |
 | 9 | `msgctxid` | `string` | yes | message-context identifier; native FIX input under the same meaning |
 | 10 | `msgseqnum` | `int64` | yes | context sequence; fills a message that stated no `MsgSeqNum` |
 | 11 | `msgpluginid` | `string` | yes | plugin that wrote the raw line; native FIX input under the same meaning |
-| 12 | `level` | `string` | yes | header severity spelling |
+| 12 | `loglevel` | `string` | yes | header severity spelling |
 
 The reviewed table contract is
 [`schemas/rekep/message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json):
@@ -34,14 +34,14 @@ the read stamps it on every row it produces. A `logs.messages` written under
 the older shape is not evolved into this one -- three columns gone, a required
 column added, every field id renumbered -- it is created.
 
-`sourceurl`, `rownum`, `threadId`, `level` and `body` are raw to this product
-alone. `msgsessionid`, `msgctxid`, `msgseqnum` and `msgpluginid` are FixMsg
-columns in their own right, named for the fields a parse fills from them --
-65032, 65008, 34 and 65009 -- so a stored row goes on through the codec
-without one spelling being translated into another. `currunix`, `curruuid` and
-`currhashcode` stand on both shapes and mean the row they sit on: here the
-line, there the settled event. The emitted `srcuuids` value is the join back
-to this row's `curruuid` for every raw fact.
+`sourceurl`, `rownum`, `msgthreadid`, `loglevel` and `body` are raw to this
+product alone. `msgsessionid`, `msgctxid`, `msgseqnum` and `msgpluginid` are
+FixMsg columns in their own right, named for the fields a parse fills from
+them -- 65032, 65008, 34 and 65009 -- so a stored row goes on through the
+codec without one spelling being translated into another. `currunix`,
+`curruuid` and `currhashcode` stand on both shapes and mean the row they sit
+on: here the line, there the settled event. The emitted `srcuuids` value is
+the join back to this row's `curruuid` for every raw fact.
 
 ## Header transcription
 
@@ -55,12 +55,12 @@ becomes:
 | column | value |
 | --- | --- |
 | `currunix` | `2026-08-14T14:46:39.769000Z`, settled from the header's `mtime` capture |
-| `threadId` | `15255` |
+| `msgthreadid` | `15255` |
 | `msgsessionid` | `e7254b12` |
 | `msgctxid` | `9f03166699` |
 | `msgseqnum` | `40218` |
 | `msgpluginid` | `OMS_X1_TradeCapture` |
-| `level` | `INFO` |
+| `loglevel` | `INFO` |
 | `body` | `2026-08-14 14:46:39.769 [15255-e7254b12:9f03166699:40218] [OMS_X1_TradeCapture] (INFO) Receiving : 8=FIX.4.4\|35=8\|...` as text, the whole line |
 | `curruuid` | the sixteen bytes the read stamps the line with |
 

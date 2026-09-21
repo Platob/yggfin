@@ -239,9 +239,9 @@ SHAPES: tuple[Stamp, ...] = (ISO, FIX, COMPACT)
 
 ULBRIDGE_ROWHEADER = (
     r"^(?P<mtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) "
-    r"\[(?P<threadId>[1-9]\d*)"
+    r"\[(?P<msgthreadid>[1-9]\d*)"
     r"(?:-(?P<msgsessionid>[0-9a-f]{8}):(?P<msgctxid>[0-9a-f]{10}):(?P<msgseqnum>\d+))?\] "
-    r"\[(?P<msgpluginid>[^\]]+)\] \((?P<level>[A-Z]+)\) "
+    r"\[(?P<msgpluginid>[^\]]+)\] \((?P<loglevel>[A-Z]+)\) "
 )
 """The ULBridge row-header expression for physical message records.
 
@@ -255,9 +255,9 @@ Every capture is named for the column the native read fills from it, which is
 the whole of how a bracket part is told from another: `mtime` is the record
 clock the read settles `currunix` from, and `msgpluginid`, `msgsessionid`,
 `msgctxid` and `msgseqnum` are the crate's own fields 65009, 65032, 65008 and
-34, which a parse reads off the line it was handed. `threadId` and `level`
-name no field of the graph and stay on `logs.messages`; a FIX row links back
-to the whole capture record through `srcuuids`.
+34, which a parse reads off the line it was handed. `msgthreadid` and
+`loglevel` name no field of the graph and stay on `logs.messages`; a FIX row
+links back to the whole capture record through `srcuuids`.
 """
 
 #: Spellings `datetime.fromisoformat` does not read, in the order they are

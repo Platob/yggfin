@@ -2,7 +2,7 @@
 
 **The event each of the 29 lines settled on, and what its header stated**
 
-| `rownum` | `currunix` | `threadId` | `msgsessionid` | `msgctxid` | `msgseqnum` | `msgpluginid` | `level` |
+| `rownum` | `currunix` | `msgthreadid` | `msgsessionid` | `msgctxid` | `msgseqnum` | `msgpluginid` | `loglevel` |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 6 | 2026-08-14 14:46:39.769 | 15255 | e7254b12 | 9f03166699 | 40218 | OMS_X1_TradeCapture | INFO |
 | 7 | 2026-08-14 14:46:39.769 | 15255 | e7254b12 | 9f03166699 | 40218 | OMS_X1_TradeCapture | DEBUG |

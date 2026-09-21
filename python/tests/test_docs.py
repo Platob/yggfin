@@ -75,12 +75,12 @@ def test_docs_publish_the_native_message_contracts() -> None:
         "sourceurl",
         "rownum",
         "body",
-        "threadId",
+        "msgthreadid",
         "msgsessionid",
         "msgctxid",
         "msgseqnum",
         "msgpluginid",
-        "level",
+        "loglevel",
     ]
     assert "pipeline/tasks/parse-fix-bronze.md" in config
     assert "pipeline/tasks/parse-fix-silver.md" in config
@@ -99,8 +99,8 @@ def test_docs_publish_the_native_message_contracts() -> None:
     for capture in (
         "sourceurl",
         "rownum",
-        "threadId",
-        "level",
+        "msgthreadid",
+        "loglevel",
         "body",
     ):
         assert f'"name": "{capture}"' not in fix_schema

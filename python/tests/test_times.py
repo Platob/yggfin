@@ -178,12 +178,12 @@ def test_every_bridge_capture_is_named_for_the_column_it_fills() -> None:
     """Spelled out here so a rename is a failing test and not a null column."""
     assert re.findall(r"\(\?P<([A-Za-z]+)>", ULBRIDGE_ROWHEADER) == [
         "mtime",
-        "threadId",
+        "msgthreadid",
         "msgsessionid",
         "msgctxid",
         "msgseqnum",
         "msgpluginid",
-        "level",
+        "loglevel",
     ]
 
 
