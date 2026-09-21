@@ -40,7 +40,7 @@ parse_fix_silver   51 read,  52 written,  0 skipped  → fix.silver
 ```mermaid
 flowchart LR
     S["capture URI<br/>file · directory · s3://"] --> T["native text reader<br/>Message field"]
-    T --> M[("logs.messages<br/>13 columns")]
+    T --> M[("logs.messages<br/>12 columns")]
     M --> F["native FIX codec<br/>parse"]
     F --> B[("fix.bronze<br/>123 columns")]
     B --> L["native FIX codec<br/>lifecycle"]
@@ -48,15 +48,17 @@ flowchart LR
 ```
 
 The text reader emits the exact `Message` schema: header captures are typed,
-`timepartition` is derived, and the line's own `currhashcode` and `curruuid`
-arrive with the read rather than being computed after it. The FIX codec reads
-that table back as a reader, through two stages
-over one codec, each landing in a table: parse reads every frame a line
-carried and settles what it implied, and lifecycle names the chains it belongs
-to. A row is a message and not a line, so the fixture's 141 stored lines settle
-as 79 messages and 51 bronze events: a line carrying prose answers none, a line
-carrying many frames answers one row per frame, and the same message logged at
-every hop it passed is one event. Lifecycle adds one expiry row.
+and the line's own `currunix`, `curruuid` and `currhashcode` arrive with the
+read rather than being computed after it. Nothing in that contract is derived
+from anything else, and the table is laid out by the hour of `currunix` alone,
+exactly as both FIX tables are laid out by the hour of theirs. The FIX codec
+reads that table back as a reader, through two stages over one codec, each
+landing in a table: parse reads every frame a line carried and settles what it
+implied, and lifecycle names the chains it belongs to. A row is a message and
+not a line, so the fixture's 141 stored lines settle as 79 messages and 51
+bronze events: a line carrying prose answers none, a line carrying many frames
+answers one row per frame, and the same message logged at every hop it passed
+is one event. Lifecycle adds one expiry row.
 
 ```python
 from rekep import Message

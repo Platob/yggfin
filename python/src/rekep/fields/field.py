@@ -32,13 +32,12 @@ IDENTITY_PARTITION = "FIELD:partition"
 
 #: The transform every capture table is laid out by, named once.
 #:
-#: Every published table takes it and none states it again: `logs.messages`
-#: on the hour a line was printed in, `fix.bronze` and `fix.silver` on the
-#: hour its message happened in. One hour of a busy bridge is a file a scan
-#: can skip whole, and
-#: a run's window is a whole number of them, so a replay replaces exactly the
-#: partitions it covers. Which column carries it is each table's own answer;
-#: the transform is not.
+#: Every published table takes it over `currunix`, the instant its own read
+#: settled: the hour a line was printed in on `logs.messages`, the hour its
+#: message happened in on `fix.bronze` and `fix.silver`. One hour of a busy
+#: bridge is a file a scan can skip whole, and a run's window is a whole
+#: number of them, so a replay replaces exactly the partitions it covers.
+#: What tells the three apart is the key, not the layout.
 HOUR = "hour"
 
 _MISSING = object()

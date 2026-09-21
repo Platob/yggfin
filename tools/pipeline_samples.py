@@ -238,11 +238,10 @@ def cell(value: Any) -> str:
     return str(value).replace("|", "\\|")
 
 
-def prose(body: bytes, width: int = 64) -> str:
+def prose(body: str, width: int = 64) -> str:
     """What the bridge printed after its header, cut to `width` characters."""
-    text = body.decode("utf-8", "replace")
-    _, _, after = text.partition(") ")
-    after = after or text
+    _, _, after = body.partition(") ")
+    after = after or body
     return cell(after[:width] + ("…" if len(after) > width else ""))
 
 
@@ -273,18 +272,19 @@ def rows(held: pyarrow.Table, columns: list[str]) -> list[dict[str, Any]]:
 def messages_page(lines: pyarrow.Table) -> str:
     captures = [
         "rownum",
-        "timestamp",
-        "threadId",
+        "currunix",
+        "msgthreadid",
         "msgsessionid",
         "msgctxid",
         "msgseqnum",
-        "pluginid",
-        "level",
+        "msgpluginid",
+        "loglevel",
     ]
     identities = ["rownum", "currhashcode", "curruuid", "body"]
     return "\n\n".join(
         [
-            f"**The header captures of the {lines.num_rows} lines**",
+            f"**The event each of the {lines.num_rows} lines settled on, "
+            "and what its header stated**",
             table(captures, rows(lines, captures)),
             "**What each line is: its code, its identity, and what it printed after the header**",
             table(identities, rows(lines, identities), {"body": prose}),

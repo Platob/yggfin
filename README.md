@@ -83,10 +83,15 @@ takes the last day up to now; the sample capture under `data/capture` is dated
 window lands its rows over what an earlier run of the same window landed, so a
 replay leaves each table holding each row once.
 
-`logs.messages` stores one physical line with its exact bytes, row header
+`logs.messages` stores one physical line as the read decoded it, row header
 included, and its source position, keyed on `currhashcode`, the content code
 the read states over the whole line: identical lines are one row whatever
-session carried them. `fix.bronze`
+session carried them. All three tables are laid out by the hour of `currunix`
+alone. On a raw row that instant is what the native text read settles over the
+line -- the line's own clock where the header dated it, else `EPOCH`, so the
+same bytes answer the same instant on every re-read of a capture. A line at
+that pin is in every window, so no window loses a line the header could not
+date. `fix.bronze`
 stores one row per *event* as the parse answered it -- typed columns, residual
 FIX entries, and the identities the parse settled -- and
 `fix.silver` the same events walked; both are keyed on `curruuid`, because a
@@ -98,8 +103,10 @@ event from its `TransactTime`, while synthetic expiry keeps its exact deadline.
 The 123-column **FixMsg** row is the native parse, storage, and lifecycle
 shape. It reconstructs canonical message semantics
 from lifted columns and residual `fixentries`; lifted values are not duplicated
-as a second arrival record. Capture location, header columns, and exact bytes
-remain only in `logs.messages`; `srcuuids` joins a FIX row back to raw
+as a second arrival record. `sourceurl`, `rownum`, `msgthreadid`, `loglevel`,
+and `body` remain only in `logs.messages`, while the bridge's `msgsessionid`,
+`msgctxid`, `msgseqnum`, and `msgpluginid` are native FixMsg fields a raw line
+fills; `srcuuids` joins a FIX row back to raw
 `curruuid`. `crosscode` uses the first available business
 identifier (`OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID`, then
 `MDReqID`), while capture `session:context` is

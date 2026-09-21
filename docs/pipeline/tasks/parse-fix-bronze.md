@@ -29,8 +29,12 @@ Nothing in this task walks lifecycle chains.
 
 ## The parse, and nothing after it
 
-The task prunes `logs.messages` to `[start, end)` on its capture timestamp and
-also reads undated lines. `fix_parse_arrow_reader` is the batch form of the
+The task prunes `logs.messages` to `[start, end)` on `currunix`, the event the
+read settled over each line, and reads the lines at the epoch pin beside them.
+`currunix` is the partition column itself and is never null, so the predicate
+names it and Iceberg projects the bounds through the hour transform: the
+window's partitions and the pin's own hour are opened, and nothing else.
+`fix_parse_arrow_reader` is the batch form of the
 native `FixCodec.parse_text_arrow_reader`; one line may answer zero, one, or
 several messages. Parsing and local enrichment are independent per event and
 may execute concurrently. `threads` defaults to the available CPU count and
@@ -53,9 +57,9 @@ and `[n/a]`, after trimming and case folding. `null_values` replaces that set.
 ## Read, parse, narrow, write
 
 `fix_message_field(codec)` is the native 123-column row used directly by the
-parse door and `fix.bronze`. Capture columns and `body` remain in
-`logs.messages`, so no carried or unstored schema is constructed. The reviewed
-**FixMsg** contract is
+parse door and `fix.bronze`. `sourceurl`, `rownum`, `msgthreadid`, `loglevel`
+and `body` are raw to `logs.messages` and remain there, so no carried or
+unstored schema is constructed. The reviewed **FixMsg** contract is
 [`schemas/rekep/fixmsg.json`](../../contracts/index.md).
 
 The dataset is keyed by `curruuid`, partitioned by hour of `currunix`, and sorted by

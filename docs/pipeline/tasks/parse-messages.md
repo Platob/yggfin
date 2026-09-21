@@ -57,77 +57,94 @@ from rekep import IOBase, Message
 source = IOBase.from_uri("file:data/capture")
 reader = source.read_arrow_reader(options=Message.text_options())
 
-assert reader.schema.equals(Message.into_field().into_arrow_schema(), check_metadata=True)
+assert reader.schema.equals(Message.read_field().into_arrow_schema(), check_metadata=True)
 ```
 
 The row header is the bridge's own `ULBRIDGE_ROWHEADER`, stated by the native
 core and spelled once in `rekep.times` -- pinned against the core's own text
-rather than respelled per reader. It captures `timestamp`, `threadId`,
-`msgsessionid`, `msgctxid`, `msgseqnum`, `pluginid` and `level`. `body` is the
-whole line, row header included: the core retains the whole record and reads
-the captures off it. `currhashcode` is the content code the read states over
-those bytes, and it is the key: nothing here computes a digest beside it.
-`sourceurl` and `rownum` come from traversal, and
-`curruuid`, the last column, is the line's own identity the read states -- a
-UUIDv7 over the XXH3-64 of its bytes, at no instant, because the read dates no
-line -- which a message parsed out of the stored line names as its one
+rather than respelled per reader. It captures `mtime`, `msgthreadid`,
+`msgsessionid`, `msgctxid`, `msgseqnum`, `msgpluginid` and `loglevel`, each
+named for what the native read fills from it. `mtime` fills no column of its
+own: it is the record clock, and naming it that is what makes the read settle
+`currunix` from it, so the line's instant is stated once rather than read
+twice. `body` is the whole line, row header included, as text the read decoded
+it to: the core retains the whole record and reads the captures off it.
+`currhashcode` is the content code the read states over those bytes, and it is
+the key: nothing here computes a digest beside it. The read states that code
+unsigned, which is why the reader above is checked against `read_field()` and
+not the narrower field a table holds. `sourceurl` and `rownum` come from
+traversal, and `curruuid` is the line's own identity the read states -- a
+UUIDv7 over the settled instant and that content code, on every row the read
+produces -- which a message parsed out of the stored line names as its one
 `srcuuids` entry.
 
-These capture columns remain in `logs.messages`. `parse_fix_bronze` reads the
-exact `body`; the same-named `msgsessionid`, `msgctxid`, and `msgseqnum` facts
-may fill their native FIX fields, while `pluginid` never fills the distinct
-native `msgpluginid`. The parse emits only native FixMsg columns and records
-the raw row's `curruuid` in `srcuuids`; it carries no header column beside the
-FIX row.
+`sourceurl`, `rownum`, `msgthreadid`, `loglevel` and `body` are raw to
+`logs.messages` and stay there. The other four are FixMsg columns a raw line
+fills: `msgsessionid` (65032), `msgctxid` (65008) and `msgpluginid` (65009)
+are the crate's own fields, and `msgseqnum` fills `MsgSeqNum` (34) where a
+frame stated none. Each fills its field because the capture is named what the
+field is named -- which is why the plugin is captured as `msgpluginid` and no
+longer as `pluginid`, a spelling that left the column empty on every FIX row.
+`parse_fix_bronze` reads the `body`, emits only native FixMsg columns, and
+records the raw row's `curruuid` in `srcuuids`; it carries no raw column
+beside the FIX row.
 
 ## A bridge that writes the header its own way
 
 `rowheader` reads one. A capture is written by several loggers and they do not
 always agree on the clock: the shipped 14-line sample spells its fraction
 `.147`, `,148` and `.147_250` in one file, and the default header reads only
-the first of those, so twelve of its fourteen lines carry no clock at all.
-Widening the fraction is a parameter rather than an edit:
+the first of those, so twelve of its fourteen lines settle at the epoch pin
+instead of on their own clock. Widening the fraction is a parameter rather
+than an edit:
 
 ```python
 from rekep import IOBase, Message
-from rekep.times import ULBRIDGE_ROWHEADER
+from rekep.times import EPOCH, ULBRIDGE_ROWHEADER
 
 widened = ULBRIDGE_ROWHEADER.replace(
-    r"(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})",
-    r"(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[.,]\d{3}(?:_\d{3})?)",
+    r"(?P<mtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})",
+    r"(?P<mtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[.,]\d{3}(?:_\d{3})?)",
 )
 source = IOBase.from_uri("file:data/capture")
 plain = source.read_arrow_reader(options=Message.text_options()).read_all()
 read = source.read_arrow_reader(options=Message.text_options(widened)).read_all()
 
+
+def dated(table):
+    # Every row states an instant, so a line the header could not date is
+    # counted by the pin it settled at rather than by a null.
+    return sum(instant != EPOCH for instant in table.column("currunix").to_pylist())
+
+
 # Every physical line is a row either way; what changes is how many it dated.
 assert plain.num_rows == read.num_rows == 14
-assert plain.num_rows - plain.column("timestamp").null_count == 2
-assert read.num_rows - read.column("timestamp").null_count == 10
+assert dated(plain) == 2
+assert dated(read) == 10
 ```
 
 What a header may change is the layout. What it may not change is the names:
-the columns above are the contract, and a read drops a capture no column holds
-without a word -- a table that lands complete, keyed, and empty down one
-column. So the names are checked where the mismatch is still legible, and a
-header that renames or omits one is refused by name:
+the names the read fills from are the contract, and a capture named anything
+else is dropped in silence -- a whole column of nulls and no error, or a clock
+that settles nothing. So the names are checked where the mismatch is still
+legible, and a header that renames or omits one is refused by name:
 
 ```python
 from rekep import Message
 from rekep.times import ULBRIDGE_ROWHEADER
 
-renamed = ULBRIDGE_ROWHEADER.replace(r"(?P<level>[A-Z]+)", r"(?P<severity>[A-Z]+)")
+renamed = ULBRIDGE_ROWHEADER.replace(r"(?P<loglevel>[A-Z]+)", r"(?P<severity>[A-Z]+)")
 try:
     Message.text_options(renamed)
 except ValueError as refusal:
-    assert "captures nothing for level" in str(refusal)
-    assert "captures severity, which no column holds" in str(refusal)
+    assert "captures nothing for loglevel" in str(refusal)
+    assert "captures severity, which this read fills nothing from" in str(refusal)
 ```
 
 `Message.captures()` is the set it is checked against, stated by the contract
 rather than beside it.
 
-See the [complete 13-column schema](../../products/message.md#complete-schema).
+See the [complete 12-column schema](../../products/message.md#complete-schema).
 
 ## Streaming behavior
 
@@ -148,12 +165,13 @@ for a streaming decoder fix.
 ## The window
 
 Every line is read and counted, and the ones the window covers go on: those
-whose `timepartition` -- the capture clock, and the column the table is laid
-out by -- falls in `[start, end)`, and those with no clock at all, which a
-header that did not match leaves and no window could place. The window is
-the last day, ending at the instant the run starts, when the document names
-neither bound; `start` and `end` read the way every instant here does, and
-`end` naming a whole day means the end of that day.
+whose `currunix` -- the event the read settled over the line, and the column
+the table is laid out by -- falls in `[start, end)`, and those at the epoch
+pin, where a header that could not date a line leaves it. The pin is in every
+window, so a header that did not match loses no line. The window is the last
+day, ending at the instant the run starts, when the document names neither
+bound; `start` and `end` read the way every instant here does, and `end`
+naming a whole day means the end of that day.
 
 ```python
 from rekep.times import window_of
@@ -225,4 +243,5 @@ uv run --project python rekep task run \
 A missing source, unreadable object, invalid URI, malformed catalog, a bound
 that names no instant, an empty window, or a failed commit fails the task. A
 line whose header does not match is data: its source identity and body are
-retained with null header fields, and it is in every window.
+retained, its header columns are null, and its `currunix` is the epoch pin,
+which every window covers.

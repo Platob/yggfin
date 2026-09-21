@@ -158,40 +158,43 @@ that.
 
 A newly deployed FIX table has exactly the 123 native FixMsg columns. Because
 schema merge is additive, an existing table that still has `sourceurl`,
-`rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`, or `level`
-must delete those columns through a reviewed PyIceberg `update_schema()`
-transaction before its windows are replayed; their raw facts remain in
-`logs.messages`.
+`rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`, or `level` --
+the names that table holds them under -- must delete those columns through a
+reviewed PyIceberg `update_schema()` transaction before its windows are
+replayed. `sourceurl`, `rownum`, `msgthreadid` and `loglevel` are the raw
+facts and remain in `logs.messages`, the last two under those spellings. The
+other three are retired outright: a line's own instant is `currunix` and the
+table is laid out by the hour of it rather than by a column beside it, and the
+plugin a line names is `msgpluginid`, a native FixMsg column the parse fills.
 
 ## Migrating a warehouse that holds the retired FIX table
 
 There is no compatibility shim for the one table the two FIX tables replaced.
-Run `rekep iceberg deploy` once: it creates `fix.bronze` and `fix.silver` and
-reports `logs.messages` as `present`. The raw table's shape is unchanged but it
-now ends in `curruuid`, the line identity every FIX row names as its source,
-and a table that already exists takes that column only as the optional one it
-is declared as, through the dataset's own `add_fields`:
+Run `rekep iceberg deploy` once: it creates `fix.bronze` and `fix.silver`, and
+it reports whatever `logs.messages` it finds as `present` -- deployment reads
+the catalog and not a table's shape.
 
-```python
-from rekep import Message
-from rekep.iceberg import IcebergCatalog
-
-store = IcebergCatalog.from_dict(catalog)
-lines = store.dataset("logs.messages", field=Message.into_field())
-added = lines.add_fields(Message.into_field())
-lines.close()
-store.close()
-```
+A `logs.messages` of the previous shape is not this one. It is the generic
+event layout now: `timestamp`, `timepartition` and `pluginid` are gone,
+`currunix` is required and is what the table is laid out by, `curruuid` is
+required and is the second field, and every field id is renumbered. Three
+columns removed, a required column added and the ids restated are not an
+additive widening, and Iceberg adds no required column to rows that never
+held it -- so drop the raw table before the replay rather than looking for a
+migration of it. The capture is what it was read from, and the capture is
+still there.
 
 Then replay each window through `parse_messages`, `parse_fix_bronze` and
-`parse_fix_silver`, in that order, and drop the retired table. Rows the
-replay has not reached yet carry no identity, and the parse recomputes one
-from the line's bytes and instant where the raw source states none -- equal only
-while those are, which is why the replay is the migration and not the
-fallback. A retired table the previous core wrote cannot be walked in place:
-its rows are not the pinned core's 123-column native row, and `parse_fix_silver`
-reads a table named as its `bronze` only in that shape. The products are
-rebuilt by [`build_dbt`](../tasks/build-dbt.md) afterwards; drop
+`parse_fix_silver`, in that order, and drop the retired FIX table. The first
+run creates `logs.messages` in the shape above, so the raw table is created
+and not evolved. The capture is read again, so every line states the instant,
+the identity and the content code the read settles over its bytes, and the
+parse reads that stored identity back rather than recomputing one -- which is
+why `srcuuids` joins the line that landed, and why the replay is the migration
+and not the fallback. A retired table the previous core wrote cannot be walked
+in place: its rows are not the pinned core's 123-column native row, and
+`parse_fix_silver` reads a table named as its `bronze` only in that shape. The
+products are rebuilt by [`build_dbt`](../tasks/build-dbt.md) afterwards; drop
 `orders.events`, `orders.current` and `executions.fills` first, because the
 products' `lastpx` and `avgpx` moved from double to decimal with the
 dictionary, and a column an existing table already holds is not retyped in

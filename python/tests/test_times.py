@@ -9,7 +9,16 @@ from pathlib import Path
 import pyarrow
 import pytest
 
-from rekep.times import ULBRIDGE_ROWHEADER, UTC, WINDOW, datetime_of, unix_of, window_of, within
+from rekep.times import (
+    EPOCH,
+    ULBRIDGE_ROWHEADER,
+    UTC,
+    WINDOW,
+    datetime_of,
+    unix_of,
+    window_of,
+    within,
+)
 
 #: Where the core states the same expression, when its checkout is beside
 #: this one. The constant reaches Rust but not yet the Python extension, so
@@ -168,13 +177,13 @@ def test_the_bridge_row_header_is_the_text_the_core_states() -> None:
 def test_every_bridge_capture_is_named_for_the_column_it_fills() -> None:
     """Spelled out here so a rename is a failing test and not a null column."""
     assert re.findall(r"\(\?P<([A-Za-z]+)>", ULBRIDGE_ROWHEADER) == [
-        "timestamp",
-        "threadId",
+        "mtime",
+        "msgthreadid",
         "msgsessionid",
         "msgctxid",
         "msgseqnum",
-        "pluginid",
-        "level",
+        "msgpluginid",
+        "loglevel",
     ]
 
 
@@ -238,16 +247,21 @@ def test_within_covers_the_half_open_interval_and_every_row_with_no_clock() -> N
             datetime.datetime(2026, 8, 14, tzinfo=UTC),
             datetime.datetime(2026, 8, 14, 12, tzinfo=UTC),
             datetime.datetime(2026, 8, 15, tzinfo=UTC),
+            # The pin a read settles a record it could not date at, and a
+            # null for a column that admits one: neither states an instant,
+            # so no window can place either and every window holds both.
+            EPOCH,
             None,
         ],
         pyarrow.timestamp("us", tz="UTC"),
     )
 
-    assert within(values, window).to_pylist() == [False, True, True, False, True]
+    assert within(values, window).to_pylist() == [False, True, True, False, True, True]
     assert within(pyarrow.chunked_array([values]), window).to_pylist() == [
         False,
         True,
         True,
         False,
+        True,
         True,
     ]

@@ -10,37 +10,50 @@ from yggdryl import IOBase
 
 from rekep import Message
 from rekep.fix import fix_text_options
-from rekep.times import ULBRIDGE_ROWHEADER
+from rekep.text.message import decoded
+from rekep.times import EPOCH, ULBRIDGE_ROWHEADER
 
 #: The zone every instant here is spelled in.
 UTC = datetime.timezone.utc
+
+#: What a UUIDv7 carries below its instant and its variant bits: the sixty-two
+#: a random one fills, and the ones the read fills with the content code.
+RANDOM = (1 << 62) - 1
 
 
 def test_message_declares_the_text_row_and_its_storage_columns() -> None:
     field = Message.into_field()
 
+    # The native text read's own layout, in its own order: the event it
+    # settles over the line, the two columns its traversal names, the line,
+    # and the bridge's captures under the names a parse fills from.
     assert [member.name for member in field] == [
+        "currunix",
+        "curruuid",
+        "currhashcode",
         "sourceurl",
         "rownum",
-        "timestamp",
-        "timepartition",
-        "threadId",
+        "body",
+        "msgthreadid",
         "msgsessionid",
         "msgctxid",
         "msgseqnum",
-        "pluginid",
-        "level",
-        "currhashcode",
-        "body",
-        "curruuid",
+        "msgpluginid",
+        "loglevel",
     ]
-    assert field["timestamp"].into_arrow().type.unit == "us"
+    assert field["currunix"].into_arrow().type.unit == "us"
     assert field["curruuid"].into_arrow().type == pyarrow.binary(16)
-    # Nullable, because a table that already exists takes the column only as
-    # an optional one; the read fills it on every row regardless.
-    assert field["curruuid"].nullable is True
-    assert field["timepartition"].partition.sources == ["timestamp"]
-    assert field["timepartition"].iceberg["partition_key"] == "hour"
+    # The read settles all three on every row, so all three are stated.
+    assert [field[held].nullable for held in ("currunix", "curruuid", "currhashcode")] == [
+        False,
+        False,
+        False,
+    ]
+    # The table is laid out by the hour of the event itself, exactly as both
+    # FIX tables are: the row carries the instant, so nothing materializes a
+    # second copy of it to partition by.
+    assert field["currunix"].iceberg["partition_key"] == "hour"
+    assert not [member.name for member in field if member.partition.sources]
     # The key is the code the read states, not a digest computed beside it:
     # this contract holds the type a table stores and `read_field` widens the
     # one column the read answers unsigned.
@@ -60,13 +73,13 @@ def test_message_text_options_own_the_complete_native_read() -> None:
     assert options.safe is False
     assert options.field == Message.read_field()
     assert options.capture_names == (
-        "timestamp",
-        "threadId",
+        "mtime",
+        "msgthreadid",
         "msgsessionid",
         "msgctxid",
         "msgseqnum",
-        "pluginid",
-        "level",
+        "msgpluginid",
+        "loglevel",
     )
 
 
@@ -85,36 +98,35 @@ def test_the_text_reader_produces_messages_without_a_python_row_pass(tmp_path) -
         reader.close()
 
     assert table.schema.equals(Message.read_field().into_arrow_schema(), check_metadata=True)
-    assert table.select(
-        ("rownum", "timestamp", "threadId", "msgsessionid", "msgctxid", "msgseqnum", "pluginid")
-    ).to_pylist() == [
+    settled = ("rownum", "currunix", "msgthreadid")
+    bracket = ("msgsessionid", "msgctxid", "msgseqnum", "msgpluginid")
+    assert table.select(settled + bracket).to_pylist() == [
         {
             "rownum": 1,
-            "timestamp": datetime.datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC),
-            "threadId": 250,
+            "currunix": datetime.datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC),
+            "msgthreadid": 250,
             "msgsessionid": "e7256476",
             "msgctxid": "9effef3e6a",
             "msgseqnum": 72504,
-            "pluginid": "ULBridge",
+            "msgpluginid": "ULBridge",
         },
         {
             "rownum": 2,
-            "timestamp": datetime.datetime(2026, 8, 14, 0, 5, 1, 148000, tzinfo=UTC),
-            "threadId": 653,
+            "currunix": datetime.datetime(2026, 8, 14, 0, 5, 1, 148000, tzinfo=UTC),
+            "msgthreadid": 653,
             "msgsessionid": None,
             "msgctxid": None,
             "msgseqnum": None,
-            "pluginid": "Spot_FX_TradeCapture",
+            "msgpluginid": "Spot_FX_TradeCapture",
         },
     ]
-    assert table.column("timepartition").equals(table.column("timestamp"))
     # The body is the whole line as the native read retains it, the row
     # header included: the header's captures are read off it, not cut out of
     # it, and the code the read states is over these same bytes.
     assert table.column("body").to_pylist() == [
-        b"2026-08-14 00:05:01.147 [250-e7256476:9effef3e6a:72504] "
-        b"[ULBridge] (INFO) Sending : 8=FIX.4.4|35=D|10=0|",
-        b"2026-08-14 00:05:01.148 [653] [Spot_FX_TradeCapture] (WARN) prose",
+        "2026-08-14 00:05:01.147 [250-e7256476:9effef3e6a:72504] "
+        "[ULBridge] (INFO) Sending : 8=FIX.4.4|35=D|10=0|",
+        "2026-08-14 00:05:01.148 [653] [Spot_FX_TradeCapture] (WARN) prose",
     ]
     codes = table.column("currhashcode")
     assert codes.type == pyarrow.uint64() and codes.null_count == 0
@@ -136,17 +148,29 @@ def test_a_line_without_the_bridge_header_is_kept_as_an_unstamped_message(tmp_pa
     finally:
         reader.close()
 
-    assert row["body"] == b"one physical line"
+    assert row["body"] == "one physical line"
     assert row["rownum"] == 1
+    # The line is still an event: the read settles it at the epoch pin, which
+    # is the same instant on every re-read of these bytes and the same one an
+    # undated message takes in `fix.bronze`, and states an identity over it.
+    assert row["currunix"] == EPOCH
+    # The pin's own identity, stated over the line: a UUIDv7 whose instant is
+    # the pin and whose rest is that line's own code -- so an undated line is
+    # still told from every other one, and not the zero identity a row built
+    # anywhere but the read would carry.
+    identity = row["curruuid"]
+    assert identity != bytes(16) and identity.startswith(bytes(6))
+    assert identity[6] >> 4 == 7, "a UUIDv7, at the pin"
+    assert int.from_bytes(identity[8:], "big") & RANDOM == row["currhashcode"] & RANDOM
     assert all(
         row[name] is None
         for name in (
-            "timestamp",
-            "timepartition",
-            "threadId",
+            "msgthreadid",
             "msgsessionid",
             "msgctxid",
             "msgseqnum",
+            "msgpluginid",
+            "loglevel",
         )
     )
 
@@ -154,12 +178,12 @@ def test_a_line_without_the_bridge_header_is_kept_as_an_unstamped_message(tmp_pa
 def test_message_instance_normalizes_scalar_inputs() -> None:
     message = Message.from_text(
         b"body",
-        timestamp="2026-08-14 02:05:01.147250+02:00",
-        threadId="250",
+        currunix="2026-08-14 02:05:01.147250+02:00",
+        msgthreadid="250",
         msgseqnum="72504",
     )
 
-    assert message.timestamp == datetime.datetime(
+    assert message.currunix == datetime.datetime(
         2026,
         8,
         14,
@@ -169,7 +193,53 @@ def test_message_instance_normalizes_scalar_inputs() -> None:
         147250,
         tzinfo=UTC,
     )
-    assert (message.threadId, message.msgseqnum) == (250, 72504)
+    assert (message.msgthreadid, message.msgseqnum) == (250, 72504)
+    assert message.body == "body"
+
+
+#: What a bridge writes that is not UTF-8, and what the read makes of it: a
+#: record in one encoding, a record in the other, the bytes windows-1252
+#: fills the C1 range with, and the five it leaves undefined.
+ENCODED = (
+    "caf\u00e9 \u20ac".encode(),
+    "caf\u00e9".encode("latin-1"),
+    b"\x80\x93\x92",
+    b"\x81\x8d\x8f\x90\x9d",
+    b"\xff\xfe",
+    # One record in both encodings at once, which is what a relayed line is:
+    # the fallback is per run of bytes and not per record.
+    b"caf\xc3\xa9 caf\xe9",
+)
+
+
+@pytest.mark.parametrize("payload", ENCODED, ids=[repr(held) for held in ENCODED])
+def test_a_body_built_by_hand_is_the_text_the_read_would_have_answered(payload, tmp_path) -> None:
+    """A capture is not written in one encoding, and the read decodes each
+    record in the one it is in rather than refusing it or filling it with
+    replacement characters. A row built out of the same bytes says the same."""
+    line = b"2026-08-14 00:05:01.147 [77-e7256476:9effef3e6a:72503] [P] (INFO) " + payload
+    source = tmp_path / "encoded.log"
+    source.write_bytes(line + b"\n")
+
+    reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=Message.text_options())
+    try:
+        stored = reader.read_all().column("body")[0].as_py()
+    finally:
+        reader.close()
+
+    assert Message.from_text(line).body == stored
+    assert decoded(payload) == stored[-len(decoded(payload)) :]
+    # Never the replacement character: the bytes are read, not papered over.
+    assert "\ufffd" not in stored
+
+
+def test_a_message_made_by_hand_states_the_event_that_names_no_line() -> None:
+    """Only the native read states an instant, a code and an identity: a row
+    built anywhere else says so, at the pin, the zero code and the sixteen
+    zero bytes -- rather than inventing one of the three."""
+    message = Message.from_text("body")
+
+    assert (message.currunix, message.currhashcode, message.curruuid) == (EPOCH, 0, bytes(16))
 
 
 def test_the_raw_read_is_the_bridge_read_the_codec_is_pinned_against() -> None:
@@ -196,8 +266,8 @@ def test_the_raw_read_is_the_bridge_read_the_codec_is_pinned_against() -> None:
 #: loggers actually write: a comma decimal sign, and a micro suffix after the
 #: millis. The names it captures are unchanged, which is the whole rule.
 WIDENED = ULBRIDGE_ROWHEADER.replace(
-    r"(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})",
-    r"(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[.,]\d{3}(?:_\d{3})?)",
+    r"(?P<mtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})",
+    r"(?P<mtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[.,]\d{3}(?:_\d{3})?)",
 )
 
 #: Every line of the shipped sample, and the two spellings of its clock: the
@@ -226,20 +296,22 @@ def test_a_header_of_its_own_reads_a_bridge_that_writes_the_clock_differently() 
     # many of them it could date.
     assert plain.num_rows == widened.num_rows
     assert plain.schema.equals(widened.schema, check_metadata=True)
-    assert plain.num_rows - plain.column("timestamp").null_count == 2
-    assert widened.num_rows - widened.column("timestamp").null_count == 10
+    # What the widened header could date, the plain one settled at the pin.
+    undated = [held.column("currunix").to_pylist().count(EPOCH) for held in (plain, widened)]
+    assert [plain.num_rows - held for held in undated] == [2, 10]
 
 
 @pytest.mark.parametrize(
     ("spelled", "refused"),
     [
         (
-            ULBRIDGE_ROWHEADER.replace(r"(?P<level>[A-Z]+)", r"(?P<severity>[A-Z]+)"),
-            "captures nothing for level and captures severity, which no column holds",
+            ULBRIDGE_ROWHEADER.replace(r"(?P<loglevel>[A-Z]+)", r"(?P<severity>[A-Z]+)"),
+            "captures nothing for loglevel and captures severity, "
+            "which this read fills nothing from",
         ),
         (
-            ULBRIDGE_ROWHEADER.replace(r" \((?P<level>[A-Z]+)\) ", r" \([A-Z]+\) "),
-            "captures nothing for level",
+            ULBRIDGE_ROWHEADER.replace(r" \((?P<loglevel>[A-Z]+)\) ", r" \([A-Z]+\) "),
+            "captures nothing for loglevel",
         ),
     ],
     ids=["renamed", "dropped"],
@@ -261,26 +333,27 @@ def test_the_columns_a_header_is_expected_to_fill_are_the_contract_s_own() -> No
     # Spelled out once here, so a column that stops being captured is a
     # failing test rather than a silently empty one.
     assert Message.captures() == {
-        "timestamp",
-        "threadId",
+        "mtime",
+        "msgthreadid",
         "msgsessionid",
         "msgctxid",
         "msgseqnum",
-        "pluginid",
-        "level",
+        "msgpluginid",
+        "loglevel",
     }
-    # A member the read fills or a field apply derives is not a capture, and
-    # says so itself rather than being remembered in a list.
+    # A member the read settles or a field apply derives is not a capture,
+    # and says so itself rather than being remembered in a list.
     assert Message.READ_COLUMNS == {
         "sourceurl",
         "rownum",
         "body",
+        "currunix",
         "curruuid",
         "currhashcode",
     }
     field = Message.into_field()
-    assert {member.name for member in field} - Message.captures() == {
-        *Message.READ_COLUMNS,
-        "timepartition",
-    }
-    assert field["timepartition"].partition.sources == ["timestamp"]
+    # The record clock is the one capture no column holds: what it fills is
+    # the settled `currunix`, and a second copy of the reading is not kept.
+    assert Message.RECORD_CLOCK == "mtime"
+    assert {member.name for member in field} - Message.captures() == Message.READ_COLUMNS
+    assert Message.captures() - {member.name for member in field} == {Message.RECORD_CLOCK}

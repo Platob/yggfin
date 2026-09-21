@@ -26,8 +26,8 @@ def _():
     mo.md("""
     # Parse messages
 
-    Read physical text records into raw message rows, for one window of the
-    capture clock.
+    Read physical text records into raw message rows, for one window of
+    `currunix`, the event the native read settles over each line.
     """)
 
 
@@ -72,9 +72,10 @@ def _(catalog, end, filesystem, records, rowheader, start):
         )
         field = Message.into_field()
         # A bridge writing these same facts in a layout of its own is read by
-        # naming its header here; the names it captures are still the columns
-        # that hold them, and a header that renames one is refused rather than
-        # stored as a column of nulls.
+        # naming its header here; the names it captures are still the ones
+        # the read fills from -- a column each, and `currunix` for `mtime` --
+        # and a header that renames one is refused rather than stored as a
+        # column of nulls under a clock that settled nothing.
         options = Message.text_options(rowheader)
         counts = {"read": 0}
         store = IcebergCatalog.from_dict(catalog)
@@ -89,12 +90,13 @@ def _(catalog, end, filesystem, records, rowheader, start):
 
         def _batches():
             # Every line is read and counted; the ones the window covers go
-            # on. `timepartition` carries the capture clock and is the column
-            # the table is laid out by, and a line with no clock is in every
-            # window, so a header that did not match never loses a line.
+            # on. `currunix` is the event the read settled over the line and
+            # the column the table is laid out by, and a line the header
+            # could not date sits at the epoch pin, which is in every window,
+            # so a header that did not match never loses a line.
             for batch in reader:
                 counts["read"] += batch.num_rows
-                yield batch.filter(within(batch.column("timepartition"), window))
+                yield batch.filter(within(batch.column("currunix"), window))
 
         read = pyarrow.RecordBatchReader.from_batches(
             Message.read_field().into_arrow_schema(),
@@ -107,9 +109,9 @@ def _(catalog, end, filesystem, records, rowheader, start):
         parsed = stored_arrow_reader(read, field)
         opened.callback(parsed.close)
         # What the window carries replaces what the table held under the same
-        # `currhashcode`, the key the field declares: a replay of the window
-        # lands the same rows again, so the table holds each line once
-        # however often it runs.
+        # `currhashcode`, the key the field declares, within the hour of
+        # `currunix` it falls in: a replay of the window lands the same rows
+        # again, so the table holds each line once however often it runs.
         written = messages.overwrite_arrow_reader(parsed, field, merge_by=True)
         _outcome = stage.finished(read=counts["read"], written=written)
     outcome = _outcome

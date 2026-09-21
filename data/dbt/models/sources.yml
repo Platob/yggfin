@@ -120,7 +120,7 @@ sources:
 
   - name: logs
     description: >
-      Raw capture lines, one per physical line, with their exact body bytes.
+      Raw capture lines, one per physical line, each as the read decoded it.
     schema: logs
     meta:
       plugin: rekep
@@ -133,13 +133,15 @@ sources:
         meta:
           table: logs.messages
         columns:
-          - name: sourceurl
-            description: The capture object the line was read from.
-          - name: rownum
-            description: The physical line number inside that object.
+          - name: currunix
+            description: The instant the read settled over the line, and the hour the table is laid out by.
           - name: curruuid
             description: The line's own identity, which every message parsed out of it names as its source.
           - name: currhashcode
             description: The content code the read states over the line's bytes, and the table's key.
+          - name: sourceurl
+            description: The capture object the line was read from.
+          - name: rownum
+            description: The physical line number inside that object.
           - name: body
             description: The whole line as the read retains it, the row header included.

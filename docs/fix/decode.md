@@ -22,19 +22,25 @@ line. For example:
 [OMS_X1_TradeCapture] (INFO) Receiving : 8=FIX.4.4|35=8|55=ABBN.S|...
 ```
 
-becomes one `Message` whose `timestamp`, `threadId`, `msgsessionid`,
-`msgctxid`, `msgseqnum`, `pluginid`, and `level` are read off the header and
-whose `body` is the line itself, header included. `currhashcode` codes those
-bytes and `curruuid` is the identity the read states over the line; the read
-states both, before `logs.messages` is written.
+becomes one `Message` whose `msgthreadid`, `msgsessionid`, `msgctxid`,
+`msgseqnum`, `msgpluginid`, and `loglevel` are read off the header and whose
+`body` is the line itself, header included, as text. `currunix` is the instant
+the read settles over the line, `currhashcode` codes its content and
+`curruuid` is the identity the read states over it; the read states all three,
+before `logs.messages` is written.
 
-Every capture is named for the column it fills, and the row header is the one
-`ULBRIDGE_ROWHEADER` every reader takes, pinned against the native core's own
-text: `msgsessionid`
-is the session *instance* the bridge handled the line on (65032) and not
-what the message itself says about the counterparty session
-it names; `msgseqnum` fills `MsgSeqNum(34)`
-where the frame stated none. Nothing maps a spelling onto a tag in between.
+Every capture is named for the column the native read fills from it, and the
+row header is the one `ULBRIDGE_ROWHEADER` every reader takes, pinned against
+the native core's own text: `mtime` is the record clock `currunix` is settled
+from, and it fills no column of its own, because the row keeps the settled
+instant rather than a second reading of it; `msgsessionid` is the session
+*instance* the bridge handled the line on (65032) and not what the message
+itself says about the counterparty session it names; `msgpluginid` is the
+plugin that wrote the line (65009); `msgseqnum` fills `MsgSeqNum(34)` where the
+frame stated none. Nothing maps a spelling onto a tag in between, and a capture
+under any other name fills nothing -- a column of nulls and no error, or a
+clock that settles nothing -- so `Message.text_options` refuses a supplied
+header that renames one.
 
 ```python
 from rekep import IOBase, Message
@@ -44,7 +50,7 @@ raw = source.read_arrow_reader(options=Message.text_options())
 first_batch = next(iter(raw))
 
 assert first_batch.column("rownum")[0].as_py() == 1
-assert first_batch.column("pluginid")[0].as_py() == "ULBridge"
+assert first_batch.column("msgpluginid")[0].as_py() == "ULBridge"
 assert first_batch.column("msgseqnum")[0].as_py() == 3088
 
 raw.close()
@@ -293,28 +299,30 @@ why it is nullable.
 ## Arrow parse step
 
 ```python
+import uuid
+
 import pyarrow
 
 from rekep import Message
 from rekep.fix import fix_codec, fix_parse_arrow_reader, fix_registry
+from rekep.times import EPOCH
 
 schema = Message.into_field().into_arrow_schema()
 batch = pyarrow.RecordBatch.from_pylist(
     [
         {
+            "currunix": EPOCH,
+            "curruuid": b"\x01" * 16,
+            "currhashcode": 0,
             "sourceurl": "file:///capture.log",
             "rownum": 1,
-            "timestamp": None,
-            "timepartition": None,
-            "threadId": None,
+            "body": "Receiving : 8=FIX.4.4|35=D|55=AAPL|10=000|",
+            "msgthreadid": None,
             "msgsessionid": None,
             "msgctxid": None,
             "msgseqnum": 7,
-            "pluginid": "OMS",
-            "level": "INFO",
-            "currhashcode": 0,
-            "body": b"Receiving : 8=FIX.4.4|35=D|55=AAPL|10=000|",
-            "curruuid": b"\x01" * 16,
+            "msgpluginid": "OMS",
+            "loglevel": "INFO",
         }
     ],
     schema=schema,
@@ -325,26 +333,31 @@ parsed = fix_parse_arrow_reader(codec, source)
 table = parsed.read_all()
 
 assert table.column("symbol").to_pylist() == ["AAPL"]
-assert table.column("srcuuids").to_pylist() == [[b"\x01" * 16]]
+assert table.column("srcuuids").to_pylist() == [[uuid.UUID(bytes=b"\x01" * 16)]]
 assert table.num_columns == 123
 assert table.schema.names[-3:] == ["metadata", "nofixentries", "fixentries"]
 ```
 
-The input batch is the raw 13-column `Message` contract. The output is exactly
-the native 123-column FixMsg contract: it contains no raw capture columns or
-`body`. The input line's `curruuid` becomes a `srcuuids` provenance entry, so
-`sourceurl`, `rownum`, header values, and exact bytes remain available by
-joining back to `logs.messages`.
+The input batch is the raw 12-column `Message` contract, in the native event
+layout's own order. The output is exactly the native 123-column FixMsg
+contract: it holds neither `body` nor a column raw to a line. The input line's
+`curruuid` becomes a `srcuuids` provenance entry, so `sourceurl`, `rownum`,
+`msgthreadid`, `loglevel` and the line's own text remain available by joining
+back to `logs.messages`. The parse reads those stored sixteen bytes back as the
+identity the read stated over the line rather than recomputing one, so the join
+is exact.
 
 ## Two doors onto the same messages
 
 `fix_parse_lines` is the line door of the parse and `fix_lifecycle_messages`
 the line door of the walk, over messages read one at a time. A line door pins
 the header's capture order on the codec, because it resolves a bracket part by
-position. It dates no message from the line's own capture clock -- a bridge
-spells that clock the way a log spells one, not the way `SendingTime` is
-spelled -- so an undated message takes the codec's `UNDATED` floor, and so does
-the same message read through the batch door.
+position. It dates no message from `currunix`, the instant the read settled
+over the line -- a bridge stamps a line the way a log is stamped, not the way
+`SendingTime` is spelled -- so an undated message takes the codec's `UNDATED`
+floor, and so does the same message read through the batch door. That floor is
+the epoch, the same instant a line the header could not date settles at, so
+both sit in every window rather than outside all of them.
 
 ```python
 from rekep import IOBase
@@ -373,33 +386,35 @@ one message onto one identity, so those 79 messages are 51 bronze
 events; lifecycle adds one expiry and therefore emits 52 rows for this fixture.
 
 ```python
+import uuid
+
 import pyarrow
 
 from rekep import Message
 from rekep.fix import fix_codec, fix_parse_arrow_reader, fix_registry
+from rekep.times import EPOCH
 
 schema = Message.into_field().into_arrow_schema()
 lines = [
-    b"Receiving : 8=FIX.4.4|35=D|55=AAPL|10=000|",
-    b"Enrichment execution[&SetEnv]",
-    b"Relaying : 8=FIX.4.4|35=D|55=AAPL|10=000| and 8=FIX.4.4|35=8|55=HOLN|10=000|",
+    "Receiving : 8=FIX.4.4|35=D|55=AAPL|10=000|",
+    "Enrichment execution[&SetEnv]",
+    "Relaying : 8=FIX.4.4|35=D|55=AAPL|10=000| and 8=FIX.4.4|35=8|55=HOLN|10=000|",
 ]
 batch = pyarrow.RecordBatch.from_pylist(
     [
         {
+            "currunix": EPOCH,
+            "curruuid": rownum.to_bytes(16, "big"),
+            "currhashcode": 0,
             "sourceurl": "file:///capture.log",
             "rownum": rownum,
-            "timestamp": None,
-            "timepartition": None,
-            "threadId": None,
+            "body": body,
+            "msgthreadid": None,
             "msgsessionid": None,
             "msgctxid": None,
             "msgseqnum": None,
-            "pluginid": "OMS",
-            "level": "INFO",
-            "currhashcode": 0,
-            "body": body,
-            "curruuid": rownum.to_bytes(16, "big"),
+            "msgpluginid": "OMS",
+            "loglevel": "INFO",
         }
         for rownum, body in enumerate(lines, start=1)
     ],
@@ -412,9 +427,9 @@ table = parsed.read_all()
 
 assert table.column("symbol").to_pylist() == ["AAPL", "AAPL", "HOLN"]
 assert table.column("srcuuids").to_pylist() == [
-    [bytes.fromhex("00" * 15 + "01")],
-    [bytes.fromhex("00" * 15 + "03")],
-    [bytes.fromhex("00" * 15 + "03")],
+    [uuid.UUID(bytes=bytes.fromhex("00" * 15 + "01"))],
+    [uuid.UUID(bytes=bytes.fromhex("00" * 15 + "03"))],
+    [uuid.UUID(bytes=bytes.fromhex("00" * 15 + "03"))],
 ]
 assert table.num_columns == 123
 

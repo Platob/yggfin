@@ -74,12 +74,12 @@ def test_a_cell_is_rendered_the_way_a_reader_compares_it() -> None:
 def test_the_prose_of_a_line_is_what_follows_its_header() -> None:
     tool = _tool()
     line = (
-        b"2026-08-14 14:46:39.769 [15255-e7254b12:9f03166699:40218] [X] (INFO) "
-        b"Receiving : 8=FIX.4.4|9=938"
+        "2026-08-14 14:46:39.769 [15255-e7254b12:9f03166699:40218] [X] (INFO) "
+        "Receiving : 8=FIX.4.4|9=938"
     )
 
     assert tool.prose(line, width=24) == "Receiving : 8=FIX.4.4\\|9=…"
-    assert tool.prose(b"no header here", width=64) == "no header here"
+    assert tool.prose("no header here", width=64) == "no header here"
 
 
 def test_the_walk_order_is_the_one_the_table_declares() -> None:

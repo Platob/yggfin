@@ -28,14 +28,17 @@ The three streaming tasks cover one window, `[start, end)`. Each bound is an
 instant or a date -- a date as `end` is the end of that day -- and a task
 given neither takes the last day up to now, which is the window a nightly run
 means. The sample capture is dated 2026-08-14, so the runs above name that
-day; a run without the two parameters would read every line and write none,
-because none falls in the last day. `parse_messages` and `parse_fix_bronze`
-read the window off the capture clock, so the two are run over the same one.
-`parse_fix_silver` reads it off the event clock `currunix` -- a bronze row is
-already an event, dated by what its message stated -- and the rows the parse
-could not date, which sit at the codec's pin, by the `TransactTime` the walk
-dates them with: a day's run walks the day's events, dated or pinned, so it is
-run over the same window again.
+day; a run without the two parameters would read every line and write only the
+ones the row header could not date, because those sit at the epoch pin and the
+rest fall outside the last day. `parse_messages` and `parse_fix_bronze`
+read the window off `currunix`, the event clock, so the two are run over the
+same one: the text read settles it over a line, and a line the header could
+not date sits at the epoch pin, which every window covers. `parse_fix_silver`
+reads it off the same column -- a bronze row is already an event, dated by
+what its message stated -- and the rows the parse could not date, which sit at
+the codec's pin, by the `TransactTime` the walk dates them with: a day's run
+walks the day's events, dated or pinned, so it is run over the same window
+again.
 
 ## One override
 

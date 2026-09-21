@@ -30,17 +30,17 @@ FIELD = Message.read_field()
 SCHEMA = FIELD.into_arrow_schema()
 
 
-def timestamp(index: int) -> str:
-    """The deterministic source spelling for one row."""
+def mtime(index: int) -> str:
+    """The deterministic source spelling for one row's record clock."""
     return f"2026-08-14 00:05:{index % 60:02d}.{index % 1_000:03d}"
 
 
-def body(index: int) -> bytes:
+def body(index: int) -> str:
     """One representative wire payload retained without interpretation."""
     return (
         f"sending >> 8=FIX.4.4|35=D|11=ORD-{index:010d}|55=S{index % 512}|"
         f"38={index % 10_000 + 1}|44={index % 10_000 / 100:.2f}|10=000|"
-    ).encode()
+    )
 
 
 def line(index: int) -> bytes:
@@ -48,13 +48,13 @@ def line(index: int) -> bytes:
     level = "WARN" if index % 7 == 0 else "INFO"
     return (
         (
-            f"{timestamp(index)} "
+            f"{mtime(index)} "
             f"[{index % 16 + 1}-{index % 2**32:08x}:{index % 2**40:010x}:{index}] "
             f"[feed-{index % 4}] ({level}) "
-        ).encode()
+        )
         + body(index)
-        + b"\n"
-    )
+        + "\n"
+    ).encode()
 
 
 def corpus(rows: int) -> bytes:
@@ -125,17 +125,15 @@ def first_batch(case: Case) -> int:
 
 def expected(index: int) -> dict[str, object]:
     """The endpoint values independent of the resource's diagnostic URL."""
-    instant = datetime_of(timestamp(index))
     return {
+        "currunix": datetime_of(mtime(index)),
         "rownum": index + 1,
-        "timestamp": instant,
-        "timepartition": instant,
-        "threadId": index % 16 + 1,
+        "msgthreadid": index % 16 + 1,
         "msgsessionid": f"{index % 2**32:08x}",
         "msgctxid": f"{index % 2**40:010x}",
         "msgseqnum": index,
-        "pluginid": f"feed-{index % 4}",
-        "level": "WARN" if index % 7 == 0 else "INFO",
+        "msgpluginid": f"feed-{index % 4}",
+        "loglevel": "WARN" if index % 7 == 0 else "INFO",
         "body": body(index),
     }
 
@@ -145,7 +143,7 @@ def verify(case: Case, rows: int) -> pyarrow.Table:
     batches = list(message_batches(case.source()))
     assert batches and all(batch.schema.equals(SCHEMA, check_metadata=True) for batch in batches)
     assert all(0 < batch.num_rows <= BATCH_ROW_SIZE for batch in batches)
-    assert SCHEMA.field("timestamp").type == pyarrow.timestamp("us", tz="UTC")
+    assert SCHEMA.field("currunix").type == pyarrow.timestamp("us", tz="UTC")
     table = pyarrow.Table.from_batches(batches, schema=SCHEMA)
     assert table.num_rows == rows
     assert first_batch(case) == min(rows, BATCH_ROW_SIZE)
@@ -160,7 +158,7 @@ def verify(case: Case, rows: int) -> pyarrow.Table:
         assert isinstance(url, str) and url.endswith(case.filename)
         assert isinstance(code, int)
         assert isinstance(identity, bytes) and len(identity) == 16
-        assert isinstance(line, bytes) and line.endswith(expected(index)["body"])
+        assert isinstance(line, str) and line.endswith(expected(index)["body"])
         assert row == {key: value for key, value in expected(index).items() if key != "body"}
     return table
 

@@ -238,10 +238,10 @@ SHAPES: tuple[Stamp, ...] = (ISO, FIX, COMPACT)
 
 
 ULBRIDGE_ROWHEADER = (
-    r"^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) "
-    r"\[(?P<threadId>[1-9]\d*)"
+    r"^(?P<mtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) "
+    r"\[(?P<msgthreadid>[1-9]\d*)"
     r"(?:-(?P<msgsessionid>[0-9a-f]{8}):(?P<msgctxid>[0-9a-f]{10}):(?P<msgseqnum>\d+))?\] "
-    r"\[(?P<pluginid>[^\]]+)\] \((?P<level>[A-Z]+)\) "
+    r"\[(?P<msgpluginid>[^\]]+)\] \((?P<loglevel>[A-Z]+)\) "
 )
 """The ULBridge row-header expression for physical message records.
 
@@ -251,11 +251,13 @@ beside this one. It is spelled here because the constant reaches Rust but not
 yet the Python extension; the day it does, this becomes one import and the
 pin becomes redundant.
 
-Every capture is named for the raw column it fills. `msgsessionid`,
-`msgctxid` and `msgseqnum` also fill native FIX fields 65032, 65008 and 34.
-`pluginid`, `threadId`, `level` and the capture clock stay on `logs.messages`;
-a FIX row links back through `srcuuids`. The native `msgpluginid` field is
-not filled by the differently named `pluginid` capture.
+Every capture is named for the column the native read fills from it, which is
+the whole of how a bracket part is told from another: `mtime` is the record
+clock the read settles `currunix` from, and `msgpluginid`, `msgsessionid`,
+`msgctxid` and `msgseqnum` are the crate's own fields 65009, 65032, 65008 and
+34, which a parse reads off the line it was handed. `msgthreadid` and
+`loglevel` name no field of the graph and stay on `logs.messages`; a FIX row
+links back to the whole capture record through `srcuuids`.
 """
 
 #: Spellings `datetime.fromisoformat` does not read, in the order they are
@@ -368,13 +370,15 @@ def within(
     values: pyarrow.Array | pyarrow.ChunkedArray,
     window: tuple[datetime.datetime, datetime.datetime],
 ) -> pyarrow.Array | pyarrow.ChunkedArray:
-    """Which of `values` a window covers: `start <= value < end`, or no value at all.
+    """Which of `values` a window covers: `start <= value < end`, or no instant at all.
 
-    A row that carries no instant cannot be placed in any window, so it is in
+    A row that states no instant cannot be placed in any window, so it is in
     every one: a capture line whose header did not match keeps its body and
-    its source position under a null clock, and a window that dropped it
-    would lose the line for good rather than for a day. Replacing it on every
-    run is the harmless direction to be wrong in.
+    its source position at `EPOCH`, the pin the native read settles a line it
+    could not date at, and a window that dropped it would lose the line for
+    good rather than for a day. Replacing it on every run is the harmless
+    direction to be wrong in. A null reads the same way, for a column that
+    admits one.
     """
     compute = pyarrow.compute
     lower, upper = (pyarrow.scalar(bound, values.type) for bound in window)
@@ -382,7 +386,9 @@ def within(
         compute.greater_equal(values, lower),
         compute.less(values, upper),
     )
-    return compute.or_(compute.fill_null(covered, False), compute.is_null(values))
+    undated = compute.equal(values, pyarrow.scalar(EPOCH, values.type))
+    placed = compute.or_(compute.fill_null(covered, False), compute.fill_null(undated, False))
+    return compute.or_(placed, compute.is_null(values))
 
 
 def _instant(value: Any) -> datetime.datetime | None:

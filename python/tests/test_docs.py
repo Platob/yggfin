@@ -69,19 +69,18 @@ def test_docs_publish_the_native_message_contracts() -> None:
 
     assert Field.__name__ == "Field"
     assert [member.name for member in Message.into_field()] == [
+        "currunix",
+        "curruuid",
+        "currhashcode",
         "sourceurl",
         "rownum",
-        "timestamp",
-        "timepartition",
-        "threadId",
+        "body",
+        "msgthreadid",
         "msgsessionid",
         "msgctxid",
         "msgseqnum",
-        "pluginid",
-        "level",
-        "currhashcode",
-        "body",
-        "curruuid",
+        "msgpluginid",
+        "loglevel",
     ]
     assert "pipeline/tasks/parse-fix-bronze.md" in config
     assert "pipeline/tasks/parse-fix-silver.md" in config
@@ -100,11 +99,8 @@ def test_docs_publish_the_native_message_contracts() -> None:
     for capture in (
         "sourceurl",
         "rownum",
-        "timestamp",
-        "timepartition",
-        "threadId",
-        "pluginid",
-        "level",
+        "msgthreadid",
+        "loglevel",
         "body",
     ):
         assert f'"name": "{capture}"' not in fix_schema

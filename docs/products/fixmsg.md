@@ -21,7 +21,10 @@ the partition it is replacing.
 
 The bundled registry produces 123 native columns. Parsing stored capture rows,
 writing bronze, reconstructing messages, and walking silver all use this same
-shape. Raw capture columns and `body` remain in `logs.messages`.
+shape. `sourceurl`, `rownum`, `msgthreadid`, `loglevel` and `body` are raw to
+`logs.messages` and stay there; the header's other four -- `msgsessionid`,
+`msgctxid`, `msgseqnum` and `msgpluginid` -- are columns of this shape too,
+which is why a raw line fills them under the names it already stored.
 
 The native row includes 29 crate fields and standard FIX fields chosen by the
 registry. Its lifted vocabulary includes:
@@ -75,8 +78,10 @@ walk. Repeated deliveries are suppressed without suppressing distinct events.
 ## Raw-line provenance
 
 `srcuuids` is the only raw-capture reference in FixMsg. Its values join to
-`logs.messages.curruuid`, where `sourceurl`, `rownum`, capture timestamps,
-header details, and exact `body` bytes remain available. A stored FIX row is
+`logs.messages.curruuid`, where `sourceurl`, `rownum`, the instant the read
+settled over the line, the rest of its header and its whole `body` text remain
+available. The parse reads the stored identity back rather than recomputing
+one, so the join names the line that landed. A stored FIX row is
 self-contained for canonical message reconstruction.
 
 ## Inspect the product field
@@ -92,8 +97,7 @@ assert schema.field("msgtype").metadata[b"FIX:tag"] == b"35"
 assert schema.field("curruuid").metadata[b"ICEBERG:primary_key"] == b"true"
 assert schema.field("currunix").metadata[b"ICEBERG:partition_key"] == b"hour"
 assert not {
-    "sourceurl", "rownum", "timestamp", "timepartition", "threadId", "threadid",
-    "pluginid", "level", "body",
+    "sourceurl", "rownum", "msgthreadid", "loglevel", "body",
 } & set(schema.names)
 assert schema.names[-2:] == ["nofixentries", "fixentries"]
 ```

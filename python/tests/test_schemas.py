@@ -57,13 +57,14 @@ def test_a_contract_is_the_three_things_iceberg_stores() -> None:
     ]
     # One row per line's bytes, whatever session carried it: `currhashcode`
     # is the code the read states over them and the whole key. The line's own
-    # identity is the last column, and not the key.
-    assert document["schema"]["identifier-field-ids"] == [11]
-    assert document["schema"]["fields"][-1]["name"] == "curruuid"
-    assert document["schema"]["fields"][-1]["type"] == "fixed[16]"
-    assert document["schema"]["fields"][-1]["required"] is False, "an evolved table takes it"
+    # identity is a column of its own, stated on every row, and not the key.
+    assert document["schema"]["identifier-field-ids"] == [3]
+    assert document["schema"]["fields"][1]["name"] == "curruuid"
+    assert document["schema"]["fields"][1]["type"] == "fixed[16]"
+    assert document["schema"]["fields"][1]["required"] is True, "the read states it on every row"
+    # The hour of the event itself, exactly as both FIX tables are laid out.
     assert document["partition-spec"]["fields"] == [
-        {"source-id": 4, "field-id": 1000, "transform": "hour", "name": "timepartition_hour"}
+        {"source-id": 1, "field-id": 1000, "transform": "hour", "name": "currunix_hour"}
     ]
     # Order 0 is what a created table records; a bare `SortOrder()` is order 1.
     assert document["sort-order"] == {"order-id": 0, "fields": []}
@@ -89,27 +90,27 @@ def test_contract_matches_the_message_declaration() -> None:
     # `ICEBERG:field_id` on every column. Types, names and nullability agree.
     assert published.into_arrow_schema().equals(declared.into_arrow_schema())
     assert primary_keys(published) == primary_keys(declared) == ["currhashcode"]
-    assert partition_keys(published) == partition_keys(declared) == {"timepartition": "hour"}
+    assert partition_keys(published) == partition_keys(declared) == {"currunix": "hour"}
     assert metrics_for(published) == metrics_for(declared)
 
 
 def test_a_contract_does_not_carry_what_only_arrow_metadata_states() -> None:
     """The cost of the format, as an assertion rather than as prose.
 
-    Each of these is asserted against the runtime declaration instead:
-    `test_message.py` owns the derived-partition contract, and
+    Each of these is asserted against the runtime declaration instead, and
     `test_the_fix_declaration_keeps_its_registry_metadata` below owns the tags.
     """
     published = load_contract()
 
-    assert derived_keys(Message.into_field()) == {"timepartition": ("timestamp",)}
-    assert derived_keys(published) == {}
+    # Nothing is derived on either side: the table is laid out by the event
+    # the row already carries, so no column is computed from another.
+    assert derived_keys(Message.into_field()) == derived_keys(published) == {}
     # Nothing here computes a digest any more: the key is the code the read
     # states, so neither shape holds one.
     assert [member.name for member in Message.into_field() if member.digest.is_holder()] == []
     assert [member.name for member in published if member.digest.is_holder()] == []
     assert published.into_arrow_schema().field("currhashcode").metadata[b"ICEBERG:field_id"] == (
-        b"11"
+        b"3"
     )
     # A column's description survives as Iceberg's `doc`; the struct's own does
     # not, and neither do the `python:*` keys naming the class that declared it.
@@ -141,25 +142,20 @@ def test_the_fix_contract_is_what_the_current_dictionary_answers() -> None:
 
 
 def test_the_stored_row_holds_none_of_the_text_it_was_read_from() -> None:
-    """A FIX row carries native event facts only; `logs.messages` owns captures
-    and bytes, and `srcuuids` joins an event back to those lines."""
+    """A FIX row carries native event facts only; `logs.messages` owns where a
+    line was read from, what it printed and the two captures no field takes,
+    and `srcuuids` joins an event back to those lines."""
     stored = fix_message_field().into_arrow_schema()
     parsed = fix_parse_field().into_arrow_schema()
     logged = Message.into_field().into_arrow_schema()
 
-    for column in (
-        "sourceurl",
-        "rownum",
-        "timestamp",
-        "timepartition",
-        "threadId",
-        "threadid",
-        "pluginid",
-        "level",
-        "body",
-    ):
+    for column in ("sourceurl", "rownum", "msgthreadid", "loglevel", "body"):
         assert column not in stored.names, column
         assert column not in parsed.names, column
+    # The bracket's own facts are native fields a raw line fills, so they are
+    # on both shapes under one spelling and nothing translates between them.
+    for column in ("msgsessionid", "msgctxid", "msgseqnum", "msgpluginid"):
+        assert column in stored.names and column in logged.names, column
     assert "body" in logged.names
     assert stored.field("srcuuids").type.field(0).type == pyarrow.binary(16)
     assert logged.field("curruuid").type == pyarrow.binary(16)
@@ -201,7 +197,7 @@ def test_the_fix_tables_are_laid_out_by_the_event_and_keyed_by_its_identity() ->
     # without a precision shim -- the event's own clock included.
     assert schema.field("currunix").type.unit == "us"
     # What every message settles, and nothing more: a read is not a snapshot,
-    # and a capture `timestamp` is context.
+    # and the clock a line was printed at is context.
     assert [member.name for member in fixed if not member.nullable] == [
         "currunix",
         "creaunix",
@@ -232,14 +228,15 @@ def test_the_fix_declaration_keeps_its_registry_metadata() -> None:
 def test_raw_message_contract_keeps_the_captures_the_bridge_names() -> None:
     message = load_contract()
     assert primary_keys(message) == ["currhashcode"]
-    assert partition_keys(message) == {"timepartition": "hour"}
-    assert [member.name for member in message][4:10] == [
-        "threadId",
+    assert partition_keys(message) == {"currunix": "hour"}
+    assert [member.name for member in message][6:] == [
+        "msgthreadid",
         "msgsessionid",
         "msgctxid",
         "msgseqnum",
-        "pluginid",
-        "level",
+        "msgpluginid",
+        "loglevel",
     ]
-    assert [int(member.iceberg["field_id"]) for member in message] == list(range(1, 14))
-    assert [member.name for member in message][-2:] == ["body", "curruuid"]
+    assert [int(member.iceberg["field_id"]) for member in message] == list(range(1, 13))
+    # The event the read settles opens the row, exactly as it opens a FIX one.
+    assert [member.name for member in message][:3] == ["currunix", "curruuid", "currhashcode"]

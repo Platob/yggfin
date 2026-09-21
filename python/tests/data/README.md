@@ -19,6 +19,7 @@ Its content SHA-256, as `sha256sum` prints it, is:
 | --- | ---: | --- |
 | physical lines | 144 | one row of the text read each |
 | stored lines | 141 | `logs.messages` is keyed on `currhashcode`, the code the read states over the whole line, and 3 lines repeat another byte for byte |
+| lines the row header does not date | 15 | they settle at the epoch pin in `currunix`, and each carries a content code of its own, so all 15 land |
 | messages the codec answers | 79 | a line can carry two frames and a line carrying none answers nothing |
 | duplicate frame arrivals | 28 | the same message is logged again at several hops |
 | `fix.bronze` rows | 51 | one row per distinct parsed event, keyed on `curruuid` |
