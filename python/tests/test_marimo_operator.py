@@ -574,12 +574,12 @@ FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
 #: day when nothing says otherwise. `end: 2026-08-14` is the exclusive end of it.
 WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
 
-#: What each stage returns the first time it sees those 144 physical rows, and
-#: what a replay of the same window returns: the same rows, replaced.
+#: The full registry folds 79 parsed frames to 51 native events; lifecycle
+#: adds one expiry. A replay replaces those same rows.
 LANDED = {
     "parse_messages": {"read": 144, "written": 141, "skipped": 3},
-    "parse_fix_bronze": {"read": 141, "written": 53, "skipped": 26},
-    "parse_fix_silver": {"read": 53, "written": 53, "skipped": 0},
+    "parse_fix_bronze": {"read": 141, "written": 51, "skipped": 28},
+    "parse_fix_silver": {"read": 51, "written": 52, "skipped": 0},
 }
 REPLAYED = LANDED
 
@@ -591,7 +591,7 @@ PUBLISHED = {
     "parse_fix_silver": "fix.silver",
 }
 TARGETS = {"parse_messages": "messages", "parse_fix_bronze": "bronze", "parse_fix_silver": "silver"}
-STORED = {"logs.messages": 141, "fix.bronze": 53, "fix.silver": 53}
+STORED = {"logs.messages": 141, "fix.bronze": 51, "fix.silver": 52}
 
 
 def counted(result: dict[str, Any]) -> dict[str, int]:
@@ -675,7 +675,8 @@ def test_the_scheduled_graph_publishes_the_bridge_fixture_and_replays_it(
     `test_workflow.py` pins these same counts for `rekep task run`. Pinning
     them here as well is what says the two routes are one pipeline: a
     scheduled run reads the same capture into the same two products, and its
-    replay writes nothing, exactly as the command-line run does.
+    replay replaces the same rows in one new snapshot, exactly as the
+    command-line run does.
     """
     monkeypatch.undo()
     catalog = _scheduled(tmp_path)
