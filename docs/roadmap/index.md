@@ -33,7 +33,8 @@ what these pages specify.
 
 1. Read `fix.silver` as a `RecordBatchReader`; never re-open captures, and
    never `fix.bronze`, which carries no chain.
-2. Retain `sourceurl`, `rownum`, and `curruuid` as source lineage.
+2. Retain `srcuuids` and `curruuid` as source lineage; resolve raw location by
+   joining `srcuuids` to `logs.messages.curruuid`.
 3. Make the row grain and key explicit before adding columns.
 4. Keep stated protocol values separate from derived identities or state.
 5. Preserve corrections, cancels, rejects, and unknown states as events; do
@@ -50,7 +51,7 @@ Each product lands only when it has:
 | --- | --- |
 | grain | one sentence that decides whether a source message emits zero, one, or many rows |
 | identity | deterministic key across replay and capture duplication |
-| lineage | source position and parsed digest retained |
+| lineage | raw source identities and parsed digest retained |
 | semantics | precedence for identifiers, clocks, corrections, and nulls |
 | schema | metadata-bearing field plus reviewed JSON snapshot |
 | quality | unmapped/rejected counters and reconciliation queries |

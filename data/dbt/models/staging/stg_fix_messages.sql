@@ -3,8 +3,8 @@
 -- Read off `fix.silver` and never `fix.bronze`: a product needs the chain --
 -- the step an event follows, the state its chain reached -- and only the
 -- walked rows carry one. A row here is an event and not a line: the parse
--- folds every hop that logged one message onto one `curruuid`, so a source
--- position no longer names a row and the identity does.
+-- folds every hop that logged one message onto one `curruuid`. Native
+-- `srcuuids` retains the raw-line identities for a later `logs.messages` lookup.
 --
 -- The native lifecycle owns event time, including expiry: using an inherited
 -- TransactTime would move an expired event back to the transaction it closed.
@@ -12,9 +12,8 @@
 -- row. Product price and quantity retain their documented fallback order.
 
 select
-    sourceurl,
-    rownum,
     curruuid,
+    srcuuids,
     crossuuid,
     crosscode,
     prevuuid,

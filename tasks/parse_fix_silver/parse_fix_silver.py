@@ -24,7 +24,6 @@ with app.setup:
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
     from rekep.tasks import Task
-    from rekep.text import Message
     from rekep.times import window_of, within
 
     TARGET = "fix.silver"
@@ -47,10 +46,11 @@ def parameters():
     _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
     bronze = _defaults["bronze"]
     registry = _defaults["registry"]
+    codec_options = _defaults["codec_options"]
     start = _defaults["start"]
     end = _defaults["end"]
     catalog = _defaults["catalog"]
-    return bronze, catalog, end, registry, start
+    return bronze, catalog, codec_options, end, registry, start
 
 
 @app.cell
@@ -60,7 +60,7 @@ def _():
 
 
 @app.cell
-def _(bronze, catalog, end, records, registry, start):
+def _(bronze, catalog, codec_options, end, records, registry, start):
     _ = records
     with ExitStack() as opened:
         window = window_of(start, end)
@@ -77,9 +77,8 @@ def _(bronze, catalog, end, records, registry, start):
         # back as the message that wrote it, and the dictionary is what wrote
         # it. The same field too, because a walked row is the parsed row
         # restated: same columns, same key, same layout.
-        codec = fix_codec(fix_registry(registry))
-        carrier = Message.into_field()
-        field = fix_message_field(codec, carrier)
+        codec = fix_codec(fix_registry(registry), **(codec_options or {}))
+        field = fix_message_field(codec)
         parsed = store.dataset(bronze, field=field)
         opened.callback(parsed.close)
         # The hour transform prunes partitions, then the ordered reader

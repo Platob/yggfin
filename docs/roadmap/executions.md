@@ -17,8 +17,7 @@ cancels retain both their own event identity and the execution they reference.
 | `executionkey` | `fixed_size_binary[16]` | no | scoped execution identity; primary key |
 | `eventkey` | `fixed_size_binary[16]` | no | source-event identity |
 | `originalexecutionkey` | `fixed_size_binary[16]` | yes | corrected/cancelled execution |
-| `sourceurl` | `string` | no | source object |
-| `rownum` | `int64` | no | source line |
+| `srcuuids` | `list<fixed_size_binary[16]>` | no | raw-line identities for provenance |
 | `curruuid` | `fixed_size_binary[16]` | no | settled event identity |
 | `executiontime` | `timestamp[us, UTC]` | no | transaction time, then market timestamp |
 | `timepartition` | `timestamp[us, UTC]` | no | Iceberg day transform |
@@ -52,11 +51,11 @@ cancels retain both their own event identity and the execution they reference.
 - `lastqty` and `lastpx` come from the occurrence. Cumulative fields are audit
   checks, not the source of occurrence quantity.
 - Currency and unit mismatches are quality failures, not automatic conversion.
-- Duplicate source positions are skipped; separately captured relay copies may
+- Duplicate source identities are skipped; separately captured relay copies may
   share `curruuid` and are reconciled by `executionkey` plus provenance.
 
 ## Reconciliation
 
 Acceptance compares the settled execution chain with the latest order
 `cumqty`, checks correction/cancel references, reports unlinked orders, and
-retains every source position used in a conflict decision.
+retains every source identity used in a conflict decision.

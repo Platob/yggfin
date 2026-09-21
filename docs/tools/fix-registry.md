@@ -45,21 +45,14 @@ bundled dictionary defines 181 of them.
 | Metadata | the complete field metadata mapping |
 | Field JSON | deterministic `Field.into_json(indent=2)` |
 
-The full-schema panel creates an empty Arrow reader and asks
-`FixCodec.parse_text_arrow_reader` for its output schema. It therefore displays
-the actual registry-dependent `FixMsg` projection without parsing or
-fabricating a row.
+The full-schema panel asks the codec for its native field. It therefore
+displays the actual registry-dependent `FixMsg` projection without parsing or
+fabricating a row or input schema.
 
 ```python
-import pyarrow
+from rekep.fix import fix_message_field
 
-from rekep import Field
-from rekep.fix import fix_codec, fix_registry
-
-carrier = pyarrow.schema([pyarrow.field("body", pyarrow.string(), False)])
-empty = pyarrow.RecordBatchReader.from_batches(carrier, [])
-parsed = fix_codec(fix_registry()).parse_text_arrow_reader(empty)
-field = Field.from_arrow_schema(parsed.schema, name="FixMsg")
+field = fix_message_field()
 
 print(field.into_json(indent=2))
 ```

@@ -7,7 +7,7 @@
         "name": "sourceurl",
         "type": "string",
         "required": true,
-        "doc": "Canonical URI of the source text object, carried beside the FIX row."
+        "doc": "Canonical URI of the source text object, stored only on the raw line."
       },
       {
         "id": 2,
@@ -28,7 +28,7 @@
         "name": "timepartition",
         "type": "timestamptz",
         "required": false,
-        "doc": "Timestamp partitioned by its UTC hour in Iceberg. `logs.messages` is laid out by it and the two FIX tables carry it as an ordinary column: a settled message is laid out by the instant it happened at, not by the instant a bridge printed the line."
+        "doc": "Timestamp partitioned by its UTC hour in Iceberg. `logs.messages` is laid out by it. FIX tables omit the capture clock and partition by the native event instant `currunix`."
       },
       {
         "id": 5,
@@ -63,7 +63,7 @@
         "name": "pluginid",
         "type": "string",
         "required": false,
-        "doc": "Bridge plugin that wrote the line. Carried in front of a FIX row under this name: the row's own column for the plugin is `msgpluginid` (65009), and this capture is spelled as the bridge's header brackets it."
+        "doc": "Bridge plugin that wrote the line. Stored only on the raw line. The native FIX field `msgpluginid` (65009) has its own meaning; this differently named capture does not fill it."
       },
       {
         "id": 10,
@@ -84,7 +84,7 @@
         "name": "body",
         "type": "binary",
         "required": true,
-        "doc": "The whole line as the native read retains it, the row header included. The captures above are read off it, not cut out of it. `logs.messages` is where the bytes live and the only place, and so is the code beside them: neither FIX table holds either, because a row there is an event and both of these are one line's. It names the line it was read from instead, with `sourceurl`, `rownum` and, exactly, the line's `curruuid`."
+        "doc": "The whole line as the native read retains it, the row header included. The captures above are read off it, not cut out of it. `logs.messages` is where the bytes live and the only place, and so is the code beside them: neither FIX table holds either, because a row there is an event and both of these are one line's. A FIX row names the raw line's `curruuid` in `srcuuids`; capture details are looked up on that raw identity."
       },
       {
         "id": 13,

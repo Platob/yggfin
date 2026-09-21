@@ -12,6 +12,7 @@ write only this job's `fix.silver` events.
   "parameters": {
     "bronze": "fix.bronze",
     "registry": null,
+    "codec_options": null,
     "start": null,
     "end": null,
     "catalog": {
@@ -27,6 +28,10 @@ write only this job's `fix.silver` events.
 ```
 
 ## Walk the chains
+
+`codec_options` has the same contract as bronze: `null` uses native defaults,
+and an object is forwarded unchanged to `FixCodec`. Give both stages the same
+semantic parse options; `snapshot_ns` affects lifecycle output only.
 
 Lifecycle enrichment is stateful and ordered. It fills `prevuuid`, `seqnum`,
 `parentuuids`, folded state, creation and expiry. Expiry is emitted at its
@@ -65,9 +70,8 @@ older.
 
 ## Read, order, widen, walk, narrow, write
 
-`fix_lifecycle_arrow_reader` reads the same 130-column **FixMsg** field that
-bronze stored. `stored_arrow_reader` applies the storage field after the walk,
-and `overwrite_arrow_reader(..., merge_by=True)` replaces matching `curruuid`
+`fix_lifecycle_arrow_reader` reads and emits the same 123-column **FixMsg**
+field that bronze stored. `overwrite_arrow_reader(..., merge_by=True)` replaces matching `curruuid`
 rows inside affected hourly partitions.
 
 The identity field is `curruuid`. Iceberg's merge behavior is

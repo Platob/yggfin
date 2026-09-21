@@ -4,6 +4,7 @@
   "parameters": {
     "bronze": "fix.bronze",
     "registry": null,
+    "codec_options": null,
     "start": null,
     "end": null,
     "catalog": {

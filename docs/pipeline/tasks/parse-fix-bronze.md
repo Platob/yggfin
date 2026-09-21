@@ -12,6 +12,7 @@ Nothing in this task walks lifecycle chains.
   "parameters": {
     "messages": "logs.messages",
     "registry": null,
+    "codec_options": null,
     "start": null,
     "end": null,
     "catalog": {
@@ -35,25 +36,29 @@ several messages. Parsing and local enrichment are independent per event and
 may execute concurrently. `threads` defaults to the available CPU count and
 zero becomes one. Output order remains input order.
 
-The codec accepts its native options directly. Common pins include
+`codec_options: null` delegates every native default. An object is forwarded
+unchanged to `FixCodec`; Python keeps no whitelist or second interpretation.
+Common pins include
 `batch_row_size`, `batch_byte_size`, `include_msgtypes`, `exclude_msgtypes`,
 `threads`, and `snapshot_ns`; native construction rejects unknown names.
+Batching defaults to 32,768 rows and 128 MiB.
 `snapshot_ns` is normally zero for bronze because snapshots belong to a
 lifecycle walk.
+`lstrip` belongs to the raw reader's `TextOptions`, changes retained raw bytes,
+and is neither a codec option nor enabled by this task.
 
 The default absence values are empty text, `null`, `<null>`, `none`, `n/a`,
 and `[n/a]`, after trimming and case folding. `null_values` replaces that set.
 
 ## Read, parse, narrow, write
 
-`fix_schema(registry, "fixmsg")` is the native 123-column row.
-`fix_schema_carrying` and the parse door add eight non-overlapping source
-columns, yielding 131 columns. `iceberg_fix_field` removes the consumed `body`
-before storage, so `fix.bronze` uses the 130-column **FixMsg** contract in
+`fix_message_field(codec)` is the native 123-column row used directly by the
+parse door and `fix.bronze`. Capture columns and `body` remain in
+`logs.messages`, so no carried or unstored schema is constructed. The reviewed
+**FixMsg** contract is
 [`schemas/rekep/fixmsg.json`](../../contracts/index.md).
 
-`stored_arrow_reader` applies that field before the table write. The dataset
-is keyed by `curruuid`, partitioned by hour of `currunix`, and sorted by
+The dataset is keyed by `curruuid`, partitioned by hour of `currunix`, and sorted by
 `currunix, seqnum, curruuid`. An overwrite is scoped to matching identifiers
 inside affected partitions; append remains a blind generic Iceberg append.
 
@@ -92,7 +97,8 @@ rows; it is never inferred from a batch.
 
 - `seqnum`, `prevuuid`, and `parentuuids` remain empty because bronze has not
   walked a chain.
-- `sourceurl`, `rownum`, and `srcuuids` preserve capture provenance.
+- `srcuuids` preserves capture provenance by joining to raw
+  `logs.messages.curruuid`; the FIX row carries no raw source columns.
 - Undated messages use the codec's deterministic epoch floor until lifecycle
   can date them from message facts.
 - Unknown names remain residual tag-zero entries.

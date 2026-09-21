@@ -25,12 +25,12 @@ models:
         description: The identity of the step this event follows in its chain.
       - name: seqnum
         description: Where this event stands in its chain, filled by the walk.
-      - name: sourceurl
-        description: The capture object this event was read from.
-      - name: rownum
-        description: The physical line number inside that object.
+      - name: srcuuids
+        description: >
+          Native raw-line identities for provenance; join them to
+          `logs.messages.curruuid` for capture detail.
       - name: eventtime
-        description: The transaction time, else the settled message instant.
+        description: The native settled event instant, including expiry at its deadline.
         data_tests:
           - not_null
       - name: timepartition

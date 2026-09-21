@@ -16,9 +16,8 @@ a guessed order.
 | column | Arrow type | null | contract |
 | --- | --- | :---: | --- |
 | `orderkey` | `fixed_size_binary[16]` | no | digest of stable session/account/client-or-venue identity |
-| `eventkey` | `fixed_size_binary[16]` | no | digest of source position plus event index; primary key |
-| `sourceurl` | `string` | no | source object |
-| `rownum` | `int64` | no | source line |
+| `eventkey` | `fixed_size_binary[16]` | no | native settled event identity; primary key |
+| `srcuuids` | `list<fixed_size_binary[16]>` | no | raw-line identities for provenance |
 | `eventindex` | `int32` | no | zero for one-event messages; supports future exploded groups |
 | `curruuid` | `fixed_size_binary[16]` | no | settled event identity |
 | `eventtime` | `timestamp[us, UTC]` | no | lifecycle `currunix`, including exact expiry deadlines |
@@ -56,8 +55,7 @@ identity.
 
 - Keep both `state` and `exectype`; status and event type answer different
   questions.
-- Order by `eventtime`, then source `(sourceurl, rownum, eventindex)` as a stable
-  tie-breaker.
+- Order by `eventtime`, lifecycle `seqnum`, then deterministic `eventkey`.
 - A late event is appended and changes current state only through deterministic
   ordering.
 - A reject is an event even when it never creates a live order.

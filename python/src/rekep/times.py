@@ -251,15 +251,11 @@ beside this one. It is spelled here because the constant reaches Rust but not
 yet the Python extension; the day it does, this becomes one import and the
 pin becomes redundant.
 
-Every capture is named for the column it fills, which is the whole contract:
-`msgsessionid`, `msgctxid`, `msgseqnum` and `pluginid` reach `msgsessionid`
-(65032), `msgctxid` (65008), `MsgSeqNum` (34) and `pluginid` (65009) with
-nothing mapping a spelling onto a tag in between. The bridge writes the first
-three in camel case -- `msgSessionId`, `msgCtxId`, `seqNum` -- and they were
-captured that way, against a table that read `seqnum` as tag 34 and landed
-the session *instance* on a column of its own. Naming the captures for the
-fields retires both mistakes, and `msgsessionid` is what the event calls the
-session instance, so the capture, the column and the fact are one word.
+Every capture is named for the raw column it fills. `msgsessionid`,
+`msgctxid` and `msgseqnum` also fill native FIX fields 65032, 65008 and 34.
+`pluginid`, `threadId`, `level` and the capture clock stay on `logs.messages`;
+a FIX row links back through `srcuuids`. The native `msgpluginid` field is
+not filled by the differently named `pluginid` capture.
 """
 
 #: Spellings `datetime.fromisoformat` does not read, in the order they are

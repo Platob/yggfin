@@ -30,8 +30,8 @@ written = messages.overwrite_arrow_reader(
 
 `merge_by=True` uses the primary key declared on the native Field:
 `currhashcode` for `logs.messages`, and `curruuid` for `fix.bronze` and
-`fix.silver`, where a parse answers one row per message and a source URL and
-row number alone therefore name no row. A missing table is created.
+`fix.silver`. A parse answers one row per message; capture location remains on
+the raw table and does not identify an event row. A missing table is created.
 `commit_batch_num` and the optional `commit_row_size` bound each storage
 commit independently from input batch size, however many partitions the
 bounded chunk spans: its parts are staged one at a time and committed together.
@@ -158,6 +158,12 @@ existing table must be nullable because older rows have no value for it; the
 first write creates a missing table directly from its Field. Schema updates
 are table-wide even when rows are written to a branch. A write with no new
 column makes no schema commit.
+
+The current FIX contract creates a new table with its 123 native columns.
+`merge_schema=True` cannot retire columns from an existing table, so before
+replaying an older FIX table use PyIceberg `table.update_schema()` to delete
+`sourceurl`, `rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`,
+and `level`; the raw values remain in `logs.messages`.
 
 Before either write, the native `Field` applies its declarations in dependency
 order: **cast → derived partition columns → digest holders**. `logs.messages`

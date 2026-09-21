@@ -9,10 +9,10 @@ flowchart LR
     T --> M[("logs.messages<br/>13 columns")]
     M --> F["parse_fix_bronze<br/>parse"]
     R[["bundled dictionary<br/>7,778 definitions"]] -.types.-> F
-    F --> X[("fix.bronze<br/>130 columns")]
+    F --> X[("fix.bronze<br/>123 columns")]
     X --> L["parse_fix_silver<br/>lifecycle"]
     R -.types.-> L
-    L --> S[("fix.silver<br/>130 columns")]
+    L --> S[("fix.silver<br/>123 columns")]
     S --> B["build_dbt"]
     B --> O[("orders.events<br/>orders.current")]
     B --> C[("executions.fills")]
@@ -84,6 +84,7 @@ the command line.
 | `catalog.properties.uri` | every | local SQLite | SQL catalog URI; not used by Glue |
 | `catalog.properties.warehouse` | every | `data/warehouse` | local path or `s3://` Iceberg root |
 | `registry` | bronze, silver | `null` | bundled dictionary; an explicit URI overrides it |
+| `codec_options` | bronze, silver | `null` | native defaults; an object is forwarded unchanged to `FixCodec` |
 | `project` | dbt | `data/dbt` | the dbt project directory |
 | `profiles` | dbt | `null` | where `profiles.yml` is; `null` is the project itself |
 | `target` | dbt | `null` | the profile target; `null` is the profile's own |

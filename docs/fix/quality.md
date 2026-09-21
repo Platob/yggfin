@@ -60,14 +60,29 @@ A pair no dictionary explains is an entry of `tag` 0 inside residual
 residual tree:
 
 ```python
-# `fixed` is a pyarrow.Table read from fix.silver or fix.bronze.
+import pyarrow
+import pyarrow.compute
+
+# `fixed` and `messages` are the two product tables.
+residual = fixed.select(("srcuuids", "fixentries"))
+parents = pyarrow.compute.list_parent_indices(residual.column("srcuuids"))
+residual = pyarrow.table(
+    {
+        "fixentries": pyarrow.compute.take(residual.column("fixentries"), parents),
+        "lineuuid": pyarrow.compute.list_flatten(residual.column("srcuuids")),
+    }
+)
+lines = messages.select(("curruuid", "sourceurl", "rownum")).rename_columns(
+    ("lineuuid", "sourceurl", "rownum")
+)
+provenance = residual.join(lines, keys="lineuuid", join_type="left outer")
 needs_dictionary_work = [
     (
         row["sourceurl"],
         row["rownum"],
         [entry["name"] for entry in row["fixentries"] or [] if entry["tag"] == 0],
     )
-    for row in fixed.select(("sourceurl", "rownum", "fixentries")).to_pylist()
+    for row in provenance.to_pylist()
 ]
 ```
 
@@ -78,10 +93,10 @@ diff before publishing it as the next bundle.
 ## Replay guarantees
 
 `srcuuids` joins a fixed row back to the stored line it was parsed out of --
-the line's own `curruuid`, as `logs.messages` holds it -- with `sourceurl` and
-`rownum` beside it, and `curruuid` tells two messages of one line apart and
-folds one message logged at three hops, which is why both FIX tables are keyed
-on `curruuid` alone. A replay of a window lands the same rows in `fix.bronze`
+each line's own `curruuid`, as `logs.messages` holds it. Those raw rows own
+`sourceurl` and `rownum`; the FIX row does not. Its `curruuid` tells two
+messages of one line apart and folds one message logged at three hops, which
+is why both FIX tables are keyed on `curruuid` alone. A replay of a window lands the same rows in `fix.bronze`
 and, walked, the same rows in `fix.silver`, and leaves no duplicate: a message
 that stated no clock of its own is dated by the codec's `UNDATED` floor in the
 parse and by the `TransactTime(60)` it states in the walk, never by the instant

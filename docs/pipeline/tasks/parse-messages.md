@@ -62,8 +62,7 @@ assert reader.schema.equals(Message.into_field().into_arrow_schema(), check_meta
 
 The row header is the bridge's own `ULBRIDGE_ROWHEADER`, stated by the native
 core and spelled once in `rekep.times` -- pinned against the core's own text
-rather than respelled per reader -- and every capture it declares is named for
-the column it fills: `timestamp`, `threadId`,
+rather than respelled per reader. It captures `timestamp`, `threadId`,
 `msgsessionid`, `msgctxid`, `msgseqnum`, `pluginid` and `level`. `body` is the
 whole line, row header included: the core retains the whole record and reads
 the captures off it. `currhashcode` is the content code the read states over
@@ -74,16 +73,12 @@ UUIDv7 over the XXH3-64 of its bytes, at no instant, because the read dates no
 line -- which a message parsed out of the stored line names as its one
 `srcuuids` entry.
 
-`msgsessionid` is the session *instance* the bridge handled the line on
-(65032) -- never what the message itself says about the counterparty session it
-names; two connections to one counterparty are two instances, so they are two
-facts. `msgctxid` fills 65008,
-`msgseqnum` fills `MsgSeqNum` (34) on a frame that stated none. `sourceurl`
-remains a carried provenance column; 65026 documents it but is never a
-message-stated fact. `pluginid` fills nothing: it rides in front of the FIX row under
-this name, and the row's own column for the plugin is `msgpluginid`. A stored
-row therefore goes on through [`parse_fix_bronze`](parse-fix-bronze.md)
-without one spelling being translated into another.
+These capture columns remain in `logs.messages`. `parse_fix_bronze` reads the
+exact `body`; the same-named `msgsessionid`, `msgctxid`, and `msgseqnum` facts
+may fill their native FIX fields, while `pluginid` never fills the distinct
+native `msgpluginid`. The parse emits only native FixMsg columns and records
+the raw row's `curruuid` in `srcuuids`; it carries no header column beside the
+FIX row.
 
 ## A bridge that writes the header its own way
 

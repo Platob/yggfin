@@ -6,7 +6,7 @@ without creating a second schema owner.
 | snapshot | columns | runtime constructor |
 | --- | ---: | --- |
 | [`message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json) | 13 | `Message.into_field()` |
-| [`fixmsg.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fixmsg.json) | 130 | `fix_message_field()` |
+| [`fixmsg.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fixmsg.json) | 123 | `fix_message_field()` |
 
 The second document is named **FixMsg** and declares both `fix.bronze` and
 `fix.silver`: one schema, one `curruuid` key, one hourly `currunix` partition,
@@ -14,9 +14,9 @@ and one `currunix, seqnum, curruuid` sort order.
 
 ## FIX row composition
 
-The registry constructs a 123-column native row. The stored-message door adds
-eight carrier columns, producing 131 parse columns, and consumes `body` before
-storage. The resulting product contract has 130 columns. The native row's 29
+The registry constructs one 123-column native row used by parse, storage, and
+lifecycle. Capture fields and `body` remain solely in `logs.messages`; a FIX
+row names its raw source through `srcuuids`. The native row's 29
 crate fields include `msgcat` (`MsgCat`), `exprtime`, and the lifted code columns
 `isincode`, `cficode`, `cusipcode`, `sedolcode`, `bloombergcode`, `figicode`,
 and `miccode`.

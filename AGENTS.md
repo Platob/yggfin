@@ -115,9 +115,10 @@ keyed on `currhashcode`, the content code the native read states over the
 exact line bytes, so identical lines are one row whatever session carried
 them; nothing here computes a digest beside it. A raw text row names its source
 through Yggdryl `sourceurl` and `rownum`, and itself through `curruuid`, the
-line's own identity the native read states: a message parsed out of a stored
-line names that identity as its one `srcuuids` entry, which is provenance and
-never lineage, and no walk moves it.
+line's own identity the native read states. A message parsed out of a stored
+line records that identity in `srcuuids`, which is provenance and never
+lineage; repeated arrivals may contribute more than one source identity, and
+no walk changes what any identity means.
 
 The two FIX stages one codec exposes are two tasks over two tables, in this
 order and no other:
@@ -135,20 +136,17 @@ hour and the run's window from `fix.bronze`, including undated epoch rows, in
 the job window plus still-undated rows and excludes future expiry events. This
 bounded history does not claim arbitrary old-chain completeness. It reads each
 row back as the message that wrote it, walks the chains, and lands the walked
-rows. The walk reads the fixed row alone: a
-capture's own column beside it would be read as content and give every
-arrival its own identity, so the carrier's columns are held back and put in
-front again by the line each walked row names. A silver row differs from its
+rows. The walk reads the fixed row alone. A silver row differs from its
 bronze twin in what the walk filled -- its place, its lineage, the folded
 `creaunix`, `exprtime` and `state` -- and in the identity those re-settle to;
 a duplicate is not a successor, and the walk gives every copy of one message
 the same place, the same lineage and the same state.
 
-Both tables are one field, `fix_schema_carrying(carrier, fix_schema(registry,
-"fixmsg"))` narrowed to what a table stores, without a yggfin FIX model: the
-dictionary's row, the capture's own columns in front, and nothing else defined
-here. The native row is 123 columns, eight carrier columns make the parse 131,
-and dropping consumed `body` leaves the stored 130-column **FixMsg** contract.
+Both tables use the native `fix_message_field(codec)` field directly,
+without a yggfin FIX model. Parse, storage, reconstruction,
+and lifecycle all use the same 123-column **FixMsg** contract. Capture columns
+and `body` remain only in `logs.messages`; `srcuuids` joins a FIX row to the raw
+row's `curruuid`.
 The native row contains 29 crate fields; code vocabularies live centrally and
 fields reference them through `FIX:codeset`. `fixentries` is residual and does
 not duplicate successfully lifted scalars or complete groups. A reconstructed
@@ -174,12 +172,12 @@ may use `threads`; the default is the available CPU count and zero becomes one.
 Only lifecycle enrichment owns cross-event state and order. `snapshot_ns`
 defaults to zero (off), and a positive value emits owned lifecycle snapshots
 on that nanosecond grid. A capture order is pinned only where a door resolves one by
-position, which is the line door; the batch door fills from a column named
-after the field, so neither FIX task pins one and cannot go stale against a
-header it never sees. A version is not among the pins -- what a message was
+position, which is the line door. A version is not among the pins -- what a message was
 read at is what its own `beginstring` said. Native construction validates
-every keyword; useful pins include `batch_row_size`, `include_msgtypes`,
-`exclude_msgtypes`, `threads`, and `snapshot_ns`. The doors are named for
+every keyword; both FIX tasks expose `codec_options`, where `null` delegates
+native defaults and an object is forwarded unchanged. Useful pins include
+`batch_row_size`, `include_msgtypes`, `exclude_msgtypes`, `threads`, and
+`snapshot_ns`. The doors are named for
 their stage: `fix_parse_*` and `fix_lifecycle_*`, a line door and a batch door each.
 
 The silver Iceberg scan prunes with `fix_window_filter`, requests

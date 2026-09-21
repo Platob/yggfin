@@ -87,7 +87,8 @@ is what DuckDB spells.
   `fix.silver` rather than being assigned a guessed order, and an unknown
   chain -- an empty `crosscode` -- is not an order.
 - `orders.current` is folded from `orders.events` alone, never from FIX. The
-  winning event is the latest `eventtime`, then the latest source position, so
+  winning event is the latest `eventtime`, then the latest lifecycle `seqnum`,
+  then the latest deterministic `eventkey`, so
   a late event changes the row only through that ordering and the same events
   in any arrival order fold to the same row.
 - `executions.fills` takes a message that states both a quantity and a price
@@ -95,7 +96,8 @@ is what DuckDB spells.
   a zero fill. A bridge relays one execution into every chain it belongs to and
   logs the copy it received beside the copy it sent, so the occurrence is
   scoped by its chain and the earliest `eventtime` wins, then the earliest
-  source position among the copies that share one.
+  lifecycle `seqnum` and deterministic `eventkey` among the copies that share
+  one.
 
 ## What a model declares
 
@@ -138,7 +140,7 @@ sources:
       - name: silver
         meta:
           table: fix.silver
-          columns: [sourceurl, rownum, curruuid, crosscode]
+          columns: [srcuuids, curruuid, crosscode]
 ```
 
 | key | meaning |
@@ -152,7 +154,7 @@ sources:
 
 DuckDB takes a table, so a source is read into memory: a large one is narrowed
 by `columns`, `row_filter` and `limit` rather than read whole. The shipped
-project projects the 35 of 130 stored FIX columns that the current products
+project projects the fields from the 123-column FIX row that current products
 read. That projection is pushed into the Iceberg scan before DuckDB sees it.
 
 The source is `fix.silver` and never `fix.bronze`, though both are declared:
@@ -250,8 +252,9 @@ stored value is sixteen bytes; a null is an empty cell.
 --8<-- "docs/pipeline/tasks/samples/build-dbt.md"
 
 The generated tables are the authoritative example values and counts. Events
-are ordered by lifecycle `currunix` and source position; current orders and
-fills fold from those rows under their declared keys. `tools/pipeline_samples.py`
+are ordered by lifecycle `currunix`, `seqnum`, and deterministic `eventkey`;
+current orders and fills fold from those rows under their declared keys.
+`tools/pipeline_samples.py`
 regenerates the include from a fixture run, and the integration suite checks it
 with `--check`.
 

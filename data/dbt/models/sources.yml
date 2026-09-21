@@ -27,9 +27,8 @@ sources:
         meta:
           table: fix.silver
           columns:
-            - sourceurl
-            - rownum
             - curruuid
+            - srcuuids
             - crossuuid
             - crosscode
             - prevuuid
@@ -63,15 +62,15 @@ sources:
             - ordrejreason
             - text
         columns:
-          - name: sourceurl
-            description: The capture object the line was read from.
-          - name: rownum
-            description: The physical line number inside that object.
           - name: curruuid
             description: >
               The event's own identity: a UUID over the instant it settled on
               and the code of its content, so every hop that logged one
               message answers one of these.
+          - name: srcuuids
+            description: >
+              Native raw-line identities. Join each value to
+              `logs.messages.curruuid` for capture detail.
           - name: crossuuid
             description: The chain's identity, over the first identifier the message states.
           - name: crosscode

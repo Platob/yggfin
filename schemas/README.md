@@ -6,7 +6,7 @@ the published tables. Runtime constructors remain the source of truth.
 | snapshot | runtime constructor | tables | stored columns |
 | --- | --- | --- | ---: |
 | `rekep/message.json` | `Message.into_field()` | `logs.messages` | 13 |
-| `rekep/fixmsg.json` | `fix_message_field()` | `fix.bronze`, `fix.silver` | 130 |
+| `rekep/fixmsg.json` | `fix_message_field()` | `fix.bronze`, `fix.silver` | 123 |
 
 `fixmsg.json` is named **FixMsg**. It is generated from the live FIX registry,
 then narrowed exactly as the Iceberg boundary narrows it. It is reviewed
@@ -14,10 +14,12 @@ output and is never edited as an alternate schema.
 
 ## Where the FIX row comes from
 
-The native FIX row has 123 columns. Parsing a stored `Message` carries eight
-non-overlapping source columns in front of that row, producing 131 columns at
-the parse boundary. `body` is consumed by the codec and is not stored in the
-FIX products, leaving the 130 columns in `fixmsg.json`.
+The native FIX row has 123 columns. Parse, storage, reconstruction, and
+lifecycle all use that exact **FixMsg** shape. Capture columns such as
+`sourceurl`, `rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`,
+`level`, and `body` belong only to `logs.messages`; FixMsg also contains no
+lowercase `threadid`. A FIX row reaches its raw
+line through `srcuuids`, whose values join to `logs.messages.curruuid`.
 
 The native row contains 29 crate fields. These include `msgcat` (`MsgCat`), the seven
 lifted identifier-code columns `isincode`, `cficode`, `cusipcode`, `sedolcode`,

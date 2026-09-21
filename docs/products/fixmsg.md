@@ -7,7 +7,7 @@ walk.
 | property | contract |
 | --- | --- |
 | grain | one FIX event |
-| stored columns | 130 |
+| stored columns | 123 |
 | identifier field | `curruuid` |
 | partition | `hour(currunix)` |
 | sort order | `currunix`, `seqnum`, `curruuid` |
@@ -19,9 +19,9 @@ the partition it is replacing.
 
 ## Row composition
 
-The bundled registry produces 123 native columns. Reading stored capture rows
-adds eight carrier columns, producing 131 parse columns; the consumed `body`
-is removed at the storage boundary, leaving 130.
+The bundled registry produces 123 native columns. Parsing stored capture rows,
+writing bronze, reconstructing messages, and walking silver all use this same
+shape. Raw capture columns and `body` remain in `logs.messages`.
 
 The native row includes 29 crate fields and standard FIX fields chosen by the
 registry. Its lifted vocabulary includes:
@@ -72,12 +72,12 @@ Changing capture context does not change the message content identity.
 `prevuuid`, `parentuuids`, folded state, creation and expiry from the ordered
 walk. Repeated deliveries are suppressed without suppressing distinct events.
 
-## Source-column folding
+## Raw-line provenance
 
-Carrier columns named for native fields fill those fields once. `sourceurl`
-and `rownum` remain carrier columns; the raw line's `curruuid` becomes one
-`srcuuids` provenance entry. The consumed `body` does not enter the table. A
-stored fixed row is self-contained and needs no capture sidecar when rebuilt.
+`srcuuids` is the only raw-capture reference in FixMsg. Its values join to
+`logs.messages.curruuid`, where `sourceurl`, `rownum`, capture timestamps,
+header details, and exact `body` bytes remain available. A stored FIX row is
+self-contained for canonical message reconstruction.
 
 ## Inspect the product field
 
@@ -87,10 +87,13 @@ from rekep.fix import fix_message_field
 field = fix_message_field()
 schema = field.into_arrow_schema()
 
-assert len(schema) == 130
+assert len(schema) == 123
 assert schema.field("msgtype").metadata[b"FIX:tag"] == b"35"
 assert schema.field("curruuid").metadata[b"ICEBERG:primary_key"] == b"true"
 assert schema.field("currunix").metadata[b"ICEBERG:partition_key"] == b"hour"
-assert "body" not in schema.names
+assert not {
+    "sourceurl", "rownum", "timestamp", "timepartition", "threadId", "threadid",
+    "pluginid", "level", "body",
+} & set(schema.names)
 assert schema.names[-2:] == ["nofixentries", "fixentries"]
 ```

@@ -60,8 +60,9 @@ uv run --project python rekep task run \
 back with the dictionary that wrote it, so a candidate is given to both.
 There is no version left to pin: what a message was read at is what its own
 `beginstring` said, and native `FixCodec` validates every keyword it receives.
-Useful pins include `batch_row_size`, `include_msgtypes`, `exclude_msgtypes`,
-`threads`, and `snapshot_ns`. `version` is no longer a task parameter, so a
+`codec_options: null` delegates native defaults; an object is forwarded
+unchanged. Useful pins include `batch_row_size`, `include_msgtypes`,
+`exclude_msgtypes`, `threads`, and `snapshot_ns`. `version` is no longer a task parameter, so a
 `--parameter 'version="4.4"'` names nothing the document declares -- the CLI
 carries it into an unused definition and Airflow's operator fails the task
 outright. There is no switch on the walk: the parsed rows without their

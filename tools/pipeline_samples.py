@@ -128,6 +128,23 @@ def _uuids(values: list[bytes]) -> pyarrow.Array:
     return pyarrow.array(values, type=pyarrow.binary(16))
 
 
+def raw_rownums(lines: pyarrow.Table) -> dict[bytes, int]:
+    """The raw line number keyed by the identity native FIX rows retain."""
+    return dict(
+        zip(
+            lines.column("curruuid").to_pylist(),
+            lines.column("rownum").to_pylist(),
+            strict=True,
+        )
+    )
+
+
+def source_rownum(row: dict[str, Any], positions: dict[bytes, int]) -> int | None:
+    """One native row's raw-line position, where it has source provenance."""
+    sources = row.get("srcuuids") or ()
+    return positions.get(sources[0]) if sources else None
+
+
 def walked(chain: pyarrow.Table) -> pyarrow.Table:
     """The chain in the silver table's own order.
 
@@ -154,20 +171,38 @@ def selected(held: dict[str, pyarrow.Table]) -> dict[str, pyarrow.Table]:
 
     lines = held["logs.messages"]
     bronze = held["fix.bronze"]
+    positions = raw_rownums(lines)
     named = pyarrow.compute.list_element(bronze.column("srcuuids"), 0)
+    bronze_chain = bronze.filter(is_in(named, value_set=sources))
     events, current, fills = (held[name] for name in TABLES[3:])
-    by_order = lambda table: table.filter(is_in(table.column("orderkey"), value_set=orders))  # noqa: E731
+
+    def by_order(table: pyarrow.Table) -> pyarrow.Table:
+        return table.filter(is_in(table.column("orderkey"), value_set=orders))
+
     return {
         "logs.messages": lines.filter(is_in(lines.column("curruuid"), value_set=sources)).sort_by(
             "rownum"
         ),
-        "fix.bronze": bronze.filter(is_in(named, value_set=sources)).sort_by("rownum"),
+        "fix.bronze": bronze_chain.take(
+            pyarrow.array(
+                sorted(
+                    range(bronze_chain.num_rows),
+                    key=lambda index: (
+                        source_rownum(
+                            bronze_chain.slice(index, 1).to_pylist()[0],
+                            positions,
+                        )
+                        or -1
+                    ),
+                )
+            )
+        ),
         "fix.silver": walked(chain),
         "orders.events": by_order(events).sort_by(
-            [("eventtime", "ascending"), ("rownum", "ascending")]
+            [("eventtime", "ascending"), ("eventkey", "ascending")]
         ),
         "orders.current": by_order(current),
-        "executions.fills": by_order(fills).sort_by("rownum"),
+        "executions.fills": by_order(fills).sort_by("executionkey"),
     }
 
 
@@ -259,7 +294,6 @@ def messages_page(lines: pyarrow.Table) -> str:
 
 def bronze_page(bronze: pyarrow.Table) -> str:
     read = [
-        "rownum",
         "msgtype",
         "msgdirection",
         "execid",
@@ -271,7 +305,6 @@ def bronze_page(bronze: pyarrow.Table) -> str:
         "transacttime",
     ]
     event = [
-        "rownum",
         "currunix",
         "curruuid",
         "crosscode",
@@ -286,14 +319,17 @@ def bronze_page(bronze: pyarrow.Table) -> str:
             f"**What the parse read off the {bronze.num_rows} messages**",
             table(read, rows(bronze, read)),
             "**The event columns a bronze row carries, and the four it leaves empty**",
-            table(event, rows(bronze, event), {"srcuuids": lambda value: identity(value[0])}),
+            table(
+                event,
+                rows(bronze, event),
+                {"srcuuids": lambda value: identity(value[0])},
+            ),
         ]
     )
 
 
 def silver_page(silver: pyarrow.Table, bronze: pyarrow.Table) -> str:
     walked = [
-        "rownum",
         "currunix",
         "curruuid",
         "prevuuid",
@@ -304,16 +340,19 @@ def silver_page(silver: pyarrow.Table, bronze: pyarrow.Table) -> str:
         "creaunix",
         "exprtime",
     ]
-    before = {row["rownum"]: row for row in rows(bronze, ["rownum", "currunix", "curruuid"])}
+    before = {
+        tuple(row["srcuuids"] or ()): row
+        for row in rows(bronze, ["srcuuids", "currunix", "curruuid"])
+    }
     moved = [
         {
-            "rownum": row["rownum"],
-            "bronze currunix": before[row["rownum"]]["currunix"],
-            "bronze curruuid": before[row["rownum"]]["curruuid"],
+            "srcuuids": row["srcuuids"],
+            "bronze currunix": before[tuple(row["srcuuids"] or ())]["currunix"],
+            "bronze curruuid": before[tuple(row["srcuuids"] or ())]["curruuid"],
             "silver currunix": row["currunix"],
             "silver curruuid": row["curruuid"],
         }
-        for row in rows(silver, ["rownum", "currunix", "curruuid"])
+        for row in rows(silver, ["srcuuids", "currunix", "curruuid"])
     ]
     return "\n\n".join(
         [
@@ -327,7 +366,6 @@ def silver_page(silver: pyarrow.Table, bronze: pyarrow.Table) -> str:
 
 def products_page(events: pyarrow.Table, current: pyarrow.Table, fills: pyarrow.Table) -> str:
     event = [
-        "rownum",
         "eventkey",
         "prevuuid",
         "seqnum",
@@ -340,7 +378,6 @@ def products_page(events: pyarrow.Table, current: pyarrow.Table, fills: pyarrow.
         "exectype",
     ]
     fill = [
-        "rownum",
         "executionkey",
         "eventkey",
         "executiontime",
@@ -375,7 +412,9 @@ def rendered(held: dict[str, pyarrow.Table]) -> dict[str, str]:
         "parse-fix-bronze": bronze_page(chosen["fix.bronze"]),
         "parse-fix-silver": silver_page(chosen["fix.silver"], chosen["fix.bronze"]),
         "build-dbt": products_page(
-            chosen["orders.events"], chosen["orders.current"], chosen["executions.fills"]
+            chosen["orders.events"],
+            chosen["orders.current"],
+            chosen["executions.fills"],
         ),
     }
     note = (
@@ -410,7 +449,10 @@ def main(argv: list[str] | None = None) -> int:
             or (SAMPLES / f"{name}.md").read_text(encoding="utf-8") != text
         ]
         if stale:
-            print(f"stale: {', '.join(stale)} -- run tools/pipeline_samples.py", file=sys.stderr)
+            print(
+                f"stale: {', '.join(stale)} -- run tools/pipeline_samples.py",
+                file=sys.stderr,
+            )
             return 1
         print(f"{len(pages)} samples match")
         return 0

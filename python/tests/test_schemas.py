@@ -4,15 +4,12 @@ import json
 from pathlib import Path
 
 import pyarrow
-from yggdryl.fix import fix_schema, fix_schema_carrying
+from yggdryl.fix import fix_schema
 
 from rekep import Message
 from rekep.fields import Field
 from rekep.fix import (
     FIXMSG,
-    PAYLOAD,
-    UNSTORED,
-    fix_carrier,
     fix_message_field,
     fix_parse_field,
     fix_registry,
@@ -136,49 +133,38 @@ def test_the_fix_contract_is_what_the_current_dictionary_answers() -> None:
 
     assert document == f"{iceberg_contract(fix_message_field())}\n"
     assert document == f"{iceberg_contract(fixed)}\n"
-    # And the row behind it is yggdryl's, field for field, with the capture's
-    # own columns in front through the one supported seam.
-    declared = fix_schema_carrying(fix_carrier(), fix_schema(fix_registry(), FIXMSG))
+    # Both parse and storage use the native fixed row, field for field.
+    declared = fix_schema(fix_registry(), FIXMSG)
     assert [member.name for member in fix_parse_field()] == [member.name for member in declared]
-    # The stored row is that row minus the capture's own text columns: the
-    # bytes the parse read each message out of, and the digest of them.
-    assert [member.name for member in fixed] == [
-        member.name for member in declared if member.name not in UNSTORED
-    ]
-    assert len(fixed) == 130 == len(fix_schema(fix_registry(), FIXMSG)) + 7
-    assert len(fix_parse_field()) == 131 == len(fixed) + len(UNSTORED)
+    assert [member.name for member in fixed] == [member.name for member in declared]
+    assert len(fixed) == len(fix_parse_field()) == len(declared) == 123
 
 
 def test_the_stored_row_holds_none_of_the_text_it_was_read_from() -> None:
-    """A FIX row names the line; `logs.messages` holds it.
-
-    The bytes and the digest of them are both the line's, and a row here is
-    the event's: one message logged at four hops is four lines and one row, so
-    either column would be one arrival's answer standing in for the event's.
-    """
+    """A FIX row carries native event facts only; `logs.messages` owns captures
+    and bytes, and `srcuuids` joins an event back to those lines."""
     stored = fix_message_field().into_arrow_schema()
     parsed = fix_parse_field().into_arrow_schema()
     logged = Message.into_field().into_arrow_schema()
 
-    assert UNSTORED == ("body",) == (PAYLOAD,)
-    for column in UNSTORED:
+    for column in (
+        "sourceurl",
+        "rownum",
+        "timestamp",
+        "timepartition",
+        "threadId",
+        "threadid",
+        "pluginid",
+        "level",
+        "body",
+    ):
         assert column not in stored.names, column
-        assert column in parsed.names, f"the parse still carries {column}"
-        assert column in logged.names, f"and the raw row still holds {column}"
-    # The line's own code needs no dropping: the fixed row takes that name for
-    # the event's code, so the carried one is folded onto it and never rides.
-    assert "currhashcode" in logged.names and "currhashcode" in stored.names
-    # What is left to reach the line with: where it was read from, and where
-    # in it -- and, exactly, the line's own identity as the message's one
-    # source. The carried `rownum` and the dictionary's `sourceurl` are both
-    # declared nullable, because the row is the dictionary's and a message
-    # made from raw bytes names no line; a capture read fills both on every
-    # row, which `test_workflow.py` asserts against the stored table.
-    assert stored.field("rownum").type == pyarrow.int64()
-    assert stored.field("sourceurl").type == pyarrow.string()
+        assert column not in parsed.names, column
+    assert "body" in logged.names
     assert stored.field("srcuuids").type.field(0).type == pyarrow.binary(16)
     assert logged.field("curruuid").type == pyarrow.binary(16)
-    # The line's code is still the raw row's key -- it just is not carried here.
+    # The line's code remains the raw row's key, while the fixed row carries
+    # its event code under the same native name.
     assert primary_keys(Message.into_field()) == ["currhashcode"]
     assert not [member.name for member in fix_message_field() if member.digest.is_holder()], (
         "no column here is a digest this shape computes"
@@ -197,9 +183,9 @@ def test_the_fix_tables_are_laid_out_by_the_event_and_keyed_by_its_identity() ->
     assert partition_keys(fixed) == {"currunix": "hour"}
     assert list(sort_keys(fixed)) == ["currunix", "seqnum", "curruuid"]
     assert document["partition-spec"]["fields"] == [
-        {"source-id": 8, "field-id": 1000, "transform": "hour", "name": "currunix_hour"}
+        {"source-id": 1, "field-id": 1000, "transform": "hour", "name": "currunix_hour"}
     ]
-    assert document["schema"]["identifier-field-ids"] == [21]
+    assert document["schema"]["identifier-field-ids"] == [14]
     assert [field["direction"] for field in document["sort-order"]["fields"]] == ["asc"] * 3
 
     schema = fixed.into_arrow_schema()
@@ -207,24 +193,13 @@ def test_the_fix_tables_are_laid_out_by_the_event_and_keyed_by_its_identity() ->
     # the published contract states the name and the registry states the tag.
     assert "35" not in schema.names
     assert "msgtype" in schema.names
-    # The capture's own columns lead, the crate's clocks open the dictionary's
-    # half, and the arrival record closes the row under the counter that
-    # counts it.
-    assert schema.names[:8] == [
-        "sourceurl",
-        "rownum",
-        "timestamp",
-        "timepartition",
-        "threadId",
-        "pluginid",
-        "level",
-        "currunix",
-    ]
+    # The crate clocks open the native row and the residual arrival record
+    # closes it under its count.
+    assert schema.names[0] == "currunix"
     assert schema.names[-3:] == ["metadata", "nofixentries", "fixentries"]
     # Every timestamp is microseconds, which is what Iceberg v2 stores
     # without a precision shim -- the event's own clock included.
     assert schema.field("currunix").type.unit == "us"
-    assert schema.field("timestamp").type.unit == "us"
     # What every message settles, and nothing more: a read is not a snapshot,
     # and a capture `timestamp` is context.
     assert [member.name for member in fixed if not member.nullable] == [
@@ -250,7 +225,7 @@ def test_the_fix_declaration_keeps_its_registry_metadata() -> None:
     assert schema.field("exprtime").metadata[b"FIX:tag"] == b"65053"
     assert load_fix_contract().into_arrow_schema().field("msgtype").metadata == {
         b"description": schema.field("msgtype").metadata[b"description"],
-        b"ICEBERG:field_id": b"32",
+        b"ICEBERG:field_id": b"25",
     }
 
 

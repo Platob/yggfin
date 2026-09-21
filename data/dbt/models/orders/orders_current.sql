@@ -16,8 +16,8 @@
 --
 -- Built from `orders.events` alone and never from FIX: a late event is
 -- appended there and changes this row only through the ordering below, which
--- is event time, then the source position that carried it. That ordering is
--- total, so the same events in any arrival order fold to the same row.
+-- is event time, then lifecycle sequence and native event identity. That
+-- ordering is total, so the same events fold to the same row.
 --
 -- The row is overwritten on its key rather than appended, so this table holds
 -- one row per order however many times it is rebuilt.
@@ -48,7 +48,7 @@ latest as (
     from {{ ref('orders_events') }}
     qualify row_number() over (
         partition by orderkey
-        order by eventtime desc, sourceurl desc, rownum desc
+        order by eventtime desc, seqnum desc, eventkey desc
     ) = 1
 
 )

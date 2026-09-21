@@ -319,6 +319,29 @@ def test_a_fix_stage_refuses_an_empty_registry_before_creating_a_table(
     assert ran.rows() == {}, "a missing dictionary cannot leave a narrow FIX table"
 
 
+def test_a_bronze_task_forwards_codec_options_without_rewriting_text(
+    ran: Ran, tmp_path: Path
+) -> None:
+    """FIX codec options cross the task boundary unchanged; text stays raw."""
+    capture = tmp_path / "prefixed.log"
+    capture.write_bytes(
+        b"2026-08-14 12:46:39.769 [1] [ULBridge] (INFO) "
+        b"  --> 8=FIX.4.4|35=D|11=OPTION-1|55=HOLN|10=000|\n"
+    )
+
+    ran.task("parse_messages", filesystem=capture.as_uri(), **WINDOW)
+    result = ran.task(
+        "parse_fix_bronze",
+        codec_options={"threads": 2, "batch_row_size": 2},
+        **WINDOW,
+    )
+
+    assert result["messages"] == result["written"] == 1
+    bronze = ran.table("fix.bronze")
+    assert bronze.column("msgtype").to_pylist() == ["D"]
+    assert bronze.column("clordid").to_pylist() == ["OPTION-1"]
+
+
 def test_a_narrow_dictionary_still_answers_every_event(ran: Ran, tmp_path: Path) -> None:
     """A venue stamps nanoseconds; Iceberg v2 holds microseconds. And a
     dictionary narrow enough to type no message type at all still answers a
@@ -343,22 +366,29 @@ def test_a_narrow_dictionary_still_answers_every_event(ran: Ran, tmp_path: Path)
 
     assert result["read"] == STORED["logs.messages"]
     assert result["messages"] == 79
-    assert counted(result)["written"] == STORED["fix.bronze"]
+    # The 79 arrivals reduce to 53, not the full registry's 51: its Account
+    # projection derives `PBRK6_EDA` for both arrivals in two duplicate pairs,
+    # while this narrow registry retains `/account:0=PBRK6_EDA` as one extra
+    # residual entry (63 rather than 62), so the canonical hashes differ.
+    assert counted(result)["written"] == 53
     bronze = ran.table("fix.bronze")
-    assert bronze.num_rows == STORED["fix.bronze"]
+    assert bronze.num_rows == 53
     assert "msgtype" not in bronze.column_names
-    assert bronze.num_columns < 130
+    assert bronze.num_columns == 32
     # The table is the dictionary's shape, and its clocks are stored at the
     # precision Iceberg v2 holds.
     assert bronze.schema.field("sendingtime").type == pyarrow.timestamp("us", tz="UTC")
-    assert bronze.schema.field("timestamp").type == pyarrow.timestamp("us", tz="UTC")
     assert bronze.schema.field(EVENT_CLOCK).type == pyarrow.timestamp("us", tz="UTC")
+    assert "timestamp" not in bronze.column_names
+    assert bronze.column("srcuuids").null_count == 0
     # The walk is another matter: a chain is read off what a message is, and
     # a dictionary that cannot name a message's type places none of them. The
     # silver run reads every bronze row of the window and lands no row, under
     # the same shape, rather than guessing at a chain.
     walked = ran.task("parse_fix_silver", registry=registry.as_uri(), **WINDOW)
-    assert counted(walked) == {"read": STORED["fix.bronze"], "written": 0, "skipped": 51}
+    # No narrow row has a typed message category to enter lifecycle, so the
+    # task reports no emitted or deduplicated candidate.
+    assert counted(walked) == {"read": 53, "written": 0, "skipped": 0}
     assert ran.table("fix.silver").num_rows == 0
     assert ran.table("fix.silver").schema.equals(bronze.schema)
 
@@ -372,10 +402,7 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
     batch = pyarrow.RecordBatch.from_pylist(
         [
             {
-                "sourceurl": "file:///mock/fix.log",
-                "rownum": 1,
                 "beginstring": "FIX.4.4",
-                "timestamp": EPOCH,
                 # The settled bundle a replayable row always carries. Only a
                 # walk stamps `snapunix`, so this row leaves it null.
                 EVENT_CLOCK: EPOCH,
@@ -395,15 +422,13 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
         assert fixes.overwrite_arrow_reader(source, field, merge_by=True) == 1
         stored = fixes.read_arrow_table(field)
         assert stored.num_rows == 1
-        assert stored.num_columns == 130
-        # The row names the line; `logs.messages` holds the bytes. The
-        # `currhashcode` here is the event's own code and not the line's.
+        assert stored.num_columns == 123
+        # The native row has event facts only. `srcuuids`, where present,
+        # joins it to raw lines without copying captures into this table.
         assert "body" not in stored.column_names
         assert "currhashcode" in stored.column_names
-        assert stored.schema.field("timestamp").type == pyarrow.timestamp("us", tz="UTC")
-        assert stored.select(("sourceurl", "rownum")).to_pylist() == [
-            {"sourceurl": "file:///mock/fix.log", "rownum": 1}
-        ]
+        assert "srcuuids" in stored.column_names
+        assert not {"sourceurl", "rownum", "timestamp", "timepartition"} & set(stored.column_names)
     finally:
         fixes.close()
         store.close()
@@ -565,48 +590,26 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
         fixes = ran.table(name)
         assert handed_to_iceberg[name].names == fixes.column_names
         assert fixes.num_rows == STORED[name]
-        assert fixes.num_columns == 130
-        # The capture's own columns lead the row, the dictionary's follow. A
-        # capture named after a field fills that field instead of leading, so
-        # `sourceurl`, `msgsessionid`, `msgctxid` and `msgseqnum` are the
-        # message's own columns; `pluginid` leads under the raw contract's own
-        # spelling, and the line's `curruuid` reaches the row only as the
-        # message's source. The event's own clocks open the dictionary's half.
-        assert fixes.column_names[:8] == [
+        assert fixes.num_columns == 123
+        # The native event row starts with its own clocks; raw capture fields
+        # stay in logs.messages and provenance crosses only as srcuuids.
+        assert fixes.column_names[0] == "currunix"
+        assert not {
             "sourceurl",
             "rownum",
             "timestamp",
             "timepartition",
             "threadId",
+            "threadid",
             "pluginid",
             "level",
-            "currunix",
-        ]
-        # The bytes are a line's and so is the digest of them, and this row is
-        # an event's: the row names the line it was read from and
-        # `logs.messages` holds the text. That join resolves, one stored line
-        # per row.
-        assert "body" not in fixes.column_names
+            "body",
+        } & set(fixes.column_names)
         lines = ran.table("logs.messages")
-        at = set(
-            zip(
-                lines.column("sourceurl").to_pylist(),
-                lines.column("rownum").to_pylist(),
-                strict=True,
-            )
-        )
-        assert len(at) == lines.num_rows, "a stored line is named once"
-        read_from = list(
-            zip(
-                fixes.column("sourceurl").to_pylist(),
-                fixes.column("rownum").to_pylist(),
-                strict=True,
-            )
-        )
-        assert all(where in at for where in read_from)
-        assert fixes.column("sourceurl").null_count == 0
-        assert fixes.column("rownum").null_count == 0
-        assert {"msgtype", "msgseqnum", "curruuid", "crosscode", "sourceurl"} <= set(
+        raw_ids = set(lines.column("curruuid").to_pylist())
+        assert all(len(held) == 1 for held in fixes.column("srcuuids").to_pylist())
+        assert set(sources(fixes)) <= raw_ids
+        assert {"msgtype", "msgseqnum", "curruuid", "crosscode", "srcuuids"} <= set(
             fixes.column_names
         )
         # One fact, one column: tags 44, 38 and 53 are their own columns and
@@ -670,20 +673,17 @@ def test_the_lineage_holds_across_the_three_steps(ran: Ran) -> None:
         held = rows.column(SOURCES).to_pylist()
         assert all(len(source) == 1 for source in held), "one line per message"
         assert set(sources(rows)) <= named
-        # The capture's columns beside a row are the named line's, on both
-        # tables -- which is what the walk door puts back by name.
-        by_line = {
-            row["curruuid"]: (row["rownum"], row["timestamp"], row["pluginid"])
-            for row in lines.select(("curruuid", "rownum", "timestamp", "pluginid")).to_pylist()
-        }
-        assert all(
-            by_line[source] == (row["rownum"], row["timestamp"], row["pluginid"])
-            for source, row in zip(
-                sources(rows),
-                rows.select(("rownum", "timestamp", "pluginid")).to_pylist(),
-                strict=True,
-            )
-        )
+        assert not {
+            "sourceurl",
+            "rownum",
+            "timestamp",
+            "timepartition",
+            "threadId",
+            "threadid",
+            "pluginid",
+            "level",
+            "body",
+        } & set(rows.column_names)
 
     # Bronze: every row at step none, following nobody, at the instant the
     # parse settled -- the pin where the message stated no sending clock.

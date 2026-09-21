@@ -95,9 +95,12 @@ event. A source message that stated no sending clock takes the codec's fixed
 epoch rather than the instant the parse ran; lifecycle may date that source
 event from its `TransactTime`, while synthetic expiry keeps its exact deadline.
 
-The 130-column **FixMsg** storage row reconstructs canonical message semantics
+The 123-column **FixMsg** row is the native parse, storage, and lifecycle
+shape. It reconstructs canonical message semantics
 from lifted columns and residual `fixentries`; lifted values are not duplicated
-as a second arrival record. `crosscode` uses the first available business
+as a second arrival record. Capture location, header columns, and exact bytes
+remain only in `logs.messages`; `srcuuids` joins a FIX row back to raw
+`curruuid`. `crosscode` uses the first available business
 identifier (`OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID`, then
 `MDReqID`), while capture `session:context` is
 `identifiers["msgsectxid"]`. Default null spellings are empty text, `null`,

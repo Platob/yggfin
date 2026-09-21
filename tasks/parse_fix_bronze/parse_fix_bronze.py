@@ -42,10 +42,11 @@ def parameters():
     _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
     messages = _defaults["messages"]
     registry = _defaults["registry"]
+    codec_options = _defaults["codec_options"]
     start = _defaults["start"]
     end = _defaults["end"]
     catalog = _defaults["catalog"]
-    return catalog, end, messages, registry, start
+    return catalog, codec_options, end, messages, registry, start
 
 
 @app.cell
@@ -55,7 +56,7 @@ def _():
 
 
 @app.cell
-def _(catalog, end, messages, records, registry, start):
+def _(catalog, codec_options, end, messages, records, registry, start):
     _ = records
     with ExitStack() as opened:
         # The same window `parse_messages` wrote, read back off the stored
@@ -99,11 +100,11 @@ def _(catalog, end, messages, records, registry, start):
         # name, and a position is what the line door resolves. Pinning one
         # here would be a reading of a header this task never sees, stale the
         # moment the capture is read under one of its own.
-        codec = fix_codec(fix_registry(registry))
+        codec = fix_codec(fix_registry(registry), **(codec_options or {}))
         # The published field is what both FIX tables are declared with, read
         # from the dictionary alone rather than from the first batch -- so an
         # empty window creates the same table a full one does.
-        field = fix_message_field(codec, carrier)
+        field = fix_message_field(codec)
         # The parse alone, over the stored capture's batches, and no walk: a
         # row is a message, so one line carrying two frames answers two -- and
         # one message logged at three hops answers three rows of one identity,

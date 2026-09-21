@@ -14,8 +14,8 @@ the interval to all three tasks as their `start` and `end`, so a day's run
 reads the day's lines under `filesystem` and replaces them in all three
 tables. The DAG exposes the union of the three adjacent task documents as
 Params. A manual run can therefore replace `filesystem`, `rowheader`, `start`,
-`end`, `catalog`, `messages`, `registry` or `bronze` without creating another
-DAG, and a bound the run's conf names wins over the interval. `messages` and
+`end`, `catalog`, `messages`, `registry`, `codec_options` or `bronze` without
+creating another DAG, and a bound the run's conf names wins over the interval. `messages` and
 `bronze` are named for the table each FIX stage reads, so one Params mapping
 over three documents cannot hand one stage the other's source. There is no
 `version` Param: what a message was read at is what its own `beginstring`

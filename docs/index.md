@@ -42,9 +42,9 @@ flowchart LR
     S["capture URI<br/>file · directory · s3://"] --> T["native text reader<br/>Message field"]
     T --> M[("logs.messages<br/>13 columns")]
     M --> F["native FIX codec<br/>parse"]
-    F --> B[("fix.bronze<br/>130 columns")]
+    F --> B[("fix.bronze<br/>123 columns")]
     B --> L["native FIX codec<br/>lifecycle"]
-    L --> O[("fix.silver<br/>130 columns")]
+    L --> O[("fix.silver<br/>123 columns")]
 ```
 
 The text reader emits the exact `Message` schema: header captures are typed,
