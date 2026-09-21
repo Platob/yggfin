@@ -82,10 +82,10 @@ sources:
             description: Where this step stands in its chain, filled by the walk.
           - name: currunix
             description: The instant the event happened at, never null.
-          - name: sendingtime
-            description: The instant the message stated it was sent at, where it stated one.
-          - name: transacttime
-            description: The transaction instant the message stated, where it stated one.
+          - name: isincode
+            description: The validated instrument ISIN code lifted by the native codec.
+          - name: miccode
+            description: The normalized market code lifted by the native codec.
           - name: exectype
             description: The normalized reason this message was sent.
           - name: ordstatus
