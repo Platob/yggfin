@@ -54,12 +54,28 @@ def test_every_document_declares_its_parameters(document: Path) -> None:
         assert set(parameters) == {"filesystem", "rowheader", "start", "end", "catalog"}
         assert parameters["start"] is None and parameters["end"] is None, "the last day"
     elif document.stem == "parse_fix_bronze":
-        assert set(parameters) == {"messages", "registry", "start", "end", "catalog"}
+        assert set(parameters) == {
+            "messages",
+            "registry",
+            "codec_options",
+            "start",
+            "end",
+            "catalog",
+        }
         assert parameters["messages"] == "logs.messages"
+        assert parameters["codec_options"] is None
         assert parameters["start"] is None and parameters["end"] is None, "the last day"
     elif document.stem == "parse_fix_silver":
-        assert set(parameters) == {"bronze", "registry", "start", "end", "catalog"}
+        assert set(parameters) == {
+            "bronze",
+            "registry",
+            "codec_options",
+            "start",
+            "end",
+            "catalog",
+        }
         assert parameters["bronze"] == "fix.bronze"
+        assert parameters["codec_options"] is None
         assert parameters["start"] is None and parameters["end"] is None, "the last day"
     elif document.stem == "build_dbt":
         assert set(parameters) == {

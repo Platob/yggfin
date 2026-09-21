@@ -30,8 +30,8 @@ written = messages.overwrite_arrow_reader(
 
 `merge_by=True` uses the primary key declared on the native Field:
 `currhashcode` for `logs.messages`, and `curruuid` for `fix.bronze` and
-`fix.silver`, where a parse answers one row per message and a source URL and
-row number alone therefore name no row. A missing table is created.
+`fix.silver`. A parse answers one row per message; capture location remains on
+the raw table and does not identify an event row. A missing table is created.
 `commit_batch_num` and the optional `commit_row_size` bound each storage
 commit independently from input batch size, however many partitions the
 bounded chunk spans: its parts are staged one at a time and committed together.
@@ -140,7 +140,7 @@ before the first batch is consumed:
 ```python
 from rekep import Field
 
-fix_field = Field.from_arrow_schema(reader.schema, name="FixMessage")
+fix_field = Field.from_arrow_schema(reader.schema, name="FixMsg")
 fixes = catalog.dataset(
     "fix.silver",
     field=fix_field,
@@ -158,6 +158,12 @@ existing table must be nullable because older rows have no value for it; the
 first write creates a missing table directly from its Field. Schema updates
 are table-wide even when rows are written to a branch. A write with no new
 column makes no schema commit.
+
+The current FIX contract creates a new table with its 123 native columns.
+`merge_schema=True` cannot retire columns from an existing table, so before
+replaying an older FIX table use PyIceberg `table.update_schema()` to delete
+`sourceurl`, `rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`,
+and `level`; the raw values remain in `logs.messages`.
 
 Before either write, the native `Field` applies its declarations in dependency
 order: **cast → derived partition columns → digest holders**. `logs.messages`
@@ -188,6 +194,7 @@ authoritative for storage planning.
 reader = messages.read_arrow_reader(
     columns=("sourceurl", "rownum", "body"),
     row_filter="rownum >= 1000",
+    order_by=("rownum",),
     limit=100,
 )
 try:
@@ -200,6 +207,18 @@ finally:
 Filters, projections, limits, and ordering are pushed into scan planning where
 PyIceberg supports them. Every read accepts `snapshot_id`; every read and write
 accepts `branch`. `root`, `main`, and `master` address the physical main ref.
+
+An ordered read streams already-disjoint file ranges directly. Overlapping
+ranges are externally sorted and merged through Arrow IPC scratch, with at
+most 16 file streams in one merge step; closing the reader also closes sources
+and removes scratch files. This bounds open-file fan-in without collecting the
+whole scan into a table before its first output batch.
+
+Identifier behavior does not depend on a column spelling or value type. UUID,
+integer, and string identifiers all follow the declared Iceberg field:
+`append_arrow_reader` is blind, while overwrite-by-key replaces matches only
+inside the affected partition. FIX happens to declare `curruuid`; the storage
+layer has no FIX-specific key or merge branch.
 
 ## Filesystem boundary
 

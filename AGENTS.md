@@ -14,6 +14,9 @@ behavior.
 
 ## Ownership
 
+- The published native dependency is pinned to `yggdryl==0.1.8`; public
+  applications and documentation import only `rekep`.
+
 - Yggdryl owns `Field`, scalar compilation, resource binding, filesystems,
   streams, codecs, decompression, text media, FIX registries, FIX batch
   parsing, the fixed `fixmsg` row, and the lifecycle stage after the parse.
@@ -112,9 +115,10 @@ keyed on `currhashcode`, the content code the native read states over the
 exact line bytes, so identical lines are one row whatever session carried
 them; nothing here computes a digest beside it. A raw text row names its source
 through Yggdryl `sourceurl` and `rownum`, and itself through `curruuid`, the
-line's own identity the native read states: a message parsed out of a stored
-line names that identity as its one `srcuuids` entry, which is provenance and
-never lineage, and no walk moves it.
+line's own identity the native read states. A message parsed out of a stored
+line records that identity in `srcuuids`, which joins to the raw row's
+`curruuid`; it is provenance, never lineage, and no walk changes what the
+identity means.
 
 The two FIX stages one codec exposes are two tasks over two tables, in this
 order and no other:
@@ -126,24 +130,28 @@ parse -> fix.bronze, lifecycle -> fix.silver
 `parse_fix_bronze` reads the stored rows of the same window off the capture
 clock and parses them, and only that: a bronze row is what the message
 implied about itself, and `seqnum`, `prevuuid` and `parentuuids` are empty on
-every one because nothing has walked yet. `parse_fix_silver` reads `fix.bronze`
-for the run's window off the event clock `currunix` -- a bronze row is already
-an event -- with the rows the parse could not date, which sit at the codec's
-pin until the walk dates them by their `TransactTime`, read by that clock
-instead. It reads each row back as the message that wrote it, walks the
-chains, and lands the walked rows. The walk reads the fixed row alone: a
-capture's own column beside it would be read as content and give every
-arrival its own identity, so the carrier's columns are held back and put in
-front again by the line each walked row names. A silver row differs from its
+every one because nothing has walked yet. `parse_fix_silver` reads the previous
+hour and the run's window from `fix.bronze`, including undated epoch rows, in
+`currunix, seqnum, curruuid` order. The previous hour is context only: it lands
+the job window plus still-undated rows and excludes future expiry events. This
+bounded history does not claim arbitrary old-chain completeness. It reads each
+row back as the message that wrote it, walks the chains, and lands the walked
+rows. The walk reads the fixed row alone. A silver row differs from its
 bronze twin in what the walk filled -- its place, its lineage, the folded
-`creaunix`, `expirunix` and `state` -- and in the identity those re-settle to;
+`creaunix`, `exprtime` and `state` -- and in the identity those re-settle to;
 a duplicate is not a successor, and the walk gives every copy of one message
 the same place, the same lineage and the same state.
 
-Both tables are one field, `fix_schema_carrying(carrier, fix_schema(registry,
-"fixmsg"))` narrowed to what a table stores, without a yggfin FIX model: the
-dictionary's row, the capture's own columns in front, and nothing else defined
-here. A FIX row is a message and not a line -- a line carrying two frames
+Both tables use the native `fix_message_field(codec)` field directly,
+without a yggfin FIX model. Parse, storage, reconstruction,
+and lifecycle all use the same 123-column **FixMsg** contract. Capture columns
+and `body` remain only in `logs.messages`; `srcuuids` joins a FIX row to the raw
+row's `curruuid`.
+The native row contains 29 crate fields; code vocabularies live centrally and
+fields reference them through `FIX:codeset`. `fixentries` is residual and does
+not duplicate successfully lifted scalars or complete groups. A reconstructed
+row promises canonical message semantics, not arrival pair order or bytes.
+A FIX row is a message and not a line -- a line carrying two frames
 answers two and a line carrying none answers none -- and a message logged
 again at every hop it passes is one event, so both tables are keyed on
 `curruuid` alone, laid out by the hour of `currunix` alone, and sorted within a
@@ -151,15 +159,32 @@ partition by `currunix, seqnum, curruuid`. Each is declared once, on the field,
 and nothing else carries either mark. A replay of a window lands the same
 rows under the same key.
 
+`crosscode` takes the first non-empty `OrderID`, `ClOrdID`, `OrigClOrdID`,
+`QuoteID`, `QuoteReqID`, or `MDReqID`. Capture session and context instead form
+`identifiers["msgsectxid"]` when both exist. Default absence spellings are
+empty text, `null`, `<null>`, `none`, `n/a`, and `[n/a]`, trimmed and compared
+case-insensitively.
+
 The codec is the whole parse surface: the dictionary and the instant an undated
 message takes are pinned on it once, and each stage after it is a call rather
-than another pin. A capture order is pinned only where a door resolves one by
-position, which is the line door; the batch door fills from a column named
-after the field, so neither FIX task pins one and cannot go stale against a
-header it never sees. A version is not among the pins -- what a message was
-read at is what its own `beginstring` said -- and `fix_codec` refuses by name
-any keyword that is not one of its seven. The doors are named for their
-stage: `fix_parse_*` and `fix_lifecycle_*`, a line door and a batch door each.
+than another pin. Parsing and local enrichment are independent per event and
+may use `threads`; the default is the available CPU count and zero becomes one.
+Only lifecycle enrichment owns cross-event state and order. `snapshot_ns`
+defaults to zero (off), and a positive value emits owned lifecycle snapshots
+on that nanosecond grid. A capture order is pinned only where a door resolves one by
+position, which is the line door. A version is not among the pins -- what a message was
+read at is what its own `beginstring` said. Native construction validates
+every keyword; both FIX tasks expose `codec_options`, where `null` delegates
+native defaults and an object is forwarded unchanged. Useful pins include
+`batch_row_size`, `include_msgtypes`, `exclude_msgtypes`, `threads`, and
+`snapshot_ns`. The doors are named for
+their stage: `fix_parse_*` and `fix_lifecycle_*`, a line door and a batch door each.
+
+The silver Iceberg scan prunes with `fix_window_filter`, requests
+`SORT_COLUMNS`, and merges at most 16 overlapping file streams at once. It
+does not form a Python `read_all` union. Native 0.1.8 lifecycle processing
+still collects and stable-sorts its finite scan result. Undated rows read from
+the epoch partition may accumulate, so this path is not batch-memory-bounded.
 
 `build_dbt` runs the dbt project under `data/dbt`. dbt owns the SQL a product
 is written in and nothing else: `rekep.dbt` is the one seam, a source is one
@@ -212,5 +237,5 @@ tasks/
   build_dbt/
 data/dbt/       the dbt project: models, schemas, macros and its one profile
 schemas/rekep/message.json
-schemas/rekep/fix-message.json
+schemas/rekep/fixmsg.json
 ```

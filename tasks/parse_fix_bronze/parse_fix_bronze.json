@@ -4,6 +4,7 @@
   "parameters": {
     "messages": "logs.messages",
     "registry": null,
+    "codec_options": null,
     "start": null,
     "end": null,
     "catalog": {

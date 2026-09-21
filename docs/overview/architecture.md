@@ -49,28 +49,28 @@ assert IOBase.from_uri("file:data/capture").exists()
 The text reader yields `RecordBatch` objects. `parse_messages` applies the
 `Message` field and gives one `RecordBatchReader` directly to Iceberg.
 `parse_fix_bronze` reads that table as another reader, passes it through the
-codec's parse, applies the published field once, and writes it.
-`parse_fix_silver` reads `fix.bronze` as a reader in turn, widens each row
-back to the dictionary's types, walks the chains, applies the same field, and
-writes it. No production stage converts rows through Python dictionaries or
+codec's parse, and writes the native FixMsg row directly.
+`parse_fix_silver` reads `fix.bronze` in turn, walks those native rows, and
+writes the same shape. No production stage converts rows through Python dictionaries or
 stages an S3 object on local disk.
 
 ## Stable identity
 
 A stored line names its source through the object URI and the 1-based
 physical row number, and itself through `curruuid`, the identity the native
-read states over it. A message parsed out of that line names it as its one
-`srcuuids` entry, and no walk moves it, so the join across the three products
-is exact provenance rather than a recomputation:
+read states over it. A message parsed out of that line records the identity in
+`srcuuids`, which joins to the raw row's `curruuid`; no walk changes what the
+identity means. The join across the products is exact provenance rather than
+a recomputation:
 
 ```text
-logs.messages(curruuid) == fix.bronze(srcuuids[0]) == fix.silver(srcuuids[0])
+fix.bronze(srcuuids[*]) -> logs.messages(curruuid)
+fix.silver(srcuuids[*]) -> logs.messages(curruuid)
 ```
 
-`sourceurl` and `rownum` are carried beside it on every FIX row, so the line
-is also readable by where it was. A parse answers one row per message rather
-than one per line, so the FIX products add the identities the parse settled
-and are keyed on a `curruuid` of their own.
+Capture location is read only after joining `srcuuids` to raw `curruuid`. A
+parse answers one row per message rather than one per line, so the FIX products
+add the identities the parse settled and are keyed on a `curruuid` of their own.
 
 A line's `currhashcode` identifies exact source bytes: the code the read
 states over the whole line, and the key of `logs.messages`. `curruuid` on a

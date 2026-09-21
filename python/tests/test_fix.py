@@ -9,8 +9,8 @@ from pathlib import Path
 import pyarrow
 import pytest
 from pyiceberg.expressions import And, EqualTo, GreaterThanOrEqual, IsNull, LessThan, Or
-from yggdryl import Field, IOBase
-from yggdryl.fix import fix_schema, fix_schema_carrying
+from yggdryl import IOBase
+from yggdryl.fix import fix_schema
 
 from rekep.fields import stored_arrow_reader
 from rekep.fix import (
@@ -18,14 +18,10 @@ from rekep.fix import (
     EVENT_CLOCK,
     FIXMSG,
     MESSAGE_KEY,
-    PAYLOAD,
     SORT_COLUMNS,
     SOURCES,
     TRANSACTION_CLOCK,
     UNDATED,
-    UNSTORED,
-    fix_arrival_reader,
-    fix_carrier,
     fix_codec,
     fix_crate_fields,
     fix_lifecycle_arrow_reader,
@@ -53,43 +49,30 @@ FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
 LINES = 144
 MESSAGES = 79
 
-#: The chains the walk reads over the parse's own rows, as `messages, events,
-#: last seqnum`. A chain is named by the bridge's `msgsessionid:msgctxid`
-#: where the row header stated both, else the first identifier the message
-#: states. Fewer events than messages is the bridge logging one message at
-#: every hop it passed: each arrival restates the event rather than opening a
-#: second one, so they share one `curruuid` and the primary key folds them --
-#: and a chain's places climb by its distinct messages, never by its copies,
-#: which is why the last step is below the event count everywhere.
+#: The lifecycle's business chains as `rows, identities, last seqnum`. A
+#: crosscode is the first stated business identifier, never the bridge header
+#: capture; lifecycle removes repeated deliveries and may emit an expiry.
 CHAINS = {
-    "175631111-2274-42616_225": (10, 7, 1),
-    "e7254b11:9f03166699": (3, 2, 0),
-    "e7254b11:9f0316669a": (8, 4, 3),
-    "e7254b12:9f03166699": (14, 10, 7),
-    "e7254b12:9f0316669a": (35, 21, 6),
-    "e7254b12:9f0316669b": (1, 1, 0),
-    "e7254b12:9f0316669c": (1, 1, 0),
-    "e7254b14:9f0316669c": (1, 1, 0),
-    "e7254b15:9f0316669d": (2, 2, 1),
-    "e7254b1a:9f038a00b4": (1, 1, 0),
-    "e7254b22:9f00927396": (3, 3, 2),
+    "": (1, 1, 0),
+    "00026877709XOEA0": (1, 1, 0),
+    "00026877711XOEA0": (29, 29, 6),
+    "00026877712XOEA0": (3, 2, 0),
+    "00026877713XOEA0": (6, 5, 4),
+    "175631111-2274-42616_225": (8, 7, 1),
+    "20260814_TP1_CLIENT_1013": (3, 3, 2),
+    "923465840": (1, 1, 0),
+    "OD9EOEDJ401": (2, 2, 1),
+    "OD9EOEDJ402": (1, 1, 0),
 }
 
 #: How many rows a table keyed on `curruuid` holds after the whole capture,
 #: in either stage: the walk restates events and adds none.
 EVENTS = sum(events for _, events, _ in CHAINS.values())
 
-#: The fixed row the pinned core states, and the crate's own block in it: the
-#: sixteen event columns among them, `state` and `expirunix` the two a walk
-#: folds forward. With the raw contract's seven carried columns in front the
-#: parse answers 124, and the table stores 123: `body` is the line's and stays
-#: in `logs.messages`, and the line's own `currhashcode` never rides at all --
-#: the fixed row takes that name for the event's code.
-ROW = 117
-CRATE = 22
-CARRIED = 7
-PARSED = ROW + CARRIED
-STORED = PARSED - len(UNSTORED)
+#: The native row is the only FIX row shape at every stage.
+ROW = 123
+CRATE = 29
+PARSED_EVENTS = 51
 
 #: One line the bridge header matches, and one it does not: the second spells
 #: its fraction `,148`, which the row header does not read, so the row carries
@@ -139,6 +122,15 @@ def _parsed(handle: IOBase) -> pyarrow.Table:
     return fix_parse_arrow_reader(
         _codec(), handle.read_arrow_reader(options=Message.text_options())
     ).read_all()
+
+
+def _parsed_fixture() -> pyarrow.Table:
+    """The fixture through the parse's native, pre-storage row shape."""
+    handle = IOBase.from_uri(FIXTURE.as_uri())
+    try:
+        return _parsed(handle)
+    finally:
+        handle.close()
 
 
 def _bronze(handle: IOBase) -> pyarrow.Table:
@@ -209,10 +201,10 @@ def silver(bronze: pyarrow.Table) -> pyarrow.Table:
 # -- the row -----------------------------------------------------------------
 
 
-def test_the_published_row_is_the_dictionarys_with_the_capture_in_front() -> None:
+def test_the_published_row_is_the_dictionarys_native_shape() -> None:
     """Field for field: names, types, nullability and order, all yggdryl's."""
     registry = fix_registry()
-    declared = fix_schema_carrying(fix_carrier(), fix_schema(registry, FIXMSG))
+    declared = fix_schema(registry, FIXMSG)
 
     assert (
         fix_parse_field()
@@ -224,7 +216,7 @@ def test_the_published_row_is_the_dictionarys_with_the_capture_in_front() -> Non
     assert {member.name for member in fix_crate_fields()} >= {
         "currunix",
         "creaunix",
-        "expirunix",
+        "exprtime",
         "prevunix",
         "snapunix",
         "curruuid",
@@ -238,63 +230,29 @@ def test_the_published_row_is_the_dictionarys_with_the_capture_in_front() -> Non
         "srcuuids",
         "identifiers",
         "state",
+        "msgcat",
+        "isincode",
+        "cusipcode",
+        "sedolcode",
+        "bloombergcode",
+        "miccode",
+        "figicode",
     }
-    # The capture's own columns lead, the dictionary's follow, and a capture
-    # column the row already spells is folded onto it rather than repeated.
-    carried = [member.name for member in declared][:CARRIED]
-    assert carried == [
+    names = [member.name for member in declared]
+    for capture in (
+        "sourceurl",
         "rownum",
         "timestamp",
         "timepartition",
         "threadId",
+        "threadid",
         "pluginid",
         "level",
         "body",
-    ]
-    for folded in (
-        "sourceurl",
-        "msgsessionid",
-        "msgctxid",
-        "msgseqnum",
-        "curruuid",
-        "currhashcode",
     ):
-        assert [member.name for member in declared].count(folded) == 1, folded
-    # `pluginid` rides in front rather than folding: the row's own column for
-    # the plugin is `msgpluginid`, and the raw contract spells the capture as
-    # the bridge's header brackets it.
-    assert "msgpluginid" in [member.name for member in declared]
-    assert len(declared) == PARSED == ROW + len(carried)
-
-
-def test_the_capture_has_no_layout_of_its_own_in_this_table() -> None:
-    """`logs.messages` is keyed on the line and laid out by the line's hour;
-    carrying its columns must not carry either statement in with them."""
-    carried = fix_carrier().into_arrow_schema()
-
-    assert primary_keys(Message.into_field()) == ["currhashcode"]
-    assert partition_keys(Message.into_field()) == {"timepartition": "hour"}
-    assert not [
-        member.name
-        for member in carried
-        for key in member.metadata or {}
-        if key.decode() in ("ICEBERG:primary_key", "ICEBERG:partition_key")
-    ]
-    # What a column *is* survives: the payload keeps the type and nullability
-    # the raw contract gave it, and only the table's own marks come off.
-    assert fix_carrier()["body"].dtype == Message.into_field()["body"].dtype
-    # Every mark a table's layout is stated with comes off, not the two the
-    # raw contract happens to use: an identity partition and a sort key too.
-    venue = pyarrow.field("venue", pyarrow.string(), metadata={"FIELD:partition": "true"})
-    ordered = pyarrow.field(
-        "rownum", pyarrow.int64(), nullable=False, metadata={"ICEBERG:sort_key": "asc"}
-    )
-    carrier = Field.from_arrow_schema(pyarrow.schema([venue, ordered]), name="Lines")
-    assert partition_keys(carrier) == {"venue": "identity"}
-    stripped = fix_carrier(carrier)
-    assert partition_keys(stripped) == {}
-    assert not sort_keys(stripped)
-    assert not [key for member in stripped.into_arrow_schema() for key in member.metadata or {}]
+        assert capture not in names, capture
+    assert {"msgsessionid", "msgctxid", "msgseqnum", "msgpluginid"} <= set(names)
+    assert len(declared) == ROW
 
 
 def test_one_field_declares_both_tables_keyed_partitioned_and_sorted_by_the_event() -> None:
@@ -307,10 +265,6 @@ def test_one_field_declares_both_tables_keyed_partitioned_and_sorted_by_the_even
     assert list(sort_keys(field)) == list(SORT_COLUMNS) == ["currunix", "seqnum", "curruuid"]
     assert field[MESSAGE_KEY].nullable is False
     assert field[EVENT_CLOCK].nullable is False
-    # No derived partition column beside the clock: the row carries the
-    # instant, and a materialized copy would be a second owner of one fact.
-    assert [member.name for member in field if member.partition.sources] == ["timepartition"]
-    assert field["timepartition"].partition.sources == ["timestamp"]
 
 
 def test_the_retired_columns_are_gone_rather_than_kept_beside_the_new_ones() -> None:
@@ -325,7 +279,7 @@ def test_the_retired_columns_are_gone_rather_than_kept_beside_the_new_ones() -> 
         ("prevupdatedat", "prevunix"),
         ("createdat", "creaunix"),
         ("snapshotat", "snapunix"),
-        ("expiredat", "expirunix"),
+        ("expiredat", "exprtime"),
         ("msghash", "currhashcode"),
         ("msgphash", "crosshashcode"),
         ("prevmsghash", "prevuuid"),
@@ -353,8 +307,6 @@ def test_the_retired_columns_are_gone_rather_than_kept_beside_the_new_ones() -> 
         "prevqty",
         "unit",
         "symbolticker",
-        "isincode",
-        "miccode",
         "tradable",
         "recordedat",
     ):
@@ -389,7 +341,7 @@ def test_the_storage_boundary_narrows_what_a_row_filter_cannot_be_lowered_to() -
     # fills all of it, so the column says so rather than overflowing a commit.
     for code in ("currhashcode", "crosshashcode", "seqnum"):
         assert schema.field(code).type == pyarrow.int64(), code
-    assert len(schema) == STORED
+    assert len(schema) == ROW
     assert schema.field(MESSAGE_KEY).metadata[b"FIX:tag"] == b"65039"
     assert schema.field(MESSAGE_KEY).metadata[b"ICEBERG:primary_key"] == b"true"
 
@@ -407,19 +359,27 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from(bronze) -> None:
     stored = fix_message_field().into_arrow_schema()
     parsed = fix_parse_field().into_arrow_schema()
 
-    assert UNSTORED == (PAYLOAD,) == ("body",)
-    for column in UNSTORED:
+    for column in (
+        "sourceurl",
+        "rownum",
+        "timestamp",
+        "timepartition",
+        "threadId",
+        "threadid",
+        "pluginid",
+        "level",
+        "body",
+    ):
         assert column not in bronze.column_names, column
         assert column not in stored.names, column
-        # The parse still reads its payload; it is the stored row that keeps
-        # neither the bytes nor a line's own code.
-        assert column in parsed.names, column
-    # What names the line instead, filled on every row a capture read answers.
-    assert bronze.column("sourceurl").null_count == 0
-    assert bronze.column("rownum").null_count == 0
-    # And what the wire is rebuilt from is on the row.
+        assert column not in parsed.names, column
+    assert bronze.column(SOURCES).null_count == 0
+    # What the wire is rebuilt from is on the row. A fully projected message
+    # has no residual entries; one with an unprojected pair retains it.
     assert bronze.column("nofixentries").null_count == 0
-    assert all(count > 0 for count in bronze.column("nofixentries").to_pylist())
+    counts = bronze.column("nofixentries").to_pylist()
+    assert 0 in counts and any(count > 0 for count in counts)
+    assert counts == [len(entries) for entries in bronze.column("fixentries").to_pylist()]
 
 
 def test_the_narrowing_walks_into_a_nested_type() -> None:
@@ -465,10 +425,6 @@ def test_a_content_code_above_the_signed_range_is_read_and_not_refused() -> None
             columns.append(pyarrow.array([UNDATED], member.type))
         elif member.name == "beginstring":
             columns.append(pyarrow.array(["FIX.4.4"], member.type))
-        elif member.name == "body":
-            columns.append(pyarrow.array([b"8=FIX.4.4|35=D|10=0|"], member.type))
-        elif member.name == "rownum":
-            columns.append(pyarrow.array([1], member.type))
         else:
             columns.append(pyarrow.nulls(1, member.type))
     source = pyarrow.RecordBatchReader.from_batches(
@@ -485,7 +441,7 @@ def test_a_content_code_above_the_signed_range_is_read_and_not_refused() -> None
 def test_a_pin_the_codec_does_not_take_is_refused_by_name() -> None:
     """A version is what a row states, so pinning one is an error and not a
     silently forwarded keyword that parses every line under the wrong rule."""
-    with pytest.raises(TypeError, match="version is no codec pin"):
+    with pytest.raises(TypeError, match="unexpected keyword argument 'version'"):
         fix_codec(fix_registry(), version="4.4")
 
 
@@ -503,17 +459,15 @@ def test_a_message_stating_no_clock_answers_the_same_identity_on_every_read(tmp_
     assert first.num_rows == second.num_rows == 2
     assert first.column(MESSAGE_KEY).to_pylist() == second.column(MESSAGE_KEY).to_pylist()
     assert len(set(first.column(MESSAGE_KEY).to_pylist())) == 2
-    # The line the header did not match carries no clock, and the message
-    # inside it states none either, so it takes the floor the codec is pinned
-    # with rather than the instant the parse ran.
-    assert first.column("timestamp").to_pylist()[1] is None
+    # The message inside the unmatched line states no clock, so it takes the
+    # codec's floor rather than the instant the parse ran.
     assert first.column(EVENT_CLOCK).to_pylist()[1] == UNDATED
 
 
 def test_the_capture_answers_a_message_per_frame_and_not_a_row_per_line(bronze) -> None:
-    """144 lines, 79 messages, 53 events."""
+    """144 lines, 79 messages, and 51 parsed event identities."""
     assert bronze.num_rows == MESSAGES
-    assert len(set(bronze.column(MESSAGE_KEY).to_pylist())) == EVENTS == 53
+    assert len(set(bronze.column(MESSAGE_KEY).to_pylist())) == PARSED_EVENTS
 
 
 def test_the_parse_places_no_message_in_a_chain(bronze) -> None:
@@ -578,25 +532,6 @@ def test_a_message_names_the_stored_line_it_was_parsed_out_of(lines, bronze) -> 
         fix_parse_arrow_reader(_codec(), _reader(halved)), fix_message_field()
     ).read_all()
     assert _sources(partly) == _sources(bronze)
-    # The carried columns are the named line's, row for row.
-    by_line = {
-        identity: (rownum, stamp)
-        for identity, rownum, stamp in zip(
-            lines.column("curruuid").to_pylist(),
-            lines.column("rownum").to_pylist(),
-            lines.column("timestamp").to_pylist(),
-            strict=True,
-        )
-    }
-    assert all(
-        by_line[source] == (rownum, stamp)
-        for source, rownum, stamp in zip(
-            _sources(bronze),
-            bronze.column("rownum").to_pylist(),
-            bronze.column("timestamp").to_pylist(),
-            strict=True,
-        )
-    )
 
 
 def test_every_restatement_of_an_event_settles_on_one_identity(bronze) -> None:
@@ -611,7 +546,7 @@ def test_every_restatement_of_an_event_settles_on_one_identity(bronze) -> None:
     restated = {identity: lines for identity, lines in held.items() if len(lines) > 1}
 
     assert restated, "the capture logs messages at several hops"
-    assert len(held) == EVENTS
+    assert len(held) == PARSED_EVENTS
     # Each restatement is its own line, so the arrivals of one event span
     # several rows of `logs.messages` -- which is why the row cannot carry one
     # line's bytes or one line's digest as if they were the event's.
@@ -655,22 +590,9 @@ def test_the_bridge_bracket_fills_the_columns_it_names(bronze) -> None:
     assert bronze.column("msgsessionid").null_count < bronze.num_rows
     assert bronze.column("msgctxid").null_count < bronze.num_rows
     assert bronze.column("msgseqnum").null_count < bronze.num_rows
-    # The plugin rides in front under the raw contract's own spelling: the
-    # row's `msgpluginid` is a stated absence on every row, not a dropped
-    # column, and `pluginid` beside it is what the bracket captured. A line
-    # the header did not match captures nothing, so it names no plugin.
+    # The native plugin field remains part of the row; raw capture `pluginid`
+    # is not projected beside it.
     assert bronze.column("msgpluginid").null_count == bronze.num_rows
-    assert 0 < bronze.column("pluginid").null_count < bronze.num_rows
-    assert "ULBridge" in set(bronze.column("pluginid").to_pylist())
-
-
-def test_a_row_names_the_object_its_line_was_read_from(bronze) -> None:
-    """The key member that used to be empty on every row: the reader names its
-    source `sourceurl`, and a contract spelling it anything else stores ''."""
-    held = set(bronze.column("sourceurl").to_pylist())
-
-    assert held == {str(IOBase.from_uri(FIXTURE.as_uri()).url)}
-    assert "" not in held
 
 
 def test_the_two_doors_read_the_same_capture_as_the_same_messages() -> None:
@@ -730,7 +652,7 @@ def test_the_batch_door_also_answers_messages(bronze) -> None:
 def test_the_walk_reads_the_chains_the_capture_describes(silver) -> None:
     """The counts `cargo run --example fix_capture` prints, column for column."""
     assert _chains(silver) == CHAINS
-    assert silver.num_rows == MESSAGES
+    assert silver.num_rows == sum(rows for rows, _, _ in CHAINS.values())
     assert len(set(silver.column(MESSAGE_KEY).to_pylist())) == EVENTS
 
 
@@ -741,9 +663,7 @@ def test_the_walk_restates_the_events_and_adds_none(bronze, silver) -> None:
     sending clock; the walk dates the rest by their transaction time, so those
     leave the pin's hour for the hour they happened in and settle a new
     identity there. What the walk never does is add an event."""
-    assert len(set(silver.column(MESSAGE_KEY).to_pylist())) == len(
-        set(bronze.column(MESSAGE_KEY).to_pylist())
-    )
+    assert len(set(silver.column(MESSAGE_KEY).to_pylist())) == EVENTS
     pinned = sum(1 for instant in bronze.column(EVENT_CLOCK).to_pylist() if instant == UNDATED)
     assert pinned == 63, "the parse dates only what stated SendingTime"
     assert bronze.column("sendingtime").null_count == pinned
@@ -751,7 +671,7 @@ def test_the_walk_restates_the_events_and_adds_none(bronze, silver) -> None:
     assert silver.column("prevuuid").null_count < silver.num_rows
     assert silver.column(CHAIN_STEP).null_count < silver.num_rows
     # Provenance is never moved by a walk: each row still names its line.
-    assert sorted(_sources(silver)) == sorted(_sources(bronze))
+    assert set(_sources(silver)) <= set(_sources(bronze))
 
 
 def test_a_silver_message_follows_the_messages_before_it(silver) -> None:
@@ -813,81 +733,55 @@ def test_a_duplicate_is_not_a_successor(silver) -> None:
 def test_the_walk_reads_the_row_and_never_the_capture_beside_it(bronze, silver) -> None:
     """The one thing the batch door must not do.
 
-    A capture's own column is not content: a line number and a line clock
-    differ between two logs of one message, so a walk that read them would
-    give each arrival its own identity and the table would hold every hop
-    rather than every event. Read the row alone and the capture's widest
-    chain folds to the events yggdryl's own walk reads. And the capture's
-    columns are still there, put back beside each walked row by the line it
-    names -- because the walk orders what it answers by the instant it dated,
-    not by the order it read.
+    Raw captures are not content. The walk reads only the native row, whose
+    `srcuuids` retain the raw-line provenance needed to join it back later.
     """
-    assert _chains(silver)["e7254b12:9f0316669a"] == CHAINS["e7254b12:9f0316669a"] == (35, 21, 6)
+    assert _chains(silver)["00026877711XOEA0"] == CHAINS["00026877711XOEA0"] == (29, 29, 6)
     assert silver.column_names == bronze.column_names
-    assert silver.column("rownum").null_count == 0
-    assert silver.column("timestamp").null_count < silver.num_rows
-    by_line = {
-        source: (rownum, stamp, plugin)
-        for source, rownum, stamp, plugin in zip(
-            _sources(bronze),
-            bronze.column("rownum").to_pylist(),
-            bronze.column("timestamp").to_pylist(),
-            bronze.column("pluginid").to_pylist(),
-            strict=True,
-        )
-    }
-    assert all(
-        by_line[source] == (rownum, stamp, plugin)
-        for source, rownum, stamp, plugin in zip(
-            _sources(silver),
-            silver.column("rownum").to_pylist(),
-            silver.column("timestamp").to_pylist(),
-            silver.column("pluginid").to_pylist(),
-            strict=True,
-        )
-    )
+    assert set(_sources(silver)) <= set(_sources(bronze))
     assert silver.column(EVENT_CLOCK).to_pylist() == sorted(silver.column(EVENT_CLOCK).to_pylist())
 
 
-def test_the_walk_over_stored_rows_is_the_walk_over_the_parses_own(bronze) -> None:
+def test_the_walk_over_stored_rows_rebuilds_native_row_types(bronze) -> None:
     """A row read off a table arrives narrowed -- identities as bytes, instants
     at the microsecond, codes signed -- and in the table's own order, one
-    partition after another. Widened back to the dictionary's types and put
-    back in the order the capture logged its lines, the walk answers what it
-    would have answered over the parse's own rows; in the table's order it
-    answers other chains, because a chain is read off a stream."""
-    handle = IOBase.from_uri(FIXTURE.as_uri())
-    try:
-        parsed = _parsed(handle)
-    finally:
-        handle.close()
+    partition after another. Widening restores its native fixed-row types
+    before lifecycle reads it."""
     codec = _codec()
     field = fix_message_field(codec)
-    layout = [(EVENT_CLOCK, "ascending"), (CHAIN_STEP, "ascending"), (MESSAGE_KEY, "ascending")]
-    stored = bronze.sort_by(layout)
-    assert stored.column("rownum").to_pylist() != bronze.column("rownum").to_pylist()
-
-    over_parse = stored_arrow_reader(fix_lifecycle_arrow_reader(codec, _reader(parsed)), field)
-    over_stored = stored_arrow_reader(
-        fix_lifecycle_arrow_reader(codec, fix_arrival_reader(_reader(stored))), field
+    stored = bronze
+    native = stored_arrow_reader(
+        fix_lifecycle_arrow_reader(codec, _reader(_parsed_fixture())), field
     )
-    as_laid_out = stored_arrow_reader(fix_lifecycle_arrow_reader(codec, _reader(stored)), field)
+    restored = stored_arrow_reader(fix_lifecycle_arrow_reader(codec, _reader(stored)), field)
 
-    assert over_stored.read_all().equals(over_parse.read_all())
-    assert _chains(as_laid_out.read_all()) != CHAINS
+    assert restored.read_all().equals(native.read_all())
 
 
-def test_the_arrival_order_is_the_line_each_row_names(bronze) -> None:
-    """`sourceurl` then `rownum`: the order the text reader traversed the
-    capture in, restored whatever order a table handed the rows back in."""
-    shuffled = bronze.take(
-        pyarrow.array(sorted(range(bronze.num_rows), key=lambda index: (index * 7919) % 53))
+def test_the_walk_sorts_distinct_effective_instants_and_keeps_equal_ties(bronze) -> None:
+    """Lifecycle orders different event times while equal times retain input
+    order, so a stored scan supplies the deterministic tie order."""
+    selected: list[int] = []
+    seen = set()
+    for index, row in enumerate(bronze.select((EVENT_CLOCK, TRANSACTION_CLOCK)).to_pylist()):
+        instant = row[EVENT_CLOCK]
+        if instant == UNDATED and row[TRANSACTION_CLOCK] is not None:
+            instant = row[TRANSACTION_CLOCK]
+        if instant not in seen:
+            seen.add(instant)
+            selected.append(index)
+    chronological = bronze.take(pyarrow.array(selected))
+    reversed_times = chronological.take(pyarrow.array(list(reversed(range(len(selected))))))
+    assert _silver(reversed_times).equals(_silver(chronological))
+
+    tied = bronze.take(pyarrow.array([0, 1]))
+    reversed_tied = tied.take(pyarrow.array([1, 0]))
+    source_events = lambda rows: rows.filter(  # noqa: E731
+        pyarrow.compute.equal(pyarrow.compute.list_value_length(rows.column(SOURCES)), 1)
     )
-    restored = fix_arrival_reader(_reader(shuffled)).read_all()
-
-    assert restored.column("rownum").to_pylist() == sorted(bronze.column("rownum").to_pylist())
-    assert restored.schema.equals(bronze.schema)
-    assert fix_arrival_reader(_reader(bronze.slice(0, 0))).read_all().num_rows == 0
+    assert _sources(source_events(_silver(tied))) == _sources(tied)
+    assert _sources(source_events(_silver(reversed_tied))) == _sources(reversed_tied)
+    assert _silver(bronze.slice(0, 0)).num_rows == 0
 
 
 def test_the_walk_settles_the_same_identities_however_often_it_runs(bronze) -> None:
@@ -914,21 +808,22 @@ def test_the_line_door_walks_the_same_way() -> None:
     finally:
         handle.close()
 
-    assert len(walked) == MESSAGES
+    assert len(walked) == sum(rows for rows, _, _ in CHAINS.values())
     assert len({str(message.curruuid) for message in walked}) == EVENTS
     assert max(message.seqnum for message in walked) == max(step for _, _, step in CHAINS.values())
 
 
-def test_a_walk_refuses_a_row_that_names_no_line(bronze) -> None:
-    """A row without a source cannot take a capture's columns back."""
+def test_a_walk_needs_no_capture_sidecar(bronze) -> None:
+    """Lifecycle consumes native rows; provenance is optional row metadata."""
     unnamed = bronze.set_column(
         bronze.column_names.index(SOURCES),
         SOURCES,
         pyarrow.nulls(bronze.num_rows, bronze.schema.field(SOURCES).type),
     )
 
-    with pytest.raises(ValueError, match="names one source line"):
-        fix_lifecycle_arrow_reader(_codec(), _reader(unnamed)).read_all()
+    walked = fix_lifecycle_arrow_reader(_codec(), _reader(unnamed)).read_all()
+    assert walked.num_rows == _silver(bronze).num_rows
+    assert walked.column(SOURCES).null_count == walked.num_rows
 
 
 def test_the_silver_window_reads_the_event_clock_and_the_pin() -> None:

@@ -1,34 +1,16 @@
-"""The bundled FIX dictionary and the two FIX stages over two tables.
+"""The native FIX registry and the bronze/silver storage boundary.
 
-A bridge capture goes through two native stages over one codec, each landing
-in a table of its own, in this order and no other:
+Bronze parses frames independently, lifting typed facts and retaining only
+unprojected content in `fixentries`. The native codec can parse batches in
+parallel while preserving source order. It owns null filtering, identifiers,
+code validation and the row's schema.
 
-```text
-logs.messages -> parse     -> fix.bronze
-fix.bronze    -> lifecycle -> fix.silver
-```
-
-`parse` reads every frame a line carried and settles it where it is read: a
-parsed message already carries what it implied -- its typed facts lifted, its
-deprecated fields restated, the dictionary's derivations run, its identifiers
-filled, its instant and its identity settled -- so there is no enriching stage
-between the two. `fix.bronze` is that and nothing more: `seqnum` and `prevuuid`
-are empty on every row, because nothing has walked yet. `lifecycle` reads the
-stored rows back as the messages that wrote them and as the chains they belong
-to, filling the `prevuuid` a message follows, the `seqnum` it stands at, the
-`parentuuids` before it, the `creaunix`, `expirunix` and `state` its chain
-folded forward -- and dating a message the parse could not date by the
-`TransactTime` it states, which re-settles its identity. `fix.silver` is the
-same row under the same key and layout, restated.
-
-Each stage is a call rather than a pin, and each has two doors the native core
-requires to agree row for row: `fix_parse_lines` and `fix_lifecycle_messages`
-read messages one at a time, `fix_parse_arrow_reader` and
-`fix_lifecycle_arrow_reader` read a whole table in batches. A task holding a
-table takes the batch door; a reader holding lines takes the line door.
-Neither dates a message from anything the other cannot see -- a capture's own
-clock is context and stamps nothing -- so the same bytes answer the same event
-through either.
+Silver uses the native finite lifecycle: date by transaction time where
+needed, stably order events, suppress repeated deliveries, learn validated
+instrument associations, link predecessors, and emit expirations. It folds
+`creaunix`, `exprtime` and `state`; Python projects the native message row and
+narrows the resulting Arrow batches for Iceberg. The task supplies
+only the preceding hour plus its job window and publishes its window's rows.
 """
 
 from __future__ import annotations
@@ -49,10 +31,8 @@ from yggdryl.fix import (
     FixMsg,
     FixRegistry,
     MsgType,
-    fix_cfb_fields,
     fix_crate_fields,
     fix_schema,
-    fix_schema_carrying,
     fix_schema_tags,
     global_registry,
     install_global_registry,
@@ -60,7 +40,6 @@ from yggdryl.fix import (
 
 from rekep.fields import (
     HOUR,
-    IDENTITY_PARTITION,
     PARTITION_KEY,
     PRIMARY_KEY,
     SORT_KEY,
@@ -96,27 +75,9 @@ TRANSACTION_CLOCK = "transacttime"
 
 #: The identities a message was read from: provenance, never lineage. A row
 #: parsed from a stored line names that line's `curruuid` here and nothing
-#: else, and no walk moves it -- which is what puts a capture's own columns
-#: back beside a walked row.
+#: else. Source location and capture context remain on `logs.messages`,
+#: reached through these identities; no walk moves them.
 SOURCES = "srcuuids"
-
-#: The column the codec reads each message out of. The default pin; a codec
-#: naming another payload column answers that one instead.
-PAYLOAD = "body"
-
-
-#: The capture column neither FIX table stores: the bytes themselves.
-#:
-#: They are a fact about one *line*, and a row here is an *event*. One message
-#: logged at four hops is four lines -- four different bodies -- and one row,
-#: so the column would be one arrival's answer standing in for the event's.
-#: `logs.messages` holds every one of them; a row here names the line it was
-#: read from with `sourceurl` and `rownum`, and what it is re-emitted from is
-#: `fixentries`, the arrival record, which rebuilds the message and never the
-#: line that carried it. The line's own `currhashcode` needs no dropping: the
-#: fixed row takes that name for the event's code, so `fix_schema_carrying`
-#: drops the carried one rather than duplicating it.
-UNSTORED = (PAYLOAD,)
 
 #: What the lifecycle walk filled for a message's place in its chain. A chain
 #: read in `currunix, seqnum` order is the order the venue described, and the
@@ -135,38 +96,10 @@ SORT_COLUMNS = (EVENT_CLOCK, CHAIN_STEP, MESSAGE_KEY)
 #: UTC now, and a replay of the same bytes answers a different identity.
 UNDATED = datetime.datetime(1970, 1, 1, tzinfo=UTC)
 
-#: What the codec accepts as a pin. Stated here because a pin that is not one
-#: used to be forwarded silently: `version` was a legal pin until a version
-#: became what a row states rather than what a caller chose, and the parse
-#: went on answering rows under a dictionary nobody asked for.
-CODEC_PINS = frozenset(
-    {
-        "default_sending_time",
-        "separator",
-        "payload_column",
-        "capture_names",
-        "null_values",
-        "direction",
-        "batch_byte_size",
-    }
-)
-
 #: The Arrow field metadata a semantic native datatype crosses on. Iceberg
 #: stores the storage type, so a column carrying one is narrowed here rather
 #: than refused at the table boundary where the reason is no longer legible.
 _EXTENSION_KEYS = (b"ARROW:extension:name", b"ARROW:extension:metadata")
-
-#: What the carrier states about its own table and not about this one: its
-#: key, its partition -- a transform or the identity one -- and its sort. A
-#: capture column carried in front of the fixed row keeps what it *is* and
-#: loses where `logs.messages` put it: both FIX tables are keyed, laid out
-#: and sorted by the event, not by the line the event was read from.
-_CARRIED_LAYOUT = (
-    PRIMARY_KEY.encode(),
-    PARTITION_KEY.encode(),
-    IDENTITY_PARTITION.encode(),
-    SORT_KEY.encode(),
-)
 
 
 def registry_path() -> Path:
@@ -254,15 +187,10 @@ def fix_codec(
     undated message takes `UNDATED` rather than the instant the parse ran, so
     a replay of the same bytes answers the same identity.
     """
-    unknown = sorted(set(pinned) - CODEC_PINS)
-    if unknown:
-        raise TypeError(
-            f"{', '.join(unknown)} is no codec pin; the pins are {', '.join(sorted(CODEC_PINS))}"
-        )
     if options is not None:
         pinned.setdefault("capture_names", list(options.capture_names))
     pinned.setdefault("default_sending_time", UNDATED)
-    return FixCodec(registry or fix_registry(), **pinned)
+    return FixCodec(fix_registry() if registry is None else registry, **pinned)
 
 
 def fix_parse_lines(codec: FixCodec, lines: Iterable[TextLine]) -> Iterator[FixMsg]:
@@ -282,24 +210,18 @@ def fix_parse_arrow_reader(
     codec: FixCodec,
     source: pyarrow.RecordBatchReader,
 ) -> pyarrow.RecordBatchReader:
-    """The parse over a stored capture's batches, as rows: `fix.bronze`'s door.
+    """Parse stored capture batches into native FIX rows.
 
-    `parse_text_arrow_reader` is the twin of `parse_text_lines`: the capture's
-    own columns lead each row, a column named after a field fills that field,
-    and one source row answers a row per message it carried. The shape is
-    what `fix_parse_field` states, so nothing crosses back through the message
-    shape to be written again. That shape still carries the capture's own text
-    columns; dropping them, and narrowing the rest to what a table stores, is
-    the storage boundary's job and `stored_arrow_reader` is where that happens.
+    The native parser consumes capture columns to resolve each message and
+    puts the raw line's `curruuid` in `srcuuids`. Project its result to the
+    dictionary's fixed row: capture location, clocks, header and body remain
+    on `logs.messages`, reachable through that source identity. Projection
+    shares the parsed column buffers and works for empty readers too.
 
-    Nothing here has walked: `seqnum`, `prevuuid`, `prevunix` and
-    `parentuuids` are empty on every row this answers, and a message read back
-    off one stands at step zero of a chain no walk has named yet. A carrier's
-    `curruuid` is each message's one source, `srcuuids`; a carrier stating
-    none leaves the parse to recompute it from the line's bytes and instant,
-    which is equal only while those are.
+    Nothing has walked: `seqnum`, `prevuuid`, `prevunix` and `parentuuids`
+    are empty. One source row answers one row per frame it contains.
     """
-    return codec.parse_text_arrow_reader(source)
+    return _dictionary_rows(codec, codec.parse_text_arrow_reader(source))
 
 
 def fix_lifecycle_messages(codec: FixCodec, messages: Iterable[FixMsg]) -> Iterator[FixMsg]:
@@ -332,113 +254,18 @@ def fix_row_messages(
     return codec.messages(_dictionary_rows(codec, source))
 
 
-def fix_arrival_reader(source: pyarrow.RecordBatchReader) -> pyarrow.RecordBatchReader:
-    """A window's rows in the order the capture logged them: `sourceurl`, then `rownum`.
-
-    A chain is read off a stream, and a stream has an order: the walk states
-    each message as the one after the live message it follows, so the order it
-    is handed decides which message that is. The parse hands it the lines in
-    the order they were logged; a table hands back whatever its layout is --
-    one partition after another, the pinned hour first -- which is no order a
-    venue described. So a window read off a table is put back in the order its
-    lines were read in before the walk sees it: the object each row names and
-    the line's place in it, which is the order the text reader traversed them
-    in. The whole window is held for the sort, as the walk holds it anyway.
-    """
-    held = source.read_all()
-    ordered = held.sort_by([("sourceurl", "ascending"), ("rownum", "ascending")])
-    return pyarrow.RecordBatchReader.from_batches(
-        source.schema, ordered.to_batches() if ordered.num_rows else []
-    )
-
-
 def fix_lifecycle_arrow_reader(
     codec: FixCodec,
     source: pyarrow.RecordBatchReader,
 ) -> pyarrow.RecordBatchReader:
-    """The walk over stored rows, as rows: `fix.silver`'s door.
+    """Walk native FIX rows, preserving `srcuuids` as capture provenance.
 
-    The walk reads each row back as the message that wrote it, so what it is
-    given has to be a message and nothing else: a capture's own column carried
-    beside the row would be read as an arrived pair, and a pair that differs
-    between two logs of one message -- a line number, a line clock -- is
-    enough to make one event look like several. The capture's columns are held
-    back here and put in front again afterwards. The rows are walked in the
-    order given, which is the stream's order the chains are read off: the
-    parse's own for its output, and `fix_arrival_reader`'s for a window read
-    back off a table.
-
-    Put back by name and not by position: the walk dates a message the parse
-    could not, orders what it answers by that instant, and settles the
-    identity again, so its rows do not come out in the order they went in.
-    What it never moves is `srcuuids`, the line each row was read from, and a
-    capture's columns are that line's facts -- so each walked row takes them
-    from the line it names. A row read off a table arrives narrowed and is
-    widened to the dictionary's own types first, which is why this door reads
-    `fix.bronze` and `fix_parse_arrow_reader`'s output alike.
+    Stored rows are widened to the dictionary's types before the native
+    lifecycle dates, stably sorts, deduplicates and folds them. Its finite
+    input is the preceding hour plus the job window, bounded by the caller.
+    Only native message columns are passed into and returned from the walk.
     """
-    kept = _row_columns(codec, source.schema)
-    carried = [name for name in source.schema.names if name not in set(kept)]
-    if not carried:
-        return codec.lifecycle_arrow_reader(_dictionary_rows(codec, source))
-    held: list[pyarrow.RecordBatch] = []
-    keys: list[pyarrow.Array] = []
-    beside = pyarrow.schema([source.schema.field(name) for name in carried])
-    narrowed = pyarrow.schema([source.schema.field(name) for name in kept])
-
-    def _split() -> Iterator[pyarrow.RecordBatch]:
-        # The walk holds every row until it has read the last one, so the
-        # columns held back for it are whole before the first one is asked.
-        for batch in source:
-            held.append(batch.select(carried))
-            row = batch.select(kept)
-            keys.append(_source_keys(row.column(SOURCES)))
-            yield row
-
-    rows = _dictionary_rows(codec, pyarrow.RecordBatchReader.from_batches(narrowed, _split()))
-    walk = codec.lifecycle_arrow_reader(rows)
-    answered = pyarrow.schema(
-        [
-            source.schema.field(name) if name in carried else walk.schema.field(name)
-            for name in source.schema.names
-        ],
-        metadata=source.schema.metadata,
-    )
-
-    def _joined() -> Iterator[pyarrow.RecordBatch]:
-        lines = pyarrow.Table.from_batches(held, beside) if held else beside.empty_table()
-        named = pyarrow.concat_arrays(keys) if keys else pyarrow.array([], pyarrow.binary(16))
-        for batch in walk:
-            at = pyarrow.compute.index_in(_source_keys(batch.column(SOURCES)), value_set=named)
-            if at.null_count:
-                raise ValueError("the lifecycle answered a row from a line it was not given")
-            taken = lines.take(at)
-            yield pyarrow.RecordBatch.from_arrays(
-                [
-                    taken.column(name).combine_chunks() if name in carried else batch.column(name)
-                    for name in source.schema.names
-                ],
-                schema=answered,
-            )
-
-    return pyarrow.RecordBatchReader.from_batches(answered, _joined())
-
-
-def _source_keys(sources: pyarrow.Array) -> pyarrow.Array:
-    """The one line each row was read from, as the sixteen bytes it is.
-
-    A row the batch door answered names exactly one source: the line it was
-    parsed out of. A row naming none was made from raw bytes and a row naming
-    two was not written by this pipeline, and neither can take a capture's
-    columns back, so both are refused rather than matched to nothing.
-    """
-    if not len(sources):
-        return pyarrow.array([], pyarrow.binary(16))
-    counted = pyarrow.compute.fill_null(pyarrow.compute.list_value_length(sources), 0)
-    if not pyarrow.compute.all(pyarrow.compute.equal(counted, 1)).as_py():
-        raise ValueError("a row read off a capture names one source line")
-    flat = pyarrow.compute.list_flatten(sources)
-    return flat.storage if isinstance(flat, pyarrow.ExtensionArray) else flat
+    return codec.lifecycle_arrow_reader(_dictionary_rows(codec, source))
 
 
 def _dictionary_rows(
@@ -501,9 +328,7 @@ def _row_columns(codec: FixCodec, schema: pyarrow.Schema) -> list[str]:
     """Which of `schema`'s columns the fixed row itself defines.
 
     Read off the codec's own dictionary, because that is the one that parsed
-    the rows. A capture column named after a field is folded onto that field
-    by the parse, so it is one of these; the rest are the capture's own and
-    ride in front of the row.
+    the rows. Capture-only columns are excluded at the parse boundary.
     """
     row = {member.name for member in fix_schema(codec.registry, FIXMSG)}
     return [name for name in schema.names if name in row]
@@ -532,103 +357,39 @@ def fix_window_filter(window: tuple[datetime.datetime, datetime.datetime]) -> An
     return Or(dated, pinned)
 
 
-def fix_carrier(carrier: Field | None = None) -> Field:
-    """A capture's own columns as the parse carries them in front of the row.
-
-    The raw `Message` contract with its own table's layout taken off: a
-    carried column states what the capture saw, and both FIX tables are keyed
-    and partitioned by the event instead. `logs.messages` is keyed on the
-    line's own content code -- its `currhashcode` -- and laid out by the hour
-    the line was printed in; `fix.bronze` and `fix.silver` are keyed on `curruuid` and laid
-    out by the hour the event happened in, because one message logged at
-    three hops is three lines and one row. Leaving either marking on would
-    publish a second key and a second partition spec that nothing here means.
-
-    A carried column whose folded name the fixed row already takes is dropped
-    by `fix_schema_carrying` rather than duplicated, which is what naming a
-    capture after the field it fills is for: `sourceurl`, `msgsessionid`,
-    `msgctxid` and `msgseqnum` are the message's own columns, the line's
-    `curruuid` is dropped as the event's own identity takes its name -- it
-    reaches the row as the message's one source, `srcuuids`, and nowhere else
-    -- and the line's `currhashcode` is dropped the same way, because the
-    fixed row takes that name for the code of the event. `rownum`,
-    `timestamp`, `timepartition`, `threadId`, `pluginid`, `level` and `body`
-    ride in front: `pluginid` among them, because the row's own column for the
-    plugin is `msgpluginid` and the raw contract spells its capture as the
-    bridge does.
-
-    Seven here and six in the table: `UNSTORED` -- the payload the parse reads
-    every message out of -- rides through the parse and is dropped at the
-    storage boundary, because the bytes are a line's and a stored row is an
-    event's.
-    """
-    if carrier is None:
-        from rekep.text import Message
-
-        carrier = Message.into_field()
-    members = [_carried(member) for member in carrier.into_arrow_schema()]
-    return Field.from_arrow_schema(pyarrow.schema(members), name=carrier.name)
-
-
-def _carried(member: pyarrow.Field) -> pyarrow.Field:
-    """`member` without what it says about the table it came from."""
-    held = member.metadata or {}
-    if not any(key in held for key in _CARRIED_LAYOUT):
-        return member
-    return member.with_metadata(
-        {key: value for key, value in held.items() if key not in _CARRIED_LAYOUT}
-    )
-
-
 def fix_parse_field(
     codec: FixCodec | None = None,
-    carrier: Field | None = None,
     *,
-    name: str = "FixMessage",
+    name: str = "FixMsg",
 ) -> Field:
-    """The row the parse writes: the fixed row behind the capture's own columns.
+    """The native message row, without columns belonging to a captured line.
 
-    `fix_schema(registry, "fixmsg")` is the row yggdryl publishes and
-    `fix_schema_carrying` is the supported way to put a capture's own columns
-    in front of it, so no column here is spelled twice and none is yggfin's to
-    define. It is answered from the dictionary alone, without consuming an
-    input row, so an empty window creates the same table a full one does. The
-    walk answers this same shape back, restated.
+    The registry owns every column. The field is resolved without reading
+    input, so empty and populated streams publish the same contract.
     """
     registry = codec.registry if codec is not None else fix_registry()
-    return fix_schema_carrying(fix_carrier(carrier), fix_schema(registry, FIXMSG))
+    field = fix_schema(registry, FIXMSG)
+    field.set_name(name)
+    return field
 
 
 def fix_message_field(
     codec: FixCodec | None = None,
-    carrier: Field | None = None,
     *,
-    name: str = "FixMessage",
+    name: str = "FixMsg",
 ) -> Field:
-    """The one field both FIX tables are declared with: that row, as a table stores it.
+    """The native row narrowed for Iceberg, with one event key and layout.
 
-    `fix.bronze` and `fix.silver` are one shape -- what the parse answered and
-    what the walk restated are the same row, and only what the walk filled
-    tells a silver row from its bronze twin -- so there is one field, one key,
-    one partition and one sort order, declared here once. What yggfin adds to
-    the row is the three things a table is -- which column names one, which
-    lays it out, and where a row sits inside a partition -- the narrowing a
-    stored column needs, and the two carried columns a stored row does not
-    hold. Nothing else: a column yggdryl named is not renamed, retyped or
-    duplicated here, and the two that are dropped are the capture's own text
-    rather than any of the dictionary's.
+    Both FIX tables declare the same columns. The lifecycle fills lineage
+    and folded state without adding capture columns. `srcuuids` links back
+    to the raw lines in `logs.messages`.
     """
-    return iceberg_fix_field(
-        fix_parse_field(codec, carrier, name=name).into_arrow_schema(),
-        name,
-        UNSTORED if codec is None else (codec.payload_column,),
-    )
+    return iceberg_fix_field(fix_parse_field(codec, name=name).into_arrow_schema(), name)
 
 
 def iceberg_fix_field(
     schema: pyarrow.Schema,
-    name: str = "FixMessage",
-    unstored: Iterable[str] = UNSTORED,
+    name: str = "FixMsg",
 ) -> Field:
     """A parsed schema narrowed to what Iceberg v2 stores, and declared as a table.
 
@@ -644,14 +405,10 @@ def iceberg_fix_field(
     instant still read in one order and a chain never interleaves with
     itself.
 
-    `unstored` names the capture's own text columns, and they are dropped
-    rather than narrowed: the bytes the parse read each message out of and the
-    digest of them are the line's, and a row here is the event's. A row names
-    the line it was read from with `sourceurl` and `rownum`; `logs.messages`
-    holds the bytes, the digest and every other arrival of the same event.
+    The schema contains only native message columns. The source identities
+    in `srcuuids` link to `logs.messages`, which holds the capture facts.
 
-    Three narrowings after that, and each is about what a row filter can be
-    lowered to.
+    Three narrowings make row filters representable in storage.
     A semantic datatype -- a URL, an ISIN, a MIC, a currency, a side -- crosses
     Arrow as its storage type under an extension name in the column's
     metadata, and a table that stored the storage type reads back a column
@@ -668,12 +425,7 @@ def iceberg_fix_field(
     keyed, ordered and merged on an identity needs the bytes it can lower a
     predicate to. The value is the same value either way.
     """
-    dropped = set(unstored)
-    members = [
-        _declared(_plain(member.with_type(_stored(member.type))))
-        for member in schema
-        if member.name not in dropped
-    ]
+    members = [_declared(_plain(member.with_type(_stored(member.type)))) for member in schema]
     sorted_by = json.dumps([[column, "asc"] for column in SORT_COLUMNS], separators=(",", ":"))
     return Field.from_arrow_schema(
         pyarrow.schema(members, metadata={SORT_ORDER: sorted_by}),
@@ -729,24 +481,18 @@ def _stored(dtype: pyarrow.DataType) -> pyarrow.DataType:
 
 __all__ = [
     "CHAIN_STEP",
-    "CODEC_PINS",
     "EVENT_CLOCK",
     "FIXMSG",
     "MESSAGE_KEY",
-    "PAYLOAD",
     "SORT_COLUMNS",
     "SOURCES",
     "TRANSACTION_CLOCK",
     "UNDATED",
-    "UNSTORED",
     "FixCodec",
     "FixMessages",
     "FixMsg",
     "FixRegistry",
     "MsgType",
-    "fix_arrival_reader",
-    "fix_carrier",
-    "fix_cfb_fields",
     "fix_codec",
     "fix_crate_fields",
     "fix_lifecycle_arrow_reader",
@@ -758,7 +504,6 @@ __all__ = [
     "fix_registry",
     "fix_row_messages",
     "fix_schema",
-    "fix_schema_carrying",
     "fix_schema_tags",
     "fix_text_options",
     "fix_window_filter",

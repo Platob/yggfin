@@ -54,6 +54,48 @@ pipeline. A replay of an interval lands its 100,000 rows again over the ones
 it landed -- one more data file and one more snapshot -- and reports them as
 written; what that replace costs over an append is measured below.
 
+## End-to-end FIX scale observation
+
+One local Windows 11 run used Python 3.12.13, yggdryl 0.1.8, Arrow 25.0.1,
+PyIceberg 0.12.0, and a 12-logical-CPU host. The codec used four threads,
+4,096-row batches, and an 8 MiB byte target. Its 73.12 MiB synthetic capture
+held 220,000 distinct FIX messages: a new and a fill for each of 110,000 order
+chains, spread evenly over ten hourly partitions.
+
+| stage | read | written | stage s | job s | full command s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| raw messages | 220,000 | 220,000 | 6.704 | 9.020 | 15.052 |
+| FIX bronze | 220,000 | 220,000 | 26.860 | 29.265 | 35.428 |
+| first silver hour | 22,000 | 22,000 | 5.469 | 8.589 | 17.360 |
+| later silver hour, range | 44,000 | 22,000 | 6.640-7.906 | 9.057-10.706 | 14.807-16.900 |
+| dbt products | -- | 440,000 | 14.234 | 20.488 | 26.969 |
+
+Each later silver job read its previous hour plus its own and published only
+its own 22,000 rows. Final counts were 220,000 in raw, bronze, silver, and
+`orders.events`, and 110,000 in both `orders.current` and
+`executions.fills`; all 25 dbt checks passed. `stage` is the task's reported
+work time. `job` includes the application run, and `full command` also includes
+interpreter, CLI, and UI startup.
+
+A streaming audit checked all 220,000 silver rows rather than a sample: every
+UUIDv7 was unique and its timestamp matched `currunix` to the millisecond,
+every `srcuuids` identity existed in the raw table, all 110,000 predecessor
+links resolved, and the states were exactly 110,000 `20NEW` plus 110,000
+`80FILLED`, with every fill at sequence one.
+
+Sampled steady-state silver jobs held 820.6-836.1 MiB peak resident memory;
+dbt reached 1,117.5 MiB. This is one local scalability observation, not a
+throughput guarantee. Hour pruning and bounded Iceberg fan-in avoid a global
+warehouse scan, but the selected finite history is still collected by the
+native lifecycle and dbt still calls `read_all` on its projected source, so
+the pipeline is not globally memory-bounded.
+
+A wall-time profile found no Python per-row allocation loop: fixed-row
+widening and native lifecycle construction each accounted for about 2.6 s,
+application imports about 2.1 s, table existence/loading about 1.5 s, and the
+overwrite commit about 1.2 s. These cumulative timers overlap and are not an
+additive breakdown.
+
 ## Iceberg internals
 
 ```bash

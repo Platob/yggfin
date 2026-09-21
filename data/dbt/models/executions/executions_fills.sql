@@ -47,8 +47,7 @@ select
     end as executionkey,
     curruuid as eventkey,
     crossuuid as orderkey,
-    sourceurl,
-    rownum,
+    srcuuids,
     eventtime as executiontime,
     eventtime as timepartition,
     sessionid,
@@ -75,5 +74,5 @@ where crosscode <> ''
   and lastpx is not null
 qualify row_number() over (
     partition by executionkey
-    order by eventtime, sourceurl, rownum
+    order by eventtime, seqnum, curruuid
 ) = 1

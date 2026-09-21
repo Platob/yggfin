@@ -26,12 +26,12 @@ models:
         description: The logical order this occurrence belongs to.
         data_tests:
           - not_null
-      - name: sourceurl
-        description: The capture object this occurrence was read from.
-      - name: rownum
-        description: The physical line number inside that object.
+      - name: srcuuids
+        description: >
+          Native raw-line identities for provenance; join them to
+          `logs.messages.curruuid` for capture detail.
       - name: executiontime
-        description: The transaction time, else the settled message instant.
+        description: The native settled event instant, including expiry at its deadline.
         data_tests:
           - not_null
       - name: timepartition

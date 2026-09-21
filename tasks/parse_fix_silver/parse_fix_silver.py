@@ -4,15 +4,17 @@ __generated_with = "0.24.0"
 app = marimo.App(width="medium")
 
 with app.setup:
+    import datetime
     import pathlib
     from contextlib import ExitStack
 
     import marimo as mo
     import pyarrow
-
     from rekep.fields import stored_arrow_reader
     from rekep.fix import (
-        fix_arrival_reader,
+        EVENT_CLOCK,
+        SORT_COLUMNS,
+        UNDATED,
         fix_codec,
         fix_lifecycle_arrow_reader,
         fix_message_field,
@@ -22,8 +24,7 @@ with app.setup:
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
     from rekep.tasks import Task
-    from rekep.text import Message
-    from rekep.times import window_of
+    from rekep.times import window_of, within
 
     TARGET = "fix.silver"
 
@@ -33,8 +34,8 @@ def _():
     mo.md("""
     # Parse FIX: silver
 
-    Read one window of parsed FIX rows back as the messages that wrote them,
-    walk them as the chains they belong to, and land the walked rows.
+    Read the previous hour and this job's window in event order, walk their
+    lifecycle, and land only the events belonging to this job's window.
     """)
 
 
@@ -45,10 +46,11 @@ def parameters():
     _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
     bronze = _defaults["bronze"]
     registry = _defaults["registry"]
+    codec_options = _defaults["codec_options"]
     start = _defaults["start"]
     end = _defaults["end"]
     catalog = _defaults["catalog"]
-    return bronze, catalog, end, registry, start
+    return bronze, catalog, codec_options, end, registry, start
 
 
 @app.cell
@@ -58,16 +60,11 @@ def _():
 
 
 @app.cell
-def _(bronze, catalog, end, records, registry, start):
+def _(bronze, catalog, codec_options, end, records, registry, start):
     _ = records
     with ExitStack() as opened:
-        # The window, `[start, end)`, read off the event clock and not the
-        # capture's: a bronze row is already an event, dated by what its
-        # message stated. A message that stated no sending clock sits at the
-        # codec's pin until this walk dates it by its transaction time, so the
-        # predicate reads those rows by that clock instead -- one partition,
-        # pruned by the transaction times its files hold.
         window = window_of(start, end)
+        history = (window[0] - datetime.timedelta(hours=1), window[1])
         stage = Stage(
             "parse_fix_silver",
             sources={"bronze": bronze},
@@ -80,14 +77,18 @@ def _(bronze, catalog, end, records, registry, start):
         # back as the message that wrote it, and the dictionary is what wrote
         # it. The same field too, because a walked row is the parsed row
         # restated: same columns, same key, same layout.
-        codec = fix_codec(fix_registry(registry))
-        carrier = Message.into_field()
-        field = fix_message_field(codec, carrier)
+        codec = fix_codec(fix_registry(registry), **(codec_options or {}))
+        field = fix_message_field(codec)
         parsed = store.dataset(bronze, field=field)
         opened.callback(parsed.close)
-        source = parsed.read_arrow_reader(field, row_filter=fix_window_filter(window))
+        # The hour transform prunes partitions, then the ordered reader
+        # concatenates disjoint file ranges and merges only overlapping ones.
+        # Undated rows use the epoch partition and TransactTime file bounds.
+        source = parsed.read_arrow_reader(
+            field, row_filter=fix_window_filter(history), order_by=SORT_COLUMNS
+        )
         opened.callback(source.close)
-        counts = {"read": 0}
+        counts = {"read": 0, "events": 0, "outside_window": 0}
 
         def _batches():
             for batch in source:
@@ -99,36 +100,44 @@ def _(bronze, catalog, end, records, registry, start):
             _batches(),
         )
         opened.callback(counted.close)
-        # A chain is read off a stream, and a table's layout is not one: the
-        # window is put back in the order the capture logged its lines --
-        # the object each row names, then the line's place in it -- which is
-        # the order the parse handed the walk. Then the walk, over the
-        # dictionary's columns alone: the capture's own columns are held back
-        # and put in front again by the line each walked row names, because a
-        # capture column read as content would give every hop that logged a
-        # message its own identity. A stored row is widened back to the
-        # dictionary's own types on the way in.
-        walked = fix_lifecycle_arrow_reader(codec, fix_arrival_reader(counted))
+        # The native lifecycle owns dating, delivery deduplication, state and
+        # expiry. Its finite capture is limited to this input window; there
+        # is no second collected Arrow table or union before the walk.
+        walked = fix_lifecycle_arrow_reader(codec, counted)
         opened.callback(walked.close)
+
+        def _events():
+            for batch in walked:
+                clock = batch.column(EVENT_CLOCK)
+                selected = batch.filter(
+                    pyarrow.compute.or_(
+                        within(clock, window), pyarrow.compute.equal(clock, UNDATED)
+                    )
+                )
+                counts["events"] += selected.num_rows
+                counts["outside_window"] += batch.num_rows - selected.num_rows
+                if selected.num_rows:
+                    yield selected
+
+        events = pyarrow.RecordBatchReader.from_batches(walked.schema, _events())
+        opened.callback(events.close)
         # The storage boundary, the same one bronze crossed: the content codes
         # read as the signed integers Iceberg stores, then the field applied
         # in its native order.
-        applied = stored_arrow_reader(walked, field)
+        applied = stored_arrow_reader(events, field)
         opened.callback(applied.close)
         silver = store.dataset(TARGET, field=field, merge_schema=True)
         opened.callback(silver.close)
-        # What the walk answers replaces what the table held under the same
-        # `curruuid`: a replay of a window lands the same walked rows again,
-        # and every copy of one message logged at several hops -- which the
-        # walk gives the same place, the same lineage and the same state --
-        # lands once. A message the walk dated re-settles its identity, so a
-        # silver key is the bronze key only where the parse could date the
-        # message; where it could not, the row moves from the pin's hour to
-        # the hour its transaction happened in.
+        # Only this window is written. Previous-hour rows warm the lifecycle
+        # without replacing the historical chain with a truncated replay.
         written = silver.overwrite_arrow_reader(applied, field, merge_by=True)
-        # The walk answers one row per row, so what the write left out is a
-        # copy of an identity already landed.
-        _outcome = stage.finished(read=counts["read"], written=written)
+        _outcome = stage.finished(
+            read=counts["read"],
+            written=written,
+            skipped=counts["events"] - written,
+            events=counts["events"],
+            outside_window=counts["outside_window"],
+        )
     outcome = _outcome
     return (outcome,)
 
@@ -141,7 +150,7 @@ def _(outcome):
 
 
 @app.cell
-def datasets(bronze, catalog, result):
+def datasets(bronze, catalog, end, result, start):
     # What the two datasets look like after the run: how each is laid out, and
     # one chain read in the order the walk gave it. A presentation cell -- the
     # runner publishes `result` and nothing else -- and it runs headless, so a
@@ -158,7 +167,7 @@ def datasets(bronze, catalog, result):
             shown.callback(_dataset.close)
             _table = _dataset.iceberg_table
             _layout[_name] = {
-                "rows": _dataset.read_arrow_table().num_rows,
+                "rows": _dataset.records,
                 "partitions": sorted(
                     {str(_file["partition"]) for _file in _dataset.data_files().to_pylist()}
                 ),
@@ -172,18 +181,16 @@ def datasets(bronze, catalog, result):
         if TARGET in _layout and _layout[TARGET]["rows"]:
             _silver = _store.dataset(TARGET)
             shown.callback(_silver.close)
-            # `currunix, seqnum` is the order the walk gave a chain, and the
-            # widest chain is the one worth showing.
-            _rows = _silver.read_arrow_table().select(
-                ("crosscode", "currunix", "seqnum", "curruuid", "prevuuid", "state")
+            # The interactive view is a bounded sample of this window; it
+            # never scans the full warehouse after an otherwise pruned job.
+            _sample = _silver.read_arrow_reader(
+                columns=("crosscode", "currunix", "seqnum", "curruuid", "prevuuid", "state"),
+                row_filter=fix_window_filter(window_of(start, end)),
+                order_by=SORT_COLUMNS,
+                limit=64,
             )
-            _codes = _rows.column("crosscode").to_pylist()
-            _widest = max(set(_codes), key=_codes.count)
-            _chain = (
-                _rows.filter(pyarrow.compute.equal(_rows.column("crosscode"), _widest))
-                .sort_by([("currunix", "ascending"), ("seqnum", "ascending")])
-                .to_pylist()
-            )
+            shown.callback(_sample.close)
+            _chain = _sample.read_all().to_pylist()
     layout = _layout
     chain = _chain
     mo.vstack([mo.tree(layout), mo.ui.table(chain or [], selection=None)])

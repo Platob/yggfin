@@ -498,6 +498,7 @@
           ["tag", field.tag],
           ["identifier", field.id],
           ["canonical name", field.name],
+          ["category", field.category],
           ["dialect", field.dialect],
           ["Arrow type", field.type],
           ["nullable", String(field.nullable)],
@@ -510,7 +511,7 @@
     const deep = element("div");
     body.appendChild(deep);
     const heading =
-      field.tag + " · " + field.display +
+      (field.tag === null ? field.category : field.tag) + " · " + field.display +
       (field.shape === "group" ? "  [group]" : "") +
       "  — " + field.type;
     const card = details(heading, body, false);
@@ -523,7 +524,8 @@
         deepRecords().then(
           function (held) {
             deep.textContent = "";
-            for (const part of deepParts(held[String(field.tag)] || {})) {
+            const definition = (held.fields || {})[String(field.id)] || {};
+            for (const part of deepParts(definition, held.codesets || {})) {
               deep.appendChild(part);
             }
           },
@@ -538,11 +540,12 @@
     return card;
   }
 
-  /* One entry's members, code set and lineage, where the dictionary has them. */
-  function deepParts(held) {
+  /* One entry's members, named shared code set and lineage. */
+  function deepParts(held, codesets) {
     const parts = [];
     const members = held.members || [];
-    const codes = held.codes || [];
+    const codeset = held.codeset || "";
+    const codes = codesets[codeset] || [];
     const lineage = held.lineage || [];
     if (members.length) {
       parts.push(
@@ -555,13 +558,13 @@
         )
       );
     }
-    if (codes.length) {
+    if (codeset) {
       parts.push(
         details(
-          "Code set (" + codes.length + ")",
+          "Code set " + codeset + " (" + codes.length + ")",
           table(
-            ["value", "name", "since"],
-            codes.map((code) => [code.value, code.name, code.since || ""])
+            ["value", "name", "description"],
+            codes.map((code) => [code.value, code.name, code.description || ""])
           )
         )
       );
@@ -586,9 +589,9 @@
   function decoder(mount, dictionary) {
     // The code sets name a value; they arrive once, and the table is drawn
     // again when they do rather than blocking the first decode on them.
-    let codes = {};
+    let codesets = {};
     deepRecords().then(function (held) {
-      codes = held;
+      codesets = held.codesets || {};
       render();
     }, function () {});
     const input = element("textarea", {
@@ -684,9 +687,9 @@
     }
 
     function codeName(field, value) {
-      const held = codes[String(field.tag)];
+      const held = codesets[field.codeset];
       if (!held) return "";
-      const found = (held.codes || []).find((code) => code.value === value.trim());
+      const found = held.find((code) => code.value === value.trim());
       return found ? found.name : "";
     }
 
@@ -807,6 +810,7 @@
 
     const list = element("datalist", { id: "fix-tags" });
     for (const field of dictionary.fields) {
+      if (field.category !== "fields" || field.tag === null) continue;
       list.appendChild(element("option", { value: String(field.tag), label: field.display }));
     }
     mount.appendChild(list);
@@ -846,6 +850,7 @@
         .concat(field.names, field.tags.map(String))
         .join(" ")
         .toLowerCase();
+      if (field.category !== "fields") continue;
       if (field.tag !== null) byTag.set(field.tag, field);
       byName.set(field.name.toLowerCase(), field);
       for (const spelling of field.names) byName.set(spelling.toLowerCase(), field);

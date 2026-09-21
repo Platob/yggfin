@@ -14,8 +14,8 @@ the interval to all three tasks as their `start` and `end`, so a day's run
 reads the day's lines under `filesystem` and replaces them in all three
 tables. The DAG exposes the union of the three adjacent task documents as
 Params. A manual run can therefore replace `filesystem`, `rowheader`, `start`,
-`end`, `catalog`, `messages`, `registry` or `bronze` without creating another
-DAG, and a bound the run's conf names wins over the interval. `messages` and
+`end`, `catalog`, `messages`, `registry`, `codec_options` or `bronze` without
+creating another DAG, and a bound the run's conf names wins over the interval. `messages` and
 `bronze` are named for the table each FIX stage reads, so one Params mapping
 over three documents cannot hand one stage the other's source. There is no
 `version` Param: what a message was read at is what its own `beginstring`
@@ -194,15 +194,16 @@ uv run --project "$REKEP_ROOT/python" --group airflow airflow dags test \
   rekep_products --conf '{"catalog":'"$CATALOG"'}'
 ```
 
-Airflow 3.3.1 printed these lines among its own:
+The fixture run has this result shape; durations are omitted because they are
+environment measurements rather than contract values:
 
 ```text
-INFO rekep.logs parse_messages finished: 144 read, 141 written, 3 skipped → messages=logs.messages in 0.8s
-INFO rekep.logs parse_fix_bronze finished: 141 read, 53 written, 26 skipped → bronze=fix.bronze in 1.3s
-INFO rekep.logs parse_fix_silver finished: 53 read, 53 written, 0 skipped → silver=fix.silver in 1.4s
+INFO rekep.logs parse_messages finished: 144 read, 141 written, 3 skipped → messages=logs.messages
+INFO rekep.logs parse_fix_bronze finished: 141 read, 51 written, 28 skipped → bronze=fix.bronze
+INFO rekep.logs parse_fix_silver finished: 51 read, 52 written, 0 skipped → silver=fix.silver
 DagRun Finished: dag_id=rekep_ingestion, ... state=success
 INFO rekep.logs build_dbt 29 nodes ran: 4 models, 25 tests, 0 warned
-INFO rekep.logs build_dbt finished: 29 read, 66 written, 0 skipped → executions_fills=executions.fills, orders_events=orders.events, orders_current=orders.current in 3.2s
+INFO rekep.logs build_dbt finished: 29 read, 63 written, 0 skipped → executions_fills=executions.fills, orders_events=orders.events, orders_current=orders.current
 DagRun Finished: dag_id=rekep_products, ... state=success
 ```
 
@@ -230,8 +231,8 @@ marked finished, a run of `rekep_products` it created itself off the event
 Created asset-triggered DagRun for 'rekep_products': ... consumed 1 asset events
 ```
 
-Its `run_id` begins `asset_triggered__`, it finished ten seconds later, and
-its `build_dbt` logged the same counts as above, in `2.9s`. Both DAGs wrote
+Its `run_id` begins `asset_triggered__`, and its `build_dbt` logged the same
+contract fields as above. Durations vary by runner. Both DAGs wrote
 the checkout's default catalog, `data/catalog.db`, because the conf named
 none. That is the rule the run shows: an asset-triggered run carries no conf
 at all, so `rekep_products` reads the catalog
@@ -241,7 +242,7 @@ reach one catalog through their documents or not at all. A first attempt that
 had pointed the ingestion trigger at a catalog of its own failed in
 `build_dbt` with `Table does not exist: fix.silver` for exactly that reason.
 The warehouse then held the three ingestion counts above, and `orders.events`
-49, `orders.current` 9 and `executions.fills` 8 rows, which is what every
+48, `orders.current` 8 and `executions.fills` 7 rows, which is what every
 other route lands; `tools/pipeline_samples.py --catalog … --check` against it
 answered `4 samples match`.
 

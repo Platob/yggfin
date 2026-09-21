@@ -64,7 +64,8 @@ def test_navigation_names_existing_pages() -> None:
 
 def test_docs_publish_the_native_message_contracts() -> None:
     config = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
-    schema = (ROOT / "schemas" / "rekep" / "message.json").read_text(encoding="utf-8")
+    raw_schema = (ROOT / "schemas" / "rekep" / "message.json").read_text(encoding="utf-8")
+    fix_schema = (ROOT / "schemas" / "rekep" / "fixmsg.json").read_text(encoding="utf-8")
 
     assert Field.__name__ == "Field"
     assert [member.name for member in Message.into_field()] == [
@@ -88,15 +89,25 @@ def test_docs_publish_the_native_message_contracts() -> None:
     assert "pipeline/tasks/build-dbt.md" in config
     assert "market/" not in config
     assert sorted(path.name for path in (ROOT / "schemas" / "rekep").glob("*.json")) == [
-        "fix-message.json",
+        "fixmsg.json",
         "message.json",
     ]
-    # An Iceberg contract carries no Arrow metadata, so FIX vocabulary can only
-    # leak into the raw product as a column -- which is what this looks for.
-    # `currhashcode` is the one name both shapes use, and it is the core's
-    # own: a line has a content code exactly as an event does.
-    assert '"name": "body"' in schema
-    assert '"name": "msgtype"' not in schema
+    # The FIX contract is the native projected event row. Raw text remains
+    # solely in Message, linked by the event row's `srcuuids`.
+    assert '"name": "body"' in raw_schema
+    assert '"name": "msgtype"' in fix_schema
+    assert '"name": "srcuuids"' in fix_schema
+    for capture in (
+        "sourceurl",
+        "rownum",
+        "timestamp",
+        "timepartition",
+        "threadId",
+        "pluginid",
+        "level",
+        "body",
+    ):
+        assert f'"name": "{capture}"' not in fix_schema
 
 
 def test_docs_record_the_measured_message_rates() -> None:
@@ -120,27 +131,41 @@ def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
     schemas = (ROOT / "schemas" / "README.md").read_text(encoding="utf-8")
 
     assert "parse_text_arrow_reader" in bronze
-    assert "iceberg_fix_field" in bronze
-    assert "stored_arrow_reader" in bronze and "stored_arrow_reader" in silver
-    assert "fix_schema_carrying" in bronze
-    assert "lifecycle_arrow_reader" in silver
+    assert "123-column" in bronze
+    assert "FixMsg" in bronze and "FixMsg" in silver
+    assert "fix_schema_carrying" not in bronze
+    assert "fix_lifecycle_arrow_reader" in silver
     assert "fix_window_filter" in silver
     assert "not alternate implementations" in schemas
-    assert "`fix-message.json`" in schemas
+    assert "`fixmsg.json`" in schemas
     assert "iceberg_contract" in schemas
 
 
-def test_public_scripts_and_documentation_use_only_the_rekep_name() -> None:
+def test_public_python_uses_the_rekep_surface() -> None:
+    """Examples and applications import their product, not its runtime."""
     roots = [ROOT / "README.md", ROOT / "schemas", DOCS, ROOT / "tasks", ROOT / "tools"]
-    suffixes = {".md", ".json", ".js", ".py"}
-    files = []
+    sources = []
     for root in roots:
-        files.extend([root] if root.is_file() else root.rglob("*"))
+        for path in [root] if root.is_file() else root.rglob("*"):
+            if path.is_file() and path.suffix == ".py":
+                sources.append((path, path.read_text(encoding="utf-8")))
+            elif path.is_file() and path.suffix == ".md":
+                sources.extend(
+                    (path, source) for source in FENCE.findall(path.read_text(encoding="utf-8"))
+                )
 
-    exposed = [path for path in files if path.is_file() and path.suffix in suffixes]
-    assert exposed
-    for path in exposed:
-        assert "yggdryl" not in path.read_text(encoding="utf-8").casefold(), path
+    assert sources
+    for path, source in sources:
+        tree = ast.parse(source, filename=str(path))
+        modules = [
+            alias.name
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Import)
+            for alias in node.names
+        ] + [node.module or "" for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)]
+        assert not any(
+            module == "yggdryl" or module.startswith("yggdryl.") for module in modules
+        ), path
 
 
 def test_each_task_page_publishes_its_document_verbatim() -> None:

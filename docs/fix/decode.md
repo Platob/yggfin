@@ -201,8 +201,9 @@ assert [(tag, name) for tag, name, _, _ in message.entries()] == [
 ]
 ```
 
-The typed projection is normalized; `entries()` is the arrival record, each
-pair carrying the tag and name the dictionary made of its key.
+The typed message retains its protocol entries in memory. In a fixed Arrow
+row, `fixentries` is residual: fields and complete groups represented by
+lifted columns are omitted from that second representation.
 
 ## JSON configuration and FIXML
 
@@ -238,25 +239,34 @@ For each pair the builder:
 1. parses a numeric tag or folds a name/path;
 2. resolves it against the one namespace the registry is;
 3. creates an unknown nullable text field if no definition exists;
-4. records the original pair in arrival order;
-5. treats trimmed `""`, `null`, and `<null>` as absent by default;
+4. records the pair in the message's entry tree;
+5. treats trimmed empty text, `null`, `<null>`, `none`, `n/a`, and `[n/a]`
+   case-insensitively as absent by default;
 6. translates a versioned code name or wire code;
 7. converts binary data from original bytes and scalar data from cleaned text;
 8. leaves the typed value null on conversion failure while retaining the
-   arrival pair.
+   pair as residual data.
 
 Version selection is what the row itself said: `ApplVerID(1128)`,
 `BeginString(8)`, then the registry's newest applicable version. No version is
-pinned on the codec -- `fix_codec` refuses `version=` by name, along with any
-keyword that is not one of its seven pins (`default_sending_time`, `separator`,
-`payload_column`, `capture_names`, `null_values`, `direction`,
-`batch_byte_size`). Version affects code spelling, not column identity.
+pinned on the codec. Native `FixCodec` validates keyword names; useful pins
+include `default_sending_time`, `separator`, `payload_column`, `capture_names`,
+`null_values`, `direction`, `batch_byte_size`, `batch_row_size`,
+`include_msgtypes`, `exclude_msgtypes`, `threads`, and `snapshot_ns`. Version
+affects code spelling, not column identity. The batch defaults are 32,768 rows
+and 128 MiB; `threads` defaults to the available CPU count and zero means one.
+Prefix stripping belongs to `TextOptions.lstrip`, which accepts a list of
+anchored regular expressions such as `[r"^\s*-->\s*"]`; it changes the
+retained raw `body` and therefore its identity. It is not a codec option and
+the FIX tasks do not enable it. Native FIX already locates frames after
+whitespace or `-->`; preserving header captures behind any earlier prefix
+requires a supplied `rowheader` pattern that includes that prefix.
 
 ## Message ordering and derived values
 
 Resolved children are ordered as FIX header, body, trailer, then the crate's
-own fields, and the row ends `metadata`, `nofixentries`, `fixentries`: the
-arrival record is a group named after itself, under the counter that counts it.
+own fields, and the row ends `metadata`, `nofixentries`, `fixentries`. The last
+two describe only the residual protocol tree in an Arrow row.
 `beginstring` is supplied when the input did not state one. The parse dates a
 message by the `SendingTime(52)` it stated and by nothing else: one stating
 none takes the codec's `UNDATED` floor -- never the capture's own clock, which
@@ -274,7 +284,7 @@ enriching stage after it, and `fix.bronze` is that and nothing more.
 **lifecycle** is the one stage that follows, and it reads the messages as the
 chains they belong to, filling what a message implied about the message before
 it: `prevuuid` and `prevunix` naming the step before, `seqnum` where this one
-stands, `parentuuids` what it descends from, and the `creaunix`, `expirunix`
+stands, `parentuuids` what it descends from, and the `creaunix`, `exprtime`
 and `state` its chain folds forward. Those four are empty on every bronze row,
 because nothing has walked yet, and `fix.silver` is the same rows walked.
 `snapunix` is empty on every row that is not a reading a walk took, which is
@@ -304,7 +314,7 @@ batch = pyarrow.RecordBatch.from_pylist(
             "level": "INFO",
             "currhashcode": 0,
             "body": b"Receiving : 8=FIX.4.4|35=D|55=AAPL|10=000|",
-            "curruuid": b"\x00" * 16,
+            "curruuid": b"\x01" * 16,
         }
     ],
     schema=schema,
@@ -315,23 +325,16 @@ parsed = fix_parse_arrow_reader(codec, source)
 table = parsed.read_all()
 
 assert table.column("symbol").to_pylist() == ["AAPL"]
-assert table.column("msgseqnum").to_pylist() == [7]
-assert table.num_columns == 124
+assert table.column("srcuuids").to_pylist() == [[b"\x01" * 16]]
+assert table.num_columns == 123
 assert table.schema.names[-3:] == ["metadata", "nofixentries", "fixentries"]
 ```
 
-Source columns lead the output unless a fixed column owns the same folded
-name. A capture named for the field it fills therefore folds onto it:
-`sourceurl`, `msgctxid`, `msgsessionid` and `msgseqnum` land inside the fixed
-projection rather than beside it. `pluginid` rides in front, because the row's
-own column for the plugin is `msgpluginid`, and the carrier's `curruuid` is
-dropped as the event's own identity takes the name: it reaches the row as the
-message's one `srcuuids` entry, the line it was parsed out of. Message values
-always win over capture fills, and the capture's own `timestamp` fills
-nothing: it is context and dates no message. The batch is the raw contract's
-13 columns, `curruuid` last: the identity the read states over a stored line,
-and the nil identity on a row made by hand, as here, states none and leaves
-the parse to recompute one from the line's bytes and instant.
+The input batch is the raw 13-column `Message` contract. The output is exactly
+the native 123-column FixMsg contract: it contains no raw capture columns or
+`body`. The input line's `curruuid` becomes a `srcuuids` provenance entry, so
+`sourceurl`, `rownum`, header values, and exact bytes remain available by
+joining back to `logs.messages`.
 
 ## Two doors onto the same messages
 
@@ -363,11 +366,11 @@ That capture holds 144 lines and answers 79 messages, because a row is a
 message and not a line. `fix_parse_arrow_reader` is the batch door of the
 parse and `fix_lifecycle_arrow_reader` the batch door of the walk: a stored
 table in, rows out under the parse's own shape. They are what
-`parse_fix_bronze` and `parse_fix_silver` take, because each holds a table,
-and neither pins a capture order, because a column named after a field fills
-it by name. One line carrying two frames answers two rows under one `rownum`;
-one carrying none answers no row at all. The walk then folds every hop that
-logged one message onto one identity, so those 79 messages are 53 events.
+`parse_fix_bronze` and `parse_fix_silver` take, because each holds a table.
+One line carrying two frames answers two rows with the same source UUID; one
+carrying none answers no row at all. The parse folds every hop that logged
+one message onto one identity, so those 79 messages are 51 bronze
+events; lifecycle adds one expiry and therefore emits 52 rows for this fixture.
 
 ```python
 import pyarrow
@@ -396,7 +399,7 @@ batch = pyarrow.RecordBatch.from_pylist(
             "level": "INFO",
             "currhashcode": 0,
             "body": body,
-            "curruuid": b"\x00" * 16,
+            "curruuid": rownum.to_bytes(16, "big"),
         }
         for rownum, body in enumerate(lines, start=1)
     ],
@@ -407,9 +410,13 @@ codec = fix_codec(fix_registry())
 parsed = fix_parse_arrow_reader(codec, source)
 table = parsed.read_all()
 
-assert table.column("rownum").to_pylist() == [1, 3, 3]
 assert table.column("symbol").to_pylist() == ["AAPL", "AAPL", "HOLN"]
-assert table.num_columns == 124
+assert table.column("srcuuids").to_pylist() == [
+    [bytes.fromhex("00" * 15 + "01")],
+    [bytes.fromhex("00" * 15 + "03")],
+    [bytes.fromhex("00" * 15 + "03")],
+]
+assert table.num_columns == 123
 
 parsed.close()
 ```

@@ -59,8 +59,10 @@ uv run --project python rekep task run \
 `parse_fix_silver` takes the same `registry`, and the walk reads each row
 back with the dictionary that wrote it, so a candidate is given to both.
 There is no version left to pin: what a message was read at is what its own
-`beginstring` said, and `fix_codec` refuses by name any keyword that is not one
-of its seven pins. `version` is no longer a task parameter either, so a
+`beginstring` said, and native `FixCodec` validates every keyword it receives.
+`codec_options: null` delegates native defaults; an object is forwarded
+unchanged. Useful pins include `batch_row_size`, `include_msgtypes`,
+`exclude_msgtypes`, `threads`, and `snapshot_ns`. `version` is no longer a task parameter, so a
 `--parameter 'version="4.4"'` names nothing the document declares -- the CLI
 carries it into an unused definition and Airflow's operator fails the task
 outright. There is no switch on the walk: the parsed rows without their

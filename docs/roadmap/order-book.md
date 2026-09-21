@@ -7,15 +7,14 @@ acceleration product that can always be rebuilt.
 ## book.updates
 
 One market-data message may contain many depth entries. It emits one row per
-entry, addressed by source position and entry index.
+entry, addressed by source identity and entry index.
 
 ### Planned schema
 
 | column | Arrow type | null | contract |
 | --- | --- | :---: | --- |
-| `updatekey` | `fixed_size_binary[16]` | no | `(sourceurl,rownum,entryindex)` digest; primary key |
-| `sourceurl` | `string` | no | source object |
-| `rownum` | `int64` | no | source line |
+| `updatekey` | `fixed_size_binary[16]` | no | `(srcuuids,entryindex)` digest; primary key |
+| `srcuuids` | `list<fixed_size_binary[16]>` | no | raw-line identities for provenance |
 | `entryindex` | `int32` | no | occurrence index in arrival order |
 | `curruuid` | `fixed_size_binary[16]` | no | settled event identity |
 | `eventtime` | `timestamp[us, UTC]` | no | exchange time, then market timestamp |
@@ -36,7 +35,7 @@ entry, addressed by source position and entry index.
 
 ### Apply rules
 
-- Sequence and source position define deterministic order; clock alone never
+- Sequence and source identity define deterministic order; clock alone never
   orders updates.
 - Snapshot resets book state before its entries apply.
 - New/change/delete require the venue's declared keying mode: entry id,

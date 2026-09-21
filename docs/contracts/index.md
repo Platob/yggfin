@@ -1,111 +1,51 @@
 # Portable contracts
 
-Two generated Iceberg table contracts make the current table shapes
-reviewable. PyIceberg serializes them, so the document reads exactly as the
-created table records itself:
+Checked-in contracts make the deployed Arrow and Iceberg shape reviewable
+without creating a second schema owner.
 
 | snapshot | columns | runtime constructor |
 | --- | ---: | --- |
 | [`message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json) | 13 | `Message.into_field()` |
-| [`fix-message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fix-message.json) | 123 | `fix_message_field()` |
+| [`fixmsg.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fixmsg.json) | 123 | `fix_message_field()` |
 
-The second declares both FIX tables, `fix.bronze` and `fix.silver`: what the
-parse answered and what the walk restated are one row, so there is one field,
-one key, one partition and one sort order, and the two are one snapshot.
+The second document is named **FixMsg** and declares both `fix.bronze` and
+`fix.silver`: one schema, one `curruuid` key, one hourly `currunix` partition,
+and one `currunix, seqnum, curruuid` sort order.
 
-Each document has three keys -- `schema`, `partition-spec` and `sort-order` --
-holding a `pyiceberg.schema.Schema`, a `pyiceberg.partitioning.PartitionSpec`
-and a `pyiceberg.table.sorting.SortOrder`.
+## FIX row composition
 
-```json
-{
-  "schema": {
-    "type": "struct",
-    "fields": [
-      {
-        "id": 1,
-        "name": "sourceurl",
-        "type": "string",
-        "required": true,
-        "doc": "Canonical URI of the source text object, filling `sourceurl` (65026)."
-      }
-    ],
-    "schema-id": 0,
-    "identifier-field-ids": [11]
-  },
-  "partition-spec": {
-    "spec-id": 0,
-    "fields": [
-      {
-        "source-id": 4,
-        "field-id": 1000,
-        "transform": "hour",
-        "name": "timepartition_hour"
-      }
-    ]
-  },
-  "sort-order": {"order-id": 0, "fields": []}
-}
-```
+The registry constructs one 123-column native row used by parse, storage, and
+lifecycle. Capture fields and `body` remain solely in `logs.messages`; a FIX
+row names its raw source through `srcuuids`. The native row's 29
+crate fields include `msgcat` (`MsgCat`), `exprtime`, and the lifted code columns
+`isincode`, `cficode`, `cusipcode`, `sedolcode`, `bloombergcode`, `figicode`,
+and `miccode`.
 
-An Iceberg schema carries no Arrow field metadata, so digest sources, derived
-partition sources and FIX tags are not in the document. The runtime
-declaration owns them; [`schemas/README.md`](https://github.com/Platob/yggfin/blob/main/schemas/README.md)
-says where each one is asserted.
+Code vocabularies live once in the registry and fields refer to them through
+`FIX:codeset`. `fixentries` holds only residual pairs and groups that were not
+fully represented in lifted columns; `nofixentries` counts that residual.
+Reading a fixed row reconstructs canonical message semantics, including
+groups and unknown fields, without claiming original wire order.
 
 ## Verify a snapshot
 
-```python
-from pathlib import Path
-
-from rekep import Message
-from rekep.iceberg import iceberg_contract, iceberg_contract_field, partition_keys
-
-document = Path("schemas/rekep/message.json").read_text(encoding="utf-8")
-field = iceberg_contract_field(document, "Message")
-
-assert document == f"{iceberg_contract(Message.into_field())}\n"
-assert document == f"{iceberg_contract(field)}\n"
-assert partition_keys(field) == {"timepartition": "hour"}
+```bash
+uv run --project python rekep fields load --target schemas/rekep/message.json
+uv run --project python rekep fields load --target schemas/rekep/fixmsg.json
 ```
-
-The second assertion is what makes the file trustworthy: a contract read back
-and republished is the same bytes, so anything the reader drops shows up as a
-diff instead of as a silent loss.
 
 ## Regenerate
 
 ```bash
 uv run --project python rekep fields dump \
-  --pyclass rekep.text.message:Message \
+  --name message \
   --target schemas/rekep/message.json
-uv run --project python rekep fields load \
-  --target schemas/rekep/message.json
+
+uv run --project python rekep fields dump \
+  --name fixmsg \
+  --target schemas/rekep/fixmsg.json
 ```
 
-The FIX snapshot is built from an empty raw-message reader. This asks the live
-registry and codec for their complete output schema without consuming a row,
-then applies the Iceberg timestamp precision rule.
-
-```python
-from pathlib import Path
-
-from rekep.fix import fix_message_field
-from rekep.iceberg import iceberg_contract
-
-Path("schemas/rekep/fix-message.json").write_text(
-    f"{iceberg_contract(fix_message_field())}\n",
-    encoding="utf-8",
-)
-```
-
-The 123 columns are 6 carried source columns and 117 the dictionary decides:
-the specification fields it selects, the crate's own runtime columns,
-`msgdirection`, and the arrival record that closes the row -- `fixentries`,
-under the `nofixentries` that counts it. A capture column named after the
-field it fills folds onto that field, so `sourceurl`, `msgsessionid`,
-`msgctxid` and `msgseqnum` are counted with the dictionary's own and not
-beside it; the raw contract's `curruuid` is dropped as the row's own identity
-takes its name, and `pluginid` rides in front, because the row's column for
-the plugin is `msgpluginid`. The runtime registry remains authoritative; a
-registry change must produce a visible schema diff.
+The dump asks the runtime constructors for their fields and then records the
+Iceberg contract. The files are reviewed generated output, not alternate
+implementations.

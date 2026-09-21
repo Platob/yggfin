@@ -8,7 +8,7 @@ flowchart LR
     U["local file, directory, or S3 prefix"] --> T["parse_messages"]
     T --> M[("logs.messages<br/>13 columns")]
     M --> F["parse_fix_bronze<br/>parse"]
-    R[["bundled dictionary<br/>7,771 definitions"]] -.types.-> F
+    R[["bundled dictionary<br/>7,778 definitions"]] -.types.-> F
     F --> X[("fix.bronze<br/>123 columns")]
     X --> L["parse_fix_silver<br/>lifecycle"]
     R -.types.-> L
@@ -84,6 +84,7 @@ the command line.
 | `catalog.properties.uri` | every | local SQLite | SQL catalog URI; not used by Glue |
 | `catalog.properties.warehouse` | every | `data/warehouse` | local path or `s3://` Iceberg root |
 | `registry` | bronze, silver | `null` | bundled dictionary; an explicit URI overrides it |
+| `codec_options` | bronze, silver | `null` | native defaults; an object is forwarded unchanged to `FixCodec` |
 | `project` | dbt | `data/dbt` | the dbt project directory |
 | `profiles` | dbt | `null` | where `profiles.yml` is; `null` is the project itself |
 | `target` | dbt | `null` | the profile target; `null` is the profile's own |
@@ -97,9 +98,10 @@ Every ingestion task covers one window, `[start, end)`: the last day when its
 document names neither bound, and exactly the scheduler's data interval under
 Airflow. `parse_messages` and `parse_fix_bronze` read it off the capture
 clock, and a line with no clock is in every window. `parse_fix_silver` reads
-it off the event clock `currunix`, with the rows the parse could not date --
-those at the codec's pin -- read by their transaction time instead. Each
-writer replaces what its window carries on its field-declared primary key:
+the previous hour plus the job window in `currunix, seqnum, curruuid` order,
+including unresolved epoch rows. The prior hour is context only; output is
+filtered to the job window plus still-undated rows, and future expiry rows are
+excluded. Each writer replaces what its window carries on its field-declared primary key:
 the first run lands the window's rows, and a replay of the same window reads
 the same rows, writes them again, and leaves the table holding each once.
 `parse_fix_bronze` always reads the stored raw product, so dictionary and
@@ -128,16 +130,9 @@ Every successful task returns the same small result contract:
 
 ## Sample rows
 
-Each task page shows one order of the test capture as that task lands it: the
-order the walk settles under chain `e7254b12:9f03166699` in
-`python/tests/data/ulbridge.log`, a partial fill and the fill that closed it,
-ten of its 144 lines. The fill's two lines are `e7254b12:9f0316669a` until
-the walk moves them.
-[`parse_messages`](tasks/parse-messages.md) shows the ten stored lines,
-[`parse_fix_bronze`](tasks/parse-fix-bronze.md) the ten rows the parse read
-off them, [`parse_fix_silver`](tasks/parse-fix-silver.md) the same ten walked
-into one chain, and [`build_dbt`](tasks/build-dbt.md) the order's ten events,
-its one current row and its two fills. `tools/pipeline_samples.py` runs the
+Each task page shows business chain `00026877711XOEA0` from the test capture as
+that task lands it. The generated example contains 29 source and walked events,
+one current order, and three fills. `tools/pipeline_samples.py` runs the
 four tasks over the fixture and renders the tables into
 `docs/pipeline/tasks/samples/`, one file per page, and each page includes its
 own. The integration suite runs the tool with `--check`, which runs the four

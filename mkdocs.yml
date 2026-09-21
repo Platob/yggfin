@@ -57,7 +57,7 @@ nav:
   - Data products:
       - Two tables: products/index.md
       - logs.messages: products/message.md
-      - fix.bronze and fix.silver: products/fix-message.md
+      - fix.bronze and fix.silver: products/fixmsg.md
       - Field contract: contracts/types.md
       - Portable contracts: contracts/index.md
   - FIX:

@@ -10,15 +10,15 @@ carried them and however often the capture is re-read.
 
 | # | column | Arrow type | null | contract |
 | -: | --- | --- | :---: | --- |
-| 1 | `sourceurl` | `string` | no | canonical source URI, filling `sourceurl` (65026) downstream |
+| 1 | `sourceurl` | `string` | no | canonical source URI of this raw line |
 | 2 | `rownum` | `int64` | no | 1-based physical line number |
 | 3 | `timestamp` | `timestamp[us, UTC]` | yes | UTC header timestamp |
 | 4 | `timepartition` | `timestamp[us, UTC]` | yes | derived from `timestamp`; Iceberg hour partition |
 | 5 | `threadId` | `int64` | yes | bridge thread identifier |
-| 6 | `msgsessionid` | `string` | yes | bridge session instance, filling `msgsessionid` (65032) downstream |
-| 7 | `msgctxid` | `string` | yes | message-context identifier, filling `msgctxid` (65008) downstream |
-| 8 | `msgseqnum` | `int64` | yes | context sequence number, filling `MsgSeqNum` (34) where a frame stated none |
-| 9 | `pluginid` | `string` | yes | plugin that wrote the line; rides in front of a FIX row under this name, the row's own column is `msgpluginid` |
+| 6 | `msgsessionid` | `string` | yes | bridge session instance; native FIX input under the same meaning |
+| 7 | `msgctxid` | `string` | yes | message-context identifier; native FIX input under the same meaning |
+| 8 | `msgseqnum` | `int64` | yes | context sequence; fills a message that stated no `MsgSeqNum` |
+| 9 | `pluginid` | `string` | yes | plugin that wrote the raw line |
 | 10 | `level` | `string` | yes | header severity spelling |
 | 11 | `currhashcode` | `int64` | no | the line's own content code, as the read states it; a table stores the same eight bytes signed; the primary key |
 | 12 | `body` | `binary` | no | the whole line as retained, row header included |
@@ -32,16 +32,11 @@ an Iceberg schema has no place for. `curruuid` is Iceberg field 13 and
 declared last, because a table that already exists takes a new column at its
 end.
 
-Every header capture is named for the FIX column it fills when the stored row
-goes on through the codec, so `parse_fix_bronze` needs no renaming pass of its
-own: `msgsessionid`, `msgctxid` and `msgseqnum` fold onto the row's columns of
-those names, and `sourceurl`, which traversal fills rather than the header,
-onto the dictionary's own. `pluginid` does not fold: the row's own column for
-the plugin is `msgpluginid`, and this capture rides in front of the row under
-the spelling the bridge's header brackets it with.
-`msgsessionid` is the session *instance* the bridge handled the line on, and
-not what the message itself says about the counterparty session it
-names for itself.
+These columns remain on the raw product; no `Message` column is attached to
+the FixMsg schema. When the FIX codec consumes the row, the three same-named
+session, context, and sequence facts may fill their native message fields.
+`pluginid` never fills the distinct native `msgpluginid`. The emitted
+`srcuuids` value is the join back to this row's `curruuid` for every raw fact.
 
 ## Header transcription
 

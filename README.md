@@ -16,9 +16,9 @@ is required:
 from rekep.fix import FixCodec, fix_registry
 
 codec = FixCodec(fix_registry())
-(message,) = codec.parse_line(
+message = next(iter(codec.parse_line(
     b"Sending : 8=FIX.4.4|35=D|11=ORD-1|55=AAPL|54=1|38=12|10=000|"
-)
+)))
 
 assert message.by_name("symbol").as_py() == "AAPL"
 assert message.by_tag(38).as_py() == 12.0
@@ -52,7 +52,16 @@ there is no enriching stage between the two, and nothing has walked yet, so
 `parse_fix_silver` reads those rows back as the chains they belong to and fills
 what a message implied about the message before it -- the `prevuuid` it
 follows, the `seqnum` it stands at, the `parentuuids` it descends from, and the
-`creaunix`, `expirunix` and `state` its chain folded forward.
+`creaunix`, `exprtime` and `state` its chain folded forward.
+
+Silver scans the previous hour plus the job window with `fix_window_filter`
+and `SORT_COLUMNS`. Iceberg streams chronological hour paths and merges no more
+than 16 overlapping files at once; there is no Python-wide `read_all` union.
+Native 0.1.8 lifecycle processing still collects and stable-sorts that finite
+scan result. Undated rows come from the epoch partition and may accumulate, so
+this is not a batch-bounded memory path. The previous hour provides context only: output is the job window plus
+unresolved epoch rows, with future expiry excluded, so this bounded run does
+not claim arbitrary older-chain completeness.
 
 Run it locally from the repository root:
 
@@ -78,13 +87,24 @@ replay leaves each table holding each row once.
 included, and its source position, keyed on `currhashcode`, the content code
 the read states over the whole line: identical lines are one row whatever
 session carried them. `fix.bronze`
-stores one row per *event* as the parse answered it -- typed columns, the
-complete arrival record, and the identities the parse settled -- and
+stores one row per *event* as the parse answered it -- typed columns, residual
+FIX entries, and the identities the parse settled -- and
 `fix.silver` the same events walked; both are keyed on `curruuid`, because a
 bridge logs one message again at every hop it passes and those arrivals are one
-event. A message that stated no clock of its own takes the instant the codec is
-pinned with rather than the instant the parse ran, and the walk dates it by its
-`TransactTime`, so every stage replays idempotently.
+event. A source message that stated no sending clock takes the codec's fixed
+epoch rather than the instant the parse ran; lifecycle may date that source
+event from its `TransactTime`, while synthetic expiry keeps its exact deadline.
+
+The 123-column **FixMsg** row is the native parse, storage, and lifecycle
+shape. It reconstructs canonical message semantics
+from lifted columns and residual `fixentries`; lifted values are not duplicated
+as a second arrival record. Capture location, header columns, and exact bytes
+remain only in `logs.messages`; `srcuuids` joins a FIX row back to raw
+`curruuid`. `crosscode` uses the first available business
+identifier (`OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID`, then
+`MDReqID`), while capture `session:context` is
+`identifiers["msgsectxid"]`. Default null spellings are empty text, `null`,
+`<null>`, `none`, `n/a`, and `[n/a]`, trimmed and case-insensitive.
 
 `build_dbt` runs the [dbt project](data/dbt/README.md) under `data/dbt` and
 reads `fix.silver`: DuckDB owns the SQL, and every read and commit goes through
@@ -92,7 +112,7 @@ the same Iceberg dataset the tasks write through, so there is no second catalog
 and no extract.
 
 The reviewed contracts are [Message](schemas/rekep/message.json) and
-[FixMessage](schemas/rekep/fix-message.json), the Iceberg schema, partition
+[FixMsg](schemas/rekep/fixmsg.json), the Iceberg schema, partition
 spec and sort order PyIceberg records for `logs.messages` and the one both FIX
 tables share.
 The [pipeline guide](docs/pipeline/index.md) covers local files, S3, AWS Glue,

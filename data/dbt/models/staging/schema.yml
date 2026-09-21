@@ -8,17 +8,17 @@ models:
       the products' reading of the market facts FIX's own fields state. A
       view: it is never published.
     columns:
-      - name: sourceurl
-        description: The capture object the message's line was read from.
-      - name: rownum
-        description: The physical line number inside that object.
       - name: curruuid
         description: >
           The event's own identity. A message logged at every hop it passed is
-          one event, so this names a row where a source position does not.
+          one event, so this names a row where a capture position does not.
         data_tests:
           - not_null
           - unique
+      - name: srcuuids
+        description: >
+          Native raw-line identities for provenance. Join each UUID to
+          `logs.messages.curruuid` when the original capture detail is needed.
       - name: crossuuid
         description: The chain's identity, over the first identifier the message states.
         data_tests:
@@ -31,8 +31,8 @@ models:
         description: Where this step stands in its chain, filled by the walk.
       - name: eventtime
         description: >
-          The transaction time the message stated, else the instant the walk
-          settled on. Never null, because the settled instant never is.
+          The native event instant the lifecycle settled, including a generated
+          expiry at its deadline. Never null.
         data_tests:
           - not_null
       - name: sessionid

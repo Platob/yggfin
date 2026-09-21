@@ -87,7 +87,8 @@ is what DuckDB spells.
   `fix.silver` rather than being assigned a guessed order, and an unknown
   chain -- an empty `crosscode` -- is not an order.
 - `orders.current` is folded from `orders.events` alone, never from FIX. The
-  winning event is the latest `eventtime`, then the latest source position, so
+  winning event is the latest `eventtime`, then the latest lifecycle `seqnum`,
+  then the latest deterministic `eventkey`, so
   a late event changes the row only through that ordering and the same events
   in any arrival order fold to the same row.
 - `executions.fills` takes a message that states both a quantity and a price
@@ -95,7 +96,8 @@ is what DuckDB spells.
   a zero fill. A bridge relays one execution into every chain it belongs to and
   logs the copy it received beside the copy it sent, so the occurrence is
   scoped by its chain and the earliest `eventtime` wins, then the earliest
-  source position among the copies that share one.
+  lifecycle `seqnum` and deterministic `eventkey` among the copies that share
+  one.
 
 ## What a model declares
 
@@ -138,7 +140,7 @@ sources:
       - name: silver
         meta:
           table: fix.silver
-          columns: [sourceurl, rownum, curruuid, crosscode]
+          columns: [srcuuids, curruuid, crosscode]
 ```
 
 | key | meaning |
@@ -152,9 +154,8 @@ sources:
 
 DuckDB takes a table, so a source is read into memory: a large one is narrowed
 by `columns`, `row_filter` and `limit` rather than read whole. The shipped
-project projects 44 of the 123 columns a FIX row carries; a model names 39 of
-them, and the other five are projected against the products the roadmap
-states rather than the ones built here.
+project projects the fields from the 123-column FIX row that current products
+read. That projection is pushed into the Iceberg scan before DuckDB sees it.
 
 The source is `fix.silver` and never `fix.bronze`, though both are declared:
 a product needs the chain -- the step an event follows, the state its chain
@@ -163,11 +164,10 @@ with `seqnum` and `prevuuid` empty on every row, so a product built on it
 would fold every order from its first event alone. A market fact is FIX's own
 field, and the staging model `stg_fix_messages` restates the products' reading
 of it off those fields: `px` is `coalesce(price, lastpx, avgpx)`, `qty` is
-`coalesce(orderqty, lastqty, cumqty, leavesqty)`, `symbolticker` is
-`nullif(symbol, '[N/A]')`, `isincode` is `securityid` where
-`lower(securityidsource) in ('4', 'isin')`, `miccode` is
-`coalesce(securityexchange, exdestination, lastmkt)`, and `eventtime` is
-`coalesce(transacttime, currunix)`.
+`coalesce(orderqty, lastqty, cumqty, leavesqty)`, and `symbolticker`,
+`isincode`, and `miccode` come directly from their lifted native columns.
+`eventtime` is lifecycle `currunix`; applying `TransactTime` again would move a
+synthetic expiry away from its deadline.
 
 ## Run it
 
@@ -204,7 +204,7 @@ build starts when `parse_fix_silver` writes.
 {
   "task": "build_dbt",
   "read": 29,
-  "written": 66,
+  "written": 63,
   "skipped": 0,
   "sources": {"project": "data/dbt"},
   "targets": {
@@ -217,7 +217,7 @@ build starts when `parse_fix_silver` writes.
   "models": 4,
   "tests": 25,
   "warned": [],
-  "rows": {"orders.events": 49, "orders.current": 9, "executions.fills": 8}
+  "rows": {"orders.events": 48, "orders.current": 8, "executions.fills": 7}
 }
 ```
 
@@ -243,57 +243,20 @@ read is pinned against the codec itself in `python/tests/test_dbt.py`.
 
 ## Sample rows
 
-The sample is chain `e7254b12:9f03166699` of `python/tests/data/ulbridge.log`,
-a partial fill and the fill that closed the order: ten lines, as `build_dbt`
+The sample is business chain `00026877711XOEA0` from
+`python/tests/data/ulbridge.log`: 29 events, one current order, and three fills as `build_dbt`
 lands them in `orders.events`, `orders.current` and `executions.fills`. An
 identity is shown by its last eight hex digits behind a leading `…`, and the
 stored value is sixteen bytes; a null is an empty cell.
 
 --8<-- "docs/pipeline/tasks/samples/build-dbt.md"
 
-The first table is the order's ten events in `eventtime` then `rownum` order.
-`eventtime` is the `transacttime` each of these ten rows states, which is
-what [the staging model](#what-a-source-declares) settles it to where a row
-states one, so the eight bridge lines sit at `12:46:39.743`, row 6, the
-received frame with microseconds on its tag, comes last at `12:46:39.743016`,
-and row 35 comes first at `2026-08-14 00:00:00.000`, because its
-`TransactTime(60)` was a bare date, as
-[`parse_fix_bronze`](parse-fix-bronze.md#sample-rows) shows. `prevuuid` and
-`seqnum` are as the walk left them, so the ten read as the two successions
-[`parse_fix_silver`](parse-fix-silver.md#sample-rows) shows: row 36 follows
-`…f16b9d55`, row 22's key, and row 35 follows `…91130359`, row 6's. `cumqty`
-and
-`leavesqty` read `600` and `0` on rows 35 and 36, the fill as the bridge
-received it and as it restated it, where `state` reads `80FILLED`, and `340`
-and `260` on the other eight.
-`clordid` is empty on those two rows, because neither line states a
-`ClOrdID(11)`, and `avgpx` is empty on row 36.
-
-The second table is the one row the ten events fold to. `orderkey` is
-`…b7b57111`, the chain's `crossuuid`, and `eventcount` is `10`.
-`last_eventkey` is `…91130359`: row 6's `12:46:39.743016` is the latest
-`eventtime` of the ten, sixteen microseconds past row 36's `12:46:39.743`,
-which is the later of the fill's two events -- row 35 sits at midnight on a
-bare-date `TransactTime`. So row 6 wins the fold and the row reads `state`
-`40PARTFILL`, `cumqty` `340` and `leavesqty` `260` although the venue
-reported the order filled. That is what the capture states, and reading a
-bare-date `TransactTime` as no instant is not done here. `openedat` is
-`2026-08-14 00:00:00.000`, the earliest `eventtime`,
-since no event of this order is in an opening state; `closedat` is
-`12:46:39.743`, the latest terminal event, row 36's; `updatedat` is row 6's
-instant.
-
-The third table is the two venue executions, one row each, keyed by
-`executionkey` over the chain and the execution id: `…f68c7d6c` and
-`…2b24762b`. Eight rows of the chain carry `00011377089XEEA0`, and the row
-they fold to names row 7's event `…caf49857` as its `eventkey`, because the
-model orders the copies by `eventtime` and then by source position: row 6's
-`.743016` loses to the seven at `.743`, and `rownum` picks the first of
-those. `00011377090XEEA0`, `57` at `83.08`, is row 35's, at midnight, in
-state `80FILLED`.
-
-`tools/pipeline_samples.py` regenerates the file from a run over the fixture,
-and the integration suite checks it with `--check`.
+The generated tables are the authoritative example values and counts. Events
+are ordered by lifecycle `currunix`, `seqnum`, and deterministic `eventkey`;
+current orders and fills fold from those rows under their declared keys.
+`tools/pipeline_samples.py`
+regenerates the include from a fixture run, and the integration suite checks it
+with `--check`.
 
 ## The project
 
@@ -329,7 +292,7 @@ the SQL projection of that specification and state where they differ:
 | planned | here | why |
 | --- | --- | --- |
 | `side`, `state`, `exectype` as fixed-width bytes | the normalized strings `fix.silver` carries | a storage width is a declaration, and this layer does not add one to a value it passes through |
-| `parties`, `regulatorytimestamps` | not carried | a repeating group is in the arrival record, and a list of structs through DuckDB is a conversion this seam does not own |
+| `parties`, `regulatorytimestamps` | not carried | these are lifted nested columns, and a list of structs through DuckDB is a conversion this seam does not own |
 | `originalexecutionkey`, `liquidity` | not carried | `ExecRefID` and `LastLiquidityInd` are not in the fixed projection yet |
 | rejected-derivation counters | not carried | what a product left behind is still countable in `fix.silver`, but nothing publishes it |
 

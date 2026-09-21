@@ -8,9 +8,10 @@ components and repeating groups without another model.
 
 | source | count | dialect |
 | --- | ---: | --- |
-| crate columns | 22 | standard, tags 65003-65053 |
-| bundled specification and the crate's own | 6,261 scalar fields | standard |
-| definitions in all | 7,771 | no named dialect |
+| crate definitions | 29 | standard, tags 65003-65061 |
+| bundled specification and the crate's own | 6,268 scalar fields | standard |
+| definitions in all | 7,778 | no named dialect |
+| central code sets | 736 | field references use `FIX:codeset` |
 
 Every registry holds the crate's own columns and the two standard clocks from
 construction, so a bundled dictionary is those definitions and the
@@ -21,18 +22,19 @@ from rekep.fix import fix_crate_fields, fix_registry
 
 registry = fix_registry()
 
-assert len(registry) == 7771
+assert len(registry) == 7778
 assert registry.dialects() == []
-assert len(fix_crate_fields()) == 22
+assert len(fix_crate_fields()) == 29
 ```
 
 Scalar fields are one shape of definition among four. Components and repeating
 groups are declarations the same dictionary holds; a message type is what a
-`MsgType(35)` value names:
+`MsgType(35)` value names. `MsgCat` is the central message-category vocabulary
+derived beside it:
 
 | shape | count | read by |
 | --- | ---: | --- |
-| scalar fields | 6,261 | iterating the registry |
+| scalar fields | 6,268 | iterating the registry |
 | components | 928 | the `components` array of `registry.into_json()` |
 | repeating groups | 582 | the `groups` array of the same document |
 | message types | 181 | the components carrying `FIX:msgtype` |
@@ -68,16 +70,14 @@ assert registry.msgtype("D").name == "newordersingle"
 | dialects | `field.fix.branches` | the named dialects claiming it; empty is standard |
 | datatype | `field.dtype` | scalar, struct, or list storage shape |
 | description | `field.fix.description` | specification meaning |
-| code set | `field.fix["codes"]` | versioned wire value/name translations |
+| code set | `field.fix.codeset` | name of the centrally owned `FIX:codeset` vocabulary |
 
 ```python
-import json
-
 from rekep.fix import fix_registry
 
 registry = fix_registry()
 side = registry.field_by_tag(54)
-codes = json.loads(side.fix["codes"])
+codes = registry.get_codeset(side.fix.codeset)
 
 assert side.name == "side"
 assert side.display == "Side"
@@ -181,15 +181,16 @@ Code translation happens before datatype conversion. For `Side(54)`, both
 a row itself states selects the code spellings valid at it, without renaming
 the Arrow column.
 
-Lineage explains how one field evolved while preserving one current identity:
+Each vocabulary is stored once. Fields carry its name in `FIX:codeset`, and
+registry mutation invalidates the typed lookup cache. Lineage separately
+explains how one field evolved while preserving one current identity:
 
 ```python
-import json
-
 from rekep.fix import fix_registry
 
-msgtype = fix_registry().field_by_tag(35)
-codes = json.loads(msgtype.fix["codes"])
+registry = fix_registry()
+msgtype = registry.field_by_tag(35)
+codes = registry.get_codeset(msgtype.fix.codeset)
 
 assert msgtype.name == "msgtype"
 assert {"value": "D", "name": "NewOrderSingle"}.items() <= codes[
@@ -199,29 +200,20 @@ assert {"value": "D", "name": "NewOrderSingle"}.items() <= codes[
 
 ## Runtime fields
 
-Every registry starts with the crate's own 22 definitions, in the 65003-65053
-range: 20 scalar fields and the two maps. They are what the codec derives
-rather than what a dictionary shard stores.
-
-| tags | columns |
-| --- | --- |
-| 65003, 65021, 65023, 65025, 65053 | the instants: `currunix` settled, `prevunix` the step before, `creaunix` created, `snapunix` snapped, `expirunix` expiring |
-| 65017, 65018, 65039, 65040, 65022, 65041, 65042, 65048, 65051, 65052 | the content codes `currhashcode` and `crosshashcode`, the identities `curruuid` and `crossuuid` over them, what an event follows and descends from (`prevuuid`, `parentuuids`, `seqnum`), the chain it belongs to (`crosscode`), the line it was read from (`srcuuids`), and where it stands (`state`) |
-| 65008, 65009, 65026, 65027, 65032 | what the capture said: `msgctxid`, `msgpluginid`, `sourceurl`, `nofixentries`, `msgsessionid` |
-| 65020, 65049 | the two maps: the `identifiers` a message declares, and a bridge's own `metadata` |
-
-The gaps in the range are slots the core retired. The market traits -- `px`,
-`qty`, their previous step, the instrument codes, whether it trades -- left the
-row, because a market fact is FIX's own field: `Price(44)`, `OrderQty(38)` and
-`LastPx(31)` are columns, and `FixMsg.px` and `FixMsg.qty` answer off them.
+Every registry starts with 29 crate definitions: 27 scalar columns and two
+groups. They cover event clocks and identities, lifecycle state, capture
+context, metadata, residual entries, and the seven normalized instrument-code
+columns. The code fields use `ISINCode`, `CFICode`, `CUSIPCode`, `SEDOLCode`,
+`BloombergCode`, `FIGICode`, and `MICCode`; CFI remains standard FIX tag 461.
+They are derived runtime facts rather than copies of dictionary shards.
 
 ```python
 from rekep.fix import fix_crate_fields
 
 tags = [field.fix.tag for field in fix_crate_fields()]
 
-assert len(tags) == 22
-assert min(tags) == 65003 and max(tags) == 65053
+assert len(tags) == 29
+assert min(tags) == 65003 and max(tags) == 65061
 assert 65017 in tags and 65039 in tags
 ```
 
@@ -253,7 +245,7 @@ from silently creating a narrow table.
 
 ## Browser
 
-Search the same 7,771 definitions here, by tag, name, spelling or description:
+Search the same 7,778 definitions here, by tag, name, spelling or description:
 
 <div data-fix="registry"></div>
 

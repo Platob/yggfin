@@ -320,6 +320,14 @@ class PartitionedTimed(Convertible):
     """Observable source row."""
 
 
+@scalar
+class HourlyTimed(Convertible):
+    """One identified event partitioned and ordered by its UTC hour."""
+
+    identity: Annotated[int, primary_key()]
+    at: Annotated[datetime.datetime, partition_key("hour"), sort_key()]
+
+
 def timed(*values: int) -> pyarrow.Table:
     return pyarrow.Table.from_pydict(
         {"unix": list(values), "payload": ["x"] * len(values)},
@@ -467,6 +475,39 @@ def test_a_read_finishes_each_sorted_partition_before_opening_the_next(
     assert opened and all("day=2026-08-15" in path for path in opened)
 
 
+def test_hour_partition_paths_are_chronological_across_day_and_month(
+    tmp_path: Path,
+) -> None:
+    from rekep.iceberg import dataset as module
+
+    catalog = IcebergCatalog(name="hour-paths", properties=catalog_properties(tmp_path))
+    ordered = catalog.dataset("trading.hourly_timed", field=HourlyTimed.into_field())
+    instants = [
+        datetime.datetime(2026, 1, 31, 23, 30, tzinfo=UTC),
+        datetime.datetime(2026, 2, 1, 0, 15, tzinfo=UTC),
+        datetime.datetime(2026, 2, 2, 0, 0, tzinfo=UTC),
+    ]
+    schema = HourlyTimed.into_field().into_arrow_schema()
+    for identity in (2, 0, 1):
+        ordered.append_arrow_table(
+            pyarrow.Table.from_pydict(
+                {"identity": [identity], "at": [instants[identity]]}, schema=schema
+            ),
+            commit_row_size=1_000_000,
+        )
+
+    scan = ordered.iceberg_table.scan()
+    planned = list(scan.plan_files())
+    paths = [path for path, _ in module._partition_tasks(scan, reversed(planned))]
+    found = ordered.read_arrow_reader(order_by=("at", "identity")).read_all()
+
+    assert paths == sorted(paths)
+    assert ["2026-01-31-23", "2026-02-01-00", "2026-02-02-00"] == [
+        path.rsplit("=", 1)[-1] for path in paths
+    ]
+    assert found.column("at").to_pylist() == instants
+
+
 @scalar
 class Sequenced(Convertible):
     """One event ordered by clock and its source sequence."""
@@ -605,6 +646,75 @@ def test_an_external_order_uses_bounded_merge_fan_in(
 
     assert found.column("unix").to_pylist() == list(range(9))
     assert len(merged) > 1 and max(merged) == 2
+
+
+def test_overlapping_files_use_bounded_merge_fan_in(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An appended hour may have many overlapping files; its ordered read
+    retains at most one batch from each member of the bounded merge fan-in."""
+    from rekep.iceberg import dataset as module
+
+    catalog = IcebergCatalog(name="bounded-files", properties=catalog_properties(tmp_path))
+    ordered = catalog.dataset("trading.bounded_files", field=Timed.into_field())
+    for index in range(5):
+        ordered.append_arrow_table(timed(index, index + 10), commit_row_size=1_000_000)
+
+    merged: list[int] = []
+    original = module._merge_batch_streams
+
+    def bounded(streams: Sequence[Any], columns: Sequence[tuple[str, str]]) -> Any:
+        merged.append(len(streams))
+        return original(streams, columns)
+
+    monkeypatch.setattr(module, "SORT_MERGE_FAN_IN", 2)
+    monkeypatch.setattr(module, "_merge_batch_streams", bounded)
+
+    found = ordered.read_arrow_reader(order_by="unix").read_all()
+
+    assert found.column("unix").to_pylist() == sorted([*range(5), *range(10, 15)])
+    assert len(merged) > 1 and max(merged) == 2
+
+
+def test_overlapping_file_spill_cleans_scratch_on_close_and_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from rekep.iceberg import dataset as module
+
+    catalog = IcebergCatalog(name="spill-cleanup", properties=catalog_properties(tmp_path))
+    ordered = catalog.dataset("trading.spill_cleanup", field=Timed.into_field())
+    for index in range(5):
+        ordered.append_arrow_table(timed(index, index + 10), commit_row_size=1_000_000)
+
+    original_temporary_directory = module.tempfile.TemporaryDirectory
+    scratch: list[Path] = []
+
+    def tracked_directory(*args: Any, **kwargs: Any) -> Any:
+        held = original_temporary_directory(*args, **kwargs)
+        scratch.append(Path(held.name))
+        return held
+
+    monkeypatch.setattr(module, "SORT_MERGE_FAN_IN", 2)
+    monkeypatch.setattr(module.tempfile, "TemporaryDirectory", tracked_directory)
+
+    reader = ordered.read_arrow_reader(order_by="unix")
+    first = reader.read_next_batch()
+    assert first.num_rows
+    assert scratch and all(path.exists() for path in scratch)
+    reader.close()
+    assert all(not path.exists() for path in scratch)
+    assert first.column("unix")[0].as_py() == 0
+
+    scratch.clear()
+
+    def refused(*_args: Any, **_kwargs: Any) -> Any:
+        raise RuntimeError("refused ordered merge")
+
+    monkeypatch.setattr(module, "_row_key", refused)
+    reader = ordered.read_arrow_reader(order_by="unix")
+    with pytest.raises(RuntimeError, match="refused ordered merge"):
+        reader.read_next_batch()
+    assert scratch and all(not path.exists() for path in scratch)
 
 
 def test_a_nearly_right_batch_is_cast_on_the_way_in(dataset: IcebergDataset) -> None:
@@ -1181,6 +1291,58 @@ def test_an_extension_typed_key_is_replaced_by_the_bytes_it_holds(tmp_path: Path
     stored = rows.refresh().read_arrow_table()
     assert stored.num_rows == 2
     assert set(stored.column("size").to_pylist()) == {2}
+
+
+@pytest.mark.parametrize("kind", ["string", "int64", "uuid"])
+def test_append_is_blind_and_partition_scoped_overwrite_uses_any_declared_identifier(
+    tmp_path: Path, kind: str
+) -> None:
+    """Iceberg keys are native Field declarations, not a FIX column name."""
+    import uuid as uuidlib
+
+    dtype = {
+        "string": pyarrow.string(),
+        "int64": pyarrow.int64(),
+        "uuid": pyarrow.uuid(),
+    }[kind]
+    schema = pyarrow.schema(
+        [
+            pyarrow.field(
+                "identity",
+                dtype,
+                nullable=False,
+                metadata={**primary_key()["metadata"], **sort_key()["metadata"]},
+            ),
+            pyarrow.field("part", pyarrow.string(), metadata=partition_key()["metadata"]),
+            pyarrow.field("value", pyarrow.int64()),
+        ]
+    )
+    field = Field.from_arrow_schema(schema, name=f"Generic{kind}")
+    dataset = IcebergCatalog(
+        name=f"generic-{kind}", properties=catalog_properties(tmp_path)
+    ).dataset(f"trading.generic_{kind}", field=field)
+    identity = {"string": "A", "int64": 7, "uuid": uuidlib.UUID(int=7)}[kind]
+
+    def rows(parts: Sequence[str], values: Sequence[int]) -> pyarrow.Table:
+        identities = [identity] * len(parts)
+        if kind == "uuid":
+            keys = pyarrow.ExtensionArray.from_storage(
+                pyarrow.uuid(),
+                pyarrow.array([value.bytes for value in identities], pyarrow.binary(16)),
+            )
+        else:
+            keys = pyarrow.array(identities, dtype)
+        return pyarrow.Table.from_arrays(
+            [keys, pyarrow.array(parts), pyarrow.array(values, pyarrow.int64())], schema=schema
+        )
+
+    dataset.append_arrow_table(rows(["old", "old", "kept"], [1, 2, 3]))
+    assert dataset.read_arrow_table(field).num_rows == 3, "append keeps repeated identifiers"
+
+    dataset.overwrite_arrow_table(rows(["old"], [9]), field, merge_by=True)
+
+    stored = dataset.read_arrow_table(field).to_pylist()
+    assert sorted((row["part"], row["value"]) for row in stored) == [("kept", 3), ("old", 9)]
 
 
 def test_a_falsy_merge_by_replaces_complete_partitions_from_a_stream(

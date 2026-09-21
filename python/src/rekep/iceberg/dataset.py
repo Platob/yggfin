@@ -2033,7 +2033,29 @@ def _sorted_task_batches(
 def _merge_task_batches(
     scan: Any, tasks: Sequence[Any], columns: Sequence[tuple[str, str]]
 ) -> Iterator[pyarrow.RecordBatch]:
-    """K-way merge overlapping sorted files, moving slices rather than rows."""
+    """Merge overlapping sorted files with a bounded number of live batches."""
+    if len(tasks) > SORT_MERGE_FAN_IN:
+        from pyiceberg.io.pyarrow import schema_to_pyarrow
+
+        from rekep.iceberg.fields import narrowed
+
+        schema = narrowed(schema_to_pyarrow(scan.projection()))
+        with tempfile.TemporaryDirectory(prefix="rekep-iceberg-merge-") as directory:
+            runs = []
+            for index in range(0, len(tasks), SORT_MERGE_FAN_IN):
+                path = os.path.join(directory, f"0-{index // SORT_MERGE_FAN_IN}.arrow")
+                _write_ipc_batches(
+                    path,
+                    schema,
+                    _merge_task_batches(
+                        scan,
+                        tasks[index : index + SORT_MERGE_FAN_IN],
+                        columns,
+                    ),
+                )
+                runs.append(path)
+            yield from _merged_ipc_batches(directory, schema, runs, columns)
+        return
     streams = [iter(_sorted_task_batches(scan, task, columns)) for task in tasks]
     yield from _merge_batch_streams(streams, columns)
 
@@ -2144,23 +2166,37 @@ def _externally_sorted_task_batches(
         if not runs or schema is None:
             return
 
-        generation = 1
-        while len(runs) > 1:
-            merged: list[str] = []
-            for index in range(0, len(runs), SORT_MERGE_FAN_IN):
-                group = runs[index : index + SORT_MERGE_FAN_IN]
-                if len(group) == 1:
-                    merged.append(group[0])
-                    continue
-                target = os.path.join(directory, f"{generation}-{index // SORT_MERGE_FAN_IN}.arrow")
-                streams = [iter(_ipc_batches(path)) for path in group]
-                _write_ipc_batches(target, schema, _merge_batch_streams(streams, columns))
-                for path in group:
-                    os.unlink(path)
-                merged.append(target)
-            runs = merged
-            generation += 1
+        yield from _merged_ipc_batches(directory, schema, runs, columns)
+
+
+def _merged_ipc_batches(
+    directory: str,
+    schema: pyarrow.Schema,
+    runs: list[str],
+    columns: Sequence[tuple[str, str]],
+) -> Iterator[pyarrow.RecordBatch]:
+    """Merge sorted IPC runs with at most `SORT_MERGE_FAN_IN` live batches."""
+    generation = 1
+    while len(runs) > SORT_MERGE_FAN_IN:
+        merged: list[str] = []
+        for index in range(0, len(runs), SORT_MERGE_FAN_IN):
+            group = runs[index : index + SORT_MERGE_FAN_IN]
+            if len(group) == 1:
+                merged.append(group[0])
+                continue
+            target = os.path.join(directory, f"{generation}-{index // SORT_MERGE_FAN_IN}.arrow")
+            streams = [iter(_ipc_batches(path)) for path in group]
+            _write_ipc_batches(target, schema, _merge_batch_streams(streams, columns))
+            for path in group:
+                os.unlink(path)
+            merged.append(target)
+        runs = merged
+        generation += 1
+    if len(runs) == 1:
         yield from _ipc_batches(runs[0])
+    elif runs:
+        streams = [iter(_ipc_batches(path)) for path in runs]
+        yield from _merge_batch_streams(streams, columns)
 
 
 def _write_ipc_batches(
@@ -2171,9 +2207,16 @@ def _write_ipc_batches(
     """Write one external-sort run without collecting its batches."""
     import pyarrow.ipc
 
-    with pyarrow.ipc.new_file(path, schema) as writer:
-        for batch in batches:
-            writer.write_batch(batch)
+    stream = iter(batches)
+    try:
+        with pyarrow.OSFile(path, "wb") as output:
+            with pyarrow.ipc.new_file(output, schema) as writer:
+                for batch in stream:
+                    writer.write_batch(batch)
+    finally:
+        close = getattr(stream, "close", None)
+        if close is not None:
+            close()
 
 
 def _ipc_batches(path: str) -> Iterator[pyarrow.RecordBatch]:

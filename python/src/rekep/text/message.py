@@ -32,7 +32,7 @@ class Message(Convertible):
     """
 
     sourceurl: str = ""
-    """Canonical URI of the source text object, filling `sourceurl` (65026)."""
+    """Canonical URI of the source text object, stored only on the raw line."""
 
     rownum: int = 0
     """1-based physical line number within the source object."""
@@ -55,9 +55,8 @@ class Message(Convertible):
     ] = None
     """Timestamp partitioned by its UTC hour in Iceberg.
 
-    `logs.messages` is laid out by it and the two FIX tables carry it as an
-    ordinary column: a settled message is laid out by the instant it happened
-    at, not by the instant a bridge printed the line.
+    `logs.messages` is laid out by it. FIX tables omit the capture clock and
+    partition by the native event instant `currunix`.
     """
 
     threadId: int | None = None
@@ -81,9 +80,8 @@ class Message(Convertible):
     pluginid: str | None = None
     """Bridge plugin that wrote the line.
 
-    Carried in front of a FIX row under this name: the row's own column for
-    the plugin is `msgpluginid` (65009), and this capture is spelled as the
-    bridge's header brackets it.
+    Stored only on the raw line. The native FIX field `msgpluginid` (65009)
+    has its own meaning; this differently named capture does not fill it.
     """
 
     level: str | None = None
@@ -121,8 +119,8 @@ class Message(Convertible):
     The captures above are read off it, not cut out of it. `logs.messages` is
     where the bytes live and the only place, and so is the code beside them:
     neither FIX table holds either, because a row there is an event and both
-    of these are one line's. It names the line it was read from instead, with
-    `sourceurl`, `rownum` and, exactly, the line's `curruuid`.
+    of these are one line's. A FIX row names the raw line's `curruuid` in
+    `srcuuids`; capture details are looked up on that raw identity.
     """
 
     curruuid: Annotated[bytes | None, field_options(dtype=pyarrow.binary(16))] = None

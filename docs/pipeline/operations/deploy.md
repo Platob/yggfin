@@ -3,8 +3,8 @@
 `rekep iceberg deploy` creates the three tables ingestion writes --
 `logs.messages`, `fix.bronze` and `fix.silver` -- with the same runtime fields
 their tasks use: `Message` for the raw product and `fix_message_field` for
-both FIX tables, which answers all 123 columns from the carrier and the
-dictionary alone without consuming a capture row. Deployment is idempotent: an
+both FIX tables, which answers all 123 native columns from the dictionary alone
+without consuming a capture row. Deployment is idempotent: an
 existing table is reported as `present` and is not rewritten.
 
 The products the dbt project derives are not deployed here: a model declares
@@ -156,6 +156,13 @@ Properties are applied only when a table is created. Deployment deliberately
 does not mutate an existing table; use maintenance or a reviewed migration for
 that.
 
+A newly deployed FIX table has exactly the 123 native FixMsg columns. Because
+schema merge is additive, an existing table that still has `sourceurl`,
+`rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`, or `level`
+must delete those columns through a reviewed PyIceberg `update_schema()`
+transaction before its windows are replayed; their raw facts remain in
+`logs.messages`.
+
 ## Migrating a warehouse that holds the retired FIX table
 
 There is no compatibility shim for the one table the two FIX tables replaced.
@@ -179,10 +186,10 @@ store.close()
 Then replay each window through `parse_messages`, `parse_fix_bronze` and
 `parse_fix_silver`, in that order, and drop the retired table. Rows the
 replay has not reached yet carry no identity, and the parse recomputes one
-from the line's bytes and instant where the carrier states none -- equal only
+from the line's bytes and instant where the raw source states none -- equal only
 while those are, which is why the replay is the migration and not the
 fallback. A retired table the previous core wrote cannot be walked in place:
-its rows are not the pinned core's 117-column row, and `parse_fix_silver`
+its rows are not the pinned core's 123-column native row, and `parse_fix_silver`
 reads a table named as its `bronze` only in that shape. The products are
 rebuilt by [`build_dbt`](../tasks/build-dbt.md) afterwards; drop
 `orders.events`, `orders.current` and `executions.fills` first, because the
