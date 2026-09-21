@@ -7,7 +7,7 @@ Quality is represented in rows rather than hidden in parser control flow.
 | a line's `currhashcode` | did the exact captured line change? |
 | `currhashcode` | did the settled event change? |
 | `curruuid` | which event is this, whichever hop logged it, and which instant the walk settled it on? |
-| `fixentries` | exactly which pairs arrived, in what order? |
+| `fixentries` | which pairs or groups were not fully represented in lifted columns? |
 | `fixentries` entries of `tag` 0 | which pairs had no registry definition? |
 | typed null with an arrival | which value failed translation or conversion? |
 
@@ -28,17 +28,18 @@ on, and it is what both FIX tables are keyed on: the parse settles a bronze
 row's, and the walk settles it again where it dates the message by its
 `TransactTime`.
 
-`crosshashcode` digests `crosscode` alone -- the first chain identifier the
-message states -- so every event of one chain shares it, and `crossuuid` is the
-identity over that.
+`crosshashcode` digests `crosscode` alone. The first non-empty business
+identifier wins in this order: `OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`,
+`QuoteReqID`, `MDReqID`. Capture session and context are available separately
+as `identifiers["msgsectxid"]` when both exist and never alter the content
+identity. `crossuuid` is the identity over the chosen business code.
 
 ## Stated claims a row disagrees with
 
 A message that states its own `BodyLength(9)` or `CheckSum(10)` states a claim
-about bytes the reader can check, and the arrival record keeps both the claim
-and what arrived. Nothing is erased on a mismatch: the frame is read, the
-stated pair lands in its column, and the entries beside it are what the wire
-carried.
+about bytes the reader can check. The frame is read and the stated pair lands
+in its column. An unrepresentable or conflicting pair remains residual; a
+successfully lifted value is not duplicated in `fixentries`.
 
 ```python
 from rekep.fix import fix_codec, fix_registry
@@ -54,14 +55,12 @@ assert message.by_tag(35).as_py() == "D"
 
 ## Registry coverage
 
-A pair no dictionary explains is an entry of `tag` 0 inside the arrival
-record, under the key the wire spelled, so coverage is read off
-`fixentries` -- the group named after itself, counted by `nofixentries` --
-rather than off a second column:
+A pair no dictionary explains is an entry of `tag` 0 inside residual
+`fixentries`, under the key the wire spelled. `nofixentries` counts this
+residual tree:
 
 ```python
-# `fixed` is a pyarrow.Table read from fix.silver, or from fix.bronze: the
-# arrival record is the same on both.
+# `fixed` is a pyarrow.Table read from fix.silver or fix.bronze.
 needs_dictionary_work = [
     (
         row["sourceurl"],

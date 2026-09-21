@@ -3,7 +3,7 @@
 `rekep iceberg deploy` creates the three tables ingestion writes --
 `logs.messages`, `fix.bronze` and `fix.silver` -- with the same runtime fields
 their tasks use: `Message` for the raw product and `fix_message_field` for
-both FIX tables, which answers all 123 columns from the carrier and the
+both FIX tables, which answers all 130 stored columns from the carrier and the
 dictionary alone without consuming a capture row. Deployment is idempotent: an
 existing table is reported as `present` and is not rewritten.
 
@@ -182,7 +182,7 @@ replay has not reached yet carry no identity, and the parse recomputes one
 from the line's bytes and instant where the carrier states none -- equal only
 while those are, which is why the replay is the migration and not the
 fallback. A retired table the previous core wrote cannot be walked in place:
-its rows are not the pinned core's 117-column row, and `parse_fix_silver`
+its rows are not the pinned core's 123-column native row, and `parse_fix_silver`
 reads a table named as its `bronze` only in that shape. The products are
 rebuilt by [`build_dbt`](../tasks/build-dbt.md) afterwards; drop
 `orders.events`, `orders.current` and `executions.fills` first, because the

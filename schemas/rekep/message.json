@@ -7,7 +7,7 @@
         "name": "sourceurl",
         "type": "string",
         "required": true,
-        "doc": "Canonical URI of the source text object, filling `sourceurl` (65026)."
+        "doc": "Canonical URI of the source text object, carried beside the FIX row."
       },
       {
         "id": 2,

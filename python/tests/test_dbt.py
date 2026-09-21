@@ -44,12 +44,11 @@ INGESTED = {shape.table: shape for shape in TABLES}
 #: What the models commit, and the rows the checked-in 144-line fixture answers
 #: for each. One event per message that carried an order identity and a
 #: lifecycle fact, one row per chain, and one occurrence per execution the
-#: bridge relayed into a chain -- a chain being the bridge's own
-#: `msgsessionid:msgctxid` where the row header stated both.
+#: bridge relayed into a business-identifier chain.
 PRODUCTS = {
-    "orders.events": 49,
-    "orders.current": 9,
-    "executions.fills": 8,
+    "orders.events": 48,
+    "orders.current": 8,
+    "executions.fills": 7,
 }
 
 #: The whole route, in order: capture to raw rows, raw rows to parsed FIX,
@@ -486,6 +485,23 @@ def test_the_products_are_built_from_the_fixture_and_a_replay_writes_nothing(
         assert sum(current.column("eventcount").to_pylist()) == PRODUCTS["orders.events"]
         fills = store.dataset("executions.fills").read_arrow_table()
         assert min(fills.column("lastqty").to_pylist()) > 0, "a fill states what it executed"
+        silver = store.dataset("fix.silver").read_arrow_table()
+        expired = silver.filter(pyarrow.compute.equal(silver.column("state"), "95EXPIRED"))
+        assert expired.num_rows == 1
+        expiry = expired.to_pylist()[0]
+        expiry_event = events.filter(
+            pyarrow.compute.equal(events.column("eventkey"), expiry["curruuid"])
+        )
+        assert expiry_event.num_rows == 1
+        assert expiry_event.column("eventtime").to_pylist() == [expiry["currunix"]]
+        assert expiry_event.column("state").to_pylist() == ["95EXPIRED"]
+        expiry_current = current.filter(
+            pyarrow.compute.equal(current.column("last_eventkey"), expiry["curruuid"])
+        )
+        assert expiry_current.num_rows == 1
+        assert expiry_current.column("updatedat").to_pylist() == [expiry["currunix"]]
+        assert expiry_current.column("state").to_pylist() == ["95EXPIRED"]
+        assert expiry["transacttime"] != expiry["currunix"]
     finally:
         store.close()
 

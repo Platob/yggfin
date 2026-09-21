@@ -18,15 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "pyarrow>=17.0",
-    # The floor is the release that states the fixed `fixmsg` row, with
-    # `lifecycle` as the one stage after the parse. The revision this
-    # repository actually reads is the one `[tool.uv.sources]` below pins:
-    # the release after 0.1.7 is what states a text line as a graph event,
-    # a message's `srcuuids` as the line it was read from, `state` and
-    # `expirunix` as columns of the row, and the 117-column row -- every
-    # fact the bronze and silver stages are written against -- and it was
-    # not cut when that split landed. Move the pin to the release once it is.
-    "yggdryl>=0.1.7",
+    "yggdryl==0.1.8",
     # `Self` is 3.11's, and the return annotation of every builder here names
     # it. The dependency is the typing back-port rather than a second spelling
     # of every one of those signatures.
@@ -121,15 +113,6 @@ airflow = [
 bench = [
     "polars>=1.36",
 ]
-
-[tool.uv.sources]
-# The core revision the bundled dictionary under `src/rekep/_data/fix` was
-# generated against and the two FIX stages are pinned to: `main` at the merge
-# that made a text line a graph event and gave a message its sources. A
-# revision rather than a branch, so a resolution is reproducible, and a source
-# build rather than a published wheel until the release that carries it is
-# cut -- which is when this table goes and the floor above moves up.
-yggdryl = { git = "https://github.com/Platob/yggdryl", rev = "738cffe245750296f62d8116cce00663e654a026", subdirectory = "python" }
 
 [tool.uv]
 # `uv run pytest` syncs these, so a test that imports marimo or airflow finds

@@ -140,7 +140,7 @@ before the first batch is consumed:
 ```python
 from rekep import Field
 
-fix_field = Field.from_arrow_schema(reader.schema, name="FixMessage")
+fix_field = Field.from_arrow_schema(reader.schema, name="FixMsg")
 fixes = catalog.dataset(
     "fix.silver",
     field=fix_field,
@@ -188,6 +188,7 @@ authoritative for storage planning.
 reader = messages.read_arrow_reader(
     columns=("sourceurl", "rownum", "body"),
     row_filter="rownum >= 1000",
+    order_by=("rownum",),
     limit=100,
 )
 try:
@@ -200,6 +201,18 @@ finally:
 Filters, projections, limits, and ordering are pushed into scan planning where
 PyIceberg supports them. Every read accepts `snapshot_id`; every read and write
 accepts `branch`. `root`, `main`, and `master` address the physical main ref.
+
+An ordered read streams already-disjoint file ranges directly. Overlapping
+ranges are externally sorted and merged through Arrow IPC scratch, with at
+most 16 file streams in one merge step; closing the reader also closes sources
+and removes scratch files. This bounds open-file fan-in without collecting the
+whole scan into a table before its first output batch.
+
+Identifier behavior does not depend on a column spelling or value type. UUID,
+integer, and string identifiers all follow the declared Iceberg field:
+`append_arrow_reader` is blind, while overwrite-by-key replaces matches only
+inside the affected partition. FIX happens to declare `curruuid`; the storage
+layer has no FIX-specific key or merge branch.
 
 ## Filesystem boundary
 

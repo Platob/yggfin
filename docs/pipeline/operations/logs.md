@@ -36,8 +36,8 @@ small enough for Airflow XCom because it contains no rows or schemas.
 {
   "task": "parse_fix_bronze",
   "read": 141,
-  "written": 53,
-  "skipped": 26,
+  "written": 51,
+  "skipped": 28,
   "sources": {"messages": "logs.messages"},
   "targets": {"bronze": "fix.bronze"},
   "window": {"start": 1786665600000000000, "end": 1786752000000000000},

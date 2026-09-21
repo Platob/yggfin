@@ -88,7 +88,7 @@ def test_docs_publish_the_native_message_contracts() -> None:
     assert "pipeline/tasks/build-dbt.md" in config
     assert "market/" not in config
     assert sorted(path.name for path in (ROOT / "schemas" / "rekep").glob("*.json")) == [
-        "fix-message.json",
+        "fixmsg.json",
         "message.json",
     ]
     # An Iceberg contract carries no Arrow metadata, so FIX vocabulary can only
@@ -126,7 +126,7 @@ def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
     assert "lifecycle_arrow_reader" in silver
     assert "fix_window_filter" in silver
     assert "not alternate implementations" in schemas
-    assert "`fix-message.json`" in schemas
+    assert "`fixmsg.json`" in schemas
     assert "iceberg_contract" in schemas
 
 

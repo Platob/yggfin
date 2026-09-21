@@ -1,9 +1,8 @@
 """Publish one order of the bundled capture as every stage lands it.
 
 The pipeline pages under `docs/pipeline/tasks/` show real rows rather than
-invented ones: one chain of `python/tests/data/ulbridge.log` -- bridge session
-`e7254b12`, contexts `9f03166699` and `9f0316669a`, a partial fill and the
-fill that closed the order after it -- as `parse_messages` stores its lines,
+invented ones: one business chain of `python/tests/data/ulbridge.log` -- a
+partial fill and the fill that closed the order after it -- as `parse_messages` stores its lines,
 `parse_fix_bronze` parses them, `parse_fix_silver` walks them and `build_dbt`
 derives the products. Each page includes its own Markdown file from
 `docs/pipeline/tasks/samples/` through `pymdownx.snippets`, so what a page
@@ -44,8 +43,8 @@ FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
 #: The day the fixture was captured on; `end` names the exclusive end of it.
 WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
 
-#: The chain the pages follow: the bridge's `msgsessionid:msgctxid`.
-CHAIN = "e7254b12:9f03166699"
+#: The business identifier the pages follow.
+CHAIN = "00026877711XOEA0"
 
 #: Every task, in dependency order, with the parameters of its own.
 TASKS = (
@@ -303,7 +302,7 @@ def silver_page(silver: pyarrow.Table, bronze: pyarrow.Table) -> str:
         "msgdirection",
         "state",
         "creaunix",
-        "expirunix",
+        "exprtime",
     ]
     before = {row["rownum"]: row for row in rows(bronze, ["rownum", "currunix", "curruuid"])}
     moved = [

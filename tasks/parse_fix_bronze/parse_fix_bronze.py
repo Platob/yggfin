@@ -9,7 +9,6 @@ with app.setup:
 
     import marimo as mo
     import pyarrow
-
     from rekep.fields import stored_arrow_reader
     from rekep.fix import (
         fix_codec,
@@ -176,7 +175,7 @@ def datasets(catalog, messages, result):
             shown.callback(_dataset.close)
             _table = _dataset.iceberg_table
             _layout[_name] = {
-                "rows": _dataset.read_arrow_table().num_rows,
+                "rows": _dataset.records,
                 "partitions": sorted(
                     {str(_file["partition"]) for _file in _dataset.data_files().to_pylist()}
                 ),

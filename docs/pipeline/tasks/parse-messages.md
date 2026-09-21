@@ -78,8 +78,9 @@ line -- which a message parsed out of the stored line names as its one
 (65032) -- never what the message itself says about the counterparty session it
 names; two connections to one counterparty are two instances, so they are two
 facts. `msgctxid` fills 65008,
-`msgseqnum` fills `MsgSeqNum` (34) on a frame that stated none, and `sourceurl`
-fills 65026. `pluginid` fills nothing: it rides in front of the FIX row under
+`msgseqnum` fills `MsgSeqNum` (34) on a frame that stated none. `sourceurl`
+remains a carried provenance column; 65026 documents it but is never a
+message-stated fact. `pluginid` fills nothing: it rides in front of the FIX row under
 this name, and the row's own column for the plugin is `msgpluginid`. A stored
 row therefore goes on through [`parse_fix_bronze`](parse-fix-bronze.md)
 without one spelling being translated into another.
@@ -186,9 +187,9 @@ of the bytes and of nothing else; the bundled capture's 144 physical lines are
 
 ## Sample rows
 
-The sample is chain `e7254b12:9f03166699` of `python/tests/data/ulbridge.log`,
-a partial fill and the fill that closed the order: the ten lines a FIX message
-was parsed out of, as `parse_messages` lands them in `logs.messages`. An
+The sample is 29 capture lines from `python/tests/data/ulbridge.log` that the
+FIX walk later joins under business chain `00026877711XOEA0`, as
+`parse_messages` lands them in `logs.messages`. An
 identity is shown by its last eight hex digits behind a leading `…`, and the
 stored value is sixteen bytes. `currhashcode` is shown whole, and a table
 stores it as the signed integer Iceberg has, so half the codes read back
@@ -196,39 +197,9 @@ negative.
 
 --8<-- "docs/pipeline/tasks/samples/parse-messages.md"
 
-The first table is `rownum` and the seven captures read off each line's
-header. All ten are thread `15255` on session `e7254b12`, and the bridge
-handled them in two contexts: rows 6, 7, 8, 9, 10, 11, 15 and 22 are
-`9f03166699` at sequence `40218`, the partial fill, and rows 35 and 36 are
-`9f0316669a` at `40219`, the fill. What makes lines of two contexts one chain
-is the walk, on [`parse_fix_silver`](parse-fix-silver.md#sample-rows); nothing
-read here knows it.
-
-`timestamp` reads `2026-08-14 14:46:39.769` on those eight rows and `.770` on
-rows 35 and 36. It is the clock the bridge printed, and it is what
-[the window](#the-window) is taken on, but it dates no message: the frame on
-row 6 states `52=20260814-12:46:39.761` past where the sample cuts the line
-off, two hours earlier, and that is the clock the parse reads instead, on
-[`parse_fix_bronze`](parse-fix-bronze.md#sample-rows).
-
-The second table is what each line printed after its header. Rows 6 and 35
-are `OMS_X1_TradeCapture` at `INFO`, `Receiving :` and the FIX frame the
-bridge received. Rows 7 and 36 are the same plugin at `DEBUG`,
-`RouteMessage :` and the bridge's own key=value restatement of the frame it
-just received. Rows 8, 9, 10 and 11 are `After Enrichment ->`, the same
-message logged again after an enrichment step, twice by
-`TECH_AddFields_OMS_X1`, and row 15 is `After -->` from `Force_IRIS_ByPass`.
-Row 22 is `PushMessage :`, the message handed on to `ULFilter`, the
-destination the bridge resolved for it.
-
-Ten lines are ten rows: no two of these are the same bytes. An enrichment
-step need not have added a field for that. Rows 8 and 9 are both
-`TECH_AddFields_OMS_X1` logging `After Enrichment ->`, and the second is 118
-bytes shorter, because the step dropped `FIRM.SOURCE`, re-nested the party
-sub-group inside `NOPARTYIDS[0]`, and rewrote every repeating group's
-six-byte sub-field separator into a two-byte one. Every `curruuid` here
-begins `0000000000007000`: the [UUIDv7](#parse-step) the read states opens
-with the instant it is dated by, and a line is dated by none.
+The generated include is authoritative for row membership and values. This
+stage knows only capture headers and bytes; the business chain is established
+later by [`parse_fix_silver`](parse-fix-silver.md#sample-rows).
 
 `tools/pipeline_samples.py` regenerates the file from a run over the fixture,
 and the integration suite checks it with `--check`.

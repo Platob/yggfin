@@ -32,7 +32,7 @@ class Message(Convertible):
     """
 
     sourceurl: str = ""
-    """Canonical URI of the source text object, filling `sourceurl` (65026)."""
+    """Canonical URI of the source text object, carried beside the FIX row."""
 
     rownum: int = 0
     """1-based physical line number within the source object."""

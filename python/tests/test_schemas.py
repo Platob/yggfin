@@ -30,7 +30,7 @@ from rekep.iceberg import (
 
 SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
 CONTRACT = SCHEMAS / "rekep" / "message.json"
-FIX_CONTRACT = SCHEMAS / "rekep" / "fix-message.json"
+FIX_CONTRACT = SCHEMAS / "rekep" / "fixmsg.json"
 
 
 def load_contract() -> Field:
@@ -145,8 +145,8 @@ def test_the_fix_contract_is_what_the_current_dictionary_answers() -> None:
     assert [member.name for member in fixed] == [
         member.name for member in declared if member.name not in UNSTORED
     ]
-    assert len(fixed) == 123 == len(fix_schema(fix_registry(), FIXMSG)) + 6
-    assert len(fix_parse_field()) == 124 == len(fixed) + len(UNSTORED)
+    assert len(fixed) == 130 == len(fix_schema(fix_registry(), FIXMSG)) + 7
+    assert len(fix_parse_field()) == 131 == len(fixed) + len(UNSTORED)
 
 
 def test_the_stored_row_holds_none_of_the_text_it_was_read_from() -> None:
@@ -197,9 +197,9 @@ def test_the_fix_tables_are_laid_out_by_the_event_and_keyed_by_its_identity() ->
     assert partition_keys(fixed) == {"currunix": "hour"}
     assert list(sort_keys(fixed)) == ["currunix", "seqnum", "curruuid"]
     assert document["partition-spec"]["fields"] == [
-        {"source-id": 7, "field-id": 1000, "transform": "hour", "name": "currunix_hour"}
+        {"source-id": 8, "field-id": 1000, "transform": "hour", "name": "currunix_hour"}
     ]
-    assert document["schema"]["identifier-field-ids"] == [20]
+    assert document["schema"]["identifier-field-ids"] == [21]
     assert [field["direction"] for field in document["sort-order"]["fields"]] == ["asc"] * 3
 
     schema = fixed.into_arrow_schema()
@@ -210,7 +210,8 @@ def test_the_fix_tables_are_laid_out_by_the_event_and_keyed_by_its_identity() ->
     # The capture's own columns lead, the crate's clocks open the dictionary's
     # half, and the arrival record closes the row under the counter that
     # counts it.
-    assert schema.names[:7] == [
+    assert schema.names[:8] == [
+        "sourceurl",
         "rownum",
         "timestamp",
         "timepartition",
@@ -246,10 +247,10 @@ def test_the_fix_declaration_keeps_its_registry_metadata() -> None:
     assert schema.field("msgtype").metadata[b"FIX:tag"] == b"35"
     assert schema.field("curruuid").metadata[b"FIX:tag"] == b"65039"
     assert schema.field("state").metadata[b"FIX:tag"] == b"65052"
-    assert schema.field("expirunix").metadata[b"FIX:tag"] == b"65053"
+    assert schema.field("exprtime").metadata[b"FIX:tag"] == b"65053"
     assert load_fix_contract().into_arrow_schema().field("msgtype").metadata == {
         b"description": schema.field("msgtype").metadata[b"description"],
-        b"ICEBERG:field_id": b"31",
+        b"ICEBERG:field_id": b"32",
     }
 
 

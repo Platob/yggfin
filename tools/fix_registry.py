@@ -8,7 +8,6 @@ with app.setup:
 
     import marimo as mo
     import pyarrow
-
     from rekep import Field
     from rekep.fix import FixRegistry, fix_codec, fix_registry
 
@@ -29,6 +28,11 @@ with app.setup:
         """
         document = field.fix.get(key)
         return [] if document is None else json.loads(document)
+
+    def codeset_records(dictionary, field):
+        """The one shared code set a definition names, or none."""
+        held = dictionary.codeset_of(field)
+        return [] if held is None else held
 
     def _typing(field):
         """What the lineage says this definition was first and last typed as."""
@@ -97,11 +101,11 @@ with app.setup:
     def _stringly(declaration):
         """One declaration with every metadata value spelled as the string it is.
 
-        A dictionary writes `fix:codes` and `fix:lineage` as the arrays they
-        hold and reads them back as the strings a Field's metadata stores, so
-        the two ends of its own document disagree about one value shape. The
-        collection is re-encoded here rather than unwrapped, because that is
-        exactly what `metadata_records` reads back out of it.
+        A dictionary writes metadata documents as arrays and a Field holds
+        them as compact JSON strings. The collection is re-encoded here so
+        `metadata_records` reads the same document back out. Code sets do
+        not travel through metadata: a field names one and the registry owns
+        its members.
         """
         metadata = declaration.get("metadata")
         if not isinstance(metadata, dict):
@@ -445,7 +449,8 @@ def _(dictionary, registry_table):
         if _lineage
         else mo.callout("This definition carries no FIX lineage.")
     )
-    _codes = metadata_records(_field, "codes")
+    _codeset = _field.fix.codeset
+    _codes = codeset_records(dictionary, _field)
     _codes_view = (
         mo.ui.table(
             _codes,
@@ -497,7 +502,7 @@ def _(dictionary, registry_table):
                     "Overview": _overview,
                     f"Members ({len(_members):,})": _member_view,
                     f"Lineage ({len(_lineage):,})": _lineage_view,
-                    f"Codes ({len(_codes):,})": _codes_view,
+                    f"Code set {_codeset or 'none'} ({len(_codes):,})": _codes_view,
                     "Metadata": _metadata_view,
                     "Field JSON": _json_view,
                 }

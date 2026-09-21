@@ -21,7 +21,7 @@ a guessed order.
 | `rownum` | `int64` | no | source line |
 | `eventindex` | `int32` | no | zero for one-event messages; supports future exploded groups |
 | `curruuid` | `fixed_size_binary[16]` | no | settled event identity |
-| `eventtime` | `timestamp[us, UTC]` | no | `transacttime`, then fixed market timestamp |
+| `eventtime` | `timestamp[us, UTC]` | no | lifecycle `currunix`, including exact expiry deadlines |
 | `timepartition` | `timestamp[us, UTC]` | no | Iceberg day transform of `eventtime` |
 | `sessionid` | `string` | yes | protocol/bridge session |
 | `account` | `string` | yes | order account |

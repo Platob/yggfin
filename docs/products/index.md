@@ -25,7 +25,7 @@ the three tables below have and the gate the roadmap still holds them to.
 | --- | --- | --- | --- |
 | [`logs.messages`](message.md) | one physical source line | `currhashcode` | exact replayable capture record |
 | [`fix.bronze`](fix-message.md) | one parsed event, however many lines stated it | `curruuid` | the parse's answer, no chain |
-| [`fix.silver`](fix-message.md) | one walked event, the same identities restated | `curruuid` | the chain filled, what the products read |
+| [`fix.silver`](fix-message.md) | one walked event, identities settled at lifecycle time | `curruuid` | the chain filled, what the products read |
 
 `logs.messages` is partitioned by the hour of the capture clock,
 `timepartition`; the two FIX tables by the hour of the event's own instant,

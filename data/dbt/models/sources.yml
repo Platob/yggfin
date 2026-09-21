@@ -3,7 +3,7 @@ version: 2
 # The tables ingestion publishes. Each is read through the `rekep` plugin,
 # which is one Iceberg read per source: `table` names the Iceberg table and
 # `columns` is the projection pushed into scan planning, so DuckDB holds the
-# columns the products read and not the 123 a FIX row has.
+# columns the products read and not the full FIX row.
 #
 # All three are declared here because all three are the repository's published
 # contract; only `fix.silver` is read by a model. A product reads the walked
@@ -35,8 +35,6 @@ sources:
             - prevuuid
             - seqnum
             - currunix
-            - sendingtime
-            - transacttime
             - msgsessionid
             - msgtype
             - msgdirection
@@ -45,11 +43,8 @@ sources:
             - origclordid
             - orderid
             - symbol
-            - securityid
-            - securityidsource
-            - securityexchange
-            - exdestination
-            - lastmkt
+            - isincode
+            - miccode
             - side
             - ordtype
             - currency
@@ -60,10 +55,6 @@ sources:
             - avgpx
             - lastqty
             - lastpx
-            - bidpx
-            - bidsize
-            - offerpx
-            - offersize
             - execid
             - tradeid
             - ordstatus

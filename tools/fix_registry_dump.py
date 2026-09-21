@@ -21,12 +21,13 @@ import pathlib
 from typing import Any
 
 from rekep import Field
-from rekep.fix import fix_registry
+from rekep.fix import FixRegistry, fix_registry
 
 ASSETS = pathlib.Path("docs/assets")
+CATEGORIES = ("fields", "components", "groups")
 
 
-def records(field: Field, key: str) -> list[dict[str, Any]]:
+def metadata_records(field: Field, key: str) -> list[dict[str, Any]]:
     """One validated FIX metadata document as rows, or none.
 
     The document is the collection itself, in the order the specification
@@ -34,6 +35,30 @@ def records(field: Field, key: str) -> list[dict[str, Any]]:
     """
     held = field.fix.get(key)
     return [] if held is None else json.loads(held)
+
+
+def definitions(registry: FixRegistry) -> list[tuple[str, Field]]:
+    """Every stored definition, preserving its registry category."""
+    document = json.loads(registry.into_json())
+    return [
+        (category, Field.from_json(json.dumps(stringly(held))))
+        for category in CATEGORIES
+        for held in document[category]
+    ]
+
+
+def stringly(declaration: dict[str, Any]) -> dict[str, Any]:
+    """Restore metadata documents to the compact strings a Field holds."""
+    metadata = declaration.get("metadata")
+    if not isinstance(metadata, dict):
+        return declaration
+    return {
+        **declaration,
+        "metadata": {
+            key: value if isinstance(value, str) else json.dumps(value, separators=(",", ":"))
+            for key, value in metadata.items()
+        },
+    }
 
 
 def members(field: Field) -> list[dict[str, Any]]:
@@ -57,15 +82,17 @@ def main() -> int:
     registry = fix_registry()
 
     index: list[dict[str, Any]] = []
-    detail: dict[str, dict[str, Any]] = {}
-    for field in registry:
+    fields: dict[str, dict[str, Any]] = {}
+    for category, field in definitions(registry):
         fix = field.fix
         row: dict[str, Any] = {
+            "id": fix.id,
             "tag": fix.tag,
             "name": field.name,
             "display": field.display or field.name,
             "dialect": ", ".join(fix.branches) or "standard",
-            "shape": "group" if field.dtype.is_nested else "field",
+            "category": category,
+            "shape": "group" if category == "groups" else "field",
             "type": str(field.dtype.into_arrow()),
             "nullable": field.nullable,
             "description": fix.description or field.comment or "",
@@ -75,31 +102,37 @@ def main() -> int:
         for key, value in (("names", list(fix.names)), ("tags", list(fix.tags))):
             if value:
                 row[key] = value
+        if fix.codeset:
+            row["codeset"] = fix.codeset
         index.append(row)
 
         deep = {
             key: value
             for key, value in (
                 ("members", members(field)),
-                ("codes", records(field, "codes")),
-                ("lineage", records(field, "lineage")),
+                ("codeset", fix.codeset),
+                ("lineage", metadata_records(field, "lineage")),
             )
             if value
         }
-        if deep and fix.tag is not None:
-            detail[str(fix.tag)] = deep
+        if deep:
+            fields[str(fix.id)] = deep
 
-    index.sort(key=lambda row: row["tag"] or 0)
+    index.sort(key=lambda row: (row["tag"] is None, row["tag"] or 0, row["name"]))
     published = {
         "source": "rekep bundle",
         "dialects": sorted({row["dialect"] for row in index}),
         "fields": index,
     }
-    for name, held in (("fix-registry.json", published), ("fix-details.json", detail)):
+    details = {
+        "fields": fields,
+        "codesets": {name: registry.codeset(name) for name in registry.codeset_names()},
+    }
+    for name, held in (("fix-registry.json", published), ("fix-details.json", details)):
         target = ASSETS / name
         target.write_text(json.dumps(held, separators=(",", ":")) + "\n", encoding="utf-8")
         print(f"  wrote {target} ({target.stat().st_size:,} bytes)")
-    print(f"{len(index):,} definitions, {len(detail):,} with deep records")
+    print(f"{len(index):,} definitions, {len(fields):,} with deep records")
     return 0
 
 

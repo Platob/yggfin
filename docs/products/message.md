@@ -10,7 +10,7 @@ carried them and however often the capture is re-read.
 
 | # | column | Arrow type | null | contract |
 | -: | --- | --- | :---: | --- |
-| 1 | `sourceurl` | `string` | no | canonical source URI, filling `sourceurl` (65026) downstream |
+| 1 | `sourceurl` | `string` | no | canonical source URI, carried beside the native FIX row downstream |
 | 2 | `rownum` | `int64` | no | 1-based physical line number |
 | 3 | `timestamp` | `timestamp[us, UTC]` | yes | UTC header timestamp |
 | 4 | `timepartition` | `timestamp[us, UTC]` | yes | derived from `timestamp`; Iceberg hour partition |
@@ -32,11 +32,10 @@ an Iceberg schema has no place for. `curruuid` is Iceberg field 13 and
 declared last, because a table that already exists takes a new column at its
 end.
 
-Every header capture is named for the FIX column it fills when the stored row
-goes on through the codec, so `parse_fix_bronze` needs no renaming pass of its
-own: `msgsessionid`, `msgctxid` and `msgseqnum` fold onto the row's columns of
-those names, and `sourceurl`, which traversal fills rather than the header,
-onto the dictionary's own. `pluginid` does not fold: the row's own column for
+Header captures named for native fields need no renaming pass:
+`msgsessionid`, `msgctxid` and `msgseqnum` fold onto the row's columns of those
+names. `sourceurl` remains a carried provenance column; the crate definition
+documents that meaning but is never a message's own stated fact. `pluginid` does not fold: the row's own column for
 the plugin is `msgpluginid`, and this capture rides in front of the row under
 the spelling the bridge's header brackets it with.
 `msgsessionid` is the session *instance* the bridge handled the line on, and

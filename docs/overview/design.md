@@ -34,13 +34,13 @@ order.
 
 ## Raw before interpreted
 
-`logs.messages` preserves exact line bytes. `fix.bronze` interprets every
-line while retaining the arrival record in `fixentries`, under the
-`nofixentries` that counts it, where a pair no dictionary explains is an entry
-of tag 0 under its own key; `fix.silver` restates those rows with their chains
-walked. A parser update can therefore be replayed from Iceberg without
-rereading the original files, and a change to the walk from the parsed rows
-without parsing again.
+`logs.messages` preserves exact line bytes. `fix.bronze` interprets every line
+and stores lifted columns plus residual `fixentries`, under the
+`nofixentries` that counts them. Unknown and unrepresentable pairs remain
+residual; successfully lifted values are not duplicated. `fix.silver`
+restates those canonical rows with their chains walked. A parser update is
+replayed from `logs.messages`; a lifecycle change replays the semantic bronze
+rows without parsing the capture again.
 
 ## Replays are ordinary runs
 
