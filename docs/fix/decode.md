@@ -6,16 +6,17 @@ resolution, code translation, typing, group construction, arrival recording,
 derived stamps, and schema projection.
 
 Parsing is the first of two stages over that one codec, two tasks over two
-tables -- parse into `fix.bronze`, lifecycle into `fix.silver` -- and each
+tables -- parse into `fix.raw`, lifecycle into `fix.refined` -- and each
 stage has two doors that answer the same messages from the same bytes:
 `fix_parse_lines` and `fix_lifecycle_messages` read messages one at a time,
 `fix_parse_arrow_reader` and `fix_lifecycle_arrow_reader` read a stored table
 in batches.
 
-## From log line to raw Message
+## From log line to `Message`
 
-The text read frames each line under the ULBridge header and keeps the whole
-line. For example:
+The text read frames each line under the ULBridge header: the captures are
+what the header stated, and `body` is what the bridge printed after it. For
+example:
 
 ```text
 2026-08-14 14:46:39.769 [15255-e7254b12:9f03166699:40218]
@@ -24,9 +25,13 @@ line. For example:
 
 becomes one `Message` whose `msgthreadid`, `msgsessionid`, `msgctxid`,
 `msgseqnum`, `msgpluginid`, and `loglevel` are read off the header and whose
-`body` is the line itself, header included, as text. `currunix` is the instant
-the read settles over the line, `currhashcode` codes its content and
-`curruuid` is the identity the read states over it; the read states all three,
+`body` is `Receiving : 8=FIX.4.4|35=8|55=ABBN.S|...`, the line past the
+bracket, as text. `crosscode` is the object the line was read from, as the
+identifier the read was addressed under, and `seqnum` is its row number
+there, counted from 1. `currunix` is the instant the read settles over the
+line, `currhashcode` digests that object, the header's captures except the
+clock, the row number and then the body, and `curruuid` is the UUIDv7 the
+read derives from that instant and that code; the read states all of them,
 before `logs.messages` is written.
 
 Every capture is named for the column the native read fills from it, and the
@@ -46,14 +51,15 @@ header that renames one.
 from rekep import IOBase, Message
 
 source = IOBase.from_uri("file:python/tests/data/ulbridge.log")
-raw = source.read_arrow_reader(options=Message.text_options())
-first_batch = next(iter(raw))
+reader = source.read_arrow_reader(options=Message.text_options())
+first_batch = next(iter(reader))
 
-assert first_batch.column("rownum")[0].as_py() == 1
+assert first_batch.column("seqnum")[0].as_py() == 1
+assert first_batch.column("crosscode")[0].as_py().endswith("ulbridge.log")
 assert first_batch.column("msgpluginid")[0].as_py() == "ULBridge"
 assert first_batch.column("msgseqnum")[0].as_py() == 3088
 
-raw.close()
+reader.close()
 source.close()
 ```
 
@@ -265,10 +271,10 @@ identity. The batch defaults are 32,768 rows and 128 MiB;
 available CPU count and zero means one.
 Prefix stripping belongs to `TextOptions.lstrip`, which accepts a list of
 anchored regular expressions such as `[r"^\s*-->\s*"]`; it changes the
-retained raw `body` and therefore its identity. It is not a codec option and
-the FIX tasks do not enable it. Native FIX already locates frames after
-whitespace or `-->`; preserving header captures behind any earlier prefix
-requires a supplied `rowheader` pattern that includes that prefix.
+retained `body`, and with it the line's code and identity. It is not a codec
+option and the FIX tasks do not enable it. Native FIX already locates frames
+after whitespace or `-->`; preserving header captures behind any earlier
+prefix requires a supplied `rowheader` pattern that includes that prefix.
 
 ## Message ordering and derived values
 
@@ -285,22 +291,23 @@ never the capture's own clock, which stamps nothing, and never the instant the
 parse ran -- until the walk dates it by the `TransactTime(60)` it states.
 `currhashcode` is the content code over the event's facts, its text, its
 metadata, the stated header cells and the entry tree; `curruuid` is an RFC 9562
-UUIDv7: the settled millisecond in its leading 48 bits, the sequence's low 12
-in `rand_a`, and in `rand_b` the low 62 of XXH3-64 over the big-endian
-`(seqnum, digest)` tuple seeded by `crosshashcode`.
+UUIDv7 packing the microsecond of the instant the event settled on and the
+whole 64-bit code -- no seed and no sequence bits -- which is the derivation
+a line's identity takes from its own instant and code.
 No partition column is materialized beside them, because a FIX row has none of
 its own.
 
 A parse fills what a message implied about itself -- its deprecated fields
 restated to their latest spellings, the dictionary's own derivations run, the
 `identifiers` its message component declares filled -- so there is no
-enriching stage after it, and `fix.bronze` is that and nothing more.
+enriching stage after it, and `fix.raw` is that and nothing more.
 **lifecycle** is the one stage that follows, and it reads the messages as the
 chains they belong to, filling what a message implied about the message before
 it: `prevuuid` and `prevunix` naming the step before, `seqnum` where this one
 stands, `parentuuids` what it descends from, and the `creaunix`, `exprtime`
-and `state` its chain folds forward. Those four are empty on every bronze row,
-because nothing has walked yet, and `fix.silver` is the same rows walked.
+and `state` its chain folds forward. Those four are empty on every `fix.raw`
+row, because nothing has walked yet, and `fix.refined` is the same rows
+walked.
 `snapunix` is empty on every row that is not a reading a walk took, which is
 why it is nullable.
 
@@ -312,7 +319,7 @@ import uuid
 import pyarrow
 
 from rekep import Message
-from rekep.fix import fix_codec, fix_parse_arrow_reader, fix_registry
+from rekep.fix import PARSE_COLUMNS, fix_codec, fix_parse_arrow_reader, fix_registry
 from rekep.times import EPOCH
 
 schema = Message.into_field().into_arrow_schema()
@@ -322,8 +329,8 @@ batch = pyarrow.RecordBatch.from_pylist(
             "currunix": EPOCH,
             "curruuid": b"\x01" * 16,
             "currhashcode": 0,
-            "sourceurl": "file:///capture.log",
-            "rownum": 1,
+            "crosscode": "file:///capture.log",
+            "seqnum": 1,
             "body": "Receiving : 8=FIX.4.4|35=D|55=AAPL|10=000|",
             "msgthreadid": None,
             "msgsessionid": None,
@@ -334,8 +341,8 @@ batch = pyarrow.RecordBatch.from_pylist(
         }
     ],
     schema=schema,
-)
-source = pyarrow.RecordBatchReader.from_batches(schema, [batch])
+).select(list(PARSE_COLUMNS))
+source = pyarrow.RecordBatchReader.from_batches(batch.schema, [batch])
 codec = fix_codec(fix_registry())
 parsed = fix_parse_arrow_reader(codec, source)
 table = parsed.read_all()
@@ -346,12 +353,19 @@ assert table.num_columns == 128
 assert table.schema.names[-3:] == ["metadata", "nofixentries", "fixentries"]
 ```
 
-The input batch is the raw 12-column `Message` contract, in the native event
-layout's own order. The output is exactly the native 128-column FixMsg
-contract: it holds neither `body` nor a column raw to a line. The input line's
-`curruuid` becomes a `srcuuids` provenance entry, so `sourceurl`, `rownum`,
-`msgthreadid`, `loglevel` and the line's own text remain available by joining
-back to `logs.messages`. The parse reads those stored sixteen bytes back as the
+The input is the 12-column `Message` contract as a table holds it, projected
+to `PARSE_COLUMNS` -- the seven columns the parse consumes, which is what
+`parse_fix_raw` pushes into its scan: the line's clock, its identity, its
+`body` and the four captures that fill a field by name. `currhashcode`,
+`crosscode`, `seqnum`, `msgthreadid` and `loglevel` are the line's facts and
+are not read. The output is exactly the native 128-column FixMsg contract,
+selected off the parse's answer, which leads with the carried `body`: it holds
+neither `body`, `msgthreadid` nor `loglevel`, and its `crosscode` and `seqnum`
+are the message's chain identifier and its step in the chain, not the line's
+object and row number. The input line's `curruuid` becomes a `srcuuids`
+provenance entry, so the object the line was read from, its row number, its
+thread, its level and its text remain available by joining back to
+`logs.messages`. The parse reads those stored sixteen bytes back as the
 identity the read stated over the line rather than recomputing one, so the join
 is exact.
 
@@ -364,8 +378,8 @@ position. It dates no message from `currunix`, the instant the read settled
 over the line -- a bridge stamps a line the way a log is stamped, not the way
 `SendingTime` is spelled -- so an undated message takes the codec's `UNDATED`
 floor, and so does the same message read through the batch door. That floor is
-the epoch, the same instant a line the header could not date settles at, so
-both sit in every window rather than outside all of them.
+the epoch, which every window covers, so an undated message sits in every
+window rather than outside all of them until the walk dates it.
 
 ```python
 from rekep import IOBase
@@ -387,12 +401,12 @@ That capture holds 144 lines and answers 79 messages, because a row is a
 message and not a line. `fix_parse_arrow_reader` is the batch door of the
 parse and `fix_lifecycle_arrow_reader` the batch door of the walk: a stored
 table in, rows out under the parse's own shape. They are what
-`parse_fix_bronze` and `parse_fix_silver` take, because each holds a table.
+`parse_fix_raw` and `parse_fix_refined` take, because each holds a table.
 One line carrying two frames answers two rows with the same source UUID; one
 carrying none answers no row at all. The parse folds every hop that logged
-one message onto one identity, so those 79 messages are 49 bronze
-events; the walk merges the observations of one event and therefore lands 22
-rows for this fixture.
+one message onto one identity, so those 79 messages are 49 `fix.raw` rows;
+the walk merges the observations of one event and adds its expiry, and
+therefore lands 19 `fix.refined` rows for this fixture.
 
 ```python
 import uuid
@@ -400,7 +414,7 @@ import uuid
 import pyarrow
 
 from rekep import Message
-from rekep.fix import fix_codec, fix_parse_arrow_reader, fix_registry
+from rekep.fix import PARSE_COLUMNS, fix_codec, fix_parse_arrow_reader, fix_registry
 from rekep.times import EPOCH
 
 schema = Message.into_field().into_arrow_schema()
@@ -413,10 +427,10 @@ batch = pyarrow.RecordBatch.from_pylist(
     [
         {
             "currunix": EPOCH,
-            "curruuid": rownum.to_bytes(16, "big"),
+            "curruuid": seqnum.to_bytes(16, "big"),
             "currhashcode": 0,
-            "sourceurl": "file:///capture.log",
-            "rownum": rownum,
+            "crosscode": "file:///capture.log",
+            "seqnum": seqnum,
             "body": body,
             "msgthreadid": None,
             "msgsessionid": None,
@@ -425,11 +439,11 @@ batch = pyarrow.RecordBatch.from_pylist(
             "msgpluginid": "OMS",
             "loglevel": "INFO",
         }
-        for rownum, body in enumerate(lines, start=1)
+        for seqnum, body in enumerate(lines, start=1)
     ],
     schema=schema,
-)
-source = pyarrow.RecordBatchReader.from_batches(schema, [batch])
+).select(list(PARSE_COLUMNS))
+source = pyarrow.RecordBatchReader.from_batches(batch.schema, [batch])
 codec = fix_codec(fix_registry())
 parsed = fix_parse_arrow_reader(codec, source)
 table = parsed.read_all()

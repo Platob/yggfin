@@ -20,12 +20,16 @@ uv run python benchmarks/bench_message.py
 | URI local plain | 107,322 | 96,420 | 13.5 | 714 |
 | URI local gzip | 98,351 | 89,443 | 12.5 | 689 |
 
-*native* drains header-framed text batches without an output field. *`Message`*
-installs `Message.read_field()` on that same native reader, adding conversion
-to `timestamp[us, UTC]` and strict final verification. It derives nothing,
-because every column of the contract is one the read already states. The
-contract path measured 9–10% below framing alone on this run; there is no
-Python row pass between them.
+*native* drains header-framed text batches without an output field.
+*`Message`* is what `parse_messages` pays: the same native read projected to
+`Message.read_field()`, then the storage boundary,
+`rekep.fields.stored_arrow_reader`, which views the two unsigned columns into
+`int64` and casts the rest to the table's types -- `currunix` to
+`timestamp[us, UTC]`, the identity to its sixteen bytes -- under strict
+nullability. It derives nothing, because every column of the contract is one
+the read already states. The contract path measured 9–10% below framing alone
+on this run; there is no Python row pass between them. The figures predate
+0.1.10 and the benchmark's port to this path.
 
 The remaining product work is [on the roadmap](../roadmap/index.md). Staging a
 remote object locally does not help ingestion: an earlier diagnostic that
@@ -66,26 +70,26 @@ chains, spread evenly over ten hourly partitions.
 
 | stage | read | written | stage s | job s | full command s |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| raw messages | 220,000 | 220,000 | 6.704 | 9.020 | 15.052 |
-| FIX bronze | 220,000 | 220,000 | 26.860 | 29.265 | 35.428 |
-| first silver hour | 22,000 | 22,000 | 5.469 | 8.589 | 17.360 |
-| later silver hour, range | 44,000 | 22,000 | 6.640-7.906 | 9.057-10.706 | 14.807-16.900 |
+| text lines | 220,000 | 220,000 | 6.704 | 9.020 | 15.052 |
+| FIX raw | 220,000 | 220,000 | 26.860 | 29.265 | 35.428 |
+| first refined hour | 22,000 | 22,000 | 5.469 | 8.589 | 17.360 |
+| later refined hour, range | 44,000 | 22,000 | 6.640-7.906 | 9.057-10.706 | 14.807-16.900 |
 | dbt products | -- | 440,000 | 14.234 | 20.488 | 26.969 |
 
-Each later silver job read its previous hour plus its own and published only
-its own 22,000 rows. Final counts were 220,000 in raw, bronze, silver, and
-`orders.events`, and 110,000 in both `orders.current` and
+Each later refined job read its previous hour plus its own and published only
+its own 22,000 rows. Final counts were 220,000 in `logs.messages`, `fix.raw`,
+`fix.refined` and `orders.events`, and 110,000 in both `orders.current` and
 `executions.fills`; all 25 dbt checks passed. `stage` is the task's reported
 work time. `job` includes the application run, and `full command` also includes
 interpreter, CLI, and UI startup.
 
-A streaming audit checked all 220,000 silver rows rather than a sample: every
+A streaming audit checked all 220,000 refined rows rather than a sample: every
 UUIDv7 was unique and its timestamp matched `currunix` to the millisecond,
-every `srcuuids` identity existed in the raw table, all 110,000 predecessor
+every `srcuuids` identity existed in `logs.messages`, all 110,000 predecessor
 links resolved, and the states were exactly 110,000 `20NEW` plus 110,000
 `80FILLED`, with every fill at sequence one.
 
-Sampled steady-state silver jobs held 820.6-836.1 MiB peak resident memory;
+Sampled steady-state refined jobs held 820.6-836.1 MiB peak resident memory;
 dbt reached 1,117.5 MiB. This is one local scalability observation, not a
 throughput guarantee. Hour pruning and bounded Iceberg fan-in avoid a global
 warehouse scan, but the selected finite history is still collected by the

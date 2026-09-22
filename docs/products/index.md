@@ -1,15 +1,15 @@
 # Data products
 
 rekep publishes three Iceberg tables, and these are the contracts a reader
-reviews: the raw lines, the parsed events, and the walked events. Every later
-product starts from `fix.silver`, never from `fix.bronze` and never by
+reviews: the text lines, the parsed events, and the walked events. Every later
+product starts from `fix.refined`, never from `fix.raw` and never by
 reparsing source files.
 
 ```mermaid
 flowchart LR
     C["capture objects"] --> M[("logs.messages")]
-    M --> B[("fix.bronze")]
-    B --> S[("fix.silver")]
+    M --> B[("fix.raw")]
+    B --> S[("fix.refined")]
     S --> O[("orders.events<br/>orders.current")]
     S --> E[("executions.fills")]
     S -.planned.-> K[("book")]
@@ -24,15 +24,15 @@ the three tables below have and the gate the roadmap still holds them to.
 | product | row grain | key | purpose |
 | --- | --- | --- | --- |
 | [`logs.messages`](message.md) | one physical source line | `curruuid` | exact replayable capture record |
-| [`fix.bronze`](fixmsg.md) | one parsed event, however many lines stated it | `curruuid` | the parse's answer, no chain |
-| [`fix.silver`](fixmsg.md) | one walked event, identities settled at lifecycle time | `curruuid` | the chain filled, what the products read |
+| [`fix.raw`](fixmsg.md) | one parsed event, however many lines stated it | `curruuid` | the parse's answer, no chain |
+| [`fix.refined`](fixmsg.md) | one walked event, identities settled at lifecycle time | `curruuid` | the chain filled, what the products read |
 
-All three are laid out by the hour of `currunix` alone -- on a raw row the
+All three are laid out by the hour of `currunix` alone -- on a text row the
 instant the read settled over the line, on a FIX row the one the event settled
 on -- so what tells them apart is the key above and not the layout. Only
 `logs.messages` keeps `body`, and its `currhashcode` is the line's own code
-rather than the event's the two FIX tables carry. A FIX row names raw lines
-only through `srcuuids`, and adds the event's `curruuid`, its normalized
+rather than the event's the two FIX tables carry. A FIX row names stored
+lines only through `srcuuids`, and adds the event's `curruuid`, its normalized
 identifiers, message direction, and parsed or residual facts.
 
 ## Read products
@@ -51,7 +51,7 @@ store = IcebergCatalog.from_dict(
     }
 )
 messages = store.dataset("logs.messages").read_arrow_table()
-fixed = store.dataset("fix.silver").read_arrow_table()
+fixed = store.dataset("fix.refined").read_arrow_table()
 store.close()
 ```
 
@@ -70,9 +70,9 @@ audit = pyarrow.table(
     }
 )
 lines = messages.select(
-    ["curruuid", "sourceurl", "rownum", "currhashcode"]
+    ["curruuid", "crosscode", "seqnum", "currhashcode"]
 ).rename_columns(
-    ["lineuuid", "sourceurl", "rownum", "currhashcode"]
+    ["lineuuid", "crosscode", "seqnum", "currhashcode"]
 )
 joined = audit.join(lines, keys="lineuuid", join_type="left outer")
 
@@ -84,12 +84,14 @@ assert joined.column("currhashcode").null_count == 0
 
 The audit projects before it joins: a join carries no map or list column, and
 a FIX row has both -- `srcuuids` among them, which is why its entries are
-flattened to one provenance row each. The join is exact provenance rather than a recomputation:
-`srcuuids` contains identities the raw read stamped on source lines, carried
-through the parse and moved by no walk. Capture location and bytes come only
-from the joined raw row.
+flattened to one provenance row each. The join is exact provenance rather than
+a recomputation: `srcuuids` contains identities the text read stamped on
+lines, carried through the parse and moved by no walk. The object a line was
+read from, its row number and its text come only from the joined text row:
+its `crosscode`, `seqnum` and `body`.
 
-The line's `currhashcode` is an exact-byte content code. Raw and FIX rows both
-use a column named `curruuid` as their sole key, but at different grains: the
-raw value identifies the source line, while a FIX value identifies the settled
-event. `srcuuids` is the explicit join from the latter to the former.
+The line's `currhashcode` digests its object, its header's captures except
+the clock, its row number and its body. Text and FIX rows both use a column
+named `curruuid` as their sole key, but at different grains: the text row's
+value identifies the line, while a FIX value identifies the settled event.
+`srcuuids` is the explicit join from the latter to the former.

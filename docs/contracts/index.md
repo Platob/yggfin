@@ -8,19 +8,22 @@ without creating a second schema owner.
 | [`message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json) | 12 | `Message.into_field()` |
 | [`fixmsg.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fixmsg.json) | 128 | `fix_message_field()` |
 
-The second document is named **FixMsg** and declares both `fix.bronze` and
-`fix.silver`: one schema, one `curruuid` key, one hourly `currunix` partition,
+The second document is named **FixMsg** and declares both `fix.raw` and
+`fix.refined`: one schema, one `curruuid` key, one hourly `currunix` partition,
 and one `currunix, seqnum, curruuid` sort order.
 
 ## FIX row composition
 
 The registry constructs one 128-column native row used by parse, storage, and
-lifecycle. `sourceurl`, `rownum`, `msgthreadid`, `loglevel` and `body` remain
-solely in `logs.messages`; a FIX row names its raw source through `srcuuids`.
-The bridge captures beside them -- `msgsessionid`, `msgctxid`, `msgseqnum` and
-`msgpluginid` -- are crate fields of this row in their own right, which a raw
-line fills, so a stored row goes on through the codec without one spelling
-being translated into another. The native row's 32 crate fields include
+lifecycle. `msgthreadid`, `loglevel` and `body` remain solely in
+`logs.messages`; a FIX row names the lines it was read from through
+`srcuuids`. `crosscode` and `seqnum` stand on both rows and mean the row they
+sit on: the object a line was read from and its row number there, the chain a
+message belongs to and its step in it here. The bridge captures beside them --
+`msgsessionid`, `msgctxid`, `msgseqnum` and `msgpluginid` -- are crate fields
+of this row in their own right, which a stored line fills, so a stored row
+goes on through the codec without one spelling being translated into another.
+The native row's 32 crate fields include
 `msgcat` (`MsgCat`), `exprtime`, and the lifted code columns `isincode`,
 `cficode`, `cusipcode`, `sedolcode`, `bloombergcode`, `figicode`, and
 `miccode`.

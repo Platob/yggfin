@@ -1,8 +1,8 @@
 # Deploy Iceberg tables
 
 `rekep iceberg deploy` creates the three tables ingestion writes --
-`logs.messages`, `fix.bronze` and `fix.silver` -- with the same runtime fields
-their tasks use: `Message` for the raw product and `fix_message_field` for
+`logs.messages`, `fix.raw` and `fix.refined` -- with the same runtime fields
+their tasks use: `Message` for `logs.messages` and `fix_message_field` for
 both FIX tables, which answers all 128 native columns from the dictionary alone
 without consuming a capture row. Deployment is idempotent: an
 existing table is reported as `present` and is not rewritten.
@@ -35,8 +35,8 @@ Expected result shape:
   },
   "tables": {
     "logs.messages": "created",
-    "fix.bronze": "created",
-    "fix.silver": "created"
+    "fix.raw": "created",
+    "fix.refined": "created"
   }
 }
 ```
@@ -59,7 +59,7 @@ Create one product only:
 
 ```bash
 uv run --project python rekep iceberg deploy \
-  tasks/parse_messages/parse_messages.json --table fix.bronze
+  tasks/parse_messages/parse_messages.json --table fix.raw
 ```
 
 ## S3 with a SQL catalog
@@ -133,10 +133,10 @@ uv run --project python rekep task run \
   --parameters-file /run/rekep/aws.json \
   --parameter 'filesystem="s3://market-capture/ulbridge/2026/08/14?region=eu-west-1"'
 uv run --project python rekep task run \
-  tasks/parse_fix_bronze/parse_fix_bronze.json \
+  tasks/parse_fix_raw/parse_fix_raw.json \
   --parameters-file /run/rekep/aws.json
 uv run --project python rekep task run \
-  tasks/parse_fix_silver/parse_fix_silver.json \
+  tasks/parse_fix_refined/parse_fix_refined.json \
   --parameters-file /run/rekep/aws.json
 ```
 
@@ -300,55 +300,50 @@ Properties are applied only when a table is created. Deployment deliberately
 does not mutate an existing table; use maintenance or a reviewed migration for
 that.
 
-A newly deployed FIX table has exactly the 128 native FixMsg columns. Because
-schema merge is additive, an existing table that still has `sourceurl`,
-`rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`, or `level` --
-the names that table holds them under -- must delete those columns through a
-reviewed PyIceberg `update_schema()` transaction before its windows are
-replayed. `sourceurl`, `rownum`, `msgthreadid` and `loglevel` are the raw
-facts and remain in `logs.messages`, the last two under those spellings. The
-other three are retired outright: a line's own instant is `currunix` and the
-table is laid out by the hour of it rather than by a column beside it, and the
-plugin a line names is `msgpluginid`, a native FixMsg column the parse fills.
+A newly deployed FIX table has exactly the 128 native FixMsg columns, and a
+newly deployed `logs.messages` the 12 columns of the `Message` contract. A
+table of an older shape is not evolved into either; it is dropped and
+replayed from capture, as the next section says.
 
-## Migrating a warehouse that holds the retired FIX table
+## Migrating a warehouse written under an earlier yggdryl
 
-There is no compatibility shim for the one table the two FIX tables replaced.
-Run `rekep iceberg deploy` once: it creates `fix.bronze` and `fix.silver`, and
-it reports whatever `logs.messages` it finds as `present` -- deployment reads
-the catalog and not a table's shape.
+A warehouse written under yggdryl 0.1.9 or earlier is dropped and replayed
+from capture. There is no dual-write window and no evolution of an existing
+table into the new shape. Every `curruuid` and `currhashcode` differ under
+0.1.10: `curruuid` packs the microsecond of `currunix` and the whole 64-bit
+digest, and a line's `currhashcode` digests the object it was read from, the
+header's captures except the clock, its row number and then its body. Every
+table is keyed on that identity alone and `srcuuids` joins to it, so a replay
+under 0.1.10 over an older table would land new keys beside the old ones,
+never over them. The contract change follows the same rule: `logs.messages`
+names the object a line was read from and its row number as `crosscode` and
+`seqnum`, and every one of its Iceberg field ids was renumbered, which no
+schema merge does to a table in place.
 
-A `logs.messages` of the previous shape is not this one. It is the generic
-event layout now: `timestamp`, `timepartition` and `pluginid` are gone,
-`currunix` is required and is what the table is laid out by, `curruuid` is
-required and is the second field, and every field id is renumbered. Three
-columns removed, a required column added and the ids restated are not an
-additive widening, and Iceberg adds no required column to rows that never
-held it -- so drop the raw table before the replay rather than looking for a
-migration of it. The capture is what it was read from, and the capture is
-still there.
+Drop `logs.messages`, `fix.raw`, `fix.refined`, `orders.events`,
+`orders.current` and `executions.fills`. Run `rekep iceberg deploy` once: it
+creates the three ingestion tables, and it reports one it still finds as
+`present` -- deployment reads the catalog and not a table's shape. Then
+replay each window through `parse_messages`, `parse_fix_raw` and
+`parse_fix_refined`, in that order, and run
+[`build_dbt`](../tasks/build-dbt.md) afterwards. The capture is what every
+row was read from, and it is still there: the read states the instant, the
+identity and the content code over every line again, the parse reads that
+stored identity back rather than recomputing one, and the walk merges them
+-- which is why `srcuuids` joins the line that landed, and why the replay is
+the migration. Replay from where each capture was read, never from a copy
+written at another time: a line the header did not match is dated by its
+object's modification time, and its identity derives from that instant, so a
+copy states another identity for every such line.
 
-The same recreate-and-replay rule applies to the immediately preceding shape
-whose columns already match but whose identifier field is `currhashcode`.
-Iceberg schema merge does not replace identifier fields: the current table has
-`curruuid` as its sole identifier, while `currhashcode` is ordinary content
-metadata.
-
-Then replay each window through `parse_messages`, `parse_fix_bronze` and
-`parse_fix_silver`, in that order, and drop the retired FIX table. The first
-run creates `logs.messages` in the shape above, so the raw table is created
-and not evolved. The capture is read again, so every line states the instant,
-the identity and the content code the read settles over its bytes, and the
-parse reads that stored identity back rather than recomputing one -- which is
-why `srcuuids` joins the line that landed, and why the replay is the migration
-and not the fallback. A retired table the previous core wrote cannot be walked
-in place: its rows are not the pinned core's 128-column native row, and
-`parse_fix_silver` reads a table named as its `bronze` only in that shape. The
-products are rebuilt by [`build_dbt`](../tasks/build-dbt.md) afterwards; drop
-`orders.events`, `orders.current` and `executions.fills` first, because the
-products' `lastpx` and `avgpx` moved from double to decimal with the
-dictionary, and a column an existing table already holds is not retyped in
-place.
+A FIX table an earlier core wrote cannot be walked in place: the 0.1.10
+dictionary renamed three of its group columns -- `regulatorytradeids`,
+`partysubids` and `secaltids` -- so its rows are not the pinned core's
+128-column row, and `parse_fix_refined` reads a table named as its `raw` only
+in that shape. The products are dropped with the rest because their keys are
+those identities -- `eventkey` is `curruuid`, `orderkey` is `crossuuid` -- so
+a build over an older product would land new keys beside the old ones the
+same way.
 
 ## Python API
 
@@ -370,7 +365,7 @@ try:
 finally:
     catalog.close()
 
-assert set(result) == {"logs.messages", "fix.bronze", "fix.silver"}
+assert set(result) == {"logs.messages", "fix.raw", "fix.refined"}
 ```
 
 ## Verification

@@ -1,8 +1,8 @@
-# fix.bronze and fix.silver
+# fix.raw and fix.refined
 
-`fix.bronze` and `fix.silver` store one **FixMsg** contract. Bronze is the
-settled parse of each event; silver is that event after an ordered lifecycle
-walk.
+`fix.raw` and `fix.refined` store one **FixMsg** contract. `fix.raw` is the
+settled parse of each event; `fix.refined` is that event after an ordered
+lifecycle walk.
 
 | property | contract |
 | --- | --- |
@@ -19,12 +19,15 @@ the partition it is replacing.
 
 ## Row composition
 
-The bundled registry produces 128 native columns. Parsing stored capture rows,
-writing bronze, reconstructing messages, and walking silver all use this same
-shape. `sourceurl`, `rownum`, `msgthreadid`, `loglevel` and `body` are raw to
-`logs.messages` and stay there; the header's other four -- `msgsessionid`,
+The bundled registry produces 128 native columns. Parsing stored lines,
+writing `fix.raw`, reconstructing messages, and walking `fix.refined` all use
+this same shape. `msgthreadid`, `loglevel` and `body` are columns of
+`logs.messages` alone; the header's other four -- `msgsessionid`,
 `msgctxid`, `msgseqnum` and `msgpluginid` -- are columns of this shape too,
-which is why a raw line fills them under the names it already stored.
+which is why a stored line fills them under the names it already holds.
+`crosscode` and `seqnum` stand on both shapes and mean the row they sit on:
+the object a line was read from and its row number there, the chain a
+message belongs to and its step in the chain here.
 
 The native row includes 32 crate fields and standard FIX fields chosen by the
 registry. Its lifted vocabulary includes:
@@ -72,19 +75,24 @@ byte-length-prefixed value, `identifiers["msgsesseventid"]` -- for example
 `1:8|8:e7254b11|10:9f03166699|3088`; an incomplete set produces no synthetic key.
 Changing capture context does not change the message content identity.
 
-`fix.bronze` has no lifecycle predecessor. `fix.silver` fills `seqnum`,
+`fix.raw` has no lifecycle predecessor. `fix.refined` fills `seqnum`,
 `prevuuid`, `parentuuids`, folded state, creation and expiry from the ordered
 walk. Repeated deliveries are merged into one event, whose `srcuuids` names
-every line it was logged on, without merging distinct events.
+every line it was logged on, without merging distinct events. On a `fix.raw`
+row `recdunix` and `refrecdunix` are both the line's own clock; on a
+`fix.refined` row `recdunix` is the earliest observation and `refrecdunix` the
+clock of the reference the walk merged on, and the one row no line recorded,
+the walk's expiry, states neither. `execunix` is what the bridge states, where
+it does.
 
-## Raw-line provenance
+## Line provenance
 
-`srcuuids` is the only raw-capture reference in FixMsg. Its values join to
-`logs.messages.curruuid`, where `sourceurl`, `rownum`, the instant the read
-settled over the line, the rest of its header and its whole `body` text remain
-available. The parse reads the stored identity back rather than recomputing
-one, so the join names the line that landed. A stored FIX row is
-self-contained for canonical message reconstruction.
+`srcuuids` is the only reference to a stored line in FixMsg. Its values join
+to `logs.messages.curruuid`, where the object the line was read from, its row
+number, the instant the read settled over the line, the rest of its header and
+its `body` remain available. The parse reads the stored identity back rather
+than recomputing one, so the join names the line that landed. A stored FIX row
+is self-contained for canonical message reconstruction.
 
 ## Inspect the product field
 
@@ -98,8 +106,7 @@ assert len(schema) == 128
 assert schema.field("msgtype").metadata[b"FIX:tag"] == b"35"
 assert schema.field("curruuid").metadata[b"ICEBERG:primary_key"] == b"true"
 assert schema.field("currunix").metadata[b"ICEBERG:partition_key"] == b"hour"
-assert not {
-    "sourceurl", "rownum", "msgthreadid", "loglevel", "body",
-} & set(schema.names)
+assert not {"msgthreadid", "loglevel", "body"} & set(schema.names)
+assert {"crosscode", "seqnum", "srcuuids"} <= set(schema.names)
 assert schema.names[-2:] == ["nofixentries", "fixentries"]
 ```

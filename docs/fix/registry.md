@@ -250,6 +250,7 @@ Search the same 7,781 definitions here, by tag, name, spelling or description:
 <div data-fix="registry"></div>
 
 The [registry browser](../tools/fix-registry.md) is the Marimo tool over the
-same dictionary; it exposes branches, groups, members, code sets, lineage, raw
-metadata, Field JSON, and the complete `FixMsg` schema. Both read generated
+same dictionary; it exposes branches, groups, members, code sets, lineage, the
+complete field metadata, Field JSON, and the complete `FixMsg` schema. Both
+read generated
 assets that are read-only projections of this same bundled registry.

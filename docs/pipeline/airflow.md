@@ -3,10 +3,10 @@
 `tasks/airflow/pipeline.py` declares the ready-to-run `rekep_ingestion` DAG:
 
 ```text
-parse_messages -> parse_fix_bronze -> parse_fix_silver
+parse_messages -> parse_fix_raw -> parse_fix_refined
      |                  |                   |
      v                  v                   v
-logs.messages       fix.bronze          fix.silver
+logs.messages       fix.raw          fix.refined
 ```
 
 It runs daily, and each run covers its own data interval: the operator hands
@@ -14,9 +14,9 @@ the interval to all three tasks as their `start` and `end`, so a day's run
 reads the day's lines under `filesystem` and replaces them in all three
 tables. The DAG exposes the union of the three adjacent task documents as
 Params. A manual run can therefore replace `filesystem`, `rowheader`, `start`,
-`end`, `catalog`, `messages`, `registry`, `codec_options` or `bronze` without
+`end`, `catalog`, `messages`, `registry`, `codec_options` or `raw` without
 creating another DAG, and a bound the run's conf names wins over the interval. `messages` and
-`bronze` are named for the table each FIX stage reads, so one Params mapping
+`raw` are named for the table each FIX stage reads, so one Params mapping
 over three documents cannot hand one stage the other's source. There is no
 `version` Param: what a message was read at is what its own `beginstring`
 said.
@@ -67,7 +67,7 @@ is left as named.
 ### Assets and what a run returns
 
 Each node declares one `Asset` outlet named exactly for the table it writes,
-`logs.messages`, `fix.bronze` and `fix.silver`, so a downstream DAG can be
+`logs.messages`, `fix.raw` and `fix.refined`, so a downstream DAG can be
 scheduled on any of them. When a run finishes, the operator attaches `task`,
 `read`, `written` and `skipped` to the event of every outlet its result names
 as a target -- a table this run did not write claims nothing.
@@ -82,13 +82,13 @@ under `return_value`. Its fields are listed in
 [`build_dbt`](tasks/build-dbt.md):
 
 ```text
-fix.silver -> build_dbt -> orders.events, orders.current, executions.fills
+fix.refined -> build_dbt -> orders.events, orders.current, executions.fills
 ```
 
-Its schedule is the `fix.silver` Asset the ingestion DAG publishes last, so a
-build starts when `parse_fix_silver` writes and the two DAGs are one route
+Its schedule is the `fix.refined` Asset the ingestion DAG publishes last, so a
+build starts when `parse_fix_refined` writes and the two DAGs are one route
 without either naming the other's tasks. A product reads the walked rows and
-never `fix.bronze`, so no build waits on the parse alone. The node declares
+never `fix.raw`, so no build waits on the parse alone. The node declares
 one outlet per table the dbt models commit, so a third DAG can be scheduled on
 a product the same way.
 
@@ -198,11 +198,11 @@ environment measurements rather than contract values:
 
 ```text
 INFO rekep.logs parse_messages finished: 144 read, 144 written, 0 skipped → messages=logs.messages
-INFO rekep.logs parse_fix_bronze finished: 144 read, 49 written, 30 skipped → bronze=fix.bronze
-INFO rekep.logs parse_fix_silver finished: 49 read, 22 written, 0 skipped → silver=fix.silver
+INFO rekep.logs parse_fix_raw finished: 144 read, 49 written, 30 skipped → raw=fix.raw
+INFO rekep.logs parse_fix_refined finished: 49 read, 19 written, 0 skipped → refined=fix.refined
 DagRun Finished: dag_id=rekep_ingestion, ... state=success
 INFO rekep.logs build_dbt 29 nodes ran: 4 models, 25 tests, 0 warned
-INFO rekep.logs build_dbt finished: 29 read, 34 written, 0 skipped → executions_fills=executions.fills, orders_events=orders.events, orders_current=orders.current
+INFO rekep.logs build_dbt finished: 29 read, 31 written, 0 skipped → executions_fills=executions.fills, orders_events=orders.events, orders_current=orders.current
 DagRun Finished: dag_id=rekep_products, ... state=success
 ```
 
@@ -211,7 +211,7 @@ run's `--conf` reaches every node as its Params, and that each node ran the
 locked runner into the catalog the conf named. It runs one DAG directly and
 fires no Asset-triggered run, which is why the products DAG has its own
 command above. `airflow assets list`
-then names the six Assets: `logs.messages`, `fix.bronze`, `fix.silver`,
+then names the six Assets: `logs.messages`, `fix.raw`, `fix.refined`,
 `orders.events`, `orders.current` and `executions.fills`. The integration test
 `test_a_real_dag_run_publishes_both_tables_from_its_conf` in
 `python/tests/test_marimo_operator.py` runs the ingestion DAG this way.
@@ -224,7 +224,7 @@ trigger above issued over the test fixture and with no `catalog` in its conf.
 The scheduler recorded a
 manual run of `rekep_ingestion` that took 22 seconds and, before that run was
 marked finished, a run of `rekep_products` it created itself off the event
-`parse_fix_silver` had just published:
+`parse_fix_refined` had just published:
 
 ```text
 Created asset-triggered DagRun for 'rekep_products': ... consumed 1 asset events
@@ -239,9 +239,9 @@ at all, so `rekep_products` reads the catalog
 which leaves the one `data/dbt/profiles.yml` declares -- and the two DAGs
 reach one catalog through their documents or not at all. A first attempt that
 had pointed the ingestion trigger at a catalog of its own failed in
-`build_dbt` with `Table does not exist: fix.silver` for exactly that reason.
+`build_dbt` with `Table does not exist: fix.refined` for exactly that reason.
 The warehouse then held the three ingestion counts above, and `orders.events`
-19, `orders.current` 8 and `executions.fills` 7 rows, which is what every
+16, `orders.current` 8 and `executions.fills` 7 rows, which is what every
 other route lands; `tools/pipeline_samples.py --catalog … --check` against it
 answered `4 samples match`.
 

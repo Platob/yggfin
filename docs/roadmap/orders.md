@@ -8,7 +8,7 @@ late messages without making one mutable row the audit trail.
 
 One source message emits one event when it carries an order identity and an
 order lifecycle fact. Messages without enough identity remain in
-`fix.silver`; they are counted as rejected derivations rather than assigned
+`fix.refined`; they are counted as rejected derivations rather than assigned
 a guessed order.
 
 ### Planned schema
@@ -17,7 +17,7 @@ a guessed order.
 | --- | --- | :---: | --- |
 | `orderkey` | `fixed_size_binary[16]` | no | digest of stable session/account/client-or-venue identity |
 | `eventkey` | `fixed_size_binary[16]` | no | native settled event identity; primary key |
-| `srcuuids` | `list<fixed_size_binary[16]>` | no | raw-line identities for provenance |
+| `srcuuids` | `list<fixed_size_binary[16]>` | no | source line identities for provenance |
 | `eventindex` | `int32` | no | zero for one-event messages; supports future exploded groups |
 | `curruuid` | `fixed_size_binary[16]` | no | settled event identity |
 | `eventtime` | `timestamp[us, UTC]` | no | lifecycle `currunix`, including exact expiry deadlines |

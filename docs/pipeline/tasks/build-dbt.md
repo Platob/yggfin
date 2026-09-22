@@ -40,7 +40,7 @@ checked-in project keeps its local default.
 
 ```mermaid
 flowchart LR
-    F[("fix.silver")] --> P["rekep.dbt load()"]
+    F[("fix.refined")] --> P["rekep.dbt load()"]
     P --> D["DuckDB :memory:"]
     D --> S["staged Parquet"]
     S --> C["rekep.dbt store()"]
@@ -84,7 +84,7 @@ is what DuckDB spells.
 
 - `orders.events` takes a message that carries an order identity and an order
   lifecycle fact. A message carrying one and not the other stays in
-  `fix.silver` rather than being assigned a guessed order, and an unknown
+  `fix.refined` rather than being assigned a guessed order, and an unknown
   chain -- an empty `crosscode` -- is not an order.
 - `orders.current` is folded from `orders.events` alone, never from FIX. The
   winning event is the latest `eventtime`, then the latest lifecycle `seqnum`,
@@ -137,9 +137,9 @@ sources:
     meta:
       plugin: rekep
     tables:
-      - name: silver
+      - name: refined
         meta:
-          table: fix.silver
+          table: fix.refined
           columns: [srcuuids, curruuid, crosscode]
 ```
 
@@ -157,10 +157,10 @@ by `columns`, `row_filter` and `limit` rather than read whole. The shipped
 project projects the fields from the 128-column FIX row that current products
 read. That projection is pushed into the Iceberg scan before DuckDB sees it.
 
-The source is `fix.silver` and never `fix.bronze`, though both are declared:
+The source is `fix.refined` and never `fix.raw`, though both are declared:
 a product needs the chain -- the step an event follows, the state its chain
-reached -- and only the walked rows carry one; bronze holds the same events
-with `seqnum` and `prevuuid` empty on every row, so a product built on it
+reached -- and only the walked rows carry one; `fix.raw` holds the same
+events with `seqnum` and `prevuuid` empty on every row, so a product built on it
 would fold every order from its first event alone. A market fact is FIX's own
 field, and the staging model `stg_fix_messages` restates the products' reading
 of it off those fields: `px` is `coalesce(price, lastpx, avgpx)`, `qty` is
@@ -195,8 +195,8 @@ uv run --project python rekep task run tasks/build_dbt/build_dbt.json \
 ```
 
 Airflow runs the same document. The [`rekep_products`](../airflow.md#the-products-dag)
-DAG is scheduled on the `fix.silver` Asset the ingestion DAG publishes, so a
-build starts when `parse_fix_silver` writes.
+DAG is scheduled on the `fix.refined` Asset the ingestion DAG publishes, so a
+build starts when `parse_fix_refined` writes.
 
 ## What the result says
 
@@ -204,7 +204,7 @@ build starts when `parse_fix_silver` writes.
 {
   "task": "build_dbt",
   "read": 29,
-  "written": 34,
+  "written": 31,
   "skipped": 0,
   "sources": {"project": "data/dbt"},
   "targets": {
@@ -217,7 +217,7 @@ build starts when `parse_fix_silver` writes.
   "models": 4,
   "tests": 25,
   "warned": [],
-  "rows": {"orders.events": 19, "orders.current": 8, "executions.fills": 7}
+  "rows": {"orders.events": 16, "orders.current": 8, "executions.fills": 7}
 }
 ```
 
@@ -269,7 +269,7 @@ data/dbt/
     rekep.sql         the digest and the normalized states more than one model reads
   models/
     sources.yml       the three published tables, and the projection the one a model reads is read under
-    staging/          one narrowing of `fix.silver`, never published
+    staging/          one narrowing of `fix.refined`, never published
     orders/           orders.events and orders.current
     executions/       executions.fills
   tests/              the checks that span two products
@@ -291,10 +291,10 @@ the SQL projection of that specification and state where they differ:
 
 | planned | here | why |
 | --- | --- | --- |
-| `side`, `state`, `exectype` as fixed-width bytes | the normalized strings `fix.silver` carries | a storage width is a declaration, and this layer does not add one to a value it passes through |
+| `side`, `state`, `exectype` as fixed-width bytes | the normalized strings `fix.refined` carries | a storage width is a declaration, and this layer does not add one to a value it passes through |
 | `parties`, `regulatorytimestamps` | not carried | these are lifted nested columns, and a list of structs through DuckDB is a conversion this seam does not own |
 | `originalexecutionkey`, `liquidity` | not carried | `ExecRefID` and `LastLiquidityInd` are not in the fixed projection yet |
-| rejected-derivation counters | not carried | what a product left behind is still countable in `fix.silver`, but nothing publishes it |
+| rejected-derivation counters | not carried | what a product left behind is still countable in `fix.refined`, but nothing publishes it |
 
 `orders.current` is unpartitioned: one row per order is the whole table, and a
 partition on a column that moves would rewrite a file every time an order

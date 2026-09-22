@@ -29,10 +29,11 @@ written = messages.overwrite_arrow_reader(
 ```
 
 `merge_by=True` uses the primary key declared on the native Field. It is
-`curruuid` alone for `logs.messages`, `fix.bronze`, and `fix.silver`; the raw
-UUID identifies a source line and the FIX UUID identifies a settled event. A
-parse answers one row per message; capture location remains on the raw table
-and does not identify an event row. A missing table is created.
+`curruuid` alone for `logs.messages`, `fix.raw`, and `fix.refined`; a
+`logs.messages` UUID identifies a line and a FIX UUID identifies a settled
+event. A parse answers one row per message; the object a line was read from
+stays on `logs.messages` and identifies no event row. A missing table is
+created.
 `commit_batch_num` and the optional `commit_row_size` bound each storage
 commit independently from input batch size, however many partitions the
 bounded chunk spans: its parts are staged one at a time and committed together.
@@ -151,7 +152,7 @@ from rekep import Field
 
 fix_field = Field.from_arrow_schema(reader.schema, name="FixMsg")
 fixes = catalog.dataset(
-    "fix.silver",
+    "fix.refined",
     field=fix_field,
     merge_schema=True,
 )
@@ -159,8 +160,8 @@ fixes.append_arrow_reader(reader, fix_field)
 ```
 
 Pass the current Field explicitly when its reader may be newer than the stored
-table. This mode is enabled by `parse_fix_bronze` and `parse_fix_silver`; the
-raw `Message` contract remains fixed. It is additive only: existing types,
+table. This mode is enabled by `parse_fix_raw` and `parse_fix_refined`; the
+`Message` contract remains fixed. It is additive only: existing types,
 nullability, comments, field IDs, identifier fields, partition specs, and sort
 orders do not change. Iceberg assigns IDs to additions. A column added to an
 existing table must be nullable because older rows have no value for it; the
@@ -169,20 +170,20 @@ are table-wide even when rows are written to a branch. A write with no new
 column makes no schema commit.
 
 The current FIX contract creates a new table with its 128 native columns.
-`merge_schema=True` cannot retire columns from an existing table, so before
-replaying an older FIX table use PyIceberg `table.update_schema()` to delete
-`sourceurl`, `rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`,
-and `level` -- the names that table holds them under. `sourceurl`, `rownum`,
-`msgthreadid` and `loglevel` are the raw values and remain in `logs.messages`,
-the last two under those spellings; the other three are retired outright,
-because a line's instant is `currunix` and the plugin it names is
-`msgpluginid`, a native FixMsg column the parse fills.
+`merge_schema=True` cannot retire or rename a column, and no table written
+under yggdryl 0.1.9 or earlier is evolved into the 0.1.10 shape: every
+`curruuid` and `currhashcode` differ under 0.1.10, the 0.1.10 dictionary
+renamed three group columns, and the field ids of `logs.messages` were
+renumbered. Such a warehouse is dropped and replayed from capture --
+`logs.messages`, both FIX tables and the three products, then
+`rekep iceberg deploy`, then every window -- with no dual-write window; the
+path is on the [deploy page](../pipeline/operations/deploy.md).
 
 Before either write, the native `Field` applies its declarations in dependency
 order: **cast → derived partition columns → digest holders**. All three tables
 lay out on `currunix` alone, the hour transform over the event's own instant --
 what the message stated on a FIX row, what the read settled over the line on a
-raw one -- and none materializes a second layout column beside it. The
+text row -- and none materializes a second layout column beside it. The
 `Message` contract derives nothing at all: every column of it is one the read
 already states.
 
@@ -206,9 +207,9 @@ authoritative for storage planning.
 
 ```python
 reader = messages.read_arrow_reader(
-    columns=("sourceurl", "rownum", "body"),
-    row_filter="rownum >= 1000",
-    order_by=("rownum",),
+    columns=("crosscode", "seqnum", "body"),
+    row_filter="seqnum >= 1000",
+    order_by=("seqnum",),
     limit=100,
 )
 try:
@@ -282,10 +283,12 @@ served by an Iceberg REST catalog AWS hosts -- at two endpoints, which the
 }
 ```
 
-The ARN states its region; the Glue name does not, so that one is stated as
-`rest.signing-region` or in the worker's AWS environment. Anything else the
-warehouse does not decide -- `uri` for a VPC or FIPS endpoint, another signing
-region, explicit `s3.*` settings -- is kept exactly as stated.
+The ARN is read by `yggdryl.Arn`, with no regular expression of rekep's own:
+service `s3tables`, resource type `bucket`, a stated region, and nothing under
+the bucket. The ARN states its region; the Glue name does not, so that one is
+stated as `rest.signing-region` or in the worker's AWS environment. Anything
+else the warehouse does not decide -- `uri` for a VPC or FIPS endpoint,
+another signing region, explicit `s3.*` settings -- is kept exactly as stated.
 `IcebergCatalog.table_bucket` answers the warehouse for such a catalog and
 `None` for every other, which is how maintenance knows whose files it is
 looking at and why a drop there purges. The extra is `rekep[s3tables]`:
@@ -295,18 +298,17 @@ Lake Formation asks for behind the Glue one, is in
 
 ## Message schema replacement
 
-The current raw contract is the generic event layout: `currunix`, `curruuid`
-and `currhashcode` as the read states them, `sourceurl` and `rownum` from the
-traversal, the line itself, and the ULBridge header captures beside them. It
-derives nothing, is keyed only by `curruuid`, and is laid out by the hour of
-`currunix` alone. Iceberg identifier fields cannot be changed by additive
-schema merge, so a `logs.messages` table created with `currhashcode` as its
-identifier must be recreated and reingested from the capture.
-Recreate an older messages table from `Message.into_field()` and reingest its
-source captures: three columns are gone, a required column is added and every
-field id is renumbered, so there is no additive widening to evolve into --
-and rekep carries no legacy name, timestamp-type, digest-name, or
-partition-layout compatibility path.
+The `Message` contract is the native event layout: `currunix`, `curruuid`,
+`currhashcode`, `crosscode` and `seqnum` as the read states them, the line
+past its header, and the ULBridge header captures beside them. It derives
+nothing, is keyed only by `curruuid`, and is laid out by the hour of
+`currunix` alone. A `logs.messages` written under yggdryl 0.1.9 or earlier
+holds other identities under other field ids and is not evolved into this
+shape: the table is dropped, recreated from `Message.into_field()` by
+`rekep iceberg deploy`, and its captures replayed -- together with both FIX
+tables and the three products, whose `srcuuids` and keys join to it. rekep
+carries no legacy name, timestamp-type, digest-name, or partition-layout
+compatibility path.
 
 ## Maintenance
 
@@ -345,6 +347,6 @@ rekep task run tasks/optimize_iceberg/optimize_iceberg.json
 | `log_level` | `DEBUG` for file and plan details |
 
 Each table reports under its full identifier -- `logs.messages`,
-`fix.silver` -- so equal table names in different namespaces cannot collide.
+`fix.refined` -- so equal table names in different namespaces cannot collide.
 
 Run long transaction checks explicitly with `pytest -m integration`.

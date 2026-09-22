@@ -3,25 +3,25 @@
 `pipeline.py` declares the daily `rekep_ingestion` DAG:
 
 ```text
-parse_messages -> parse_fix_bronze -> parse_fix_silver
-     |                  |                   |
-     v                  v                   v
-logs.messages       fix.bronze          fix.silver
+parse_messages -> parse_fix_raw -> parse_fix_refined
+      |                 |                  |
+      v                 v                  v
+logs.messages        fix.raw          fix.refined
 ```
 
 One Params mapping covers the three task documents, so a name two of them
 share -- `start`, `end`, `catalog`, `registry` -- means one thing on every
 node, and the table each stage reads is named for what it reads, `messages`
-and `bronze`, so a run's conf cannot hand one stage the other's source.
+and `raw`, so a run's conf cannot hand one stage the other's source.
 
 `products.py` declares `rekep_products`, which is one node, `build_dbt`:
 
 ```text
-fix.silver -> build_dbt -> orders.events, orders.current, executions.fills
+fix.refined -> build_dbt -> orders.events, orders.current, executions.fills
 ```
 
-Its schedule is the `fix.silver` Asset the first DAG publishes last, so a build
-starts when `parse_fix_silver` writes and neither DAG names the other's tasks.
+Its schedule is the `fix.refined` Asset the first DAG publishes last, so a build
+starts when `parse_fix_refined` writes and neither DAG names the other's tasks.
 dbt is in the `runner` group, so the same locked environment runs it.
 
 Each node is a `MarimoOperator`. The operator enters the repository's locked
@@ -66,8 +66,8 @@ the day's lines under `filesystem` and replaces them in all three tables. A
 manual trigger covers the last complete day unless its conf names `start` and
 `end`, which win over the interval. Configure
 `tasks/parse_messages/parse_messages.json`,
-`tasks/parse_fix_bronze/parse_fix_bronze.json` and
-`tasks/parse_fix_silver/parse_fix_silver.json`, then let it run or trigger
+`tasks/parse_fix_raw/parse_fix_raw.json` and
+`tasks/parse_fix_refined/parse_fix_refined.json`, then let it run or trigger
 it. The local SQLite catalog is for one-host smoke
 tests; production catalog and S3 settings belong in those task documents.
 
