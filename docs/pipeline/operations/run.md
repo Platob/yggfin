@@ -65,7 +65,7 @@ There is no version left to pin: what a message was read at is what its own
 `beginstring` said, and native `FixCodec` validates every keyword it receives.
 `codec_options: null` delegates native defaults; an object is forwarded
 unchanged. Useful pins include `batch_row_size`, `include_msgtypes`,
-`exclude_msgtypes`, `threads`, and `snapshot_ns`. `version` is no longer a task parameter, so a
+`exclude_msgtypes`, `threads`, `official_time_delay_ms`, and `snapshot_ns`. `version` is no longer a task parameter, so a
 `--parameter 'version="4.4"'` names nothing the document declares -- the CLI
 carries it into an unused definition and Airflow's operator fails the task
 outright. There is no switch on the walk: the parsed rows without their

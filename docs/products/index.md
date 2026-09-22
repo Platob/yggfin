@@ -76,7 +76,9 @@ lines = messages.select(
 )
 joined = audit.join(lines, keys="lineuuid", join_type="left outer")
 
-assert joined.num_rows == fixed.num_rows
+assert joined.num_rows == pyarrow.compute.sum(
+    pyarrow.compute.list_value_length(fixed.column("srcuuids"))
+).as_py()
 assert joined.column("currhashcode").null_count == 0
 ```
 

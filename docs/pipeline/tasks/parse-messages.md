@@ -74,8 +74,8 @@ the key: nothing here computes a digest beside it. The read states that code
 unsigned, which is why the reader above is checked against `read_field()` and
 not the narrower field a table holds. `sourceurl` and `rownum` come from
 traversal, and `curruuid` is the line's own identity the read states -- a
-UUIDv7 over the settled instant and that content code, on every row the read
-produces -- which a message parsed out of the stored line names as its one
+UUIDv7 over the settled millisecond, the line's place in the read and its source, on every row the read
+produces -- which a bronze message parsed out of the stored line names as its one
 `srcuuids` entry.
 
 `sourceurl`, `rownum`, `msgthreadid`, `loglevel` and `body` are raw to
@@ -193,15 +193,15 @@ reader's rows on `curruuid`, the source-line identity: a stored row
 carrying one of the window's keys is taken out and the window's row lands, in
 one commit per bounded chunk. A missing table is created. If no existing file
 can contain a key, this keyed write commits as an append; a matching replay is
-an overwrite of only the affected files. The released native 0.1.8 identity
-still collapses the fixture's three exact repeated lines, so its 144 physical
-lines currently land as 141 rows. The next native identity includes source
-and physical sequence, making those UUIDs distinct without adding a composite
-or content-code key.
+an overwrite of only the affected files. The native identity carries the line's
+place in the read and its source, so the fixture's three exact repeated lines
+answer three identities and its 144 physical lines land as 144 rows -- distinct
+without a composite or content-code key. The same bytes read from two URIs
+answer two identities under one `currhashcode`.
 
 ## Sample rows
 
-The sample is 29 capture lines from `python/tests/data/ulbridge.log` that the
+The sample is 27 capture lines from `python/tests/data/ulbridge.log` that the
 FIX walk later joins under business chain `00026877711XOEA0`, as
 `parse_messages` lands them in `logs.messages`. An
 identity is shown by its last eight hex digits behind a leading `…`, and the

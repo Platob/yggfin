@@ -23,7 +23,7 @@ and the `shape` column says which of them is nested.
 
 The summary reports the counts per category, the dialects, code sets, and the
 message types. The bundled dictionary should report 7,781 definitions --
-6,268 scalar fields, 928 components and 582 repeating groups -- plus 736
+6,271 scalar fields, 928 components and 582 repeating groups -- plus 736
 centrally owned code sets, under no named dialect.
 
 ## Message types

@@ -8,8 +8,8 @@ components and repeating groups without another model.
 
 | source | count | dialect |
 | --- | ---: | --- |
-| crate definitions | 29 | standard, tags 65003-65061 |
-| bundled specification and the crate's own | 6,268 scalar fields | standard |
+| crate definitions | 32 | standard, tags 65003-65064 |
+| bundled specification and the crate's own | 6,271 scalar fields | standard |
 | definitions in all | 7,781 | no named dialect |
 | central code sets | 736 | field references use `FIX:codeset` |
 
@@ -24,7 +24,7 @@ registry = fix_registry()
 
 assert len(registry) == 7781
 assert registry.dialects() == []
-assert len(fix_crate_fields()) == 29
+assert len(fix_crate_fields()) == 32
 ```
 
 Scalar fields are one shape of definition among four. Components and repeating
@@ -34,7 +34,7 @@ derived beside it:
 
 | shape | count | read by |
 | --- | ---: | --- |
-| scalar fields | 6,268 | iterating the registry |
+| scalar fields | 6,271 | iterating the registry |
 | components | 928 | the `components` array of `registry.into_json()` |
 | repeating groups | 582 | the `groups` array of the same document |
 | message types | 181 | the components carrying `FIX:msgtype` |
@@ -51,7 +51,7 @@ from rekep.fix import fix_registry
 registry = fix_registry()
 document = json.loads(registry.into_json())
 
-assert sum(1 for _ in registry) == 6261
+assert sum(1 for _ in registry) == 6271
 assert len(document["components"]) == 928
 assert len(document["groups"]) == 582
 assert registry.msgtype("D").name == "newordersingle"
@@ -200,8 +200,8 @@ assert {"value": "D", "name": "NewOrderSingle"}.items() <= codes[
 
 ## Runtime fields
 
-Every registry starts with 29 crate definitions: 27 scalar columns and two
-groups. They cover event clocks and identities, lifecycle state, capture
+Every registry starts with 32 crate definitions: 28 scalar columns and four
+nested ones. They cover event clocks and identities, lifecycle state, capture
 context, metadata, residual entries, and the seven normalized instrument-code
 columns. The code fields use `ISINCode`, `CFICode`, `CUSIPCode`, `SEDOLCode`,
 `BloombergCode`, `FIGICode`, and `MICCode`; CFI remains standard FIX tag 461.
@@ -212,8 +212,8 @@ from rekep.fix import fix_crate_fields
 
 tags = [field.fix.tag for field in fix_crate_fields()]
 
-assert len(tags) == 29
-assert min(tags) == 65003 and max(tags) == 65061
+assert len(tags) == 32
+assert min(tags) == 65003 and max(tags) == 65064
 assert 65017 in tags and 65039 in tags
 ```
 

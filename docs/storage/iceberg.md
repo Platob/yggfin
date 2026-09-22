@@ -168,7 +168,7 @@ first write creates a missing table directly from its Field. Schema updates
 are table-wide even when rows are written to a branch. A write with no new
 column makes no schema commit.
 
-The current FIX contract creates a new table with its 123 native columns.
+The current FIX contract creates a new table with its 128 native columns.
 `merge_schema=True` cannot retire columns from an existing table, so before
 replaying an older FIX table use PyIceberg `table.update_schema()` to delete
 `sourceurl`, `rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`,

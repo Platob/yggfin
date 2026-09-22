@@ -23,7 +23,7 @@ not a line, so what the codec answered is counted separately from the lines
 it was handed, and its `skipped` is counted against those messages -- a
 restatement of an identity the key already folded -- rather than against the
 lines. `parse_fix_silver` returns nothing beside the contract: the walk
-answers one row per row it read. `build_dbt` returns `models`, `tests` and
+answers one row per event, folding every observation of it. `build_dbt` returns `models`, `tests` and
 `rows`, because its unit of work is a dbt node: `read` and `skipped` count
 nodes there, and `written` and `rows` count the rows its models committed.
 
@@ -35,9 +35,9 @@ small enough for Airflow XCom because it contains no rows or schemas.
 ```json
 {
   "task": "parse_fix_bronze",
-  "read": 141,
-  "written": 51,
-  "skipped": 28,
+  "read": 144,
+  "written": 49,
+  "skipped": 30,
   "sources": {"messages": "logs.messages"},
   "targets": {"bronze": "fix.bronze"},
   "window": {"start": 1786665600000000000, "end": 1786752000000000000},
@@ -56,9 +56,9 @@ mapping of exactly `start` and `end`.
 
 ## Monitoring rules
 
-- `parse_messages` over a capture's own day skips only the lines that repeat
-  another byte for byte: every line's clock is in the window, and identical
-  lines are one row.
+- `parse_messages` over a capture's own day skips nothing: every line's clock is
+  in the window, and two lines that repeat another byte for byte are two rows
+  under one `currhashcode`.
 - A replay of the same window reports the same numbers as the run it repeats:
   what a run writes is what it carried, and the table holds each row once
   either way. A run whose `skipped` grew is one whose window covers fewer of
@@ -67,8 +67,8 @@ mapping of exactly `start` and `end`.
   and its own `messages` key what the codec answered: a line carries none, one
   or several messages. `written` is the events those messages settled on.
 - `parse_fix_silver.read` should equal the bronze rows of the window, dated or
-  at the pin, and `written` what the walk restated: as many events as it read,
-  under identities that need not be the same.
+  at the pin, and `written` what the walk restated: one row per event it folded,
+  under identities that need not be the bronze ones.
 - A successful zero-row run is not a failure.
 - Missing result JSON, non-zero child exit, or mismatched task name fails the
   operator.

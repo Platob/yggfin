@@ -7,7 +7,8 @@ Python/Marimo startup.
 ## Message parsing
 
 70,000 header-plus-body records, schema and first/last row verified before
-timing -- past the 65,536-row native batch boundary.
+timing -- past the native batch boundary, which the benchmark reads off the
+options it reads with rather than spelling again.
 
 ```bash
 cd python

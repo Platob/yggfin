@@ -7,7 +7,7 @@ walk.
 | property | contract |
 | --- | --- |
 | grain | one FIX event |
-| stored columns | 123 |
+| stored columns | 128 |
 | identifier field | `curruuid` |
 | partition | `hour(currunix)` |
 | sort order | `currunix`, `seqnum`, `curruuid` |
@@ -19,14 +19,14 @@ the partition it is replacing.
 
 ## Row composition
 
-The bundled registry produces 123 native columns. Parsing stored capture rows,
+The bundled registry produces 128 native columns. Parsing stored capture rows,
 writing bronze, reconstructing messages, and walking silver all use this same
 shape. `sourceurl`, `rownum`, `msgthreadid`, `loglevel` and `body` are raw to
 `logs.messages` and stay there; the header's other four -- `msgsessionid`,
 `msgctxid`, `msgseqnum` and `msgpluginid` -- are columns of this shape too,
 which is why a raw line fills them under the names it already stored.
 
-The native row includes 29 crate fields and standard FIX fields chosen by the
+The native row includes 32 crate fields and standard FIX fields chosen by the
 registry. Its lifted vocabulary includes:
 
 - `msgcat` (`MsgCat`), beside `msgtype` (`MsgType`);
@@ -67,13 +67,15 @@ option replaces that set.
 6. `MDReqID`
 
 Capture session and context never replace that business identity. When both
-are present, their `session:context` value is available as
-`identifiers["msgsectxid"]`; either part alone produces no synthetic key.
+are present, message type, session, context and sequence form one
+byte-length-prefixed value, `identifiers["msgsesseventid"]` -- for example
+`1:8|8:e7254b11|10:9f03166699|3088`; an incomplete set produces no synthetic key.
 Changing capture context does not change the message content identity.
 
 `fix.bronze` has no lifecycle predecessor. `fix.silver` fills `seqnum`,
 `prevuuid`, `parentuuids`, folded state, creation and expiry from the ordered
-walk. Repeated deliveries are suppressed without suppressing distinct events.
+walk. Repeated deliveries are merged into one event, whose `srcuuids` names
+every line it was logged on, without merging distinct events.
 
 ## Raw-line provenance
 
@@ -92,7 +94,7 @@ from rekep.fix import fix_message_field
 field = fix_message_field()
 schema = field.into_arrow_schema()
 
-assert len(schema) == 123
+assert len(schema) == 128
 assert schema.field("msgtype").metadata[b"FIX:tag"] == b"35"
 assert schema.field("curruuid").metadata[b"ICEBERG:primary_key"] == b"true"
 assert schema.field("currunix").metadata[b"ICEBERG:partition_key"] == b"hour"

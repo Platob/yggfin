@@ -6,7 +6,7 @@ the published tables. Runtime constructors remain the source of truth.
 | snapshot | runtime constructor | tables | stored columns |
 | --- | --- | --- | ---: |
 | `rekep/message.json` | `Message.into_field()` | `logs.messages` | 12 |
-| `rekep/fixmsg.json` | `fix_message_field()` | `fix.bronze`, `fix.silver` | 123 |
+| `rekep/fixmsg.json` | `fix_message_field()` | `fix.bronze`, `fix.silver` | 128 |
 
 `fixmsg.json` is named **FixMsg**. It is generated from the live FIX registry,
 then narrowed exactly as the Iceberg boundary narrows it. It is reviewed
@@ -14,17 +14,18 @@ output and is never edited as an alternate schema.
 
 ## Where the FIX row comes from
 
-The native FIX row has 123 columns. Parse, storage, reconstruction, and
+The native FIX row has 128 columns. Parse, storage, reconstruction, and
 lifecycle all use that exact **FixMsg** shape. `sourceurl`, `rownum`,
 `msgthreadid`, `loglevel`, and `body` belong only to `logs.messages`;
 `msgthreadid` and `loglevel` are spelled one way and FixMsg holds neither.
 The bridge's `msgsessionid`, `msgctxid`, `msgseqnum`, and `msgpluginid` are
 not capture columns at all -- they are native FixMsg fields a raw line fills,
 so they stand on both shapes under one spelling and nothing translates between
-them. A FIX row reaches its raw line through `srcuuids`, whose values join to
+them. A bronze row names its one raw line through `srcuuids` and a silver row
+every line its event was logged on, whose values join to
 `logs.messages.curruuid`.
 
-The native row contains 29 crate fields. These include `msgcat` (`MsgCat`), the seven
+The native row contains 32 crate fields. These include `msgcat` (`MsgCat`), the seven
 lifted identifier-code columns `isincode`, `cficode`, `cusipcode`, `sedolcode`,
 `bloombergcode`, `figicode`, and `miccode`, and the lifecycle clock
 `exprtime`. Registry code vocabularies are referenced by `FIX:codeset` and

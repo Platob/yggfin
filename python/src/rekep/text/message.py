@@ -80,9 +80,11 @@ class Message(Convertible):
 
     It is the clock the bridge stamped the *line* with, read off the header's
     `mtime` capture, so it dates no message and never reaches one. What dates
-    a message is what the message states -- the `SendingTime` it carries,
-    else the one instant the codec is pinned with, which the walk then
-    replaces by the `TransactTime` it states -- so the same bytes logged at
+    a message is what the message states -- the `TransactTime` or event
+    `TrdRegTimestamp` standing within the codec's `official_time_delay_ms` of
+    its `SendingTime`, else that `SendingTime`, else the one instant the codec
+    is pinned with, which the walk then replaces by the `TransactTime` it
+    states -- so the same bytes logged at
     three hops settle on one instant however each line was stamped.
 
     A line the header could not date settles at `EPOCH`, the same pin an

@@ -17,8 +17,8 @@ and lifecycle into `fix.silver`, behind a line door and a batch door each.
 ## Default registry
 
 The package ships the dictionary as JSON shards. Importing `rekep` loads them
-over the crate's own 29 definitions -- every registry holds those and two
-standard definitions from construction, so a bare one holds 31 -- and installs the
+over the crate's own 32 definitions -- every registry holds those and two
+standard definitions from construction, so a bare one holds 34 -- and installs the
 result as the process default.
 
 ```python
@@ -28,7 +28,7 @@ registry = fix_registry()
 
 assert registry_path().is_dir()
 assert len(registry) == 7781
-assert len(fix_crate_fields()) == 29
+assert len(fix_crate_fields()) == 32
 assert global_registry() == registry
 ```
 
@@ -82,5 +82,6 @@ that nanosecond grid.
 The default null markers are empty text, `null`, `<null>`, `none`, `n/a`, and
 `[n/a]`, with ASCII whitespace and case ignored. `crosscode` uses the first
 available `OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID`, or
-`MDReqID`. Capture `session:context` is recorded separately as
-`identifiers["msgsectxid"]` when both parts exist.
+`MDReqID`. Message type, capture session, context and sequence instead form
+`identifiers["msgsesseventid"]`, each text part byte-length-prefixed, when all
+four exist.
