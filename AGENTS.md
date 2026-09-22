@@ -144,6 +144,24 @@ every other line its event was logged on; each joins to a raw row's
 `curruuid`, is provenance, never lineage, and no walk changes what the
 identity means.
 
+Every `curruuid` and `currhashcode` a table holds is the one the installed
+yggdryl states, and 0.1.10 states a different one for every row: `Uuid::from_v7`
+packs the whole `(unix_micros, digest)` pair where 0.1.9 fingerprinted
+`(seqnum, payload)` under a seed and kept 50 bits, and a text line's code now
+digests the cross code and its row number beside its body. Both FIX tables and
+`logs.messages` are keyed on that identity alone and `srcuuids` joins to it, so
+a replay of a window under 0.1.10 lands new keys beside the old ones, never
+over them. A warehouse written under an earlier yggdryl is therefore rebuilt
+from capture, and nothing else: drop `logs.messages`, both FIX tables and the
+three products, run `rekep iceberg deploy`, and replay every window -- the
+capture is what every row was read from, and it is still there. There is no
+dual-write window and no translation of an old identity into a new one: a
+second identity beside the native one would be a second implementation of
+what yggdryl owns, and a table holding both would answer two rows for one
+line. The same rule covers a contract change: `logs.messages` lost `sourceurl`
+and `rownum` for `crosscode` and `seqnum`, which renumbers every Iceberg field
+id, so it is recreated rather than evolved in place.
+
 The two FIX stages one codec exposes are two tasks over two tables, in this
 order and no other:
 
