@@ -83,7 +83,7 @@ the command line.
 | `catalog.name` | every | `rekep` | PyIceberg catalog name |
 | `catalog.properties.type` | every | `sql` | `sql`, `glue`, `s3tables`, or another installed PyIceberg catalog |
 | `catalog.properties.uri` | every | local SQLite | SQL catalog URI; not used by Glue, and derived from the warehouse by `s3tables` |
-| `catalog.properties.warehouse` | every | `data/warehouse` | local path, `s3://` Iceberg root, or the S3 Tables bucket ARN or `<account>:s3tablescatalog/<name>` |
+| `catalog.properties.warehouse` | every | `data/warehouse` | local path, `s3://` Iceberg root, or an S3 Tables bucket: its ARN, its `s3tables://<name>?region=…&account=…` locator, or `<account>:s3tablescatalog/<name>` |
 | `registry` | raw, refined | `null` | bundled dictionary; an explicit URI overrides it |
 | `codec_options` | raw, refined | `null` | native defaults; an object is forwarded unchanged to `FixCodec` |
 | `project` | dbt | `data/dbt` | the dbt project directory |

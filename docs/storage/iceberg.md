@@ -269,6 +269,7 @@ served by an Iceberg REST catalog AWS hosts -- at two endpoints, which the
 | `warehouse` | endpoint | signed for |
 | --- | --- | --- |
 | `arn:aws:s3tables:<region>:<account>:bucket/<name>` | `https://s3tables.<region>.amazonaws.com/iceberg` | `s3tables` |
+| `s3tables://<name>?region=<region>&account=<account>` | the same, or the one the locator states | `s3tables` |
 | `<account>:s3tablescatalog/<name>` | `https://glue.<region>.amazonaws.com/iceberg` | `glue` |
 
 ```json
@@ -283,12 +284,22 @@ served by an Iceberg REST catalog AWS hosts -- at two endpoints, which the
 }
 ```
 
-The ARN is read by `yggdryl.Arn`, with no regular expression of rekep's own:
-service `s3tables`, resource type `bucket`, a stated region, and nothing under
-the bucket. The ARN states its region; the Glue name does not, so that one is
-stated as `rest.signing-region` or in the worker's AWS environment. Anything
-else the warehouse does not decide -- `uri` for a VPC or FIPS endpoint,
-another signing region, explicit `s3.*` settings -- is kept exactly as stated.
+The warehouse is read as the `yggdryl.Uri` it is, with no regular expression
+of rekep's own. An ARN redirects through `Arn.locator()` to the `s3tables:`
+URL its bucket spells, and that locator is the second spelling: the same
+bucket with the two fields a location does not carry, `region` and `account`,
+in its query -- and `partition` where the bucket is outside `aws`. Both
+resolve through one reading of the locator, which refuses anything under the
+bucket, because a table's locator names a table and not a catalog, and spells
+the ARN back for the endpoint, which takes the bucket under that name and no
+other. What the locator can say that the ARN cannot is where the endpoint is:
+its host, with a port and a `scheme` where an emulator answers on one, or
+`endpoint_override` in its query, spelled exactly as an `s3:` URL spells a
+MinIO endpoint here. The ARN states its region; a locator states one under
+`region` or takes it, as the Glue name does, from `rest.signing-region` or the
+worker's AWS environment. Anything else the warehouse does not decide -- a
+`uri` stated outright, another signing region, explicit `s3.*` settings -- is
+kept exactly as stated.
 `IcebergCatalog.table_bucket` answers the warehouse for such a catalog and
 `None` for every other, which is how maintenance knows whose files it is
 looking at and why a drop there purges. The extra is `rekep[s3tables]`:

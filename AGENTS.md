@@ -113,11 +113,18 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   bucket is served by an Iceberg REST catalog AWS hosts at two endpoints and
   the `warehouse` is what picks one: a bucket ARN is the S3 Tables endpoint
   signed for `s3tables`, and `<account>:s3tablescatalog/<name>` is the Glue
-  endpoint signed for `glue`, under Lake Formation. The ARN states its region;
-  the Glue name takes one from `rest.signing-region` or the AWS environment,
-  and nothing guesses. Every other property stays as written. The service owns
-  the files under a table bucket, so no sweep deletes one there and a drop
-  purges.
+  endpoint signed for `glue`, under Lake Formation. The warehouse is read as
+  the `yggdryl.Uri` it is, never by a regular expression of yggfin's: an ARN
+  redirects through `Arn.locator()` to the `s3tables:` URL it names, and that
+  locator is the second spelling of the S3 Tables door -- `s3tables://<name>`
+  with `region`, `account` and, outside `aws`, `partition` in its query --
+  and the one that says where the endpoint is, in its host or under
+  `endpoint_override` and `scheme` exactly as an `s3:` URL does; the ARN the
+  endpoint takes is spelled back from it. The ARN states its region; a
+  locator states one or takes it from the configuration, as the Glue name
+  does from `rest.signing-region` or the AWS environment, and nothing
+  guesses. Every other property stays as written. The service owns the files
+  under a table bucket, so no sweep deletes one there and a drop purges.
 - Maintenance reports settled changes and never deletes a file whose ownership
   is ambiguous.
 

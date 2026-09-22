@@ -150,6 +150,7 @@ differently, so the `warehouse` is what says which door a run knocks at.
 | door | `warehouse` | endpoint | signed for | governs access |
 | --- | --- | --- | --- | --- |
 | S3 Tables | `arn:aws:s3tables:<region>:<account>:bucket/<name>` | `https://s3tables.<region>.amazonaws.com/iceberg` | `s3tables` | IAM alone |
+| S3 Tables, located | `s3tables://<name>?region=<region>&account=<account>` | the same, or the endpoint the locator states | `s3tables` | IAM alone |
 | AWS Glue | `<account>:s3tablescatalog/<name>` | `https://glue.<region>.amazonaws.com/iceberg` | `glue` | IAM and Lake Formation |
 
 Take the Glue door when the bucket is already integrated with the AWS
@@ -247,9 +248,39 @@ The capture bucket still needs its own list and read permissions. Prefer an
 IAM role; do not place access keys in task JSON, CLI arguments, or Airflow
 Params.
 
+### Where the endpoint is
+
+An ARN names the bucket and says nothing about where the catalog answers, so
+the regional endpoint is what it resolves to. The bucket's locator -- the
+`s3tables:` URL the ARN redirects to, `yggdryl.Arn.locator()` -- is the same
+bucket spelled as a location, and a location can say where its endpoint is
+the way every `s3:` URL here does: in its host, with a port and a `scheme`
+where an emulator of the service answers on one, or under `endpoint_override`
+in its query. The two fields a location does not carry, the region and the
+account, go in the query too, because the endpoint takes the bucket under its
+ARN and the ARN is spelled back from them:
+
+```json
+{
+  "catalog": {
+    "name": "rekep",
+    "properties": {
+      "type": "s3tables",
+      "warehouse": "s3tables://market-tables?region=eu-west-1&account=123456789012&endpoint_override=vpce-0abc123.s3tables.eu-west-1.vpce.amazonaws.com"
+    }
+  }
+}
+```
+
+`s3tables://localhost:9001/market-tables?scheme=http&region=eu-west-1&account=123456789012`
+reaches an emulator on a developer's machine the same way, and a bucket in
+another partition names it: `partition=aws-cn`. A locator that states no
+region is read like the Glue name, from `rest.signing-region` or the
+environment.
+
 What the warehouse does not decide stays the operator's, under the standard
-property names, and is kept exactly as written -- a VPC endpoint or a FIPS one
-as `uri`, another `rest.signing-region`, explicit `s3.*` credentials:
+property names, and is kept exactly as written -- a `uri` stated outright,
+another `rest.signing-region`, explicit `s3.*` credentials:
 
 ```json
 {

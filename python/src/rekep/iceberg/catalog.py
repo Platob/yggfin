@@ -26,37 +26,51 @@ PYARROW_FILE_IO = "rekep.iceberg.file_io.IcebergFileIO"
 
 #: AWS S3 Tables. A table bucket is served by an Iceberg REST catalog AWS
 #: hosts, so this type is the one yggfin resolves itself: it loads pyiceberg's
-#: REST catalog against the right regional endpoint, signed for the right
-#: service. Which front door is not a second setting -- the warehouse states
-#: it, because the two endpoints take the bucket under different names.
+#: REST catalog against the right endpoint, signed for the right service.
+#: Which front door is not a second setting -- the warehouse states it,
+#: because the two endpoints take the bucket under different names.
 S3_TABLES = "s3tables"
 
-#: The S3 Tables endpoint's own name for a bucket: the table bucket ARN, which
-#: states the region as well. `https://s3tables.<region>.amazonaws.com/iceberg`
-#: serves it, signed for `s3tables`, and Lake Formation is not in that path.
-#: `yggdryl.Arn` reads the five AWS fields; what is checked here is that they
-#: name a bucket of this service and nothing under it.
-_BUCKET_RESOURCE = "bucket"
-
-#: The Glue endpoint's name for the same bucket, once the table bucket is
-#: integrated with the AWS analytics services and mounted under the
-#: `s3tablescatalog` federated catalog: `<account>:s3tablescatalog/<bucket>`,
-#: optionally deeper. `https://glue.<region>.amazonaws.com/iceberg` serves it,
-#: signed for `glue`, and Lake Formation governs and vends for it. The name
-#: carries no region, so that one comes from the AWS configuration.
+#: The Glue endpoint's name for a table bucket, once the bucket is integrated
+#: with the AWS analytics services and mounted under the `s3tablescatalog`
+#: federated catalog: `<account>:s3tablescatalog/<bucket>`, optionally deeper.
+#: `https://glue.<region>.amazonaws.com/iceberg` serves it, signed for `glue`,
+#: and Lake Formation governs and vends for it. The name is no URI at all --
+#: it opens with the account's digits -- and carries no region, so that one
+#: comes from the AWS configuration.
 _GLUE_TABLE_BUCKET = re.compile(
     r"^(?P<account>\d{12}):s3tablescatalog/(?P<bucket>[a-z0-9][a-z0-9-]{1,61}[a-z0-9])"
     r"(?P<under>(?:/[a-z0-9_-]+)*)$"
 )
 
-#: Where a region's AWS endpoints live. Only China is spelled: a `us-gov-` or
-#: `us-iso-` region is reached by naming `uri` outright.
-_CHINA_DOMAIN = "amazonaws.com.cn"
-_AWS_DOMAIN = "amazonaws.com"
+#: The Glue endpoint's SigV4 signing name, which is also its subdomain.
+_GLUE = "glue"
+
+#: Where a partition's AWS endpoints live. An ARN states its partition, a
+#: locator states one under `partition` or means `aws`, and the Glue name
+#: states nothing, so China is read off the region there. A `us-gov-` or
+#: `us-iso-` endpoint is reached by naming it outright.
+_DOMAINS = {"aws": "amazonaws.com", "aws-cn": "amazonaws.com.cn"}
+_AWS_PARTITION = "aws"
+_CHINA_PARTITION = "aws-cn"
+
+#: The path every S3 Tables and Glue Iceberg REST endpoint serves under.
+_REST_PATH = "/iceberg"
+
+#: What an `s3tables:` locator carries in its query, spelled the way every
+#: store URL yggdryl reads spells them: `endpoint_override` and `scheme` say
+#: where the endpoint is, `region` where the bucket is. `account` and
+#: `partition` are the two fields an ARN states and a location does not, and
+#: the endpoint takes the bucket under its ARN, so a locator states them.
+_ENDPOINT_OVERRIDE = "endpoint_override"
+_ENDPOINT_SCHEME = "scheme"
+_REGION = "region"
+_ACCOUNT = "account"
+_PARTITION = "partition"
 
 #: Properties an operator may have stated the region under, in the order they
-#: are read for the Glue door. The S3 Tables door reads none of them: its ARN
-#: says which region the bucket is in.
+#: are read where the warehouse states none: the Glue name never does, and a
+#: locator does through `region` or a regional host.
 _REGION_PROPERTIES = ("rest.signing-region", "glue.region", "s3.region")
 
 #: Where a region is read from the environment. `AWS_REGION` is here because
@@ -72,15 +86,24 @@ _WINDOWS_PATH = re.compile(r"^(?:[A-Za-z]:[\\/]|\\\\)")
 class TableBucket(NamedTuple):
     """One S3 Tables bucket, as the endpoint that serves it names it."""
 
-    #: The warehouse, exactly as that endpoint takes it.
+    #: The name the endpoint takes the bucket under: its ARN at the S3 Tables
+    #: endpoint, whichever spelling the document used, and the federated
+    #: catalog name at the Glue one.
     warehouse: str
 
-    #: The SigV4 signing name, which is also the endpoint's subdomain:
-    #: `s3tables` for the S3 Tables endpoint, `glue` for the Glue one.
+    #: The SigV4 signing name, which is also the regional endpoint's
+    #: subdomain: `s3tables` for the S3 Tables endpoint, `glue` for Glue.
     service: str
 
     #: The region the warehouse itself states, or None where it states none.
     region: str | None
+
+    #: The AWS partition the warehouse states, or None where it states none.
+    partition: str | None
+
+    #: The REST endpoint the warehouse itself states -- the host and scheme
+    #: its locator carries -- or None for the partition's regional one.
+    endpoint: str | None
 
 
 def table_bucket_of(properties: Mapping[str, Any]) -> str | None:
@@ -92,54 +115,122 @@ def table_bucket_of(properties: Mapping[str, Any]) -> str | None:
 def _table_bucket(properties: Mapping[str, Any]) -> TableBucket | None:
     """The table bucket these properties name, and the door it names it at.
 
-    Raises where the type says `s3tables` and the warehouse is neither name a
-    bucket has: the warehouse is the configuration, so an unrecognized one is
-    a document to fix rather than an endpoint to guess.
+    Three spellings, one bucket. The ARN is the S3 Tables endpoint's own name
+    for it, and `yggdryl.Uri` reads it as the `Arn` it is; that name locates
+    an `s3tables:` URL, which is the second spelling and the one that can say
+    where the endpoint is -- a VPC or FIPS endpoint, an emulator on a port --
+    the way every store URL here says it, in its host or its query. The
+    third is the Glue name, which is no URI at all.
+
+    Raises where the type says `s3tables` and the warehouse is none of them:
+    the warehouse is the configuration, so an unrecognized one is a document
+    to fix rather than an endpoint to guess.
     """
     declared = properties.get("type")
     if not isinstance(declared, str) or declared.strip().casefold() != S3_TABLES:
         return None
     warehouse = str(properties.get("warehouse") or "").strip()
-    if (arn := _table_bucket_arn(warehouse)) is not None:
-        return TableBucket(warehouse, S3_TABLES, arn.region)
+    if (named := _named_bucket(warehouse, properties)) is not None:
+        return named
     if parsed := _GLUE_TABLE_BUCKET.match(warehouse):
-        return TableBucket(parsed.group(0), "glue", None)
+        return TableBucket(parsed.group(0), _GLUE, None, None, None)
     raise ValueError(
         f"an {S3_TABLES} catalog is its table bucket, named as the endpoint "
         "serving it names it: arn:aws:s3tables:<region>:<account>:bucket/<name> "
+        "or its locator s3tables://<name>?region=<region>&account=<account> "
         "for the S3 Tables endpoint, or <account>:s3tablescatalog/<name> for "
         f"the Glue one; not {warehouse!r}"
     )
 
 
-def _table_bucket_arn(warehouse: str) -> Arn | None:
-    """`warehouse` as the ARN of one table bucket, or None for anything else.
+def _named_bucket(warehouse: str, properties: Mapping[str, Any]) -> TableBucket | None:
+    """The bucket `warehouse` names or locates as an identifier, else None.
 
-    An ARN of another service, one naming no region, or one reaching under
-    the bucket -- a table, a namespace -- is not the endpoint's name for a
-    bucket, so it is none: the caller says what a warehouse may be.
+    An ARN redirects to the location it names -- `Arn.locator()` is the
+    `s3tables:` URL its bucket spells -- and the three fields a location
+    does not carry come off the ARN, so both spellings resolve through one
+    reading of the locator.
     """
-    if not warehouse.startswith("arn:"):
-        return None
     try:
-        arn = Arn.from_str(warehouse)
+        identifier = Uri(warehouse)
     except ValueError:
         return None
-    if (
-        arn.service != S3_TABLES
-        or arn.resource_type != _BUCKET_RESOURCE
-        or arn.region is None
-        or "/" in arn.resource_id
-    ):
+    if isinstance(identifier, Arn):
+        if identifier.service != S3_TABLES:
+            return None
+        if identifier.region is None or identifier.account is None:
+            raise ValueError(
+                f"an {S3_TABLES} bucket ARN states its region and its account, which "
+                f"is what the endpoint takes it under; {warehouse!r} states neither or one"
+            )
+        return _located_bucket(
+            identifier.locator(),
+            region=identifier.region,
+            account=identifier.account,
+            partition=identifier.partition,
+        )
+    if identifier.scheme != S3_TABLES:
         return None
-    return arn
+    parameters = identifier.parameters(decode=True)
+    return _located_bucket(
+        identifier,
+        region=parameters.get(_REGION) or identifier.region or _stated_region(properties),
+        account=parameters.get(_ACCOUNT),
+        partition=parameters.get(_PARTITION) or _AWS_PARTITION,
+    )
+
+
+def _located_bucket(
+    located: Uri, *, region: str, account: str | None, partition: str
+) -> TableBucket:
+    """One reading of an `s3tables:` locator, whichever spelling reached it.
+
+    The bucket is the location's container and nothing may stand under it:
+    a table's locator names a table, which is not a catalog. The endpoint is
+    the location's own where it states one -- its host, or the
+    `endpoint_override` every store URL here takes, under the `scheme` it
+    names or `https` -- and the partition's regional one otherwise. The
+    warehouse the endpoint is handed is the bucket's ARN, spelled back from
+    the region, account and partition the caller resolved.
+    """
+    bucket = located.bucket
+    if not bucket:
+        raise ValueError(f"an {S3_TABLES} locator names its table bucket: {located}")
+    if located.key:
+        raise ValueError(
+            f"an {S3_TABLES} catalog is a table bucket, and {located} names "
+            f"{located.key!r} under one"
+        )
+    if not account:
+        raise ValueError(
+            f"an {S3_TABLES} locator states the account its bucket is in, which is "
+            f"what the endpoint takes the bucket under: {located}?account=<account>"
+        )
+    parameters = located.parameters(decode=True)
+    endpoint = None
+    if host := located.store_endpoint or parameters.get(_ENDPOINT_OVERRIDE):
+        scheme = parameters.get(_ENDPOINT_SCHEME) or "https"
+        endpoint = str(Uri.from_parts(scheme, host, _REST_PATH))
+    warehouse = Arn.from_parts(partition, S3_TABLES, region, account, f"bucket/{bucket}")
+    return TableBucket(str(warehouse), S3_TABLES, region, partition, endpoint)
+
+
+def _regional_endpoint(service: str, region: str, partition: str) -> str:
+    """The Iceberg REST endpoint AWS serves `service` at in one region."""
+    domain = _DOMAINS.get(partition, _DOMAINS[_AWS_PARTITION])
+    return str(Uri.from_parts("https", f"{service}.{region}.{domain}", _REST_PATH))
+
+
+def _partition_of(region: str) -> str:
+    """The partition a region belongs to, for a name that states none."""
+    return _CHINA_PARTITION if region.startswith("cn-") else _AWS_PARTITION
 
 
 def _s3_tables_properties(properties: Mapping[str, str]) -> dict[str, str]:
     """PyIceberg's REST configuration for the table bucket these name.
 
     Only what the warehouse decides is filled, and each of it with
-    `setdefault`: a private or FIPS endpoint, another signing region, and
+    `setdefault`: a `uri` stated outright, another signing region, and
     explicit credentials stay the operator's to state, under the standard
     property names.
     """
@@ -150,13 +241,16 @@ def _s3_tables_properties(properties: Mapping[str, str]) -> dict[str, str]:
     # through a boto3 session; neither comes with the Iceberg extra.
     require("boto3", S3_TABLES)
     region = bucket.region or _stated_region(properties)
-    domain = _CHINA_DOMAIN if region.startswith("cn-") else _AWS_DOMAIN
     resolved = dict(properties)
     resolved["type"] = "rest"
-    # The warehouse as it parsed: pyiceberg sends it to the endpoint, and a
-    # document may have spelled it with space around it.
+    # The name the endpoint takes: the ARN a locator was resolved to, the ARN
+    # as it parsed, or the Glue name as it matched.
     resolved["warehouse"] = bucket.warehouse
-    resolved.setdefault("uri", f"https://{bucket.service}.{region}.{domain}/iceberg")
+    resolved.setdefault(
+        "uri",
+        bucket.endpoint
+        or _regional_endpoint(bucket.service, region, bucket.partition or _partition_of(region)),
+    )
     resolved.setdefault("rest.sigv4-enabled", "true")
     resolved.setdefault("rest.signing-name", bucket.service)
     resolved.setdefault("rest.signing-region", region)
@@ -180,9 +274,9 @@ def _stated_region(properties: Mapping[str, str]) -> str:
     if environment := _environment_region():
         return environment
     raise ValueError(
-        f"an {S3_TABLES} catalog at the Glue endpoint states its region: set "
-        "rest.signing-region on the catalog, or AWS_REGION in the worker's "
-        "environment"
+        f"an {S3_TABLES} catalog whose warehouse names no region states one: "
+        "`region` on the locator, rest.signing-region on the catalog, or "
+        "AWS_REGION in the worker's environment"
     )
 
 
@@ -191,8 +285,11 @@ def _environment_region() -> str | None:
     for name in _REGION_VARIABLES:
         if stated := os.environ.get(name, "").strip():
             return stated
-    import boto3
-
+    try:
+        import boto3
+    except ImportError:
+        # Without the extra there is no session to ask; the load says so.
+        return None
     # A profile, a config file, or the instance the worker runs on.
     return boto3.Session().region_name
 
