@@ -14,7 +14,16 @@ import pytest
 from pyiceberg.expressions import EqualTo
 
 from rekep import Field, Message, cli
-from rekep.fix import EVENT_CLOCK, MESSAGE_KEY, SOURCES, UNDATED, FixRegistry
+from rekep.fix import (
+    EVENT_CLOCK,
+    MESSAGE_KEY,
+    SOURCES,
+    TRANSACTION_CLOCK,
+    UNDATED,
+    FixRegistry,
+    fix_message_field,
+    iceberg_fix_field,
+)
 from rekep.iceberg import IcebergCatalog, IcebergDataset, iceberg_contract_field, partition_keys
 
 #: The zone every instant here is spelled in.
@@ -349,6 +358,51 @@ def test_a_bronze_task_forwards_codec_options_without_rewriting_text(
     assert bronze.column("clordid").to_pylist() == ["OPTION-1"]
 
 
+def test_the_official_clock_delay_is_a_pin_the_task_forwards(
+    tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    """What dates a message is the venue's clock, within a stated distance.
+
+    `SendingTime(52)` is when a session put the message on the wire, which is
+    not when the thing it reports happened. The parse dates the message by the
+    official transaction clock standing within `official_time_delay_ms` of
+    that sending clock, and falls back to the sending clock where none stands
+    that near -- so the pin is what decides, per run, how far a venue's clock
+    may sit from the wire and still be read as the same event. It is a codec
+    option and nothing else, so the task forwards it like every other one.
+
+    Each pin gets its own warehouse, because the instant a message settles on
+    is what its identity is derived from: a table written under one delay and
+    re-run under another does not replace its rows, it gains them.
+    """
+
+    def dated_by(name: str, **pinned: Any) -> tuple[int, int]:
+        root = tmp_path / name
+        root.mkdir()
+        held = Ran(root, capsys)
+        held.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
+        held.task("parse_fix_bronze", **pinned, **WINDOW)
+        rows = (
+            held.table("fix.bronze")
+            .select((EVENT_CLOCK, "sendingtime", TRANSACTION_CLOCK))
+            .to_pylist()
+        )
+        return (
+            sum(1 for row in rows if row["sendingtime"] == row[EVENT_CLOCK]),
+            sum(1 for row in rows if row[TRANSACTION_CLOCK] == row[EVENT_CLOCK]),
+        )
+
+    # The core's own second, which is what a run takes when it pins nothing.
+    assert dated_by("default") == (6, 13)
+    # A nonpositive delay admits only a clock equal to the sending one, so
+    # every event a venue stamped a little apart falls back to the wire.
+    assert dated_by("nought", codec_options={"official_time_delay_ms": 0}) == (16, 3)
+    # And a wide one admits the clocks the default already did and no more:
+    # no transaction clock in this capture stands between a second and ten
+    # minutes from its wire.
+    assert dated_by("wide", codec_options={"official_time_delay_ms": 600_000}) == (6, 13)
+
+
 def test_a_narrow_dictionary_still_answers_every_event(ran: Ran, tmp_path: Path) -> None:
     """A venue stamps nanoseconds; Iceberg v2 holds microseconds. And a
     dictionary narrow enough to type no message type at all still answers a
@@ -636,6 +690,103 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
             assert fixes.schema.field(required).nullable is False
             assert fixes.column(required).null_count == 0
         assert {"8", "D"} <= set(fixes.column("msgtype").to_pylist())
+
+
+def test_a_table_written_before_the_row_grew_gains_the_columns_and_keeps_its_rows(
+    ran: Ran,
+) -> None:
+    """The upgrade path, as a warehouse already holding rows sees it.
+
+    The row grew by five columns, which renumbers every Iceberg id after the
+    first in the published contract -- but a table carries its own ids, and a
+    FIX write merges schema, so what a running warehouse gets is five added
+    columns and not a rewritten table. The rows it already held stay, read
+    back with the new columns empty, and the run lands beside them.
+    """
+    grew = ("execunix", "recdunix", "refrecdunix", "noregulatorytradeids", "regulatorytradeidgrp")
+    full = fix_message_field().into_arrow_schema()
+    before = iceberg_fix_field(
+        pyarrow.schema([member for member in full if member.name not in grew], full.metadata),
+        "FixMsg",
+    )
+    assert len(before) == len(full) - len(grew)
+
+    held = before.into_arrow_schema()
+    settled = {
+        "beginstring": "FIX.4.4",
+        EVENT_CLOCK: EPOCH,
+        "creaunix": EPOCH,
+        MESSAGE_KEY: bytes(15) + b"\x01",
+        "crossuuid": bytes(15) + b"\x02",
+        "currhashcode": 1,
+        "crosshashcode": 2,
+    }
+    landed = pyarrow.RecordBatch.from_pylist(
+        [{**{member.name: None for member in held}, **settled}], schema=held
+    )
+    store = IcebergCatalog.from_dict(ran.catalog)
+    dataset = store.dataset("fix.bronze", field=before)
+    try:
+        assert (
+            dataset.append_arrow_reader(
+                pyarrow.RecordBatchReader.from_batches(held, [landed]), before
+            )
+            == 1
+        )
+    finally:
+        dataset.close()
+        store.close()
+
+    ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
+    result = ran.task("parse_fix_bronze", **WINDOW)
+
+    bronze = ran.table("fix.bronze")
+    assert counted(result) == FIRST["parse_fix_bronze"]
+    assert bronze.num_columns == len(full)
+    assert bronze.num_rows == STORED["fix.bronze"] + 1, "the row it already held is still there"
+    assert settled[MESSAGE_KEY] in bronze.column(MESSAGE_KEY).to_pylist()
+    kept = bronze.filter(pyarrow.compute.equal(bronze.column(MESSAGE_KEY), settled[MESSAGE_KEY]))
+    for column in grew:
+        assert kept.column(column).to_pylist() in ([None], [[]]), column
+    # And the walk reads the widened table back without noticing the seam.
+    walked = ran.task("parse_fix_silver", **WINDOW)
+    assert walked["read"] == STORED["fix.bronze"] + 1
+    assert ran.table("fix.silver").num_columns == len(full)
+
+
+def test_the_clocks_and_the_group_the_row_grew_reach_the_stored_table(ran: Ran) -> None:
+    """The five columns 0.1.9 added are the table's, not just the schema's.
+
+    A column a capture never fills is a column nobody would notice going
+    missing, so this reads the stored tables rather than the declaration:
+    the execution clock the bridge states, and the regulatory identifiers it
+    carries -- a repeating group persisted whole, which is the one shape a
+    scalar column cannot hold and the one Iceberg has to round-trip as
+    written. `recdunix` and `refrecdunix` stay empty here because this
+    carrier records no clock of its own, and an empty column is still a
+    column: it is what a carrier that does record one would land in.
+    """
+    ran.workflow()
+
+    for name in ("fix.bronze", "fix.silver"):
+        fixes = ran.table(name)
+        for column in ("execunix", "recdunix", "refrecdunix"):
+            assert fixes.schema.field(column).type == pyarrow.timestamp("us", tz="UTC"), column
+        assert fixes.column("execunix").null_count < fixes.num_rows, "the bridge states these"
+        assert fixes.column("recdunix").null_count == fixes.num_rows, "and none of these"
+
+        # The fourth group persisted whole, beside the counter that counts it.
+        occurrences = fixes.column("regulatorytradeidgrp").to_pylist()
+        members = fixes.schema.field("regulatorytradeidgrp").type.value_type
+        assert "regulatorytradeid" in members.names
+        assert any(occurrences), "this capture carries regulatory identifiers"
+        for held, counted in zip(
+            occurrences, fixes.column("noregulatorytradeids").to_pylist(), strict=True
+        ):
+            # A counter states what it counts; where the parse could describe
+            # no occurrence the count goes to the residual record with them,
+            # and the column reads back as the empty group it is.
+            assert counted is None or len(held or ()) == counted
 
 
 def test_both_fix_tables_are_laid_out_exactly_alike_by_the_event(ran: Ran) -> None:
