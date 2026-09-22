@@ -12,7 +12,7 @@ and lifecycle into `fix.silver`, behind a line door and a batch door each.
 | [Decode](decode.md) | how does a log line become `Message`, `FixMsg`, `fix.bronze` and `fix.silver`? |
 | [Encode](encode.md) | how is a canonical frame rebuilt from lifted fields and residual entries? |
 | [Quality](quality.md) | what survives malformed input, replay, and registry change? |
-| [Registry browser](../tools/fix-registry.md) | how do I search 7,778 definitions and 736 code sets? |
+| [Registry browser](../tools/fix-registry.md) | how do I search 7,781 definitions and 736 code sets? |
 
 ## Default registry
 
@@ -27,7 +27,7 @@ from rekep.fix import fix_crate_fields, fix_registry, global_registry, registry_
 registry = fix_registry()
 
 assert registry_path().is_dir()
-assert len(registry) == 7778
+assert len(registry) == 7781
 assert len(fix_crate_fields()) == 29
 assert global_registry() == registry
 ```

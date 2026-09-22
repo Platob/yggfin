@@ -194,8 +194,15 @@ def sweep(rows: int, repeat: int) -> None:
     with tempfile.TemporaryDirectory(prefix="rekep-message-bench-") as directory:
         selected, encoded_size = cases(pathlib.Path(directory), decoded)
         verified = [verify(case, rows) for case in selected]
+        # Two columns are the line's place and not its content: `sourceurl`
+        # is where it was read from, and `curruuid` is the identity the read
+        # states over that place as well as over the bytes -- so the same
+        # line under two URIs is two events, on purpose. Everything else,
+        # `currhashcode` and `body` included, has to be the same or the gzip
+        # leg is not reading what the plain one read.
+        placed = ("sourceurl", "curruuid")
         comparable = [
-            table.select([name for name in table.schema.names if name != "sourceurl"])
+            table.select([name for name in table.schema.names if name not in placed])
             for table in verified
         ]
         assert comparable[0].equals(comparable[1]), "plain and gzip rows differ"

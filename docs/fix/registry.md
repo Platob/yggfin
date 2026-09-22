@@ -10,7 +10,7 @@ components and repeating groups without another model.
 | --- | ---: | --- |
 | crate definitions | 29 | standard, tags 65003-65061 |
 | bundled specification and the crate's own | 6,268 scalar fields | standard |
-| definitions in all | 7,778 | no named dialect |
+| definitions in all | 7,781 | no named dialect |
 | central code sets | 736 | field references use `FIX:codeset` |
 
 Every registry holds the crate's own columns and the two standard clocks from
@@ -22,7 +22,7 @@ from rekep.fix import fix_crate_fields, fix_registry
 
 registry = fix_registry()
 
-assert len(registry) == 7778
+assert len(registry) == 7781
 assert registry.dialects() == []
 assert len(fix_crate_fields()) == 29
 ```
@@ -245,7 +245,7 @@ from silently creating a narrow table.
 
 ## Browser
 
-Search the same 7,778 definitions here, by tag, name, spelling or description:
+Search the same 7,781 definitions here, by tag, name, spelling or description:
 
 <div data-fix="registry"></div>
 

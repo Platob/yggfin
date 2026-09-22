@@ -245,11 +245,13 @@ ULBRIDGE_ROWHEADER = (
 )
 """The ULBridge row-header expression for physical message records.
 
-The same text as the native core's own `ULBRIDGE_ROWHEADER`, captures
-included, pinned against it by `test_times.py` wherever that checkout is
-beside this one. It is spelled here because the constant reaches Rust but not
-yet the Python extension; the day it does, this becomes one import and the
-pin becomes redundant.
+The same bracket as the native core's own `ULBRIDGE_ROWHEADER`, part for
+part, with two captures named for the columns they fill here rather than for
+the bracket parts they read: `timestamp` is `mtime` and `level` is
+`loglevel`. `test_times.py` pins the layout and those two renames against
+that checkout wherever it is beside this one. It is spelled here because the
+constant reaches Rust but not yet the Python extension; the day it does, this
+becomes that import with the two renames applied to it.
 
 Every capture is named for the column the native read fills from it, which is
 the whole of how a bracket part is told from another: `mtime` is the record

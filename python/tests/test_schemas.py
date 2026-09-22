@@ -137,7 +137,7 @@ def test_the_fix_contract_is_what_the_current_dictionary_answers() -> None:
     declared = fix_schema(fix_registry(), FIXMSG)
     assert [member.name for member in fix_parse_field()] == [member.name for member in declared]
     assert [member.name for member in fixed] == [member.name for member in declared]
-    assert len(fixed) == len(fix_parse_field()) == len(declared) == 123
+    assert len(fixed) == len(fix_parse_field()) == len(declared) == 128
 
 
 def test_the_stored_row_holds_none_of_the_text_it_was_read_from() -> None:
@@ -180,7 +180,7 @@ def test_the_fix_tables_are_laid_out_by_the_event_and_keyed_by_its_identity() ->
     assert document["partition-spec"]["fields"] == [
         {"source-id": 1, "field-id": 1000, "transform": "hour", "name": "currunix_hour"}
     ]
-    assert document["schema"]["identifier-field-ids"] == [14]
+    assert document["schema"]["identifier-field-ids"] == [17]
     assert [field["direction"] for field in document["sort-order"]["fields"]] == ["asc"] * 3
 
     schema = fixed.into_arrow_schema()
@@ -220,7 +220,7 @@ def test_the_fix_declaration_keeps_its_registry_metadata() -> None:
     assert schema.field("exprtime").metadata[b"FIX:tag"] == b"65053"
     assert load_fix_contract().into_arrow_schema().field("msgtype").metadata == {
         b"description": schema.field("msgtype").metadata[b"description"],
-        b"ICEBERG:field_id": b"25",
+        b"ICEBERG:field_id": b"28",
     }
 
 

@@ -574,12 +574,13 @@ FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
 #: day when nothing says otherwise. `end: 2026-08-14` is the exclusive end of it.
 WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
 
-#: The full registry folds 79 parsed frames to 51 native events; lifecycle
-#: adds one expiry. A replay replaces those same rows.
+#: The full registry folds 79 parsed frames to 49 native events; the walk
+#: folds the observations of one event and adds one expiry. A replay replaces
+#: those same rows.
 LANDED = {
-    "parse_messages": {"read": 144, "written": 141, "skipped": 3},
-    "parse_fix_bronze": {"read": 141, "written": 51, "skipped": 28},
-    "parse_fix_silver": {"read": 51, "written": 52, "skipped": 0},
+    "parse_messages": {"read": 144, "written": 144, "skipped": 0},
+    "parse_fix_bronze": {"read": 144, "written": 49, "skipped": 30},
+    "parse_fix_silver": {"read": 49, "written": 22, "skipped": 0},
 }
 REPLAYED = LANDED
 
@@ -591,7 +592,7 @@ PUBLISHED = {
     "parse_fix_silver": "fix.silver",
 }
 TARGETS = {"parse_messages": "messages", "parse_fix_bronze": "bronze", "parse_fix_silver": "silver"}
-STORED = {"logs.messages": 141, "fix.bronze": 51, "fix.silver": 52}
+STORED = {"logs.messages": 144, "fix.bronze": 49, "fix.silver": 22}
 
 
 def counted(result: dict[str, Any]) -> dict[str, int]:

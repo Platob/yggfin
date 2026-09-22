@@ -17,9 +17,9 @@ from rekep.times import EPOCH, ULBRIDGE_ROWHEADER
 #: The zone every instant here is spelled in.
 UTC = datetime.timezone.utc
 
-#: What a UUIDv7 carries below its instant and its variant bits: the sixty-two
-#: a random one fills, and the ones the read fills with the content code.
-RANDOM = (1 << 62) - 1
+#: What a UUIDv7 carries between its instant and its variant bits: the twelve
+#: `rand_a` bits, which the read fills with the line's own place in the read.
+SEQUENCE = (1 << 12) - 1
 
 
 def test_message_declares_the_text_row_and_its_storage_columns() -> None:
@@ -157,13 +157,14 @@ def test_a_line_without_the_bridge_header_is_kept_as_an_unstamped_message(tmp_pa
     # undated message takes in `fix.bronze`, and states an identity over it.
     assert row["currunix"] == EPOCH
     # The pin's own identity, stated over the line: a UUIDv7 whose instant is
-    # the pin and whose rest is that line's own code -- so an undated line is
-    # still told from every other one, and not the zero identity a row built
+    # the pin, whose sequence is where the line sat in the read, and whose
+    # rest fingerprints that line's own code -- so an undated line is still
+    # told from every other one, and not the zero identity a row built
     # anywhere but the read would carry.
     identity = row["curruuid"]
     assert identity != bytes(16) and identity.startswith(bytes(6))
     assert identity[6] >> 4 == 7, "a UUIDv7, at the pin"
-    assert int.from_bytes(identity[8:], "big") & RANDOM == row["currhashcode"] & RANDOM
+    assert int.from_bytes(identity[6:8], "big") & SEQUENCE == row["rownum"]
     assert all(
         row[name] is None
         for name in (
@@ -175,6 +176,31 @@ def test_a_line_without_the_bridge_header_is_kept_as_an_unstamped_message(tmp_pa
             "loglevel",
         )
     )
+
+
+def test_two_lines_of_one_text_are_two_rows_of_one_table(tmp_path) -> None:
+    """`logs.messages` is keyed on `curruuid` alone, so a file that prints the
+    same bytes twice has to answer two identities or one of the two lines is
+    gone. The content code is the line's, and the same on both; the identity
+    is the line's place in the read as well, and differs."""
+    source = tmp_path / "twice.log"
+    source.write_bytes(b"one physical line\none physical line\n")
+
+    def read() -> list[dict]:
+        reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=Message.text_options())
+        try:
+            return reader.read_all().to_pylist()
+        finally:
+            reader.close()
+
+    first, second = read()
+
+    assert first["body"] == second["body"]
+    assert first["currhashcode"] == second["currhashcode"]
+    assert first["curruuid"] != second["curruuid"]
+    # A replay of the same bytes answers the same two identities, because the
+    # read settles both the pin and the place rather than reading a clock.
+    assert [row["curruuid"] for row in read()] == [first["curruuid"], second["curruuid"]]
 
 
 def test_message_instance_normalizes_scalar_inputs() -> None:

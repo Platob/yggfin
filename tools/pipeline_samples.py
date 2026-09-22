@@ -340,25 +340,36 @@ def silver_page(silver: pyarrow.Table, bronze: pyarrow.Table) -> str:
         "creaunix",
         "exprtime",
     ]
+    # A bronze row is one frame off one line, so the line it names is what a
+    # walked row is read back through. A walked row names every line its
+    # event was logged on, so the join is one row per line, not per event.
     before = {
-        tuple(row["srcuuids"] or ()): row
+        row["srcuuids"][0]: row
         for row in rows(bronze, ["srcuuids", "currunix", "curruuid"])
+        if row["srcuuids"]
     }
+
+    def read_at(line: bytes, held: str) -> Any:
+        if line not in before:
+            raise SystemExit(f"a walked row names a line no bronze row of the chain read: {line!r}")
+        return before[line][held]
+
     moved = [
         {
-            "srcuuids": row["srcuuids"],
-            "bronze currunix": before[tuple(row["srcuuids"] or ())]["currunix"],
-            "bronze curruuid": before[tuple(row["srcuuids"] or ())]["curruuid"],
+            "srcuuid": line,
+            "bronze currunix": read_at(line, "currunix"),
+            "bronze curruuid": read_at(line, "curruuid"),
             "silver currunix": row["currunix"],
             "silver curruuid": row["curruuid"],
         }
         for row in rows(silver, ["srcuuids", "currunix", "curruuid"])
+        for line in (row["srcuuids"] or ())
     ]
     return "\n\n".join(
         [
             f"**The {silver.num_rows} walked rows of chain `{CHAIN}`, in the table's own order**",
             table(walked, rows(silver, walked)),
-            "**What the walk did to each line's identity: its row in both tables**",
+            "**What the walk did to each line it folded: its row in both tables**",
             table(list(moved[0]), moved),
         ]
     )

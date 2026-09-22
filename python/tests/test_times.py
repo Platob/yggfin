@@ -20,12 +20,20 @@ from rekep.times import (
     within,
 )
 
-#: Where the core states the same expression, when its checkout is beside
+#: Where the core states the same bridge layout, when its checkout is beside
 #: this one. The constant reaches Rust but not yet the Python extension, so
-#: the text is spelled in both places and this is what keeps them one text.
+#: the expression is spelled in both places and this is what keeps the two
+#: readings of one bridge from drifting apart.
 CORE_ROWHEADER = (
     Path(__file__).resolve().parents[3] / "yggdryl" / "rust" / "src" / "fix" / "ulbridge.rs"
 )
+
+#: What this package calls two of the bracket's parts that the core's own
+#: example expression names after the bracket rather than after the column:
+#: the clock the read settles `currunix` from, and the level `logs.messages`
+#: keeps. A capture reaches a column by being called what the column is
+#: called, so these two are renames and the rest is the core's text.
+RENAMED = {"timestamp": "mtime", "level": "loglevel"}
 
 #: 2026-08-14 09:30:00.123456 UTC, in the nanoseconds every `*unix` holds.
 STAMP = 1_786_699_800_123_456_000
@@ -159,10 +167,11 @@ def test_a_wrapped_value_is_asked_what_it_holds() -> None:
     assert unix_of(pyarrow.scalar(STAMP, pyarrow.timestamp("ns"))) == STAMP
 
 
-def test_the_bridge_row_header_is_the_text_the_core_states() -> None:
-    """The one copy nobody can drift: a capture reaches its column because it
-    is called what the column is called, so a renamed capture there is a
-    column that stops being filled here."""
+def test_the_bridge_row_header_is_the_layout_the_core_states() -> None:
+    """The one copy nobody can drift: the bracket this reads is the bracket
+    the core reads, part for part, and the only difference is what two of
+    those parts are called -- because a capture reaches its column by being
+    called what the column is called."""
     if not CORE_ROWHEADER.is_file():
         pytest.skip(f"the core checkout is not beside this one: {CORE_ROWHEADER}")
     stated = re.search(
@@ -171,7 +180,15 @@ def test_the_bridge_row_header_is_the_text_the_core_states() -> None:
     )
 
     assert stated is not None, f"{CORE_ROWHEADER} no longer states the constant"
-    assert ULBRIDGE_ROWHEADER == stated["pattern"]
+    renamed = re.sub(
+        r"\(\?P<([A-Za-z]+)>",
+        lambda held: f"(?P<{RENAMED.get(held[1], held[1])}>",
+        stated["pattern"],
+    )
+    assert ULBRIDGE_ROWHEADER == renamed
+    # A rename nobody made is a rename nobody needs: each one has to be a
+    # capture the core actually states, or this table is stale.
+    assert set(RENAMED) <= set(re.findall(r"\(\?P<([A-Za-z]+)>", stated["pattern"]))
 
 
 def test_every_bridge_capture_is_named_for_the_column_it_fills() -> None:

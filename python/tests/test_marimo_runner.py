@@ -101,7 +101,7 @@ def test_the_runner_runs_the_shipped_application_and_publishes_its_result(
 
     result = json.loads(published.read_text(encoding="utf-8"))
     assert result["task"] == "parse_messages"
-    assert (result["read"], result["written"], result["skipped"]) == (144, 141, 3)
+    assert (result["read"], result["written"], result["skipped"]) == (144, 144, 0)
     assert result["targets"] == {"messages": "logs.messages"}
     assert result["window"] == {
         "start": 1_786_665_600_000_000_000,

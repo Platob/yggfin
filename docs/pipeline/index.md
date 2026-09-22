@@ -8,7 +8,7 @@ flowchart LR
     U["local file, directory, or S3 prefix"] --> T["parse_messages"]
     T --> M[("logs.messages<br/>12 columns")]
     M --> F["parse_fix_bronze<br/>parse"]
-    R[["bundled dictionary<br/>7,778 definitions"]] -.types.-> F
+    R[["bundled dictionary<br/>7,781 definitions"]] -.types.-> F
     F --> X[("fix.bronze<br/>123 columns")]
     X --> L["parse_fix_silver<br/>lifecycle"]
     R -.types.-> L

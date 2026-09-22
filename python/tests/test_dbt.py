@@ -46,7 +46,7 @@ INGESTED = {shape.table: shape for shape in TABLES}
 #: lifecycle fact, one row per chain, and one occurrence per execution the
 #: bridge relayed into a business-identifier chain.
 PRODUCTS = {
-    "orders.events": 48,
+    "orders.events": 19,
     "orders.current": 8,
     "executions.fills": 7,
 }

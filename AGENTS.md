@@ -14,7 +14,7 @@ behavior.
 
 ## Ownership
 
-- The published native dependency is pinned to `yggdryl==0.1.8`; public
+- The published native dependency is pinned to `yggdryl==0.1.9`; public
   applications and documentation import only `rekep`.
 
 - Yggdryl owns `Field`, scalar compilation, resource binding, filesystems,
