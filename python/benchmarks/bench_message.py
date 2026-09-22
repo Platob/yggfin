@@ -22,8 +22,10 @@ from _bench import best_of, parser  # noqa: E402
 from rekep.text import Message  # noqa: E402
 from rekep.times import datetime_of  # noqa: E402
 
-# Yggdryl's default when TextOptions leaves the bound unset.
-BATCH_ROW_SIZE = 65_536
+# Yggdryl's own default, read off the options this package reads with rather
+# than spelled again: the bound is the core's to choose, and a number copied
+# here is a number that goes quietly wrong the release it changes.
+BATCH_ROW_SIZE = Message.text_options().batch_row_size
 # The read's own shape, which is the contract with the line's content code
 # widened to the unsigned type the core states it in.
 FIELD = Message.read_field()
