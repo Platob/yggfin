@@ -155,7 +155,9 @@ instant the read settles over the line, read off the header's `mtime` capture;
 a line the header could not date takes the modification time of the object it
 was read from, the one clock the read has left for it, and `EPOCH` only where
 a handle has none -- so a header that matched nothing loses no line, and the
-table is laid out by the hour of that instant and nothing beside it. An
+table is laid out by the hour of that instant and nothing beside it. The
+`where` names the two bounds and nothing else: a line is in the window its
+instant falls in, and a line at `EPOCH` is in the window that covers 1970. An
 identity is derived from that instant, so a copy of a capture written at
 another time states another identity for every line its header did not match;
 the capture is replayed from where it was read, never from a copy. `logs.messages` is

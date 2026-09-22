@@ -185,16 +185,16 @@ for a streaming decoder fix.
 
 The window is pushed into the read: the task sets `options.filter` to
 `where_within("currunix", window)`, a native `Filter` spelling
-`currunix >= '<start>' and currunix < '<end>' or currunix =
-'1970-01-01T00:00:00+00:00'`. The decode still cuts every line and the record
-surface answers the clause over the rows the lines become, so the read
-answers only the lines whose `currunix` -- the event the read settled over
-the line, and the column the table is laid out by -- falls in `[start, end)`,
-and the lines at the epoch pin, where a handle with no clock at all leaves a
-line. Nothing is filtered after the read, and the result's `read` is the
-lines the window covers; a window the capture falls outside reads 0. A line
-the header did not match is dated by the modification time of the object it
-was read from, so the window of that instant covers it and no other does.
+`currunix >= '<start>' and currunix < '<end>'` and nothing else. The decode
+still cuts every line and the record surface answers the clause over the rows
+the lines become, so the read answers only the lines whose `currunix` -- the
+event the read settled over the line, and the column the table is laid out by
+-- falls in `[start, end)`. Nothing is filtered after the read, and the
+result's `read` is the lines the window covers; a window the capture falls
+outside reads 0. A line the header did not match is dated by the
+modification time of the object it was read from, so the window of that
+instant covers it and no other does; a line at the epoch -- one read from a
+handle with no clock at all -- is in the window that covers 1970 alone.
 The window is the last day, ending at the instant the run starts, when the
 document names neither bound; `start` and `end` read the way every instant
 here does, and `end` naming a whole day means the end of that day.

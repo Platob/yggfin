@@ -81,10 +81,8 @@ def _(catalog, end, filesystem, records, rowheader, start):
         # over the rows the lines become: the lines whose `currunix` -- the
         # event the read settled over each, off its header or off the
         # object's own modification time where the header did not match, and
-        # the column the table is laid out by -- the window covers, and the
-        # lines at the epoch pin, where a handle with no clock at all leaves
-        # them, which is in every window. What the read answers is what the
-        # run read.
+        # the column the table is laid out by -- falls in `[start, end)`, and
+        # no other. What the read answers is what the run read.
         options.filter = where_within("currunix", window)
         counts = {"read": 0}
         store = IcebergCatalog.from_dict(catalog)

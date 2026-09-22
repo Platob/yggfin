@@ -99,11 +99,12 @@ Every ingestion task covers one window, `[start, end)`: the last day when its
 document names neither bound, and exactly the scheduler's data interval under
 Airflow. `parse_messages` and `parse_fix_raw` read it off `currunix`: the
 text read takes the window as its `where` and answers only the lines it
-covers, and the parse prunes `logs.messages` by the same bounds. A line the
-header did not match is dated by the modification time of the object it was
-read from, so the window of that instant covers it. The epoch pin, which
-every window covers, dates a line only where its handle has no clock at all,
-and a `fix.raw` message that stated no `SendingTime` until the walk dates it.
+covers -- the two bounds and nothing else -- and the parse prunes
+`logs.messages` by the same bounds. A line the header did not match is dated
+by the modification time of the object it was read from, so the window of
+that instant covers it; the epoch dates a line only where its handle has no
+clock at all, and a `fix.raw` message that stated no `SendingTime` until the
+walk dates it, which is why the FIX scans still read the epoch partition.
 `parse_fix_refined` reads the previous hour plus the job window in
 `currunix, seqnum, curruuid` order, including unresolved epoch rows. The prior
 hour is context only; output is filtered to the job window plus still-undated

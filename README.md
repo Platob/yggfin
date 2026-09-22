@@ -95,8 +95,9 @@ the line: the line's own clock where the header dated it, else the
 modification time of the object it was read from, and `EPOCH` only where the
 handle has no clock at all. A line the header did not date takes its identity
 from that modification time, so a capture is replayed from where it was read
-and never from a copy written at another time. A line dated `EPOCH` is in
-every window. `fix.raw` stores one row per *event* as the parse answered it
+and never from a copy written at another time. The run's window is the
+read's own `where`, `[start, end)` over `currunix` and nothing else. `fix.raw`
+stores one row per *event* as the parse answered it
 -- typed columns, residual FIX entries, and the identities the parse settled
 -- and `fix.refined` the same events walked; both are keyed on `curruuid`,
 because a bridge logs one message again at every hop it passes and those

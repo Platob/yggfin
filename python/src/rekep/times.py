@@ -424,20 +424,21 @@ def within(
 
 
 def where_within(column: str, window: tuple[datetime.datetime, datetime.datetime]) -> Filter:
-    """The rule `within` reads over a column, as the `where` a native read answers.
+    """The window as the `where` a native text read answers: `start <= column < end`.
 
-    The same rows, stated as the predicate a text read takes on its options
-    rather than as a mask over the batches it already answered: `start <=
-    column < end`, or the `EPOCH` pin a read settles a line at when it has no
-    clock for it at all, which every window covers. The decode still cuts every line;
-    the record surface answers this over the rows they become, so a caller
-    reads the window's rows and never the rest. The instants are spelled in
-    ISO 8601 with their offset, which the grammar reads into the column's
-    own datatype.
+    Stated as the predicate the read takes on its options rather than as a
+    mask over the batches it already answered, and it names the two bounds
+    and nothing else: the read dates every line it can locate, off the
+    header or off the object's modification time, so a line at the epoch is
+    one read from a handle with no clock at all, and it belongs to the window
+    that covers 1970 and to no other. The decode still cuts every line; the
+    record surface answers this over the rows they become, so a caller reads
+    the window's rows and never the rest. The instants are spelled in ISO
+    8601 with their offset, which the grammar reads into the column's own
+    datatype.
     """
     lower, upper = (bound.isoformat() for bound in window)
-    covered = Filter(f"{column} >= '{lower}'") & f"{column} < '{upper}'"
-    return covered | f"{column} = '{EPOCH.isoformat()}'"
+    return Filter(f"{column} >= '{lower}'") & f"{column} < '{upper}'"
 
 
 def _instant(value: Any) -> datetime.datetime | None:

@@ -35,8 +35,9 @@ fall in it. `parse_messages` and `parse_fix_raw` read the window off
 `currunix`, the event clock, so the two are run over the same one: the text
 read settles it over a line, off the header's `mtime` capture or off the
 modification time of the object a line the header did not match was read
-from, and the epoch pin, which every window covers, dates a line only where
-its handle has no clock at all. `parse_fix_refined` reads it off the same
+from, and the window is the two bounds and nothing else -- the epoch, which
+dates a line only where its handle has no clock at all, is in the window that
+covers 1970. `parse_fix_refined` reads it off the same
 column -- a `fix.raw` row is already an event, dated by what its message
 stated -- and the rows the parse could not date, which sit at the codec's
 pin, by the `TransactTime` the walk dates them with: a day's run walks the

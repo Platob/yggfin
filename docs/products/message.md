@@ -122,10 +122,11 @@ table.
 - The run's window is pushed into the read as
   `where_within("currunix", window)`: the decode cuts every line and the
   record surface answers the clause over the rows they become, so the read
-  answers only the window's lines and nothing is filtered after it. A line the
-  header could not date carries its object's modification time and belongs to
-  the window that instant falls in; the epoch pin, which every window covers,
-  dates only a line read from a handle with no clock.
+  answers only the window's lines and nothing is filtered after it: the two
+  bounds, and nothing else. A line the header could not date carries its
+  object's modification time and belongs to the window that instant falls in;
+  the epoch dates only a line read from a handle with no clock, and that line
+  is in the window that covers 1970.
 - The writer replaces on `curruuid` within the line's hour partition. A new
   key takes the append commit path; a replay rewrites only files that contain
   a matching key.

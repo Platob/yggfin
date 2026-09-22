@@ -369,14 +369,13 @@ FIXTURE = Path(__file__).resolve().parent / "data" / "ulbridge.log"
 def test_the_window_is_the_reads_own_where_and_not_a_mask_over_its_answer() -> None:
     """The pushdown, shown to have happened rather than assumed: over one
     window, the read handed the clause answers fewer rows than the read
-    handed none, and exactly the rows the Arrow reading `within` keeps -- so
-    a task reads the window's lines and never the rest. The decode itself
-    still cuts every line: the clause is the record surface's."""
+    handed none, and exactly the rows between the two bounds -- so a task
+    reads the window's lines and never the rest. The decode itself still
+    cuts every line: the clause is the record surface's."""
     window = window_of("2026-08-14", "2026-08-14T14:46:40")
     clause = where_within("currunix", window)
     assert str(clause) == (
-        "currunix >= '2026-08-14T00:00:00+00:00' and currunix < '2026-08-14T14:46:40+00:00' "
-        "or currunix = '1970-01-01T00:00:00+00:00'"
+        "currunix >= '2026-08-14T00:00:00+00:00' and currunix < '2026-08-14T14:46:40+00:00'"
     )
     handle = IOBase.from_uri(FIXTURE.as_uri())
     try:
@@ -388,7 +387,32 @@ def test_the_window_is_the_reads_own_where_and_not_a_mask_over_its_answer() -> N
     finally:
         handle.close()
 
-    kept = every.filter(within(every.column("currunix"), window))
+    clock = every.column("currunix")
+    lower, upper = (pyarrow.scalar(bound, clock.type) for bound in window)
+    between = every.filter(
+        pyarrow.compute.and_(
+            pyarrow.compute.greater_equal(clock, lower), pyarrow.compute.less(clock, upper)
+        )
+    )
     assert every.num_rows == cut == 144, "the decode yields every line either way"
     assert 0 < answered.num_rows < every.num_rows, "the read answered the window alone"
-    assert answered.equals(kept), "and exactly the rows the Arrow reading keeps"
+    assert answered.equals(between), "and exactly the rows between the two bounds"
+
+
+def test_a_line_no_clock_dates_is_outside_every_window_but_the_epochs() -> None:
+    """The clause names the two bounds and nothing else. A handle with no
+    modification time -- a buffer nothing addressed -- dates a line the
+    header did not match at the epoch, and a window that does not cover 1970
+    reads it as what it is: a line that happened outside the window."""
+    pushed = Message.text_options()
+    pushed.filter = where_within("currunix", window_of("2026-08-14", "2026-08-14"))
+    handle = IOBase.from_bytes(b"one physical line\n")
+    try:
+        every = handle.read_arrow_reader(options=Message.text_options()).read_all()
+        answered = handle.read_arrow_reader(options=pushed).read_all()
+    finally:
+        handle.close()
+
+    assert every.column("currunix").to_pylist() == [EPOCH]
+    assert answered.num_rows == 0
+    assert answered.schema.equals(every.schema, check_metadata=True)
