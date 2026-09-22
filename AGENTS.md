@@ -57,7 +57,15 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
 - `ULBRIDGE_ROWHEADER` is the default and the only one spelled here. A bridge
   writing the same facts in a layout of its own is read by naming its header
   in the task document, never by a second constant: the layout is a parameter
-  and the capture names are the contract. `Message.text_options` refuses a
+  and the capture names are the contract.
+- A capture's width is what types it, so the shipped clock reads the three
+  digits this bridge writes, under a point or a comma, or none at all -- and
+  a wider fraction stays a header of its own, because admitting a sixth digit
+  makes the column a microsecond instant and a ninth a nanosecond one, and the
+  walk answers a different set of events off the same bytes. `_` groups a
+  fraction's digits in the core and never separates one, so a bracket spelling
+  `01_147` is left unmatched rather than matched into a located refusal that
+  fails the batch. `Message.text_options` refuses a
   header that renames or omits one, because the read drops a capture it fills
   nothing from in silence -- a table that lands complete, keyed and empty down
   one column, or one whose clock settled nothing.

@@ -290,16 +290,19 @@ def test_the_raw_read_is_the_bridge_read_the_codec_is_pinned_against() -> None:
     assert bridge.field != raw.field
 
 
-#: The same header with its fraction widened to what this capture's several
-#: loggers actually write: a comma decimal sign, and a micro suffix after the
-#: millis. The names it captures are unchanged, which is the whole rule.
+#: The same header with its fraction widened past what the shipped one reads:
+#: the micro suffix some of this capture's loggers write after the millis,
+#: which the default leaves out because a capture that can match six digits is
+#: a microsecond column and the bridge writes three. The names it captures are
+#: unchanged, which is the whole rule.
 WIDENED = ULBRIDGE_ROWHEADER.replace(
-    r"(?P<mtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})",
-    r"(?P<mtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[.,]\d{3}(?:_\d{3})?)",
+    r"(?:[.,]\d{3})?",
+    r"[.,]\d{3}(?:_\d{3})?",
 )
 
-#: Every line of the shipped sample, and the two spellings of its clock: the
-#: default header reads the plain millis, and a widened one reads the rest.
+#: Every line of the shipped sample, and the spellings of its clock: the
+#: default header reads the millis, under a point or a comma, and a widened
+#: one reads the micro-suffixed rest.
 SAMPLE = Path(__file__).resolve().parents[2] / "data" / "capture"
 
 
@@ -312,7 +315,10 @@ def test_the_row_header_defaults_to_the_bridge_s_own() -> None:
 
 def test_a_header_of_its_own_reads_a_bridge_that_writes_the_clock_differently() -> None:
     """What the parameter is for: one capture, several loggers, and a fraction
-    they do not agree on. The columns are the same columns either way."""
+    they do not agree on. The shipped header reads every millisecond they
+    write, under a point or a comma; a logger that suffixes its micros is a
+    width the shipped one cannot take on, because the width a capture matches
+    is what types the column. The columns are the same columns either way."""
     handle = IOBase.from_uri(SAMPLE.as_uri())
     try:
         plain = handle.read_arrow_reader(options=Message.text_options()).read_all()
@@ -326,7 +332,16 @@ def test_a_header_of_its_own_reads_a_bridge_that_writes_the_clock_differently() 
     assert plain.schema.equals(widened.schema, check_metadata=True)
     # What the widened header could date, the plain one settled at the pin.
     undated = [held.column("currunix").to_pylist().count(EPOCH) for held in (plain, widened)]
-    assert [plain.num_rows - held for held in undated] == [2, 10]
+    assert [plain.num_rows - held for held in undated] == [3, 10]
+    # And what the widening costs, which is why it is not the default: the
+    # width a capture can match is what types the column, so the header that
+    # admits six digits reads a microsecond clock where the shipped one reads
+    # the millisecond the bridge writes.
+    typed = [
+        Message.text_options(held).source_field().into_arrow_schema().field("mtime").type.unit
+        for held in (None, WIDENED)
+    ]
+    assert typed == ["ms", "us"]
 
 
 @pytest.mark.parametrize(

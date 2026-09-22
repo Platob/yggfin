@@ -74,9 +74,10 @@ ROW = 128
 CRATE = 32
 PARSED_EVENTS = 49
 
-#: One line the bridge header matches, and one it does not: the second spells
-#: its fraction `,148`, which the row header does not read, so the row settles
-#: at the epoch pin and the message inside it states no clock either.
+#: Two lines the bridge header matches, one under a point and one under a
+#: comma, and two messages: the second states no `SendingTime` of its own, so
+#: it settles at the codec's pin whatever its line was stamped at -- a line's
+#: clock is context to a message and never its event.
 BRIEF = (
     b"2026-08-14 00:05:01.147 [250-e7256476:9effef3e6a:72504] [ULBridge] (INFO) "
     b"Sending : 8=FIX.4.4|35=D|11=A1|55=AAPL|10=0|\n"

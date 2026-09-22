@@ -8,7 +8,9 @@ from pathlib import Path
 
 import pyarrow
 import pytest
+from yggdryl import IOBase
 
+from rekep.text import Message
 from rekep.times import (
     EPOCH,
     ULBRIDGE_ROWHEADER,
@@ -34,6 +36,15 @@ CORE_ROWHEADER = (
 #: keeps. A capture reaches a column by being called what the column is
 #: called, so these two are renames and the rest is the core's text.
 RENAMED = {"timestamp": "mtime", "level": "loglevel"}
+
+#: The one part of the bracket this package reads wider than the core's own
+#: expression does, as `core: ours`. The core requires the bridge's
+#: millisecond fraction; this package makes it optional and reads it under a
+#: comma, which is what `times.ISO` already declares a fraction may be spelled
+#: with. The width stays three digits, because the width a capture can match
+#: is what types it. Stated here so the rest of the bracket is still compared
+#: character for character.
+WIDENED = {r"\d{2}:\d{2}:\d{2}\.\d{3}": r"\d{2}:\d{2}:\d{2}(?:[.,]\d{3})?"}
 
 #: 2026-08-14 09:30:00.123456 UTC, in the nanoseconds every `*unix` holds.
 STAMP = 1_786_699_800_123_456_000
@@ -169,9 +180,9 @@ def test_a_wrapped_value_is_asked_what_it_holds() -> None:
 
 def test_the_bridge_row_header_is_the_layout_the_core_states() -> None:
     """The one copy nobody can drift: the bracket this reads is the bracket
-    the core reads, part for part, and the only difference is what two of
-    those parts are called -- because a capture reaches its column by being
-    called what the column is called."""
+    the core reads, part for part, and every difference is declared -- what
+    two of those parts are called, because a capture reaches its column by
+    being called what the column is called, and how wide the clock reads."""
     if not CORE_ROWHEADER.is_file():
         pytest.skip(f"the core checkout is not beside this one: {CORE_ROWHEADER}")
     stated = re.search(
@@ -180,10 +191,14 @@ def test_the_bridge_row_header_is_the_layout_the_core_states() -> None:
     )
 
     assert stated is not None, f"{CORE_ROWHEADER} no longer states the constant"
+    held = stated["pattern"]
+    for core, ours in WIDENED.items():
+        assert held.count(core) == 1, f"the core no longer spells {core}"
+        held = held.replace(core, ours)
     renamed = re.sub(
         r"\(\?P<([A-Za-z]+)>",
-        lambda held: f"(?P<{RENAMED.get(held[1], held[1])}>",
-        stated["pattern"],
+        lambda found: f"(?P<{RENAMED.get(found[1], found[1])}>",
+        held,
     )
     assert ULBRIDGE_ROWHEADER == renamed
     # A rename nobody made is a rename nobody needs: each one has to be a
@@ -202,6 +217,71 @@ def test_every_bridge_capture_is_named_for_the_column_it_fills() -> None:
         "msgpluginid",
         "loglevel",
     ]
+
+
+@pytest.mark.parametrize(
+    ("fraction", "settled"),
+    [
+        # What the bridge this package was written against writes.
+        (".147", ".147000"),
+        # The same clock under a comma locale, which the core's instant parser
+        # reads and the old expression dropped.
+        (",148", ".148000"),
+        # A bridge that states seconds and stops.
+        ("", ""),
+    ],
+)
+def test_the_bridge_clock_reads_every_fraction_the_core_parses(
+    tmp_path, fraction: str, settled: str
+) -> None:
+    """A bracket the expression refuses is a line that lands undated with every
+    capture empty, so the clock reads the fraction absent and the fraction
+    under a comma, which is what `ISO` already says an instant may spell."""
+    line = f"2026-08-14 00:05:01{fraction} [250] [ULBridge] (INFO) body\n"
+    source = tmp_path / "bridge.log"
+    source.write_bytes(line.encode())
+
+    reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=Message.text_options())
+    try:
+        row = reader.read_all().to_pylist()[0]
+    finally:
+        reader.close()
+
+    assert row["currunix"] == datetime.datetime.fromisoformat(f"2026-08-14 00:05:01{settled}+00:00")
+    # A dated line is a matched bracket, so every capture beside it is filled.
+    assert (row["msgthreadid"], row["msgpluginid"], row["loglevel"]) == (250, "ULBridge", "INFO")
+
+
+@pytest.mark.parametrize("fraction", ["_147", ".", ";147", ".147258", ".147_250"])
+def test_a_fraction_this_header_does_not_read_leaves_the_line_undated(
+    tmp_path, fraction: str
+) -> None:
+    """Two reasons a fraction is not matched here, and one outcome.
+
+    `_` groups a fraction's digits in the core and never separates one, so
+    matching `01_147` would hand the instant parser a value it refuses -- and
+    a located refusal fails the whole batch the line arrived in, which is
+    worse than not reading the clock. A fraction wider than the millisecond is
+    left out for the other reason: the width a capture can match is what types
+    the column, so admitting a ninth digit would make this a nanosecond
+    instant and change what the walk answers off the same bytes. A bridge
+    writing either is read by naming its own header, which is what
+    `Message.text_options` takes one for.
+
+    Unmatched, the line is not lost: it keeps its body and settles at the pin
+    every window covers."""
+    source = tmp_path / "bridge.log"
+    source.write_bytes(f"2026-08-14 00:05:01{fraction} [250] [ULBridge] (INFO) body\n".encode())
+
+    reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=Message.text_options())
+    try:
+        row = reader.read_all().to_pylist()[0]
+    finally:
+        reader.close()
+
+    assert row["currunix"] == EPOCH
+    assert row["msgpluginid"] is None
+    assert row["body"].endswith("body")
 
 
 # -- the window a run covers -------------------------------------------------

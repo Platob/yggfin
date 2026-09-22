@@ -67,7 +67,9 @@ rather than respelled per reader. It captures `mtime`, `msgthreadid`,
 named for what the native read fills from it. `mtime` fills no column of its
 own: it is the record clock, and naming it that is what makes the read settle
 `currunix` from it, so the line's instant is stated once rather than read
-twice. `body` is the whole line, row header included, as text the read decoded
+twice. Its fraction is optional and reads under a point or a comma, so a
+bridge that omits the millisecond or writes it under a comma locale still
+dates its lines instead of landing them complete, keyed and undated. `body` is the whole line, row header included, as text the read decoded
 it to: the core retains the whole record and reads the captures off it.
 `currhashcode` is the content code the read states over those bytes, and it is
 the key: nothing here computes a digest beside it. The read states that code
@@ -93,19 +95,19 @@ beside the FIX row.
 
 `rowheader` reads one. A capture is written by several loggers and they do not
 always agree on the clock: the shipped 14-line sample spells its fraction
-`.147`, `,148` and `.147_250` in one file, and the default header reads only
-the first of those, so twelve of its fourteen lines settle at the epoch pin
-instead of on their own clock. Widening the fraction is a parameter rather
-than an edit:
+`.147`, `,148` and `.147_250` in one file. The shipped header reads the first
+two -- the millisecond is optional in it and its separator is a point or a
+comma, which is what `times.ISO` already says a fraction may be spelled with
+-- and leaves the micro-suffixed rest at the epoch pin. That last width is a
+parameter rather than an edit, because the width a capture can match is what
+types it: a header admitting six digits reads a microsecond column, and this
+bridge writes three.
 
 ```python
 from rekep import IOBase, Message
 from rekep.times import EPOCH, ULBRIDGE_ROWHEADER
 
-widened = ULBRIDGE_ROWHEADER.replace(
-    r"(?P<mtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})",
-    r"(?P<mtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[.,]\d{3}(?:_\d{3})?)",
-)
+widened = ULBRIDGE_ROWHEADER.replace(r"(?:[.,]\d{3})?", r"[.,]\d{3}(?:_\d{3})?")
 source = IOBase.from_uri("file:data/capture")
 plain = source.read_arrow_reader(options=Message.text_options()).read_all()
 read = source.read_arrow_reader(options=Message.text_options(widened)).read_all()
@@ -119,7 +121,7 @@ def dated(table):
 
 # Every physical line is a row either way; what changes is how many it dated.
 assert plain.num_rows == read.num_rows == 14
-assert dated(plain) == 2
+assert dated(plain) == 3
 assert dated(read) == 10
 ```
 
