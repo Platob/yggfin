@@ -127,7 +127,7 @@ def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
     schemas = (ROOT / "schemas" / "README.md").read_text(encoding="utf-8")
 
     assert "parse_text_arrow_reader" in bronze
-    assert "123-column" in bronze
+    assert "128-column" in bronze
     assert "FixMsg" in bronze and "FixMsg" in silver
     assert "fix_schema_carrying" not in bronze
     assert "fix_lifecycle_arrow_reader" in silver

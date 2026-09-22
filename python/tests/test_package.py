@@ -25,7 +25,7 @@ from rekep.fields import (
     primary_key,
     sort_key,
 )
-from rekep.fix import fix_registry, global_registry, registry_path
+from rekep.fix import fix_crate_fields, fix_registry, global_registry, registry_path
 
 PYPROJECT = pathlib.Path(__file__).parent.parent / "pyproject.toml"
 
@@ -100,10 +100,38 @@ def test_rekep_installs_its_bundled_registry_as_the_process_default() -> None:
     bundled = fix_registry()
 
     assert registry_path().is_dir()
-    assert len(bundled) == 7778
+    assert len(bundled) == 7781
     assert global_registry() == bundled
     assert IOBase.__module__.startswith("yggdryl")
     assert TextOptions.__module__.startswith("yggdryl")
+
+
+def test_the_bundled_dictionary_holds_no_copy_of_a_crate_definition() -> None:
+    """The bundle is the specification and nothing else.
+
+    A crate field is seeded by the core on every registry it builds, so a
+    committed copy of one is a second owner of one definition -- inert, and
+    free to drift the day the core restates it. The specification files are
+    what this package ships; the crate's own columns arrive with the crate.
+    """
+    import json
+
+    owned = {member.name for member in fix_crate_fields()}
+    root = registry_path()
+    held: set[str] = set()
+    for category in ("fields", "components", "groups"):
+        folder = root / category
+        if not folder.is_dir():
+            continue
+        for path in folder.glob("*.json"):
+            document = json.loads(path.read_text(encoding="utf-8"))
+            for one in document if isinstance(document, list) else [document]:
+                if isinstance(one, dict) and one.get("name") in owned:
+                    held.add(f"{category}/{path.name}:{one['name']}")
+
+    assert not held, f"the bundle copies definitions the crate owns: {sorted(held)}"
+    # And the registry is the same one either way: nothing was lost with them.
+    assert len(fix_registry()) == 7781
 
 
 def test_the_scheduling_dependencies_are_installed_wherever_they_can_be() -> None:

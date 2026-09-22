@@ -256,11 +256,13 @@ For each pair the builder:
 Version selection is what the row itself said: `ApplVerID(1128)`,
 `BeginString(8)`, then the registry's newest applicable version. No version is
 pinned on the codec. Native `FixCodec` validates keyword names; useful pins
-include `default_sending_time`, `separator`, `payload_column`, `capture_names`,
-`null_values`, `direction`, `batch_byte_size`, `batch_row_size`,
-`include_msgtypes`, `exclude_msgtypes`, `threads`, and `snapshot_ns`. Version
-affects code spelling, not column identity. The batch defaults are 32,768 rows
-and 128 MiB; `threads` defaults to the available CPU count and zero means one.
+include `default_sending_time`, `official_time_delay_ms`, `separator`,
+`payload_column`, `capture_names`, `null_values`, `direction`,
+`batch_byte_size`, `batch_row_size`, `include_msgtypes`, `exclude_msgtypes`,
+`threads`, and `snapshot_ns`. Version affects code spelling, not column
+identity. The batch defaults are 32,768 rows and 128 MiB;
+`official_time_delay_ms` defaults to 1,000; `threads` defaults to the
+available CPU count and zero means one.
 Prefix stripping belongs to `TextOptions.lstrip`, which accepts a list of
 anchored regular expressions such as `[r"^\s*-->\s*"]`; it changes the
 retained raw `body` and therefore its identity. It is not a codec option and
@@ -274,12 +276,18 @@ Resolved children are ordered as FIX header, body, trailer, then the crate's
 own fields, and the row ends `metadata`, `nofixentries`, `fixentries`. The last
 two describe only the residual protocol tree in an Arrow row.
 `beginstring` is supplied when the input did not state one. The parse dates a
-message by the `SendingTime(52)` it stated and by nothing else: one stating
-none takes the codec's `UNDATED` floor -- never the capture's own clock, which
-stamps nothing, and never the instant the parse ran -- until the walk dates it
-by the `TransactTime(60)` it states. `currhashcode` is the content code over
-the event's facts, its text, its metadata, the stated header cells and the
-entry tree; `curruuid` is the identity over that code and the settled instant.
+message by the official transaction clock standing within
+`official_time_delay_ms` of the `SendingTime(52)` it stated --
+`TransactTime(60)`, else the `TrdRegTimestamp(769)` whose
+`TrdRegTimestampType(770)` says it is about the event or a hop -- and by that
+`SendingTime` otherwise: one stating none takes the codec's `UNDATED` floor --
+never the capture's own clock, which stamps nothing, and never the instant the
+parse ran -- until the walk dates it by the `TransactTime(60)` it states.
+`currhashcode` is the content code over the event's facts, its text, its
+metadata, the stated header cells and the entry tree; `curruuid` is an RFC 9562
+UUIDv7: the settled millisecond in its leading 48 bits, the sequence's low 12
+in `rand_a`, and in `rand_b` the low 62 of XXH3-64 over the big-endian
+`(seqnum, digest)` tuple seeded by `crosshashcode`.
 No partition column is materialized beside them, because a FIX row has none of
 its own.
 
@@ -334,12 +342,12 @@ table = parsed.read_all()
 
 assert table.column("symbol").to_pylist() == ["AAPL"]
 assert table.column("srcuuids").to_pylist() == [[uuid.UUID(bytes=b"\x01" * 16)]]
-assert table.num_columns == 123
+assert table.num_columns == 128
 assert table.schema.names[-3:] == ["metadata", "nofixentries", "fixentries"]
 ```
 
 The input batch is the raw 12-column `Message` contract, in the native event
-layout's own order. The output is exactly the native 123-column FixMsg
+layout's own order. The output is exactly the native 128-column FixMsg
 contract: it holds neither `body` nor a column raw to a line. The input line's
 `curruuid` becomes a `srcuuids` provenance entry, so `sourceurl`, `rownum`,
 `msgthreadid`, `loglevel` and the line's own text remain available by joining
@@ -382,8 +390,9 @@ table in, rows out under the parse's own shape. They are what
 `parse_fix_bronze` and `parse_fix_silver` take, because each holds a table.
 One line carrying two frames answers two rows with the same source UUID; one
 carrying none answers no row at all. The parse folds every hop that logged
-one message onto one identity, so those 79 messages are 51 bronze
-events; lifecycle adds one expiry and therefore emits 52 rows for this fixture.
+one message onto one identity, so those 79 messages are 49 bronze
+events; the walk merges the observations of one event and therefore lands 22
+rows for this fixture.
 
 ```python
 import uuid
@@ -431,7 +440,7 @@ assert table.column("srcuuids").to_pylist() == [
     [uuid.UUID(bytes=bytes.fromhex("00" * 15 + "03"))],
     [uuid.UUID(bytes=bytes.fromhex("00" * 15 + "03"))],
 ]
-assert table.num_columns == 123
+assert table.num_columns == 128
 
 parsed.close()
 ```

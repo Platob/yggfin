@@ -67,15 +67,17 @@ rather than respelled per reader. It captures `mtime`, `msgthreadid`,
 named for what the native read fills from it. `mtime` fills no column of its
 own: it is the record clock, and naming it that is what makes the read settle
 `currunix` from it, so the line's instant is stated once rather than read
-twice. `body` is the whole line, row header included, as text the read decoded
+twice. Its fraction is optional and reads under a point or a comma, so a
+bridge that omits the millisecond or writes it under a comma locale still
+dates its lines instead of landing them complete, keyed and undated. `body` is the whole line, row header included, as text the read decoded
 it to: the core retains the whole record and reads the captures off it.
 `currhashcode` is the content code the read states over those bytes, and it is
 the key: nothing here computes a digest beside it. The read states that code
 unsigned, which is why the reader above is checked against `read_field()` and
 not the narrower field a table holds. `sourceurl` and `rownum` come from
 traversal, and `curruuid` is the line's own identity the read states -- a
-UUIDv7 over the settled instant and that content code, on every row the read
-produces -- which a message parsed out of the stored line names as its one
+UUIDv7 over the settled millisecond, the line's place in the read and its source, on every row the read
+produces -- which a bronze message parsed out of the stored line names as its one
 `srcuuids` entry.
 
 `sourceurl`, `rownum`, `msgthreadid`, `loglevel` and `body` are raw to
@@ -93,19 +95,19 @@ beside the FIX row.
 
 `rowheader` reads one. A capture is written by several loggers and they do not
 always agree on the clock: the shipped 14-line sample spells its fraction
-`.147`, `,148` and `.147_250` in one file, and the default header reads only
-the first of those, so twelve of its fourteen lines settle at the epoch pin
-instead of on their own clock. Widening the fraction is a parameter rather
-than an edit:
+`.147`, `,148` and `.147_250` in one file. The shipped header reads the first
+two -- the millisecond is optional in it and its separator is a point or a
+comma, which is what `times.ISO` already says a fraction may be spelled with
+-- and leaves the micro-suffixed rest at the epoch pin. That last width is a
+parameter rather than an edit, because the width a capture can match is what
+types it: a header admitting six digits reads a microsecond column, and this
+bridge writes three.
 
 ```python
 from rekep import IOBase, Message
 from rekep.times import EPOCH, ULBRIDGE_ROWHEADER
 
-widened = ULBRIDGE_ROWHEADER.replace(
-    r"(?P<mtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})",
-    r"(?P<mtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[.,]\d{3}(?:_\d{3})?)",
-)
+widened = ULBRIDGE_ROWHEADER.replace(r"(?:[.,]\d{3})?", r"[.,]\d{3}(?:_\d{3})?")
 source = IOBase.from_uri("file:data/capture")
 plain = source.read_arrow_reader(options=Message.text_options()).read_all()
 read = source.read_arrow_reader(options=Message.text_options(widened)).read_all()
@@ -119,7 +121,7 @@ def dated(table):
 
 # Every physical line is a row either way; what changes is how many it dated.
 assert plain.num_rows == read.num_rows == 14
-assert dated(plain) == 2
+assert dated(plain) == 3
 assert dated(read) == 10
 ```
 
@@ -193,15 +195,15 @@ reader's rows on `curruuid`, the source-line identity: a stored row
 carrying one of the window's keys is taken out and the window's row lands, in
 one commit per bounded chunk. A missing table is created. If no existing file
 can contain a key, this keyed write commits as an append; a matching replay is
-an overwrite of only the affected files. The released native 0.1.8 identity
-still collapses the fixture's three exact repeated lines, so its 144 physical
-lines currently land as 141 rows. The next native identity includes source
-and physical sequence, making those UUIDs distinct without adding a composite
-or content-code key.
+an overwrite of only the affected files. The native identity carries the line's
+place in the read and its source, so the fixture's three exact repeated lines
+answer three identities and its 144 physical lines land as 144 rows -- distinct
+without a composite or content-code key. The same bytes read from two URIs
+answer two identities under one `currhashcode`.
 
 ## Sample rows
 
-The sample is 29 capture lines from `python/tests/data/ulbridge.log` that the
+The sample is 27 capture lines from `python/tests/data/ulbridge.log` that the
 FIX walk later joins under business chain `00026877711XOEA0`, as
 `parse_messages` lands them in `logs.messages`. An
 identity is shown by its last eight hex digits behind a leading `…`, and the

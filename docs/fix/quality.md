@@ -14,24 +14,25 @@ Quality is represented in rows rather than hidden in parser control flow.
 ## Distinct digests
 
 A line's `currhashcode` codes the whole line, row header included, because
-the read states it over `Message.body` as it retains it, and it is what
-`logs.messages` is keyed on: identical lines are one row whatever session
-carried them.
+the read states it over `Message.body` as it retains it. It is not what
+`logs.messages` is keyed on: two identical lines are two rows under two
+`curruuid` identities, sharing one code.
 
 `currhashcode` is the event's content code -- XXH3-64 over its facts, its text,
 its metadata, the stated header cells and the entry tree, and never the row's
 storage, so a message read back out of a row is the same message. Two lines
 carrying the same frame under the same clock answer one code while their bytes
 differ, which is exactly what makes a message logged at three hops one event.
-`curruuid` is the identity over that code and the instant the event settled
-on, and it is what both FIX tables are keyed on: the parse settles a bronze
-row's, and the walk settles it again where it dates the message by its
-`TransactTime`.
+`curruuid` is the UUIDv7 the settled millisecond, the sequence and that code
+cross-seeded derive, and it is what both FIX tables are keyed on: the parse
+settles a bronze row's, and the walk settles it again where it dates the
+message by its `TransactTime`.
 
 `crosshashcode` digests `crosscode` alone. The first non-empty business
 identifier wins in this order: `OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`,
 `QuoteReqID`, `MDReqID`. Capture session and context are available separately
-as `identifiers["msgsectxid"]` when both exist and never alter the content
+as `identifiers["msgsesseventid"]` with the message type and sequence when all
+four exist, each text part byte-length-prefixed, and never alter the content
 identity. `crossuuid` is the identity over the chosen business code.
 
 ## Stated claims a row disagrees with
@@ -92,9 +93,10 @@ diff before publishing it as the next bundle.
 
 ## Replay guarantees
 
-`srcuuids` joins a fixed row back to the stored line it was parsed out of --
-each line's own `curruuid`, as `logs.messages` holds it. Those raw rows own
-`sourceurl` and `rownum`; the FIX row does not. Its `curruuid` tells two
+`srcuuids` joins a fixed row back to the stored lines it was read out of -- the
+one line a bronze row was parsed out of, every line its event was logged on
+once the walk merged them -- each line's own `curruuid`, as `logs.messages`
+holds it. Those raw rows own `sourceurl` and `rownum`; the FIX row does not. Its `curruuid` tells two
 messages of one line apart and folds one message logged at three hops, which
 is why both FIX tables are keyed on `curruuid` alone. A replay of a window lands the same rows in `fix.bronze`
 and, walked, the same rows in `fix.silver`, and leaves no duplicate: a message

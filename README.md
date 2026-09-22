@@ -57,7 +57,7 @@ follows, the `seqnum` it stands at, the `parentuuids` it descends from, and the
 Silver scans the previous hour plus the job window with `fix_window_filter`
 and `SORT_COLUMNS`. Iceberg streams chronological hour paths and merges no more
 than 16 overlapping files at once; there is no Python-wide `read_all` union.
-Native 0.1.8 lifecycle processing still collects and stable-sorts that finite
+Native 0.1.9 lifecycle processing still collects and stable-sorts that finite
 scan result. Undated rows come from the epoch partition and may accumulate, so
 this is not a batch-bounded memory path. The previous hour provides context only: output is the job window plus
 unresolved epoch rows, with future expiry excluded, so this bounded run does
@@ -100,7 +100,7 @@ event. A source message that stated no sending clock takes the codec's fixed
 epoch rather than the instant the parse ran; lifecycle may date that source
 event from its `TransactTime`, while synthetic expiry keeps its exact deadline.
 
-The 123-column **FixMsg** row is the native parse, storage, and lifecycle
+The 128-column **FixMsg** row is the native parse, storage, and lifecycle
 shape. It reconstructs canonical message semantics
 from lifted columns and residual `fixentries`; lifted values are not duplicated
 as a second arrival record. `sourceurl`, `rownum`, `msgthreadid`, `loglevel`,
@@ -109,9 +109,10 @@ and `body` remain only in `logs.messages`, while the bridge's `msgsessionid`,
 fills; `srcuuids` joins a FIX row back to raw
 `curruuid`. `crosscode` uses the first available business
 identifier (`OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID`, then
-`MDReqID`), while capture `session:context` is
-`identifiers["msgsectxid"]`. Default null spellings are empty text, `null`,
-`<null>`, `none`, `n/a`, and `[n/a]`, trimmed and case-insensitive.
+`MDReqID`), while message type, capture session, context and sequence form the
+byte-length-prefixed `identifiers["msgsesseventid"]`. Default null spellings
+are empty text, `null`, `<null>`, `none`, `n/a`, and `[n/a]`, trimmed and
+case-insensitive.
 
 `build_dbt` runs the [dbt project](data/dbt/README.md) under `data/dbt` and
 reads `fix.silver`: DuckDB owns the SQL, and every read and commit goes through

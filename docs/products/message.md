@@ -107,10 +107,11 @@ eight bytes land in the stored `int64`.
 - The writer replaces on `curruuid` within the line's hour partition. A new
   key takes the append commit path; a replay rewrites only files that contain
   a matching key.
-- Native 0.1.8 gives the bundled capture's three exact repeated lines the same
-  legacy UUID, so 144 physical lines currently land as 141 rows. The next
-  native identity includes source and physical sequence, making those UUIDs
-  distinct without turning `currhashcode` into a key.
+- `curruuid` carries the line's place in the read and its source, not only its
+  bytes, so the bundled capture's three exact repeated lines answer distinct
+  identities and its 144 physical lines land as 144 rows. The same bytes read
+  from two URIs answer two identities under one `currhashcode`, which stays out
+  of the key.
 - This `currhashcode` is the code of the *line* and not the message's own,
   which covers the settled event and is a column of both FIX tables. Two
   different lines can state one message, so the two codes answer different

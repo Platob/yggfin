@@ -14,7 +14,7 @@ behavior.
 
 ## Ownership
 
-- The published native dependency is pinned to `yggdryl==0.1.8`; public
+- The published native dependency is pinned to `yggdryl==0.1.9`; public
   applications and documentation import only `rekep`.
 
 - Yggdryl owns `Field`, scalar compilation, resource binding, filesystems,
@@ -57,7 +57,15 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
 - `ULBRIDGE_ROWHEADER` is the default and the only one spelled here. A bridge
   writing the same facts in a layout of its own is read by naming its header
   in the task document, never by a second constant: the layout is a parameter
-  and the capture names are the contract. `Message.text_options` refuses a
+  and the capture names are the contract.
+- A capture's width is what types it, so the shipped clock reads the three
+  digits this bridge writes, under a point or a comma, or none at all -- and
+  a wider fraction stays a header of its own, because admitting a sixth digit
+  makes the column a microsecond instant and a ninth a nanosecond one, and the
+  walk answers a different set of events off the same bytes. `_` groups a
+  fraction's digits in the core and never separates one, so a bracket spelling
+  `01_147` is left unmatched rather than matched into a located refusal that
+  fails the batch. `Message.text_options` refuses a
   header that renames or omits one, because the read drops a capture it fills
   nothing from in silence -- a table that lands complete, keyed and empty down
   one column, or one whose clock settled nothing.
@@ -131,8 +139,9 @@ keyed on `curruuid` alone, the line identity the native read states;
 here computes a digest beside it. A raw text row names its source
 through Yggdryl `sourceurl` and `rownum`, and itself through `curruuid`, the
 line's own identity the native read states. A message parsed out of a stored
-line records that identity in `srcuuids`, which joins to the raw row's
-`curruuid`; it is provenance, never lineage, and no walk changes what the
+line records that identity in `srcuuids`, and the walk adds the identity of
+every other line its event was logged on; each joins to a raw row's
+`curruuid`, is provenance, never lineage, and no walk changes what the
 identity means.
 
 The two FIX stages one codec exposes are two tasks over two tables, in this
@@ -152,21 +161,22 @@ hour and the run's window from `fix.bronze`, including undated epoch rows, in
 the job window plus still-undated rows and excludes future expiry events. This
 bounded history does not claim arbitrary old-chain completeness. It reads each
 row back as the message that wrote it, walks the chains, and lands the walked
-rows. The walk reads the fixed row alone. A silver row differs from its
-bronze twin in what the walk filled -- its place, its lineage, the folded
-`creaunix`, `exprtime` and `state` -- and in the identity those re-settle to;
-a duplicate is not a successor, and the walk gives every copy of one message
-the same place, the same lineage and the same state.
+rows. The walk reads the fixed row alone. A silver row differs from the bronze
+rows it merges in what the walk filled -- its place, its lineage, the merged
+`srcuuids`, the folded `creaunix`, `exprtime` and `state` -- and in the
+identity those re-settle to; a duplicate is not a successor, and the walk folds
+every copy of one message into one row naming every line it was logged on.
 
 Both tables use the native `fix_message_field(codec)` field directly,
 without a yggfin FIX model. Parse, storage, reconstruction,
-and lifecycle all use the same 123-column **FixMsg** contract. `sourceurl`,
+and lifecycle all use the same 128-column **FixMsg** contract. `sourceurl`,
 `rownum`, `msgthreadid`, `loglevel` and `body` remain only in `logs.messages`;
 the bridge's `msgsessionid`, `msgctxid`, `msgseqnum` and `msgpluginid` are
 native FixMsg fields a raw line fills, so they stand on both shapes under one
 spelling and nothing translates between them. `srcuuids` joins a FIX row to
-the raw row's `curruuid`.
-The native row contains 29 crate fields; code vocabularies live centrally and
+the `curruuid` of every raw row its event was logged on -- one on bronze, all
+of them after the walk.
+The native row contains 32 crate fields; code vocabularies live centrally and
 fields reference them through `FIX:codeset`. `fixentries` is residual and does
 not duplicate successfully lifted scalars or complete groups. A reconstructed
 row promises canonical message semantics, not arrival pair order or bytes.
@@ -180,9 +190,11 @@ rows under the same key.
 
 `crosscode` takes the first non-empty `OrderID`, `ClOrdID`, `OrigClOrdID`,
 `QuoteID`, `QuoteReqID`, or `MDReqID`. Capture session and context instead form
-`identifiers["msgsectxid"]` when both exist. Default absence spellings are
-empty text, `null`, `<null>`, `none`, `n/a`, and `[n/a]`, trimmed and compared
-case-insensitively.
+`identifiers["msgsesseventid"]` with the message type and sequence when all
+four exist, each text part byte-length-prefixed as
+`<len>:<msgtype>|<len>:<session>|<len>:<context>|<msgseqnum>`. Default absence
+spellings are empty text, `null`, `<null>`, `none`, `n/a`, and `[n/a]`, trimmed
+and compared case-insensitively.
 
 The codec is the whole parse surface: the dictionary and the instant an undated
 message takes are pinned on it once, and each stage after it is a call rather
@@ -195,13 +207,13 @@ position, which is the line door. A version is not among the pins -- what a mess
 read at is what its own `beginstring` said. Native construction validates
 every keyword; both FIX tasks expose `codec_options`, where `null` delegates
 native defaults and an object is forwarded unchanged. Useful pins include
-`batch_row_size`, `include_msgtypes`, `exclude_msgtypes`, `threads`, and
-`snapshot_ns`. The doors are named for
+`batch_row_size`, `include_msgtypes`, `exclude_msgtypes`, `threads`,
+`official_time_delay_ms`, and `snapshot_ns`. The doors are named for
 their stage: `fix_parse_*` and `fix_lifecycle_*`, a line door and a batch door each.
 
 The silver Iceberg scan prunes with `fix_window_filter`, requests
 `SORT_COLUMNS`, and merges at most 16 overlapping file streams at once. It
-does not form a Python `read_all` union. Native 0.1.8 lifecycle processing
+does not form a Python `read_all` union. Native 0.1.9 lifecycle processing
 still collects and stable-sorts its finite scan result. Undated rows read from
 the epoch partition may accumulate, so this path is not batch-memory-bounded.
 

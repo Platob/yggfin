@@ -154,7 +154,7 @@ sources:
 
 DuckDB takes a table, so a source is read into memory: a large one is narrowed
 by `columns`, `row_filter` and `limit` rather than read whole. The shipped
-project projects the fields from the 123-column FIX row that current products
+project projects the fields from the 128-column FIX row that current products
 read. That projection is pushed into the Iceberg scan before DuckDB sees it.
 
 The source is `fix.silver` and never `fix.bronze`, though both are declared:
@@ -204,7 +204,7 @@ build starts when `parse_fix_silver` writes.
 {
   "task": "build_dbt",
   "read": 29,
-  "written": 63,
+  "written": 34,
   "skipped": 0,
   "sources": {"project": "data/dbt"},
   "targets": {
@@ -217,7 +217,7 @@ build starts when `parse_fix_silver` writes.
   "models": 4,
   "tests": 25,
   "warned": [],
-  "rows": {"orders.events": 48, "orders.current": 8, "executions.fills": 7}
+  "rows": {"orders.events": 19, "orders.current": 8, "executions.fills": 7}
 }
 ```
 
@@ -244,7 +244,7 @@ read is pinned against the codec itself in `python/tests/test_dbt.py`.
 ## Sample rows
 
 The sample is business chain `00026877711XOEA0` from
-`python/tests/data/ulbridge.log`: 29 events, one current order, and three fills as `build_dbt`
+`python/tests/data/ulbridge.log`: 4 events, one current order, and three fills as `build_dbt`
 lands them in `orders.events`, `orders.current` and `executions.fills`. An
 identity is shown by its last eight hex digits behind a leading `…`, and the
 stored value is sixteen bytes; a null is an empty cell.

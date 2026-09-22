@@ -3,7 +3,7 @@
 `rekep iceberg deploy` creates the three tables ingestion writes --
 `logs.messages`, `fix.bronze` and `fix.silver` -- with the same runtime fields
 their tasks use: `Message` for the raw product and `fix_message_field` for
-both FIX tables, which answers all 123 native columns from the dictionary alone
+both FIX tables, which answers all 128 native columns from the dictionary alone
 without consuming a capture row. Deployment is idempotent: an
 existing table is reported as `present` and is not rewritten.
 
@@ -300,7 +300,7 @@ Properties are applied only when a table is created. Deployment deliberately
 does not mutate an existing table; use maintenance or a reviewed migration for
 that.
 
-A newly deployed FIX table has exactly the 123 native FixMsg columns. Because
+A newly deployed FIX table has exactly the 128 native FixMsg columns. Because
 schema merge is additive, an existing table that still has `sourceurl`,
 `rownum`, `timestamp`, `timepartition`, `threadId`, `pluginid`, or `level` --
 the names that table holds them under -- must delete those columns through a
@@ -342,7 +342,7 @@ the identity and the content code the read settles over its bytes, and the
 parse reads that stored identity back rather than recomputing one -- which is
 why `srcuuids` joins the line that landed, and why the replay is the migration
 and not the fallback. A retired table the previous core wrote cannot be walked
-in place: its rows are not the pinned core's 123-column native row, and
+in place: its rows are not the pinned core's 128-column native row, and
 `parse_fix_silver` reads a table named as its `bronze` only in that shape. The
 products are rebuilt by [`build_dbt`](../tasks/build-dbt.md) afterwards; drop
 `orders.events`, `orders.current` and `executions.fills` first, because the

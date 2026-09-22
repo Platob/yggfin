@@ -44,7 +44,8 @@ zero becomes one. Output order remains input order.
 unchanged to `FixCodec`; Python keeps no whitelist or second interpretation.
 Common pins include
 `batch_row_size`, `batch_byte_size`, `include_msgtypes`, `exclude_msgtypes`,
-`threads`, and `snapshot_ns`; native construction rejects unknown names.
+`threads`, `official_time_delay_ms`, and `snapshot_ns`; native construction
+rejects unknown names.
 Batching defaults to 32,768 rows and 128 MiB.
 `snapshot_ns` is normally zero for bronze because snapshots belong to a
 lifecycle walk.
@@ -56,7 +57,7 @@ and `[n/a]`, after trimming and case folding. `null_values` replaces that set.
 
 ## Read, parse, narrow, write
 
-`fix_message_field(codec)` is the native 123-column row used directly by the
+`fix_message_field(codec)` is the native 128-column row used directly by the
 parse door and `fix.bronze`. `sourceurl`, `rownum`, `msgthreadid`, `loglevel`
 and `body` are raw to `logs.messages` and remain there, so no carried or
 unstored schema is constructed. The reviewed **FixMsg** contract is
@@ -75,8 +76,9 @@ distinct messages from one line remain distinct.
 `crosscode` is the first non-empty business identifier in this order:
 `OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID`, `MDReqID`.
 Capture session and context do not replace it. When both capture values exist,
-`identifiers["msgsectxid"]` records `session:context` without changing event
-content identity.
+`identifiers["msgsesseventid"]` records
+`<msgtype-len>:<msgtype>|<session-len>:<session>|<context-len>:<context>|<msgseqnum>`
+without changing event content identity.
 
 ## Schema and precision
 

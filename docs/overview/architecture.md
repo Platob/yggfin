@@ -73,9 +73,11 @@ parse answers one row per message rather than one per line, so the FIX products
 add the identities the parse settled and are keyed on a `curruuid` of their own.
 
 A line's `currhashcode` identifies the line itself: the code the read states
-over its whole content, and the key of `logs.messages`. `curruuid` on a
+over its whole content, beside the `curruuid` that keys `logs.messages`.
+`curruuid` on a
 FIX row identifies the settled
-message: sixteen ordered bytes over its settled instant and its named content.
+message: a UUIDv7 over its settled millisecond, its place in the sequence, and
+its named content.
 They intentionally answer different questions.
 
 ## Repository layout

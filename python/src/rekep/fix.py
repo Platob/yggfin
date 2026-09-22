@@ -57,13 +57,14 @@ _REGISTRY_PATH = Path(__file__).with_name("_data") / "fix"
 FIXMSG = "fixmsg"
 
 #: The column a message's own identity is published as, and the table's whole
-#: key. A UUIDv7 over the instant the event settled on and the code of its
-#: content, so one message logged at three hops settles on one of them: an
-#: arrival under an identity already held is a restatement, not a second row.
+#: key. A UUIDv7 over the millisecond the event settled on, its place in its
+#: chain and the cross-seeded code of its content, so one message logged at
+#: three hops settles on one of them: an arrival under an identity already
+#: held is a restatement, not a second row.
 MESSAGE_KEY = "curruuid"
 
 #: The instant every table here is laid out by, and the core's own name for
-#: it: the first of the sixteen columns every event's schema opens with. On a
+#: it: the first of the nineteen columns every event's schema opens with. On a
 #: FIX row it is what the message stated and never what a line was printed
 #: at; on a raw one it is what the line was printed at, because there a line
 #: is the event. Each read settles its own, and the hour of it is the layout.
@@ -75,10 +76,11 @@ EVENT_CLOCK = "currunix"
 #: window's, and `fix_window_filter` reads it there.
 TRANSACTION_CLOCK = "transacttime"
 
-#: The identities a message was read from: provenance, never lineage. A row
-#: parsed from a stored line names that line's `curruuid` here and nothing
-#: else. Source location and capture context remain on `logs.messages`,
-#: reached through these identities; no walk moves them.
+#: The identities a message was read from: provenance, never lineage. A
+#: bronze row names the one line it was parsed from; a silver row names every
+#: line its event was logged on, because the walk merges the observations of
+#: one event. Source location and capture context remain on `logs.messages`,
+#: reached through these identities; no walk reads them as lineage.
 SOURCES = "srcuuids"
 
 #: The capture column a parse reads the line's own identity off, and puts in
@@ -269,7 +271,7 @@ def fix_lifecycle_arrow_reader(
     codec: FixCodec,
     source: pyarrow.RecordBatchReader,
 ) -> pyarrow.RecordBatchReader:
-    """Walk native FIX rows, preserving `srcuuids` as capture provenance.
+    """Walk native FIX rows, merging every observation's `srcuuids` as capture provenance.
 
     Stored rows are widened to the dictionary's types before the native
     lifecycle dates, stably sorts, deduplicates and folds them. Its finite

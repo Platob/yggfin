@@ -55,13 +55,13 @@ MESSAGES = 79
 CHAINS = {
     "": (1, 1, 0),
     "00026877709XOEA0": (1, 1, 0),
-    "00026877711XOEA0": (29, 29, 6),
-    "00026877712XOEA0": (3, 2, 0),
-    "00026877713XOEA0": (6, 5, 4),
-    "175631111-2274-42616_225": (8, 7, 1),
-    "20260814_TP1_CLIENT_1013": (3, 3, 2),
+    "00026877711XOEA0": (4, 4, 2),
+    "00026877712XOEA0": (2, 1, 0),
+    "00026877713XOEA0": (3, 3, 2),
+    "175631111-2274-42616_225": (8, 6, 1),
+    "20260814_TP1_CLIENT_1013": (1, 1, 0),
     "923465840": (1, 1, 0),
-    "OD9EOEDJ401": (2, 2, 1),
+    "OD9EOEDJ401": (1, 1, 0),
     "OD9EOEDJ402": (1, 1, 0),
 }
 
@@ -70,13 +70,14 @@ CHAINS = {
 EVENTS = sum(events for _, events, _ in CHAINS.values())
 
 #: The native row is the only FIX row shape at every stage.
-ROW = 123
-CRATE = 29
-PARSED_EVENTS = 51
+ROW = 128
+CRATE = 32
+PARSED_EVENTS = 49
 
-#: One line the bridge header matches, and one it does not: the second spells
-#: its fraction `,148`, which the row header does not read, so the row settles
-#: at the epoch pin and the message inside it states no clock either.
+#: Two lines the bridge header matches, one under a point and one under a
+#: comma, and two messages: the second states no `SendingTime` of its own, so
+#: it settles at the codec's pin whatever its line was stamped at -- a line's
+#: clock is context to a message and never its event.
 BRIEF = (
     b"2026-08-14 00:05:01.147 [250-e7256476:9effef3e6a:72504] [ULBridge] (INFO) "
     b"Sending : 8=FIX.4.4|35=D|11=A1|55=AAPL|10=0|\n"
@@ -727,7 +728,7 @@ def test_the_walk_reads_the_row_and_never_the_capture_beside_it(bronze, silver) 
     Raw captures are not content. The walk reads only the native row, whose
     `srcuuids` retain the raw-line provenance needed to join it back later.
     """
-    assert _chains(silver)["00026877711XOEA0"] == CHAINS["00026877711XOEA0"] == (29, 29, 6)
+    assert _chains(silver)["00026877711XOEA0"] == CHAINS["00026877711XOEA0"] == (4, 4, 2)
     assert silver.column_names == bronze.column_names
     assert set(_sources(silver)) <= set(_sources(bronze))
     assert silver.column(EVENT_CLOCK).to_pylist() == sorted(silver.column(EVENT_CLOCK).to_pylist())
@@ -765,13 +766,18 @@ def test_the_walk_sorts_distinct_effective_instants_and_keeps_equal_ties(bronze)
     reversed_times = chronological.take(pyarrow.array(list(reversed(range(len(selected))))))
     assert _silver(reversed_times).equals(_silver(chronological))
 
+    # Two observations of one event at one instant are one event, so the tie
+    # is no longer two rows to order but one row's provenance: the walk keeps
+    # both lines under one identity, and which line it records first is the
+    # input's to decide, never the walk's own.
     tied = bronze.take(pyarrow.array([0, 1]))
     reversed_tied = tied.take(pyarrow.array([1, 0]))
-    source_events = lambda rows: rows.filter(  # noqa: E731
-        pyarrow.compute.equal(pyarrow.compute.list_value_length(rows.column(SOURCES)), 1)
-    )
-    assert _sources(source_events(_silver(tied))) == _sources(tied)
-    assert _sources(source_events(_silver(reversed_tied))) == _sources(reversed_tied)
+    held, reversed_held = _silver(tied), _silver(reversed_tied)
+    lines = lambda rows: rows.column(SOURCES).to_pylist()  # noqa: E731
+
+    assert held.num_rows == reversed_held.num_rows == 1
+    assert set(lines(held)[0]) == set(lines(reversed_held)[0]) == set(_sources(tied))
+    assert lines(held)[0] == list(reversed(lines(reversed_held)[0]))
     assert _silver(bronze.slice(0, 0)).num_rows == 0
 
 

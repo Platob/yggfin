@@ -22,8 +22,10 @@ from _bench import best_of, parser  # noqa: E402
 from rekep.text import Message  # noqa: E402
 from rekep.times import datetime_of  # noqa: E402
 
-# Yggdryl's default when TextOptions leaves the bound unset.
-BATCH_ROW_SIZE = 65_536
+# Yggdryl's own default, read off the options this package reads with rather
+# than spelled again: the bound is the core's to choose, and a number copied
+# here is a number that goes quietly wrong the release it changes.
+BATCH_ROW_SIZE = Message.text_options().batch_row_size
 # The read's own shape, which is the contract with the line's content code
 # widened to the unsigned type the core states it in.
 FIELD = Message.read_field()
@@ -194,8 +196,15 @@ def sweep(rows: int, repeat: int) -> None:
     with tempfile.TemporaryDirectory(prefix="rekep-message-bench-") as directory:
         selected, encoded_size = cases(pathlib.Path(directory), decoded)
         verified = [verify(case, rows) for case in selected]
+        # Two columns are the line's place and not its content: `sourceurl`
+        # is where it was read from, and `curruuid` is the identity the read
+        # states over that place as well as over the bytes -- so the same
+        # line under two URIs is two events, on purpose. Everything else,
+        # `currhashcode` and `body` included, has to be the same or the gzip
+        # leg is not reading what the plain one read.
+        placed = ("sourceurl", "curruuid")
         comparable = [
-            table.select([name for name in table.schema.names if name != "sourceurl"])
+            table.select([name for name in table.schema.names if name not in placed])
             for table in verified
         ]
         assert comparable[0].equals(comparable[1]), "plain and gzip rows differ"

@@ -40,7 +40,7 @@ With `snapshot_ns > 0`, the walk also emits owned views of every live event on
 the requested nanosecond grid. Zero, the default, disables snapshots.
 
 Parsing and local per-event enrichment may run in parallel, but prior-event
-state belongs only to lifecycle. Native version 0.1.8 consumes a finite input
+state belongs only to lifecycle. Native version 0.1.9 consumes a finite input
 and stable-sorts it before walking. The Arrow scan streams batches into that
 door, yet lifecycle still collects the selected rows. Undated rows are read
 from the epoch partition on every job and that partition may grow, so this is
@@ -70,7 +70,7 @@ older.
 
 ## Read, order, widen, walk, narrow, write
 
-`fix_lifecycle_arrow_reader` reads and emits the same 123-column **FixMsg**
+`fix_lifecycle_arrow_reader` reads and emits the same 128-column **FixMsg**
 field that bronze stored. `overwrite_arrow_reader(..., merge_by=True)` replaces matching `curruuid`
 rows inside affected hourly partitions.
 
@@ -88,7 +88,7 @@ older inherited transaction time.
 - Duplicate deliveries are removed without conflating distinct events.
 - `crosscode` follows business-identifier priority: `OrderID`, `ClOrdID`,
   `OrigClOrdID`, `QuoteID`, `QuoteReqID`, `MDReqID`.
-- Capture `session:context` is `identifiers["msgsectxid"]`, not a chain key.
+- Capture session and context are `identifiers["msgsesseventid"]`, byte-length-prefixed with msgtype and `msgseqnum`, not a chain key.
 - Lifted values are not duplicated in residual `fixentries`; unknown and
   unrepresentable content remains there.
 - Reconstructing a row preserves canonical message semantics and its recorded

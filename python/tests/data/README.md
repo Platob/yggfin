@@ -18,15 +18,16 @@ Its content SHA-256, as `sha256sum` prints it, is:
 | reading | count | why |
 | --- | ---: | --- |
 | physical lines | 144 | one row of the text read each |
-| stored lines | 141 | `logs.messages` is keyed on `curruuid`; native 0.1.8 gives 3 exact repeats the same legacy UUID, while the next native identity includes source and physical sequence |
+| stored lines | 144 | `logs.messages` is keyed on `curruuid`, the UUIDv7 the native read states from the line's place and source, so the 3 exact repeats answer 3 identities and no line is lost |
 | lines the row header does not date | 15 | they settle at the epoch pin in `currunix`, and each carries a content code of its own, so all 15 land |
 | messages the codec answers | 79 | a line can carry two frames and a line carrying none answers nothing |
-| duplicate frame arrivals | 28 | the same message is logged again at several hops |
-| `fix.bronze` rows | 51 | one row per distinct parsed event, keyed on `curruuid` |
-| `fix.silver` rows | 52 | the 51 source events walked, plus one expiry at `2026-08-14T16:25:00Z` |
+| duplicate frame arrivals | 30 | the same message is logged again at several hops |
+| `fix.bronze` rows | 49 | one row per distinct parsed event, keyed on `curruuid` |
+| `fix.silver` rows | 22 | the 49 bronze observations walked, those of one event merged into one row |
 
 `python/tests/test_fix.py` holds every chain's walked counts. Capture
-`session:context` is retained as the `msgsectxid` identifier and never replaces
+session and context form the byte-length-prefixed `msgsesseventid` identifier,
+which never replaces
 the business identifier that names a chain. The 144 lines and 79 frame
 arrivals are the numbers `cargo run --example fix_capture` prints in a core
 checkout.

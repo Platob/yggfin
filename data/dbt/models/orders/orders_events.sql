@@ -30,7 +30,7 @@
 -- message states. A message the walk could not place carries an empty
 -- `crosscode`, and an unknown chain is not an order, so those are left behind.
 --
--- `eventkey` is the event's own identity, which the parse settled: one message
+-- `eventkey` is the event's own identity, which the walk settled: one message
 -- logged at three hops is one event, so the key is `curruuid` itself rather
 -- than a digest of where a copy of it was read from.
 --

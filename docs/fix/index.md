@@ -12,13 +12,13 @@ and lifecycle into `fix.silver`, behind a line door and a batch door each.
 | [Decode](decode.md) | how does a log line become `Message`, `FixMsg`, `fix.bronze` and `fix.silver`? |
 | [Encode](encode.md) | how is a canonical frame rebuilt from lifted fields and residual entries? |
 | [Quality](quality.md) | what survives malformed input, replay, and registry change? |
-| [Registry browser](../tools/fix-registry.md) | how do I search 7,778 definitions and 736 code sets? |
+| [Registry browser](../tools/fix-registry.md) | how do I search 7,781 definitions and 736 code sets? |
 
 ## Default registry
 
 The package ships the dictionary as JSON shards. Importing `rekep` loads them
-over the crate's own 29 definitions -- every registry holds those and two
-standard definitions from construction, so a bare one holds 31 -- and installs the
+over the crate's own 32 definitions -- every registry holds those and two
+standard definitions from construction, so a bare one holds 34 -- and installs the
 result as the process default.
 
 ```python
@@ -27,8 +27,8 @@ from rekep.fix import fix_crate_fields, fix_registry, global_registry, registry_
 registry = fix_registry()
 
 assert registry_path().is_dir()
-assert len(registry) == 7778
-assert len(fix_crate_fields()) == 29
+assert len(registry) == 7781
+assert len(fix_crate_fields()) == 32
 assert global_registry() == registry
 ```
 
@@ -82,5 +82,6 @@ that nanosecond grid.
 The default null markers are empty text, `null`, `<null>`, `none`, `n/a`, and
 `[n/a]`, with ASCII whitespace and case ignored. `crosscode` uses the first
 available `OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID`, or
-`MDReqID`. Capture `session:context` is recorded separately as
-`identifiers["msgsectxid"]` when both parts exist.
+`MDReqID`. Message type, capture session, context and sequence instead form
+`identifiers["msgsesseventid"]`, each text part byte-length-prefixed, when all
+four exist.

@@ -197,12 +197,12 @@ The fixture run has this result shape; durations are omitted because they are
 environment measurements rather than contract values:
 
 ```text
-INFO rekep.logs parse_messages finished: 144 read, 141 written, 3 skipped → messages=logs.messages
-INFO rekep.logs parse_fix_bronze finished: 141 read, 51 written, 28 skipped → bronze=fix.bronze
-INFO rekep.logs parse_fix_silver finished: 51 read, 52 written, 0 skipped → silver=fix.silver
+INFO rekep.logs parse_messages finished: 144 read, 144 written, 0 skipped → messages=logs.messages
+INFO rekep.logs parse_fix_bronze finished: 144 read, 49 written, 30 skipped → bronze=fix.bronze
+INFO rekep.logs parse_fix_silver finished: 49 read, 22 written, 0 skipped → silver=fix.silver
 DagRun Finished: dag_id=rekep_ingestion, ... state=success
 INFO rekep.logs build_dbt 29 nodes ran: 4 models, 25 tests, 0 warned
-INFO rekep.logs build_dbt finished: 29 read, 63 written, 0 skipped → executions_fills=executions.fills, orders_events=orders.events, orders_current=orders.current
+INFO rekep.logs build_dbt finished: 29 read, 34 written, 0 skipped → executions_fills=executions.fills, orders_events=orders.events, orders_current=orders.current
 DagRun Finished: dag_id=rekep_products, ... state=success
 ```
 
@@ -241,7 +241,7 @@ reach one catalog through their documents or not at all. A first attempt that
 had pointed the ingestion trigger at a catalog of its own failed in
 `build_dbt` with `Table does not exist: fix.silver` for exactly that reason.
 The warehouse then held the three ingestion counts above, and `orders.events`
-48, `orders.current` 8 and `executions.fills` 7 rows, which is what every
+19, `orders.current` 8 and `executions.fills` 7 rows, which is what every
 other route lands; `tools/pipeline_samples.py --catalog … --check` against it
 answered `4 samples match`.
 

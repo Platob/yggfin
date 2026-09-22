@@ -15,9 +15,9 @@ models:
           - not_null
       - name: eventkey
         description: >
-          The event's own identity, which the parse settled: one message
-          logged at three hops answers one of these. The primary key, and the
-          same bytes on every replay.
+          The event's own identity, which the walk settled: one message
+          logged at three hops merges into one of these. The primary key,
+          and the same bytes on every replay.
         data_tests:
           - not_null
           - unique

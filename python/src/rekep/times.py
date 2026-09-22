@@ -237,19 +237,49 @@ COMPACT = Stamp(
 SHAPES: tuple[Stamp, ...] = (ISO, FIX, COMPACT)
 
 
+#: What a bridge may write after the seconds: nothing, or a separator and the
+#: three digits of its millisecond. The separator is `.` or `,`, because a
+#: bridge under a comma locale writes the one its runtime prints and the
+#: native instant parser reads both.
+#:
+#: Three digits and not one to nine, because the width a capture can match is
+#: what types it: admit a ninth digit and the column is a nanosecond instant
+#: rather than the millisecond this bridge writes, and the walk answers a
+#: different set of events off the same bytes. A bridge that writes a wider
+#: fraction is read by naming its own header in the task document, which is
+#: what `Message.text_options` takes one for, and the column it lands in is
+#: then the one its own clock states.
+#:
+#: `_` is not a separator here. The core reads it as a digit group *inside* a
+#: fraction -- `.147_250`, one digit on each side -- and refuses it in the
+#: separator's place, so a bracket spelling `00:05:01_147` would match here
+#: and then fail its batch on a located refusal. Left unmatched, that line
+#: settles at `EPOCH` whole instead, which every window covers.
+_FRACTION = r"(?:[.,]\d{3})?"
+
 ULBRIDGE_ROWHEADER = (
-    r"^(?P<mtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) "
+    rf"^(?P<mtime>\d{{4}}-\d{{2}}-\d{{2}} \d{{2}}:\d{{2}}:\d{{2}}{_FRACTION}) "
     r"\[(?P<msgthreadid>[1-9]\d*)"
     r"(?:-(?P<msgsessionid>[0-9a-f]{8}):(?P<msgctxid>[0-9a-f]{10}):(?P<msgseqnum>\d+))?\] "
     r"\[(?P<msgpluginid>[^\]]+)\] \((?P<loglevel>[A-Z]+)\) "
 )
 """The ULBridge row-header expression for physical message records.
 
-The same text as the native core's own `ULBRIDGE_ROWHEADER`, captures
-included, pinned against it by `test_times.py` wherever that checkout is
-beside this one. It is spelled here because the constant reaches Rust but not
-yet the Python extension; the day it does, this becomes one import and the
-pin becomes redundant.
+The same bracket as the native core's own `ULBRIDGE_ROWHEADER`, part for
+part, with two captures named for the columns they fill here rather than for
+the bracket parts they read -- `timestamp` is `mtime` and `level` is
+`loglevel` -- and with the millisecond the core requires made optional and
+readable under a comma. `test_times.py` pins the layout, those two renames
+and that one widening against that checkout wherever it is beside this one.
+It is spelled here because the constant reaches Rust but not yet the Python
+extension.
+
+A bracket the expression does not match is not a line lost: the read settles
+that line at `EPOCH`, keeps its body, and leaves the captures empty. That is
+why the fraction is widened here rather than left to a header of its own -- a
+bridge that omits it, or spells it under a comma locale, otherwise lands
+complete and undated, with every capture the bracket states dropped in
+silence.
 
 Every capture is named for the column the native read fills from it, which is
 the whole of how a bracket part is told from another: `mtime` is the record

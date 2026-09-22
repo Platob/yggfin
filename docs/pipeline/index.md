@@ -8,11 +8,11 @@ flowchart LR
     U["local file, directory, or S3 prefix"] --> T["parse_messages"]
     T --> M[("logs.messages<br/>12 columns")]
     M --> F["parse_fix_bronze<br/>parse"]
-    R[["bundled dictionary<br/>7,778 definitions"]] -.types.-> F
-    F --> X[("fix.bronze<br/>123 columns")]
+    R[["bundled dictionary<br/>7,781 definitions"]] -.types.-> F
+    F --> X[("fix.bronze<br/>128 columns")]
     X --> L["parse_fix_silver<br/>lifecycle"]
     R -.types.-> L
-    L --> S[("fix.silver<br/>123 columns")]
+    L --> S[("fix.silver<br/>128 columns")]
     S --> B["build_dbt"]
     B --> O[("orders.events<br/>orders.current")]
     B --> C[("executions.fills")]
@@ -133,7 +133,7 @@ Every successful task returns the same small result contract:
 ## Sample rows
 
 Each task page shows business chain `00026877711XOEA0` from the test capture as
-that task lands it. The generated example contains 29 source and walked events,
+that task lands it. The generated example contains 27 source lines and four walked events,
 one current order, and three fills. `tools/pipeline_samples.py` runs the
 four tasks over the fixture and renders the tables into
 `docs/pipeline/tasks/samples/`, one file per page, and each page includes its

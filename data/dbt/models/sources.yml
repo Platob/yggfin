@@ -8,9 +8,9 @@ version: 2
 # All three are declared here because all three are the repository's published
 # contract; only `fix.silver` is read by a model. A product reads the walked
 # rows and never the parsed ones: `fix.bronze` holds the same events under the
-# same identities, but nothing there has been placed in its chain yet --
-# `seqnum` and `prevuuid` are null on every row -- so a product built on it
-# would fold every order from its first event alone.
+# identities the parse settled, but nothing there has been placed in its chain
+# yet -- `seqnum` and `prevuuid` are null on every row -- so a product built on
+# it would fold every order from its first event alone.
 
 sources:
   - name: fix
@@ -64,9 +64,9 @@ sources:
         columns:
           - name: curruuid
             description: >
-              The event's own identity: a UUID over the instant it settled on
-              and the code of its content, so every hop that logged one
-              message answers one of these.
+              The event's own identity: a UUIDv7 over the millisecond it
+              settled on, its place in its chain and the code of its content,
+              so every hop that logged one message merges into one of these.
           - name: srcuuids
             description: >
               Native raw-line identities. Join each value to
@@ -112,7 +112,9 @@ sources:
           table: fix.bronze
         columns:
           - name: curruuid
-            description: The event's own identity, the same bytes `fix.silver` keys it by.
+            description: >
+              The event's own identity as the parse settled it, before the
+              walk merged the event's hops and re-settled it.
           - name: seqnum
             description: Null on every row, because nothing has walked yet.
           - name: prevuuid
@@ -127,9 +129,10 @@ sources:
     tables:
       - name: messages
         description: >
-          `logs.messages`, keyed on `currhashcode`: identical bytes are one
-          row whatever session carried them. No model reads it yet: every product
-          here is derived from the walked FIX rows.
+          `logs.messages`, keyed on `curruuid`: a line's identity carries its
+          place in the read and its source, so the same bytes read twice are
+          two rows. No model reads it yet: every product here is derived from
+          the walked FIX rows.
         meta:
           table: logs.messages
         columns:
@@ -138,7 +141,10 @@ sources:
           - name: curruuid
             description: The line's own identity, which every message parsed out of it names as its source.
           - name: currhashcode
-            description: The content code the read states over the line's bytes, and the table's key.
+            description: >
+              The content code the read states over the line's bytes;
+              identical bytes share it wherever they were read, and are still
+              separate rows.
           - name: sourceurl
             description: The capture object the line was read from.
           - name: rownum
