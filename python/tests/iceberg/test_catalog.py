@@ -153,6 +153,129 @@ def test_a_table_bucket_in_another_partition_keeps_its_domain(
     assert seen["uri"] == "https://s3tables.cn-north-1.amazonaws.com.cn/iceberg"
 
 
+#: The same bucket, as the `s3tables:` locator its ARN redirects to: the two
+#: fields a location does not carry are stated in the query, spelled the way
+#: every store URL here spells them.
+LOCATED_BUCKET = "s3tables://market-tables?region=eu-west-1&account=123456789012"
+
+
+def test_a_table_bucket_locator_is_the_arn_it_spells(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The ARN redirects to its `s3tables:` URL through `Arn.locator()`, and
+    the URL resolves back to the ARN the endpoint takes: one bucket, two
+    spellings, one configuration handed to pyiceberg."""
+    seen = _loaded(monkeypatch)
+
+    catalog = IcebergCatalog(properties={"type": "s3tables", "warehouse": LOCATED_BUCKET})
+    _ = catalog.catalog
+
+    assert seen["type"] == "rest"
+    assert seen["warehouse"] == TABLE_BUCKET
+    assert seen["uri"] == "https://s3tables.eu-west-1.amazonaws.com/iceberg"
+    assert seen["rest.signing-name"] == "s3tables"
+    assert seen["rest.signing-region"] == "eu-west-1"
+    assert seen["s3.region"] == "eu-west-1"
+    # The document still says what it said; the endpoint is handed the ARN.
+    assert catalog.properties["warehouse"] == LOCATED_BUCKET
+    assert catalog.table_bucket == TABLE_BUCKET
+
+
+@pytest.mark.parametrize(
+    ("warehouse", "endpoint"),
+    [
+        # A private endpoint, spelled as every store URL here spells one.
+        (
+            "s3tables://market-tables?region=eu-west-1&account=123456789012"
+            "&endpoint_override=vpce-0abc.s3tables.eu-west-1.vpce.amazonaws.com",
+            "https://vpce-0abc.s3tables.eu-west-1.vpce.amazonaws.com/iceberg",
+        ),
+        # The endpoint as the location's own host, with a port and a scheme:
+        # an emulator of the service on a developer's machine.
+        (
+            "s3tables://localhost:9001/market-tables?scheme=http&region=eu-west-1"
+            "&account=123456789012",
+            "http://localhost:9001/iceberg",
+        ),
+        # A FIPS endpoint, by its host.
+        (
+            "s3tables://s3tables-fips.us-east-1.amazonaws.com/market-tables"
+            "?region=us-east-1&account=123456789012",
+            "https://s3tables-fips.us-east-1.amazonaws.com/iceberg",
+        ),
+    ],
+    ids=["endpoint_override", "host and port", "fips host"],
+)
+def test_a_table_bucket_locator_states_where_its_endpoint_is(
+    monkeypatch: pytest.MonkeyPatch, warehouse: str, endpoint: str
+) -> None:
+    """What the locator can say that the ARN cannot: where the catalog is."""
+    seen = _loaded(monkeypatch)
+
+    catalog = IcebergCatalog(properties={"type": "s3tables", "warehouse": warehouse})
+    _ = catalog.catalog
+
+    assert seen["uri"] == endpoint
+    assert seen["rest.signing-name"] == "s3tables"
+    assert seen["warehouse"].startswith("arn:aws:s3tables:")
+    assert seen["warehouse"].endswith(":123456789012:bucket/market-tables")
+    assert seen["rest.signing-region"] == seen["s3.region"] == catalog.table_bucket.split(":")[3]
+
+
+def test_a_table_bucket_locator_in_another_partition_spells_its_arn(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen = _loaded(monkeypatch)
+
+    _ = IcebergCatalog(
+        properties={
+            "type": "s3tables",
+            "warehouse": "s3tables://market?region=cn-north-1&account=123456789012&partition=aws-cn",
+        }
+    ).catalog
+
+    assert seen["warehouse"] == "arn:aws-cn:s3tables:cn-north-1:123456789012:bucket/market"
+    assert seen["uri"] == "https://s3tables.cn-north-1.amazonaws.com.cn/iceberg"
+
+
+def test_a_table_bucket_locator_takes_the_region_the_configuration_states(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A locator that names no region is read like the Glue name: once, off
+    the catalog or the environment, never guessed."""
+    seen = _loaded(monkeypatch)
+    monkeypatch.delenv("AWS_DEFAULT_REGION", raising=False)
+    monkeypatch.setenv("AWS_REGION", "us-east-2")
+
+    catalog = IcebergCatalog(
+        properties={"type": "s3tables", "warehouse": "s3tables://market?account=123456789012"}
+    )
+    _ = catalog.catalog
+
+    assert catalog.table_bucket == "arn:aws:s3tables:us-east-2:123456789012:bucket/market"
+    assert seen["uri"] == "https://s3tables.us-east-2.amazonaws.com/iceberg"
+
+
+@pytest.mark.parametrize(
+    ("warehouse", "refused"),
+    [
+        # The endpoint takes the bucket under its ARN, and an ARN names the
+        # account; a location does not, so the locator states it.
+        ("s3tables://market?region=eu-west-1", "account"),
+        # A table's locator names a table, which is not a catalog.
+        ("s3tables://market/t-a1?region=eu-west-1&account=123456789012", "under one"),
+        ("arn:aws:s3tables:eu-west-1:123456789012:bucket/market/table/t-a1", "under one"),
+        # An ARN naming every region names no endpoint.
+        ("arn:aws:s3tables::123456789012:bucket/market", "region"),
+        # Another service's ARN, and a location of another store.
+        ("arn:aws:s3:::market", "s3tablescatalog"),
+        ("s3://market/rekep", "s3tablescatalog"),
+    ],
+    ids=["no account", "a table", "a table arn", "no region", "s3 arn", "s3 url"],
+)
+def test_what_is_not_a_table_bucket_is_refused_by_name(warehouse: str, refused: str) -> None:
+    with pytest.raises(ValueError, match=refused):
+        IcebergCatalog(properties={"type": "s3tables", "warehouse": warehouse})
+
+
 def test_a_table_bucket_arn_is_left_exactly_as_written() -> None:
     """`arn:` is a scheme, so nothing resolves it against the working directory."""
     catalog = IcebergCatalog(properties={"type": "s3tables", "warehouse": TABLE_BUCKET})

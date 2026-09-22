@@ -16,6 +16,7 @@ from typing import Any
 
 import pyarrow
 import pyarrow.compute
+from yggdryl import Filter
 
 #: The one zone this package reads and writes instants in. `datetime.UTC` is
 #: 3.11's alias for this very object, so the two are the same singleton where
@@ -57,7 +58,7 @@ NAMED: dict[str, Any] = {
 #:
 #: One declaration because the set of accepted spellings is *one behavior*
 #: even where the execution is two: this module reads configuration with
-#: `strptime`, while the raw Message header expression uses the same shapes.
+#: `strptime`, while the Message header expression uses the same shapes.
 @dataclasses.dataclass(frozen=True)
 class Stamp:
     """One accepted spelling of an instant, and where its parts sit in it."""
@@ -238,24 +239,22 @@ SHAPES: tuple[Stamp, ...] = (ISO, FIX, COMPACT)
 
 
 #: What a bridge may write after the seconds: nothing, or a separator and the
-#: three digits of its millisecond. The separator is `.` or `,`, because a
+#: three digits of its millisecond, and after those the three more digits some
+#: of its loggers group under a `_`. The separator is `.` or `,`, because a
 #: bridge under a comma locale writes the one its runtime prints and the
-#: native instant parser reads both.
+#: native instant parser reads both -- and it reads `.524_315` too, since `_`
+#: groups a fraction's digits in the core. `_` never *opens* a fraction there,
+#: so a bracket spelling `01_147` stays unmatched rather than matched into a
+#: located refusal that fails the batch.
 #:
-#: Three digits and not one to nine, because the width a capture can match is
-#: what types it: admit a ninth digit and the column is a nanosecond instant
-#: rather than the millisecond this bridge writes, and the walk answers a
-#: different set of events off the same bytes. A bridge that writes a wider
-#: fraction is read by naming its own header in the task document, which is
-#: what `Message.text_options` takes one for, and the column it lands in is
-#: then the one its own clock states.
-#:
-#: `_` is not a separator here. The core reads it as a digit group *inside* a
-#: fraction -- `.147_250`, one digit on each side -- and refuses it in the
-#: separator's place, so a bracket spelling `00:05:01_147` would match here
-#: and then fail its batch on a located refusal. Left unmatched, that line
-#: settles at `EPOCH` whole instead, which every window covers.
-_FRACTION = r"(?:[.,]\d{3})?"
+#: The width admitted here does not type a column: the capture is named
+#: `mtime`, which the read consumes into `currunix` at nanoseconds UTC
+#: whatever the expression spells, so admitting the grouped micros costs no
+#: unit. What the width decides is which lines the header matches at all -- a
+#: line it misses keeps its whole text as its body, is dated by its object's
+#: modification time with every capture null, and reaches the walk with no
+#: session, context or sequence to fold on.
+_FRACTION = r"(?:[.,]\d{3}(?:_\d{3})?)?"
 
 ULBRIDGE_ROWHEADER = (
     rf"^(?P<mtime>\d{{4}}-\d{{2}}-\d{{2}} \d{{2}}:\d{{2}}:\d{{2}}{_FRACTION}) "
@@ -265,29 +264,32 @@ ULBRIDGE_ROWHEADER = (
 )
 """The ULBridge row-header expression for physical message records.
 
-The same bracket as the native core's own `ULBRIDGE_ROWHEADER`, part for
-part, with two captures named for the columns they fill here rather than for
-the bracket parts they read -- `timestamp` is `mtime` and `level` is
-`loglevel` -- and with the millisecond the core requires made optional and
-readable under a comma. `test_times.py` pins the layout, those two renames
-and that one widening against that checkout wherever it is beside this one.
-It is spelled here because the constant reaches Rust but not yet the Python
-extension.
+The same bracket as `yggdryl.fix.ULBRIDGE_ROWHEADER`, part for part, and
+spelled here rather than imported because the native one dates nothing: it
+names its clock `timestamp` and its level `level`, and a capture reaches a
+column by being called what the column is called. `mtime` is the one name the
+read consumes -- the record clock it settles `currunix` from, at nanoseconds
+UTC whatever the fraction spells -- and `loglevel` is the column
+`logs.messages` keeps. `test_times.py` pins those two renames and the fraction
+against the native text, so every other character is still the core's.
 
-A bracket the expression does not match is not a line lost: the read settles
-that line at `EPOCH`, keeps its body, and leaves the captures empty. That is
-why the fraction is widened here rather than left to a header of its own -- a
-bridge that omits it, or spells it under a comma locale, otherwise lands
-complete and undated, with every capture the bracket states dropped in
-silence.
+The fraction reads what this bridge writes: three digits, under a point or a
+comma or not at all, and the grouped micros its other loggers append. A
+bracket the expression does not match is not a line lost: the read dates that
+line by the modification time of the object it was read from, keeps its whole
+text as its body, and leaves the captures empty -- and the walk then has no
+session, context or sequence to fold that line's message on, so the count of
+lines a header matched moves the count of events a walk answers. That is why
+the shipped header admits every fraction the bundled capture spells rather
+than leaving a width to a header of its own.
 
 Every capture is named for the column the native read fills from it, which is
-the whole of how a bracket part is told from another: `mtime` is the record
-clock the read settles `currunix` from, and `msgpluginid`, `msgsessionid`,
-`msgctxid` and `msgseqnum` are the crate's own fields 65009, 65032, 65008 and
-34, which a parse reads off the line it was handed. `msgthreadid` and
-`loglevel` name no field of the graph and stay on `logs.messages`; a FIX row
-links back to the whole capture record through `srcuuids`.
+the whole of how a bracket part is told from another: `msgpluginid`,
+`msgsessionid`, `msgctxid` and `msgseqnum` are the crate's own fields 65009,
+65032, 65008 and 34, which a parse reads off the line it was handed.
+`msgthreadid` and `loglevel` name no field of the graph and stay on
+`logs.messages`; a FIX row links back to the whole capture record through
+`srcuuids`.
 """
 
 #: Spellings `datetime.fromisoformat` does not read, in the order they are
@@ -403,12 +405,12 @@ def within(
     """Which of `values` a window covers: `start <= value < end`, or no instant at all.
 
     A row that states no instant cannot be placed in any window, so it is in
-    every one: a capture line whose header did not match keeps its body and
-    its source position at `EPOCH`, the pin the native read settles a line it
-    could not date at, and a window that dropped it would lose the line for
-    good rather than for a day. Replacing it on every run is the harmless
-    direction to be wrong in. A null reads the same way, for a column that
-    admits one.
+    every one: `EPOCH` is the pin the native read settles a line at when it
+    has no clock for it at all -- neither a header that dated it nor an object
+    with a modification time -- and the pin a parse leaves an undated message
+    at, and a window that dropped either would lose it for good rather than
+    for a day. Replacing it on every run is the harmless direction to be
+    wrong in. A null reads the same way, for a column that admits one.
     """
     compute = pyarrow.compute
     lower, upper = (pyarrow.scalar(bound, values.type) for bound in window)
@@ -419,6 +421,24 @@ def within(
     undated = compute.equal(values, pyarrow.scalar(EPOCH, values.type))
     placed = compute.or_(compute.fill_null(covered, False), compute.fill_null(undated, False))
     return compute.or_(placed, compute.is_null(values))
+
+
+def where_within(column: str, window: tuple[datetime.datetime, datetime.datetime]) -> Filter:
+    """The window as the `where` a native text read answers: `start <= column < end`.
+
+    Stated as the predicate the read takes on its options rather than as a
+    mask over the batches it already answered, and it names the two bounds
+    and nothing else: the read dates every line it can locate, off the
+    header or off the object's modification time, so a line at the epoch is
+    one read from a handle with no clock at all, and it belongs to the window
+    that covers 1970 and to no other. The decode still cuts every line; the
+    record surface answers this over the rows they become, so a caller reads
+    the window's rows and never the rest. The instants are spelled in ISO
+    8601 with their offset, which the grammar reads into the column's own
+    datatype.
+    """
+    lower, upper = (bound.isoformat() for bound in window)
+    return Filter(f"{column} >= '{lower}'") & f"{column} < '{upper}'"
 
 
 def _instant(value: Any) -> datetime.datetime | None:

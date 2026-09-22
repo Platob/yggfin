@@ -27,8 +27,8 @@ models:
         description: Where this event stands in its chain, filled by the walk.
       - name: srcuuids
         description: >
-          Native raw-line identities for provenance; join them to
-          `logs.messages.curruuid` for capture detail.
+          The identities of the lines the event was logged on, for provenance;
+          join them to `logs.messages.curruuid` for capture detail.
       - name: eventtime
         description: The native settled event instant, including expiry at its deadline.
         data_tests:

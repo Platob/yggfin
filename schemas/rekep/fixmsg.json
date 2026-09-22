@@ -7,7 +7,7 @@
         "name": "currunix",
         "type": "timestamptz",
         "required": true,
-        "doc": "When the message happened: the settled instant, UTC."
+        "doc": "When the event happened: the settled instant, UTC."
       },
       {
         "id": 2,
@@ -21,14 +21,14 @@
         "name": "recdunix",
         "type": "timestamptz",
         "required": false,
-        "doc": "When the message was recorded by its carrier, where the carrier states one."
+        "doc": "When the message was recorded by its carrier, where the carrier states one; the earliest its statements know."
       },
       {
         "id": 4,
         "name": "refrecdunix",
         "type": "timestamptz",
         "required": false,
-        "doc": "The recording clock of the observation selected as the message's merge reference; the latest its statements know."
+        "doc": "The recording clock of the observation selected as this event's merge reference; the latest its statements know."
       },
       {
         "id": 5,
@@ -42,14 +42,14 @@
         "name": "prevunix",
         "type": "timestamptz",
         "required": false,
-        "doc": "When the message this one follows happened, where it follows one."
+        "doc": "When the event this one follows happened, where it follows one."
       },
       {
         "id": 7,
         "name": "snapunix",
         "type": "timestamptz",
         "required": false,
-        "doc": "The grid instant a walk read this message as the snapshot of; empty on every row no snapshot was taken of."
+        "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
       },
       {
         "id": 8,
@@ -119,14 +119,14 @@
         "name": "curruuid",
         "type": "fixed[16]",
         "required": true,
-        "doc": "The message's identity: the UUIDv7 its millisecond instant, sequence and cross-seeded code derive."
+        "doc": "The event's identity: the UUIDv7 its microsecond instant and code derive."
       },
       {
         "id": 18,
         "name": "crossuuid",
         "type": "fixed[16]",
         "required": true,
-        "doc": "The identity every message of one lifecycle shares, derived from the identifier they share; the message's own where it names none."
+        "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
       },
       {
         "id": 19,
@@ -147,21 +147,21 @@
         "name": "crosshashcode",
         "type": "long",
         "required": true,
-        "doc": "The XXH3-64 of the cross code; zero where the message names none."
+        "doc": "The XXH3-64 of the cross code; zero where the event names none."
       },
       {
         "id": 22,
         "name": "prevuuid",
         "type": "fixed[16]",
         "required": false,
-        "doc": "The identity of the message this one follows, where it follows one."
+        "doc": "The identity of the event this one follows, where it follows one."
       },
       {
         "id": 23,
         "name": "seqnum",
         "type": "long",
         "required": false,
-        "doc": "The message's place in its chain: how many came before it."
+        "doc": "The event's place in its chain: how many came before it."
       },
       {
         "id": 24,
@@ -173,7 +173,7 @@
           "element-required": true
         },
         "required": false,
-        "doc": "The identities of the messages this one descends from, in the order it states them."
+        "doc": "The identities of the events this one descends from, oldest first, each once."
       },
       {
         "id": 25,
@@ -758,7 +758,7 @@
               },
               {
                 "id": 139,
-                "name": "ptyssubgrp",
+                "name": "partysubids",
                 "type": {
                   "type": "list",
                   "element-id": 140,
@@ -801,7 +801,7 @@
       },
       {
         "id": 102,
-        "name": "secaltidgrp",
+        "name": "secaltids",
         "type": {
           "type": "list",
           "element-id": 143,
@@ -951,7 +951,7 @@
       },
       {
         "id": 106,
-        "name": "regulatorytradeidgrp",
+        "name": "regulatorytradeids",
         "type": {
           "type": "list",
           "element-id": 160,

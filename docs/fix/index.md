@@ -3,13 +3,13 @@
 rekep ships one FIX system: a complete registry, a line codec, `FixMsg`, and a
 fixed Arrow projection. It reads numeric FIX, ULLINK name/value rows, bridge
 configuration JSON, FIXML, and already-split pairs through one builder. The
-capture pipeline is two stages over that one codec, parse into `fix.bronze`
-and lifecycle into `fix.silver`, behind a line door and a batch door each.
+capture pipeline is two stages over that one codec, parse into `fix.raw`
+and lifecycle into `fix.refined`, behind a line door and a batch door each.
 
 | page | answers |
 | --- | --- |
 | [Registry](registry.md) | which tag, name, alias, dialect, datatype, code set, and group does a key mean? |
-| [Decode](decode.md) | how does a log line become `Message`, `FixMsg`, `fix.bronze` and `fix.silver`? |
+| [Decode](decode.md) | how does a log line become `Message`, `FixMsg`, `fix.raw` and `fix.refined`? |
 | [Encode](encode.md) | how is a canonical frame rebuilt from lifted fields and residual entries? |
 | [Quality](quality.md) | what survives malformed input, replay, and registry change? |
 | [Registry browser](../tools/fix-registry.md) | how do I search 7,781 definitions and 736 code sets? |

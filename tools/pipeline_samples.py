@@ -3,7 +3,7 @@
 The pipeline pages under `docs/pipeline/tasks/` show real rows rather than
 invented ones: one business chain of `python/tests/data/ulbridge.log` -- a
 partial fill and the fill that closed the order after it -- as `parse_messages` stores its lines,
-`parse_fix_bronze` parses them, `parse_fix_silver` walks them and `build_dbt`
+`parse_fix_raw` parses them, `parse_fix_refined` walks them and `build_dbt`
 derives the products. Each page includes its own Markdown file from
 `docs/pipeline/tasks/samples/` through `pymdownx.snippets`, so what a page
 shows is what a run lands, and `--check` regenerates into memory and fails on
@@ -49,22 +49,22 @@ CHAIN = "00026877711XOEA0"
 #: Every task, in dependency order, with the parameters of its own.
 TASKS = (
     ("parse_messages", {"filesystem": "file:python/tests/data/ulbridge.log", **WINDOW}),
-    ("parse_fix_bronze", dict(WINDOW)),
-    ("parse_fix_silver", dict(WINDOW)),
+    ("parse_fix_raw", dict(WINDOW)),
+    ("parse_fix_refined", dict(WINDOW)),
     ("build_dbt", {}),
 )
 
 TABLES = (
     "logs.messages",
-    "fix.bronze",
-    "fix.silver",
+    "fix.raw",
+    "fix.refined",
     "orders.events",
     "orders.current",
     "executions.fills",
 )
 
 #: One sample file per task page.
-PAGES = ("parse-messages", "parse-fix-bronze", "parse-fix-silver", "build-dbt")
+PAGES = ("parse-messages", "parse-fix-raw", "parse-fix-refined", "build-dbt")
 
 
 # -- landing the fixture ------------------------------------------------------
@@ -128,25 +128,25 @@ def _uuids(values: list[bytes]) -> pyarrow.Array:
     return pyarrow.array(values, type=pyarrow.binary(16))
 
 
-def raw_rownums(lines: pyarrow.Table) -> dict[bytes, int]:
-    """The raw line number keyed by the identity native FIX rows retain."""
+def raw_seqnums(lines: pyarrow.Table) -> dict[bytes, int]:
+    """Each line's row number, keyed by the identity FIX rows name in `srcuuids`."""
     return dict(
         zip(
             lines.column("curruuid").to_pylist(),
-            lines.column("rownum").to_pylist(),
+            lines.column("seqnum").to_pylist(),
             strict=True,
         )
     )
 
 
-def source_rownum(row: dict[str, Any], positions: dict[bytes, int]) -> int | None:
-    """One native row's raw-line position, where it has source provenance."""
+def source_seqnum(row: dict[str, Any], positions: dict[bytes, int]) -> int | None:
+    """The row number of the line a FIX row was parsed from, where it names one."""
     sources = row.get("srcuuids") or ()
     return positions.get(sources[0]) if sources else None
 
 
 def walked(chain: pyarrow.Table) -> pyarrow.Table:
-    """The chain in the silver table's own order.
+    """The chain in the refined table's own order.
 
     The declared sort order, `currunix, seqnum, curruuid`, with a null step
     after the numbered ones, which is where Arrow and the stored table both
@@ -160,20 +160,20 @@ def walked(chain: pyarrow.Table) -> pyarrow.Table:
 def selected(held: dict[str, pyarrow.Table]) -> dict[str, pyarrow.Table]:
     """The chain's rows in every table, each in the order its page reads them."""
     equal, is_in = pyarrow.compute.equal, pyarrow.compute.is_in
-    silver = held["fix.silver"]
-    chain = silver.filter(equal(silver.column("crosscode"), CHAIN))
+    refined = held["fix.refined"]
+    chain = refined.filter(equal(refined.column("crosscode"), CHAIN))
     if not chain.num_rows:
-        raise SystemExit(f"{CHAIN} is not a chain of fix.silver")
+        raise SystemExit(f"{CHAIN} is not a chain of fix.refined")
     sources = _uuids(
         sorted({line for named in chain.column("srcuuids").to_pylist() for line in named})
     )
     orders = _uuids(sorted(set(chain.column("crossuuid").to_pylist())))
 
     lines = held["logs.messages"]
-    bronze = held["fix.bronze"]
-    positions = raw_rownums(lines)
-    named = pyarrow.compute.list_element(bronze.column("srcuuids"), 0)
-    bronze_chain = bronze.filter(is_in(named, value_set=sources))
+    raw = held["fix.raw"]
+    positions = raw_seqnums(lines)
+    named = pyarrow.compute.list_element(raw.column("srcuuids"), 0)
+    raw_chain = raw.filter(is_in(named, value_set=sources))
     events, current, fills = (held[name] for name in TABLES[3:])
 
     def by_order(table: pyarrow.Table) -> pyarrow.Table:
@@ -181,15 +181,15 @@ def selected(held: dict[str, pyarrow.Table]) -> dict[str, pyarrow.Table]:
 
     return {
         "logs.messages": lines.filter(is_in(lines.column("curruuid"), value_set=sources)).sort_by(
-            "rownum"
+            "seqnum"
         ),
-        "fix.bronze": bronze_chain.take(
+        "fix.raw": raw_chain.take(
             pyarrow.array(
                 sorted(
-                    range(bronze_chain.num_rows),
+                    range(raw_chain.num_rows),
                     key=lambda index: (
-                        source_rownum(
-                            bronze_chain.slice(index, 1).to_pylist()[0],
+                        source_seqnum(
+                            raw_chain.slice(index, 1).to_pylist()[0],
                             positions,
                         )
                         or -1
@@ -197,7 +197,7 @@ def selected(held: dict[str, pyarrow.Table]) -> dict[str, pyarrow.Table]:
                 )
             )
         ),
-        "fix.silver": walked(chain),
+        "fix.refined": walked(chain),
         "orders.events": by_order(events).sort_by(
             [("eventtime", "ascending"), ("eventkey", "ascending")]
         ),
@@ -239,10 +239,8 @@ def cell(value: Any) -> str:
 
 
 def prose(body: str, width: int = 64) -> str:
-    """What the bridge printed after its header, cut to `width` characters."""
-    _, _, after = body.partition(") ")
-    after = after or body
-    return cell(after[:width] + ("…" if len(after) > width else ""))
+    """The body -- what the bridge printed after its header -- cut to `width`."""
+    return cell(body[:width] + ("…" if len(body) > width else ""))
 
 
 def table(
@@ -271,7 +269,7 @@ def rows(held: pyarrow.Table, columns: list[str]) -> list[dict[str, Any]]:
 
 def messages_page(lines: pyarrow.Table) -> str:
     captures = [
-        "rownum",
+        "seqnum",
         "currunix",
         "msgthreadid",
         "msgsessionid",
@@ -280,19 +278,19 @@ def messages_page(lines: pyarrow.Table) -> str:
         "msgpluginid",
         "loglevel",
     ]
-    identities = ["rownum", "currhashcode", "curruuid", "body"]
+    identities = ["seqnum", "currhashcode", "curruuid", "body"]
     return "\n\n".join(
         [
             f"**The event each of the {lines.num_rows} lines settled on, "
             "and what its header stated**",
             table(captures, rows(lines, captures)),
-            "**What each line is: its code, its identity, and what it printed after the header**",
+            "**What each line is: its code, its identity, and its body past the header**",
             table(identities, rows(lines, identities), {"body": prose}),
         ]
     )
 
 
-def bronze_page(bronze: pyarrow.Table) -> str:
+def raw_page(raw: pyarrow.Table) -> str:
     read = [
         "msgtype",
         "msgdirection",
@@ -316,19 +314,19 @@ def bronze_page(bronze: pyarrow.Table) -> str:
     ]
     return "\n\n".join(
         [
-            f"**What the parse read off the {bronze.num_rows} messages**",
-            table(read, rows(bronze, read)),
-            "**The event columns a bronze row carries, and the four it leaves empty**",
+            f"**What the parse read off the {raw.num_rows} messages**",
+            table(read, rows(raw, read)),
+            "**The event columns a `fix.raw` row carries, and the four it leaves empty**",
             table(
                 event,
-                rows(bronze, event),
+                rows(raw, event),
                 {"srcuuids": lambda value: identity(value[0])},
             ),
         ]
     )
 
 
-def silver_page(silver: pyarrow.Table, bronze: pyarrow.Table) -> str:
+def refined_page(refined: pyarrow.Table, raw: pyarrow.Table) -> str:
     walked = [
         "currunix",
         "curruuid",
@@ -340,35 +338,37 @@ def silver_page(silver: pyarrow.Table, bronze: pyarrow.Table) -> str:
         "creaunix",
         "exprtime",
     ]
-    # A bronze row is one frame off one line, so the line it names is what a
+    # A `fix.raw` row is one frame off one line, so the line it names is what a
     # walked row is read back through. A walked row names every line its
     # event was logged on, so the join is one row per line, not per event.
     before = {
         row["srcuuids"][0]: row
-        for row in rows(bronze, ["srcuuids", "currunix", "curruuid"])
+        for row in rows(raw, ["srcuuids", "currunix", "curruuid"])
         if row["srcuuids"]
     }
 
     def read_at(line: bytes, held: str) -> Any:
         if line not in before:
-            raise SystemExit(f"a walked row names a line no bronze row of the chain read: {line!r}")
+            raise SystemExit(
+                f"a walked row names a line no `fix.raw` row of the chain read: {line!r}"
+            )
         return before[line][held]
 
     moved = [
         {
             "srcuuid": line,
-            "bronze currunix": read_at(line, "currunix"),
-            "bronze curruuid": read_at(line, "curruuid"),
-            "silver currunix": row["currunix"],
-            "silver curruuid": row["curruuid"],
+            "fix.raw currunix": read_at(line, "currunix"),
+            "fix.raw curruuid": read_at(line, "curruuid"),
+            "fix.refined currunix": row["currunix"],
+            "fix.refined curruuid": row["curruuid"],
         }
-        for row in rows(silver, ["srcuuids", "currunix", "curruuid"])
+        for row in rows(refined, ["srcuuids", "currunix", "curruuid"])
         for line in (row["srcuuids"] or ())
     ]
     return "\n\n".join(
         [
-            f"**The {silver.num_rows} walked rows of chain `{CHAIN}`, in the table's own order**",
-            table(walked, rows(silver, walked)),
+            f"**The {refined.num_rows} walked rows of chain `{CHAIN}`, in the table's own order**",
+            table(walked, rows(refined, walked)),
             "**What the walk did to each line it folded: its row in both tables**",
             table(list(moved[0]), moved),
         ]
@@ -420,8 +420,8 @@ def rendered(held: dict[str, pyarrow.Table]) -> dict[str, str]:
     chosen = selected(held)
     pages = {
         "parse-messages": messages_page(chosen["logs.messages"]),
-        "parse-fix-bronze": bronze_page(chosen["fix.bronze"]),
-        "parse-fix-silver": silver_page(chosen["fix.silver"], chosen["fix.bronze"]),
+        "parse-fix-raw": raw_page(chosen["fix.raw"]),
+        "parse-fix-refined": refined_page(chosen["fix.refined"], chosen["fix.raw"]),
         "build-dbt": products_page(
             chosen["orders.events"],
             chosen["orders.current"],

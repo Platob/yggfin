@@ -11,18 +11,18 @@ atomic result file.
 | `task` | string | stage name |
 | `read` | integer | source rows consumed |
 | `written` | integer | target rows the run carried into the table |
-| `skipped` | integer | read rows not written: outside the window, or answering nothing |
+| `skipped` | integer | what a run had and did not write: a restatement of a key the write folded, or a row the write left out; the window is pushed into every read, so nothing is read and then found outside it |
 | `sources` | object | logical source names to masked locations |
 | `targets` | object | logical target names to table identifiers |
 | `window` | object | `start` and `end`, each epoch nanoseconds or null |
 | `elapsed_ms` | integer | wall-clock stage duration |
 
 Anything else a task knows keeps its own name beside those fields.
-`parse_fix_bronze` returns one such key, `messages`: a row is a message and
+`parse_fix_raw` returns one such key, `messages`: a row is a message and
 not a line, so what the codec answered is counted separately from the lines
 it was handed, and its `skipped` is counted against those messages -- a
 restatement of an identity the key already folded -- rather than against the
-lines. `parse_fix_silver` returns nothing beside the contract: the walk
+lines. `parse_fix_refined` returns nothing beside the contract: the walk
 answers one row per event, folding every observation of it. `build_dbt` returns `models`, `tests` and
 `rows`, because its unit of work is a dbt node: `read` and `skipped` count
 nodes there, and `written` and `rows` count the rows its models committed.
@@ -34,12 +34,12 @@ small enough for Airflow XCom because it contains no rows or schemas.
 
 ```json
 {
-  "task": "parse_fix_bronze",
+  "task": "parse_fix_raw",
   "read": 144,
   "written": 49,
   "skipped": 30,
   "sources": {"messages": "logs.messages"},
-  "targets": {"bronze": "fix.bronze"},
+  "targets": {"raw": "fix.raw"},
   "window": {"start": 1786665600000000000, "end": 1786752000000000000},
   "elapsed_ms": 208,
   "messages": 79
@@ -56,19 +56,23 @@ mapping of exactly `start` and `end`.
 
 ## Monitoring rules
 
-- `parse_messages` over a capture's own day skips nothing: every line's clock is
-  in the window, and two lines that repeat another byte for byte are two rows
-  under one `currhashcode`.
+- `parse_messages` reads the lines its window covers and no other, so its
+  `read` is that count and its `skipped` is 0 unless the write skipped; a
+  window the capture falls outside reads 0. Two lines that repeat another
+  byte for byte are two rows under two codes, because a line's
+  `currhashcode` digests the object it was read from and its row number
+  beside its body.
 - A replay of the same window reports the same numbers as the run it repeats:
   what a run writes is what it carried, and the table holds each row once
-  either way. A run whose `skipped` grew is one whose window covers fewer of
-  the lines it read.
-- `parse_fix_bronze.read` should equal the selected `logs.messages` row count,
+  either way. A run whose `read` fell is one whose window covers fewer
+  lines.
+- `parse_fix_raw.read` should equal the selected `logs.messages` row count,
   and its own `messages` key what the codec answered: a line carries none, one
   or several messages. `written` is the events those messages settled on.
-- `parse_fix_silver.read` should equal the bronze rows of the window, dated or
-  at the pin, and `written` what the walk restated: one row per event it folded,
-  under identities that need not be the bronze ones.
+- `parse_fix_refined.read` should equal the `fix.raw` rows of the window and
+  the hour before it, dated or at the pin, and `written` what the walk
+  restated: one row per event it folded, under identities that need not be
+  the parsed rows'.
 - A successful zero-row run is not a failure.
 - Missing result JSON, non-zero child exit, or mismatched task name fails the
   operator.

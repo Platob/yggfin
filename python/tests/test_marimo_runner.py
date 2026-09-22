@@ -52,7 +52,7 @@ def test_the_runner_executes_an_application_without_the_rekep_cli(
                 "written": rows,
                 "skipped": 0,
                 "sources": {},
-                "targets": {"rows": "fix.silver"},
+                "targets": {"rows": "fix.refined"},
                 "window": {"start": None, "end": None},
                 "elapsed_ms": 0,
             }

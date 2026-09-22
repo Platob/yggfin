@@ -10,16 +10,16 @@ stderr.
 ```bash
 uv run --project python rekep task run tasks/parse_messages/parse_messages.json \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep task run tasks/parse_fix_bronze/parse_fix_bronze.json \
+uv run --project python rekep task run tasks/parse_fix_raw/parse_fix_raw.json \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep task run tasks/parse_fix_silver/parse_fix_silver.json \
+uv run --project python rekep task run tasks/parse_fix_refined/parse_fix_refined.json \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
 uv run --project python rekep task run tasks/build_dbt/build_dbt.json
 ```
 
-The order is required: `parse_fix_bronze` reads `logs.messages` rather than
-source files, `parse_fix_silver` reads `fix.bronze` rather than either, and
-[`build_dbt`](../tasks/build-dbt.md) reads `fix.silver` and nothing before
+The order is required: `parse_fix_raw` reads `logs.messages` rather than
+source files, `parse_fix_refined` reads `fix.raw` rather than either, and
+[`build_dbt`](../tasks/build-dbt.md) reads `fix.refined` and nothing before
 it.
 
 ## One window
@@ -28,17 +28,20 @@ The three streaming tasks cover one window, `[start, end)`. Each bound is an
 instant or a date -- a date as `end` is the end of that day -- and a task
 given neither takes the last day up to now, which is the window a nightly run
 means. The sample capture is dated 2026-08-14, so the runs above name that
-day; a run without the two parameters would read every line and write only the
-ones the row header could not date, because those sit at the epoch pin and the
-rest fall outside the last day. `parse_messages` and `parse_fix_bronze`
-read the window off `currunix`, the event clock, so the two are run over the
-same one: the text read settles it over a line, and a line the header could
-not date sits at the epoch pin, which every window covers. `parse_fix_silver`
-reads it off the same column -- a bronze row is already an event, dated by
-what its message stated -- and the rows the parse could not date, which sit at
-the codec's pin, by the `TransactTime` the walk dates them with: a day's run
-walks the day's events, dated or pinned, so it is run over the same window
-again.
+day; a run without the two parameters covers the last day, which the lines
+the header dates fall outside, so it reads none of them -- only a line the
+header did not match, which the file's own modification time dates, could
+fall in it. `parse_messages` and `parse_fix_raw` read the window off
+`currunix`, the event clock, so the two are run over the same one: the text
+read settles it over a line, off the header's `mtime` capture or off the
+modification time of the object a line the header did not match was read
+from, and the window is the two bounds and nothing else -- the epoch, which
+dates a line only where its handle has no clock at all, is in the window that
+covers 1970. `parse_fix_refined` reads it off the same
+column -- a `fix.raw` row is already an event, dated by what its message
+stated -- and the rows the parse could not date, which sit at the codec's
+pin, by the `TransactTime` the walk dates them with: a day's run walks the
+day's events, dated or pinned, so it is run over the same window again.
 
 ## One override
 
@@ -55,11 +58,11 @@ Point the FIX parse at a candidate dictionary:
 
 ```bash
 uv run --project python rekep task run \
-  tasks/parse_fix_bronze/parse_fix_bronze.json \
+  tasks/parse_fix_raw/parse_fix_raw.json \
   --parameter 'registry="file:///srv/fix"'
 ```
 
-`parse_fix_silver` takes the same `registry`, and the walk reads each row
+`parse_fix_refined` takes the same `registry`, and the walk reads each row
 back with the dictionary that wrote it, so a candidate is given to both.
 There is no version left to pin: what a message was read at is what its own
 `beginstring` said, and native `FixCodec` validates every keyword it receives.
@@ -69,7 +72,7 @@ unchanged. Useful pins include `batch_row_size`, `include_msgtypes`,
 `--parameter 'version="4.4"'` names nothing the document declares -- the CLI
 carries it into an unused definition and Airflow's operator fails the task
 outright. There is no switch on the walk: the parsed rows without their
-chains are `fix.bronze`, which `parse_fix_bronze` publishes on its own.
+chains are `fix.raw`, which `parse_fix_raw` publishes on its own.
 
 ## Parameters file
 
@@ -105,8 +108,8 @@ names them.
 
 ```bash
 uv run --project python rekep task run \
-  tasks/parse_fix_bronze/parse_fix_bronze.json \
-  --result-file /run/rekep/parse-fix-bronze-result.json
+  tasks/parse_fix_raw/parse_fix_raw.json \
+  --result-file /run/rekep/parse-fix-raw-result.json
 ```
 
 The result file is published atomically. It contains counts and locations,
@@ -123,6 +126,6 @@ message lands over the old one on the same `curruuid` key. A reading that
 changes an event's `curruuid` is a new key, and the old row stays: delete the
 window first, or use a new target table, when the identity itself changes.
 The walk re-settles the identity of a message it dates, which is why
-`fix.silver` is written from `fix.bronze` and never in place: a silver key is
-not always its bronze twin's, and a walk landing over the parsed rows would
-leave the old identity beside the new one.
+`fix.refined` is written from `fix.raw` and never in place: a walked row's
+key is not always the key of the parsed row it restates, and a walk landing
+over the parsed rows would leave the old identity beside the new one.

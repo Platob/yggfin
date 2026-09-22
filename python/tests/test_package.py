@@ -106,19 +106,21 @@ def test_rekep_installs_its_bundled_registry_as_the_process_default() -> None:
     assert TextOptions.__module__.startswith("yggdryl")
 
 
-def test_the_bundled_dictionary_holds_no_copy_of_a_crate_definition() -> None:
-    """The bundle is the specification and nothing else.
+def test_the_bundled_dictionary_is_the_crates_own_where_it_restates_the_crate() -> None:
+    """The bundle is yggdryl's `config/fix`, copied whole and never edited.
 
-    A crate field is seeded by the core on every registry it builds, so a
-    committed copy of one is a second owner of one definition -- inert, and
-    free to drift the day the core restates it. The specification files are
-    what this package ships; the crate's own columns arrive with the crate.
+    Three of its documents restate definitions the core seeds on every
+    registry it builds -- the crate's scalar columns and its two Map groups.
+    A committed copy of one is free to drift the day the core restates it,
+    so each is compared with the field the installed crate answers: the same
+    tag, datatype and nullability, or the vendored copy is stale and the
+    re-vendoring is what fixes it, not an edit.
     """
     import json
 
-    owned = {member.name for member in fix_crate_fields()}
+    owned = {member.name: member for member in fix_crate_fields()}
     root = registry_path()
-    held: set[str] = set()
+    held: list[str] = []
     for category in ("fields", "components", "groups"):
         folder = root / category
         if not folder.is_dir():
@@ -126,11 +128,23 @@ def test_the_bundled_dictionary_holds_no_copy_of_a_crate_definition() -> None:
         for path in folder.glob("*.json"):
             document = json.loads(path.read_text(encoding="utf-8"))
             for one in document if isinstance(document, list) else [document]:
-                if isinstance(one, dict) and one.get("name") in owned:
-                    held.add(f"{category}/{path.name}:{one['name']}")
+                if not isinstance(one, dict) or one.get("name") not in owned:
+                    continue
+                stated = json.loads(owned[one["name"]].into_json())
+                # A list-valued metadata entry is written to the store as the
+                # list it is and answered by a field as the JSON text it
+                # holds: one value, two spellings.
+                stated["metadata"] = {
+                    key: json.loads(value) if isinstance(one["metadata"].get(key), list) else value
+                    for key, value in stated["metadata"].items()
+                }
+                assert stated == one, f"{category}/{path.name}:{one['name']} drifted from the crate"
+                held.append(one["name"])
 
-    assert not held, f"the bundle copies definitions the crate owns: {sorted(held)}"
-    # And the registry is the same one either way: nothing was lost with them.
+    # The crate's scalar columns, and the two Map groups it seeds beside them.
+    assert sorted(held) == sorted(owned)
+    # And the registry is the same one with them or without: the core seeds
+    # what they restate, so nothing is added and nothing is lost.
     assert len(fix_registry()) == 7781
 
 

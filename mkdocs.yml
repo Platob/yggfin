@@ -55,9 +55,9 @@ nav:
       - Why Arrow: overview/arrow.md
       - Design rules: overview/design.md
   - Data products:
-      - Two tables: products/index.md
+      - Three tables: products/index.md
       - logs.messages: products/message.md
-      - fix.bronze and fix.silver: products/fixmsg.md
+      - fix.raw and fix.refined: products/fixmsg.md
       - Field contract: contracts/types.md
       - Portable contracts: contracts/index.md
   - FIX:
@@ -73,8 +73,8 @@ nav:
   - Pipeline:
       - Overview: pipeline/index.md
       - Parse messages: pipeline/tasks/parse-messages.md
-      - Parse FIX bronze: pipeline/tasks/parse-fix-bronze.md
-      - Parse FIX silver: pipeline/tasks/parse-fix-silver.md
+      - Parse FIX raw: pipeline/tasks/parse-fix-raw.md
+      - Parse FIX refined: pipeline/tasks/parse-fix-refined.md
       - Build dbt: pipeline/tasks/build-dbt.md
       - Airflow: pipeline/airflow.md
       - Run: pipeline/operations/run.md

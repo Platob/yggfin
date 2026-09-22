@@ -23,7 +23,7 @@
 -- A message emits one event when it carries an order identity -- a client or a
 -- venue order id -- and an order lifecycle fact, which is a stated status or a
 -- stated execution type. A message carrying one and not the other stays in
--- `fix.silver` rather than being assigned a guessed order.
+-- `fix.refined` rather than being assigned a guessed order.
 --
 -- `orderkey` is the chain the parser already named: `crossuuid` is the chain's
 -- identity over `crosscode`, and `crosscode` is the first identifier the

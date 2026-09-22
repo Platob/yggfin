@@ -8,6 +8,7 @@ with app.setup:
 
     import marimo as mo
     import pyarrow
+
     from rekep import Field
     from rekep.fix import FixRegistry, fix_codec, fix_registry
 

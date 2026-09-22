@@ -1,11 +1,11 @@
-"""The native FIX registry and the bronze/silver storage boundary.
+"""The native FIX registry and the raw/refined storage boundary.
 
-Bronze parses frames independently, lifting typed facts and retaining only
+Raw parses frames independently, lifting typed facts and retaining only
 unprojected content in `fixentries`. The native codec can parse batches in
 parallel while preserving source order. It owns null filtering, identifiers,
 code validation and the row's schema.
 
-Silver uses the native finite lifecycle: date by transaction time where
+Refined uses the native finite lifecycle: date by transaction time where
 needed, stably order events, suppress repeated deliveries, learn validated
 instrument associations, link predecessors, and emit expirations. It folds
 `creaunix`, `exprtime` and `state`; Python projects the native message row and
@@ -57,33 +57,34 @@ _REGISTRY_PATH = Path(__file__).with_name("_data") / "fix"
 FIXMSG = "fixmsg"
 
 #: The column a message's own identity is published as, and the table's whole
-#: key. A UUIDv7 over the millisecond the event settled on, its place in its
-#: chain and the cross-seeded code of its content, so one message logged at
-#: three hops settles on one of them: an arrival under an identity already
-#: held is a restatement, not a second row.
+#: key. A UUIDv7 packing the microsecond the event settled on and the whole
+#: 64-bit code of its content -- no seed, no sequence bits -- so one message
+#: logged at three hops settles on one of them: an arrival under an identity
+#: already held is a restatement, not a second row.
 MESSAGE_KEY = "curruuid"
 
 #: The instant every table here is laid out by, and the core's own name for
 #: it: the first of the nineteen columns every event's schema opens with. On a
 #: FIX row it is what the message stated and never what a line was printed
-#: at; on a raw one it is what the line was printed at, because there a line
+#: at; on a text row it is what the line was printed at, because there a line
 #: is the event. Each read settles its own, and the hour of it is the layout.
 EVENT_CLOCK = "currunix"
 
 #: The clock the walk dates a message by where the parse could not: the
 #: `TransactTime(60)` it states. A parse pins an undated message at `UNDATED`,
-#: so a bronze row at the pin whose transaction time falls in a window is that
+#: so a `fix.raw` row at the pin whose transaction time falls in a window is that
 #: window's, and `fix_window_filter` reads it there.
 TRANSACTION_CLOCK = "transacttime"
 
 #: The identities a message was read from: provenance, never lineage. A
-#: bronze row names the one line it was parsed from; a silver row names every
-#: line its event was logged on, because the walk merges the observations of
-#: one event. Source location and capture context remain on `logs.messages`,
-#: reached through these identities; no walk reads them as lineage.
+#: `fix.raw` row names the one line it was parsed from; a `fix.refined` row
+#: names every line its event was logged on, because the walk merges the
+#: observations of one event. Source location and capture context remain on
+#: `logs.messages`, reached through these identities; no walk reads them as
+#: lineage.
 SOURCES = "srcuuids"
 
-#: The capture column a parse reads the line's own identity off, and puts in
+#: The stored line's column a parse reads its identity off, and puts in
 #: `srcuuids`. `logs.messages` stores it as the sixteen ordered bytes Arrow
 #: can key, sort and merge on, so the parse is handed it back at the type the
 #: read states before it is asked to read it.
@@ -91,8 +92,25 @@ CAPTURE_KEY = "curruuid"
 
 #: What the lifecycle walk filled for a message's place in its chain. A chain
 #: read in `currunix, seqnum` order is the order the venue described, and the
-#: column is empty on every bronze row.
+#: column is empty on every `fix.raw` row.
 CHAIN_STEP = "seqnum"
+
+#: The columns of a stored line the parse reads, and the projection the
+#: raw stage pushes into its scan: the line's own clock, which is context to
+#: the messages it states; its identity, which each of them names as its
+#: source; the body the frames are read out of; and the four captures that
+#: fill a field by their name. The line's content code, cross code and row
+#: number are the line's facts and say nothing about a message, and
+#: `msgthreadid` and `loglevel` name no field, so none of them is read.
+PARSE_COLUMNS = (
+    EVENT_CLOCK,
+    CAPTURE_KEY,
+    "body",
+    "msgsessionid",
+    "msgctxid",
+    "msgseqnum",
+    "msgpluginid",
+)
 
 #: Where a row sits inside its partition: the instant, then the step its chain
 #: put it at, then its own identity, so two events of one instant still read
@@ -162,9 +180,10 @@ def fix_text_options(
 
     Every capture a row header declares is named for what the native read
     fills from it -- a field for `msgpluginid`, `msgsessionid`, `msgctxid`
-    and `msgseqnum`, the settled `currunix` for `mtime` -- so `capture_names`
-    alone is what tells the codec which bracket part is which and nothing
-    maps a spelling onto a tag. `rowheader` reads a bridge writing those same
+    and `msgseqnum`, the settled `currunix` for `mtime`, which `parse_mtime`
+    consumes at its native default and never lands beside it -- so
+    `capture_names` alone is what tells the codec which bracket part is which
+    and nothing maps a spelling onto a tag. `rowheader` reads a bridge writing those same
     facts in a layout of its own; the default is the one this package ships.
     A reader that also stores its rows takes the header through
     `Message.text_options`, which additionally checks those names against the
@@ -172,7 +191,6 @@ def fix_text_options(
     """
     options = TextOptions()
     options.start_rownum = 1
-    options.parse_mtime = False
     options.rowheader = ULBRIDGE_ROWHEADER if rowheader is None else rowheader
     options.timezone = "UTC"
     options.safe = False
@@ -225,7 +243,7 @@ def fix_parse_arrow_reader(
     """Parse stored capture batches into native FIX rows.
 
     The native parser consumes capture columns to resolve each message and
-    puts the raw line's `curruuid` in `srcuuids`. Project its result to the
+    puts the stored line's `curruuid` in `srcuuids`. Project its result to the
     dictionary's fixed row: where the line was read from, what it was printed
     at and the line itself remain on `logs.messages`, reachable through that
     source identity. Projection shares the parsed column buffers and works
@@ -233,8 +251,21 @@ def fix_parse_arrow_reader(
 
     Nothing has walked: `seqnum`, `prevuuid`, `prevunix` and `parentuuids`
     are empty. One source row answers one row per frame it contains.
+
+    The parse answers the capture's own columns ahead of the row -- the
+    `body` it read the frames out of, and whatever else the source carried
+    that no field claims -- because a message carries the line it was read
+    off. A table holds the row, so those lead columns are left here, and
+    that is the whole of what this door narrows: a source read projected to
+    what the parse consumes (`PARSE_COLUMNS`) carries nothing else.
     """
-    return _dictionary_rows(codec, codec.parse_text_arrow_reader(_carried_rows(source)))
+    parsed = codec.parse_text_arrow_reader(_carried_rows(source))
+    row = fix_schema(codec.registry, FIXMSG).into_arrow_schema()
+    if parsed.schema.names == row.names:
+        return parsed
+    return pyarrow.RecordBatchReader.from_batches(
+        row, (batch.select(row.names) for batch in parsed)
+    )
 
 
 def fix_lifecycle_messages(codec: FixCodec, messages: Iterable[FixMsg]) -> Iterator[FixMsg]:
@@ -256,7 +287,7 @@ def fix_row_messages(
 ) -> Iterator[FixMsg]:
     """A FIX table's rows read back as the messages that wrote them.
 
-    The message shape of either table, bronze or silver. `messages` crosses
+    The message shape of either table, raw or refined. `messages` crosses
     back from a *fixed row*, so the projection is there and not a convenience:
     a message is read back out of the columns the dictionary defines, and a
     capture's own column beside them would be read as content the message
@@ -285,52 +316,51 @@ def _dictionary_rows(
     codec: FixCodec,
     source: pyarrow.RecordBatchReader,
 ) -> pyarrow.RecordBatchReader:
-    """`source` narrowed to the fixed row's own columns, typed as it types them.
+    """`source`, a table's rows, typed as the fixed row types them.
 
-    The reverse of `stored_arrow_reader`, for a row read back off a table: the
-    content codes stored as the signed integers Iceberg has are viewed as the
-    unsigned ones they are -- the same eight bytes, no row pass -- and the
-    dictionary's field then widens the rest in its native order, an identity
-    from the sixteen bytes a table keeps to the UUID the row states and an
-    instant from the microsecond stored to the nanosecond read. A row that
-    already carries the dictionary's types passes through untouched.
+    The reverse of `stored_arrow_reader`, and the one thing a table read
+    cannot express: the content codes stored as the signed integers Iceberg
+    has are viewed as the unsigned ones they are -- the same eight bytes, no
+    row pass, where a cast would refuse half of them -- and the dictionary's
+    field then widens the rest in its native order, an identity from the
+    sixteen bytes a table keeps to the UUID the row states and an instant
+    from the microsecond stored to the nanosecond read. The read itself is
+    handed the table's field, so what arrives here is the row's own columns
+    and nothing to narrow; a source already at the dictionary's types passes
+    through untouched.
     """
-    kept = _row_columns(codec, source.schema)
-    row = fix_schema(codec.registry, FIXMSG)
-    native = row.into_arrow_schema()
-    narrowed = pyarrow.schema([source.schema.field(name) for name in kept])
-    if narrowed.equals(native, check_metadata=False):
-        if len(kept) == len(source.schema.names):
-            return source
-        return pyarrow.RecordBatchReader.from_batches(
-            native, (batch.select(kept) for batch in source)
-        )
+    native = fix_schema(codec.registry, FIXMSG).into_arrow_schema()
+    if source.schema.equals(native, check_metadata=False):
+        return source
+    held = source.schema
     unsigned = [
-        name
-        for name in kept
-        if pyarrow.types.is_unsigned_integer(native.field(name).type)
-        and pyarrow.types.is_signed_integer(narrowed.field(name).type)
+        member.name
+        for member in held
+        if member.name in native.names
+        and pyarrow.types.is_unsigned_integer(native.field(member.name).type)
+        and pyarrow.types.is_signed_integer(member.type)
     ]
     viewed = pyarrow.schema(
         [
             member.with_type(native.field(member.name).type) if member.name in unsigned else member
-            for member in narrowed
-        ]
+            for member in held
+        ],
+        metadata=held.metadata,
     )
 
     def _viewed() -> Iterator[pyarrow.RecordBatch]:
         for batch in source:
             yield pyarrow.RecordBatch.from_arrays(
                 [
-                    batch.column(name).view(viewed.field(name).type)
-                    if name in unsigned
-                    else batch.column(name)
-                    for name in kept
+                    batch.column(index).view(viewed.field(index).type)
+                    if viewed.field(index).name in unsigned
+                    else batch.column(index)
+                    for index in range(batch.num_columns)
                 ],
                 schema=viewed,
             )
 
-    return row.apply_arrow_reader(
+    return fix_schema(codec.registry, FIXMSG).apply_arrow_reader(
         pyarrow.RecordBatchReader.from_batches(viewed, _viewed()),
         safe=False,
         nullability="strict",
@@ -340,11 +370,11 @@ def _dictionary_rows(
 def _carried_rows(source: pyarrow.RecordBatchReader) -> pyarrow.RecordBatchReader:
     """`source` with the line's identity viewed back to the type the read states.
 
-    The reverse of the raw table's own narrowing, and the reason that
-    narrowing is safe: a stored `curruuid` is the sixteen ordered bytes
-    Iceberg keys and sorts on, and a parse handed those bytes reads no
-    identity at all -- it recomputes one from the line's content, at the
-    undated pin, which is the line's own only by accident. Viewed back, the
+    The reverse of the narrowing `logs.messages` holds an identity at, and
+    the reason that narrowing is safe: a stored `curruuid` is the sixteen
+    ordered bytes Iceberg keys and sorts on, and a parse handed those bytes
+    reads no identity off them -- it derives one of its own from the line's
+    clock and content, which names no line that landed. Viewed back, the
     parse names the line that landed, so `srcuuids` is a join and not a
     coincidence. The bytes are the same bytes; nothing is copied or cast.
     """
@@ -376,20 +406,10 @@ def _capture_key_type() -> pyarrow.DataType:
     return TextOptions().source_field().into_arrow_schema().field(CAPTURE_KEY).type
 
 
-def _row_columns(codec: FixCodec, schema: pyarrow.Schema) -> list[str]:
-    """Which of `schema`'s columns the fixed row itself defines.
-
-    Read off the codec's own dictionary, because that is the one that parsed
-    the rows. Capture-only columns are excluded at the parse boundary.
-    """
-    row = {member.name for member in fix_schema(codec.registry, FIXMSG)}
-    return [name for name in schema.names if name in row]
-
-
 def fix_window_filter(window: tuple[datetime.datetime, datetime.datetime]) -> Any:
-    """The bronze rows whose event a window covers, as the predicate a scan prunes by.
+    """The `fix.raw` rows whose event a window covers, as the predicate a scan prunes by.
 
-    Read off the event clock, because a bronze row is already an event: the
+    Read off the event clock, because a `fix.raw` row is already an event: the
     rows whose `currunix` falls in `[start, end)`. And the rows the parse
     could not date -- those at the `UNDATED` pin, which the walk will date by
     the `TransactTime` they state -- where that transaction time falls in the
@@ -434,7 +454,7 @@ def fix_message_field(
 
     Both FIX tables declare the same columns. The lifecycle fills lineage
     and folded state without adding capture columns. `srcuuids` links back
-    to the raw lines in `logs.messages`.
+    to the lines in `logs.messages`.
     """
     return iceberg_fix_field(fix_parse_field(codec, name=name).into_arrow_schema(), name)
 
@@ -537,6 +557,7 @@ __all__ = [
     "EVENT_CLOCK",
     "FIXMSG",
     "MESSAGE_KEY",
+    "PARSE_COLUMNS",
     "SORT_COLUMNS",
     "SOURCES",
     "TRANSACTION_CLOCK",

@@ -11,9 +11,9 @@ from marimo_operator import MarimoOperator
 ROOT = str(Path(__file__).resolve().parents[2])
 
 #: What the ingestion DAG publishes last, and what this one waits on. Naming
-#: the Asset is the whole schedule: a run starts when `parse_fix_silver`
+#: the Asset is the whole schedule: a run starts when `parse_fix_refined`
 #: writes, because a product reads the walked rows and never the parsed ones.
-UPSTREAM = Asset(name="fix.silver")
+UPSTREAM = Asset(name="fix.refined")
 
 #: The tables the dbt project commits, in the order its models build them.
 PUBLISHED = ("orders.events", "orders.current", "executions.fills")

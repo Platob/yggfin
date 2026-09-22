@@ -1,4 +1,4 @@
-"""The raw-message table, created before ingestion runs.
+"""The tables ingestion writes, created before it runs.
 
 A task creates its own target on the first write, so a run against an
 empty catalog already lands every table it needs. That is not enough where the
@@ -48,8 +48,8 @@ class Deployed:
 #: restated are the same row, and only what the walk filled tells them apart.
 TABLES: tuple[Deployed, ...] = (
     Deployed("logs.messages", Message.into_field),
-    Deployed("fix.bronze", fix_message_field),
-    Deployed("fix.silver", fix_message_field),
+    Deployed("fix.raw", fix_message_field),
+    Deployed("fix.refined", fix_message_field),
 )
 
 

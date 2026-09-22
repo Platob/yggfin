@@ -26,8 +26,8 @@ TASKS = ROOT / "tasks"
 NAMES = (
     "build_dbt",
     "optimize_iceberg",
-    "parse_fix_bronze",
-    "parse_fix_silver",
+    "parse_fix_raw",
+    "parse_fix_refined",
     "parse_messages",
 )
 

@@ -5,7 +5,7 @@
  * six separator spellings, the same printed-SOH unescape, the same key/value
  * bounds, the same "a checksum closes the message" rule, and the same media
  * type and direction taxonomies -- so a line decoded on this page resolves the
- * way `parse_fix_bronze` resolves it. The dictionary is `assets/fix-registry.json`,
+ * way `parse_fix_raw` resolves it. The dictionary is `assets/fix-registry.json`,
  * generated from rekep's bundled FIX registry.
  *
  * Nothing here parses on the server, and nothing is uploaded: a pasted line
@@ -188,10 +188,10 @@
 
   /* ------------------------------------------------------------ inference */
 
-  /* The media type, MsgType and direction the raw layer names for one line.
+  /* The media type, MsgType and direction the parse names for one line.
    *
    * The taxonomy is the core's `LineInference::mime_type`: numeric tags prove
-   * FIX, a `#`-marked key or a raw `MSGTYPE=` proves a bridge row, both prove
+   * FIX, a `#`-marked key or a bare `MSGTYPE=` proves a bridge row, both prove
    * the mixed form, an XML payload in tag 213 proves FIXML, a line that is
    * still `key=value` throughout is the generic key/value shape, and a
    * document that opens as XML or JSON is that document.
@@ -632,7 +632,7 @@
         )
       );
       if (!found.scanned.entries.length) {
-        output.appendChild(note("No FIX-shaped frame here: parse_fix_bronze skips this line, and it stays in logs.messages.", "warn"));
+        output.appendChild(note("No FIX-shaped frame here: parse_fix_raw skips this line, and it stays in logs.messages.", "warn"));
         return;
       }
       const resolved = [];
@@ -660,7 +660,7 @@
         details(
           "Resolved columns (" + resolved.length + ")",
           table(
-            ["column", "field", "wire key", "raw value", "typed value", "note", "code"],
+            ["column", "field", "wire key", "wire value", "typed value", "note", "code"],
             resolved
           ),
           true

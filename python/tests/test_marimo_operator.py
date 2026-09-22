@@ -156,23 +156,23 @@ def test_the_ingestion_dag_is_exactly_the_three_streamed_stages() -> None:
 
     assert dag.dag_id == "rekep_ingestion"
     assert dag.schedule == "@daily", "one run a day, covering its own interval"
-    assert set(dag.task_dict) == {"parse_messages", "parse_fix_bronze", "parse_fix_silver"}
+    assert set(dag.task_dict) == {"parse_messages", "parse_fix_raw", "parse_fix_refined"}
     messages = dag.get_task("parse_messages")
-    bronze = dag.get_task("parse_fix_bronze")
-    silver = dag.get_task("parse_fix_silver")
-    assert messages.downstream_task_ids == {"parse_fix_bronze"}
-    assert bronze.upstream_task_ids == {"parse_messages"}
-    assert bronze.downstream_task_ids == {"parse_fix_silver"}
-    assert silver.upstream_task_ids == {"parse_fix_bronze"}
+    raw = dag.get_task("parse_fix_raw")
+    refined = dag.get_task("parse_fix_refined")
+    assert messages.downstream_task_ids == {"parse_fix_raw"}
+    assert raw.upstream_task_ids == {"parse_messages"}
+    assert raw.downstream_task_ids == {"parse_fix_refined"}
+    assert refined.upstream_task_ids == {"parse_fix_raw"}
     assert [asset.name for asset in messages.outlets] == ["logs.messages"]
-    assert [asset.name for asset in bronze.outlets] == ["fix.bronze"]
-    assert [asset.name for asset in silver.outlets] == ["fix.silver"]
+    assert [asset.name for asset in raw.outlets] == ["fix.raw"]
+    assert [asset.name for asset in refined.outlets] == ["fix.refined"]
     assert dag.params["filesystem"] == "file:data/capture"
     assert dag.params["registry"] is None
     # Each FIX stage names the table it reads under a name of its own, so one
     # Params mapping over three documents hands neither the other's source.
     assert dag.params["messages"] == "logs.messages"
-    assert dag.params["bronze"] == "fix.bronze"
+    assert dag.params["raw"] == "fix.raw"
     assert dag.params["start"] is None and dag.params["end"] is None, "the interval fills them"
 
 
@@ -183,7 +183,7 @@ def test_the_products_dag_starts_when_the_fix_table_is_written() -> None:
 
     assert dag.dag_id == "rekep_products"
     assert set(dag.task_dict) == {"build_dbt"}
-    assert [asset.name for asset in dag.timetable.asset_condition.objects] == ["fix.silver"]
+    assert [asset.name for asset in dag.timetable.asset_condition.objects] == ["fix.refined"]
     built = dag.get_task("build_dbt")
     assert [asset.name for asset in built.outlets] == [
         "orders.events",
@@ -579,8 +579,8 @@ WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
 #: those same rows.
 LANDED = {
     "parse_messages": {"read": 144, "written": 144, "skipped": 0},
-    "parse_fix_bronze": {"read": 144, "written": 49, "skipped": 30},
-    "parse_fix_silver": {"read": 49, "written": 22, "skipped": 0},
+    "parse_fix_raw": {"read": 144, "written": 49, "skipped": 30},
+    "parse_fix_refined": {"read": 49, "written": 19, "skipped": 0},
 }
 REPLAYED = LANDED
 
@@ -588,11 +588,11 @@ REPLAYED = LANDED
 #: the name each result reports it under.
 PUBLISHED = {
     "parse_messages": "logs.messages",
-    "parse_fix_bronze": "fix.bronze",
-    "parse_fix_silver": "fix.silver",
+    "parse_fix_raw": "fix.raw",
+    "parse_fix_refined": "fix.refined",
 }
-TARGETS = {"parse_messages": "messages", "parse_fix_bronze": "bronze", "parse_fix_silver": "silver"}
-STORED = {"logs.messages": 144, "fix.bronze": 49, "fix.silver": 22}
+TARGETS = {"parse_messages": "messages", "parse_fix_raw": "raw", "parse_fix_refined": "refined"}
+STORED = {"logs.messages": 144, "fix.raw": 49, "fix.refined": 19}
 
 
 def counted(result: dict[str, Any]) -> dict[str, int]:
@@ -671,11 +671,11 @@ def _snapshots(catalog: dict[str, Any]) -> dict[str, int]:
 def test_the_scheduled_graph_publishes_the_bridge_fixture_and_replays_it(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """The whole scheduled route: uv, runner, both applications, both tables.
+    """The whole scheduled route: uv, runner, three applications, three tables.
 
     `test_workflow.py` pins these same counts for `rekep task run`. Pinning
     them here as well is what says the two routes are one pipeline: a
-    scheduled run reads the same capture into the same two products, and its
+    scheduled run reads the same capture into the same three tables, and its
     replay replaces the same rows in one new snapshot, exactly as the
     command-line run does.
     """
@@ -799,16 +799,16 @@ def test_terminating_the_task_stops_the_runner_process_group(
 
 
 @pytest.mark.integration
-def test_a_real_dag_run_publishes_both_tables_from_its_conf(
+def test_a_real_dag_run_publishes_its_three_tables_from_its_conf(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """The scheduler itself, not just the operator: `airflow dags test`.
 
     Everything above builds operators by hand, so nothing there proves the DAG
     parses under Airflow's own bundle loading, serializes, or that a run's
-    `--conf` reaches both nodes as declared Params. This runs the shipped DAG
+    `--conf` reaches every node as declared Params. This runs the shipped DAG
     the way `docs/pipeline/airflow.md` says to trigger it, in a private
-    `AIRFLOW_HOME`, and reads the two products back.
+    `AIRFLOW_HOME`, and reads the three tables back.
     """
     from rekep.iceberg import IcebergCatalog
 
@@ -855,7 +855,7 @@ def test_a_real_dag_run_publishes_both_tables_from_its_conf(
     # The scheduler's own record of the run, not the CLI's prose: that line is
     # only printed to a terminal, and this child has none.
     assert re.search(r"DagRun Finished:.*state=success", printed), printed
-    # Both nodes ran the locked runner, and the run's conf reached them: the
+    # Every node ran the locked runner, and the run's conf reached them: the
     # catalog they wrote is this test's, not the document's relative default.
     for task_id in PUBLISHED:
         assert f"tasks/{task_id}/{task_id}.json" in printed, printed

@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "pyarrow>=17.0",
-    "yggdryl==0.1.9",
+    "yggdryl==0.1.10",
     # `Self` is 3.11's, and the return annotation of every builder here names
     # it. The dependency is the typing back-port rather than a second spelling
     # of every one of those signatures.

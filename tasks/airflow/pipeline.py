@@ -18,13 +18,13 @@ def _defaults(name: str) -> dict[str, object]:
 
 
 MESSAGE_DEFAULTS = _defaults("parse_messages")
-BRONZE_DEFAULTS = _defaults("parse_fix_bronze")
-SILVER_DEFAULTS = _defaults("parse_fix_silver")
+RAW_DEFAULTS = _defaults("parse_fix_raw")
+REFINED_DEFAULTS = _defaults("parse_fix_refined")
 # One Params mapping over three documents, so a name two of them share --
 # `start`, `end`, `catalog`, `registry` -- means one thing on every node. The
-# table each stage reads is named for what it reads, `messages` and `bronze`,
+# table each stage reads is named for what it reads, `messages` and `raw`,
 # so a run's conf cannot hand one stage the other's source.
-PARAMS = {**MESSAGE_DEFAULTS, **BRONZE_DEFAULTS, **SILVER_DEFAULTS}
+PARAMS = {**MESSAGE_DEFAULTS, **RAW_DEFAULTS, **REFINED_DEFAULTS}
 
 
 def _task(name: str, target: str) -> MarimoOperator:
@@ -40,7 +40,7 @@ def _task(name: str, target: str) -> MarimoOperator:
 
 @dag(
     dag_id="rekep_ingestion",
-    description="Parse one day of captured text into raw messages, then parsed and walked FIX.",
+    description="Parse one day of captured text into stored lines, then parsed and walked FIX.",
     # One run a day, covering its own data interval: the operator hands the
     # interval to every task as its `start` and `end`, and a manual trigger
     # of the DAG covers the last complete day the same way. Triggered on an
@@ -55,9 +55,9 @@ def _task(name: str, target: str) -> MarimoOperator:
 )
 def _ingestion() -> None:
     messages = _task("parse_messages", "logs.messages")
-    bronze = _task("parse_fix_bronze", "fix.bronze")
-    silver = _task("parse_fix_silver", "fix.silver")
-    messages >> bronze >> silver
+    raw = _task("parse_fix_raw", "fix.raw")
+    refined = _task("parse_fix_refined", "fix.refined")
+    messages >> raw >> refined
 
 
 ingestion = _ingestion()

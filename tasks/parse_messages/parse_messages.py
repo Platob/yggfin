@@ -9,13 +9,14 @@ with app.setup:
 
     import marimo as mo
     import pyarrow
+
     from rekep import IOBase
     from rekep.fields import stored_arrow_reader
     from rekep.iceberg import IcebergCatalog
     from rekep.logs import Stage, configure
     from rekep.tasks import Task
     from rekep.text import Message
-    from rekep.times import window_of, within
+    from rekep.times import where_within, window_of
 
     TARGET = "logs.messages"
 
@@ -25,7 +26,7 @@ def _():
     mo.md("""
     # Parse messages
 
-    Read physical text records into raw message rows, for one window of
+    Read physical text lines into `logs.messages` rows, for one window of
     `currunix`, the event the native read settles over each line.
     """)
 
@@ -34,9 +35,7 @@ def _():
 def parameters():
     # The adjacent document owns every default. A runner passes the whole
     # mapping to `app.run(defs=...)`, which replaces this cell.
-    _defaults = Task.from_json(
-        str(pathlib.Path(__file__).with_suffix(".json"))
-    ).parameters
+    _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
     filesystem = _defaults["filesystem"]
     rowheader = _defaults["rowheader"]
     start = _defaults["start"]
@@ -78,6 +77,13 @@ def _(catalog, end, filesystem, records, rowheader, start):
         # and a header that renames one is refused rather than stored as a
         # column of nulls under a clock that settled nothing.
         options = Message.text_options(rowheader)
+        # The window is the read's `where`, answered by the record surface
+        # over the rows the lines become: the lines whose `currunix` -- the
+        # event the read settled over each, off its header or off the
+        # object's own modification time where the header did not match, and
+        # the column the table is laid out by -- falls in `[start, end)`, and
+        # no other. What the read answers is what the run read.
+        options.filter = where_within("currunix", window)
         counts = {"read": 0}
         store = IcebergCatalog.from_dict(catalog)
         opened.callback(store.close)
@@ -90,23 +96,17 @@ def _(catalog, end, filesystem, records, rowheader, start):
         opened.callback(reader.close)
 
         def _batches():
-            # Every line is read and counted; the ones the window covers go
-            # on. `currunix` is the event the read settled over the line and
-            # the column the table is laid out by, and a line the header
-            # could not date sits at the epoch pin, which is in every window,
-            # so a header that did not match never loses a line.
             for batch in reader:
                 counts["read"] += batch.num_rows
-                yield batch.filter(within(batch.column("currunix"), window))
+                yield batch
 
-        read = pyarrow.RecordBatchReader.from_batches(
-            Message.read_field().into_arrow_schema(),
-            _batches(),
-        )
+        read = pyarrow.RecordBatchReader.from_batches(reader.schema, _batches())
         opened.callback(read.close)
-        # The read states a line's content code unsigned and Iceberg's only
-        # sixty-four-bit integer is signed, so the same eight bytes are viewed
-        # rather than converted on the way to the table.
+        # The storage boundary: the read states the content code and the row
+        # number unsigned and Iceberg's only sixty-four-bit integer is signed,
+        # so those eight bytes are viewed rather than converted, and the field
+        # then casts the rest -- the instant to the microsecond a table holds,
+        # the identity to the sixteen bytes it keys on -- in its native order.
         parsed = stored_arrow_reader(read, field)
         opened.callback(parsed.close)
         # What the window carries replaces what the table held under the same

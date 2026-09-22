@@ -2683,8 +2683,8 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
     )
     row = Message(
         currunix="2026-08-14 09:30:00.123",
-        sourceurl="capture.log",
-        rownum=7,
+        crosscode="capture.log",
+        seqnum=7,
         msgthreadid=250,
         msgsessionid="e7256476",
         msgctxid="9effef3e6a",
@@ -2715,8 +2715,8 @@ def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
             # line's identity nor its code: only the native read states them.
             "curruuid": bytes(16),
             "currhashcode": 0,
-            "sourceurl": "capture.log",
-            "rownum": 7,
+            "crosscode": "capture.log",
+            "seqnum": 7,
             "body": "opaque",
             "msgthreadid": 250,
             "msgsessionid": "e7256476",

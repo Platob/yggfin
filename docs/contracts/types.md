@@ -10,7 +10,8 @@ from rekep import Field, Message
 field = Message.into_field()
 assert isinstance(field, Field)
 assert field.name == "Message"
-assert field["sourceurl"].nullable is False
+assert field["body"].nullable is False
+assert field["crosscode"].nullable is True
 assert field["curruuid"].iceberg["primary_key"] == "true"
 ```
 

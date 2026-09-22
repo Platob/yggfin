@@ -634,7 +634,7 @@ def event_pair(tmp_path: Path) -> tuple[IcebergDataset, IcebergDataset]:
 
 
 def test_a_replace_through_a_partition_transform_agrees(event_pair) -> None:
-    """The key bounds name the raw column; Iceberg prunes on `day(at)`.
+    """The key bounds name the source column; Iceberg prunes on `day(at)`.
 
     A projection that went the wrong way would plan no file, match nothing and
     insert a second copy of every row -- so this compares row for row.

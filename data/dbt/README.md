@@ -1,13 +1,13 @@
 # The dbt project
 
-This is the SQL half of the pipeline: `fix.silver` in, three business
+This is the SQL half of the pipeline: `fix.refined` in, three business
 products out. DuckDB runs the SQL and holds nothing -- the database is
 `:memory:` -- and every read and every commit goes through `rekep.dbt`, the
 plugin that binds dbt to the same `IcebergDataset` the ingestion tasks write
 through. There is no second catalog, no second warehouse and no extract.
 
 ```text
-fix.silver -> stg_fix_messages -> orders.events   -> orders.current
+fix.refined -> stg_fix_messages -> orders.events   -> orders.current
                                -> executions.fills
 ```
 
@@ -50,8 +50,8 @@ uv run --project python dbt build --project-dir data/dbt --profiles-dir data/dbt
   --select orders_events+
 ```
 
-A build needs `fix.silver` to exist, which is what `parse_fix_silver` writes
-at the end of the ingestion graph; `fix.bronze` holds the same events before
+A build needs `fix.refined` to exist, which is what `parse_fix_refined` writes
+at the end of the ingestion graph; `fix.raw` holds the same events before
 the walk and no model reads it, because a product needs the chain. Nothing
 needs `dbt deps`: there is no
 package file, and every macro a model reads is here.

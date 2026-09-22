@@ -1,4 +1,4 @@
-"""Benchmark plain and gzip text objects into raw `Message` batches."""
+"""Benchmark plain and gzip text objects into stored `Message` batches."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 from _bench import best_of, parser  # noqa: E402
 
+from rekep.fields import stored_arrow_reader  # noqa: E402
 from rekep.text import Message  # noqa: E402
 from rekep.times import datetime_of  # noqa: E402
 
@@ -26,9 +27,10 @@ from rekep.times import datetime_of  # noqa: E402
 # than spelled again: the bound is the core's to choose, and a number copied
 # here is a number that goes quietly wrong the release it changes.
 BATCH_ROW_SIZE = Message.text_options().batch_row_size
-# The read's own shape, which is the contract with the line's content code
-# widened to the unsigned type the core states it in.
-FIELD = Message.read_field()
+# The table's own shape: what `parse_messages` hands the write, after the
+# storage boundary views the read's two unsigned columns into the signed
+# integer Iceberg has and casts the rest in the field's native order.
+FIELD = Message.into_field()
 SCHEMA = FIELD.into_arrow_schema()
 
 
@@ -75,7 +77,6 @@ def text_options() -> TextOptions:
 OPTIONS = text_options()
 RAW_OPTIONS = TextOptions()
 RAW_OPTIONS.start_rownum = OPTIONS.start_rownum
-RAW_OPTIONS.parse_mtime = OPTIONS.parse_mtime
 RAW_OPTIONS.rowheader = OPTIONS.rowheader
 RAW_OPTIONS.timezone = OPTIONS.timezone
 
@@ -90,8 +91,9 @@ class Case:
 
 
 def message_batches(source: IOBase) -> Iterator[pyarrow.RecordBatch]:
-    """The exact native Message reader used by `parse_messages`."""
-    reader = source.read_arrow_reader(options=OPTIONS)
+    """The exact path `parse_messages` runs: the projected native read, then
+    the storage boundary that types its rows as the table holds them."""
+    reader = stored_arrow_reader(source.read_arrow_reader(options=OPTIONS), FIELD)
     try:
         yield from reader
     finally:
@@ -129,7 +131,7 @@ def expected(index: int) -> dict[str, object]:
     """The endpoint values independent of the resource's diagnostic URL."""
     return {
         "currunix": datetime_of(mtime(index)),
-        "rownum": index + 1,
+        "seqnum": index + 1,
         "msgthreadid": index % 16 + 1,
         "msgsessionid": f"{index % 2**32:08x}",
         "msgctxid": f"{index % 2**40:010x}",
@@ -151,17 +153,15 @@ def verify(case: Case, rows: int) -> pyarrow.Table:
     assert first_batch(case) == min(rows, BATCH_ROW_SIZE)
     first, last = table.slice(0, 1).to_pylist()[0], table.slice(rows - 1, 1).to_pylist()[0]
     for row, index in ((first, 0), (last, rows - 1)):
-        url = row.pop("sourceurl")
+        url = row.pop("crosscode")
         code = row.pop("currhashcode")
         identity = row.pop("curruuid")
-        # The body is the whole line as the read retains it, header included,
-        # so the payload written for the row closes it.
-        line = row.pop("body")
         assert isinstance(url, str) and url.endswith(case.filename)
         assert isinstance(code, int)
         assert isinstance(identity, bytes) and len(identity) == 16
-        assert isinstance(line, str) and line.endswith(expected(index)["body"])
-        assert row == {key: value for key, value in expected(index).items() if key != "body"}
+        # The body is the line past its row header, so it is the payload
+        # written for the row and nothing else.
+        assert row == expected(index)
     return table
 
 
@@ -196,13 +196,14 @@ def sweep(rows: int, repeat: int) -> None:
     with tempfile.TemporaryDirectory(prefix="rekep-message-bench-") as directory:
         selected, encoded_size = cases(pathlib.Path(directory), decoded)
         verified = [verify(case, rows) for case in selected]
-        # Two columns are the line's place and not its content: `sourceurl`
-        # is where it was read from, and `curruuid` is the identity the read
-        # states over that place as well as over the bytes -- so the same
-        # line under two URIs is two events, on purpose. Everything else,
-        # `currhashcode` and `body` included, has to be the same or the gzip
+        # Three columns are the line's place and not its content: `crosscode`
+        # is the object it was read from, `currhashcode` digests that object,
+        # the header's captures and the line's row number ahead of its body,
+        # and `curruuid` packs the microsecond of `currunix` and that code --
+        # so the same line under two URIs is two events, on purpose.
+        # Everything else, `body` included, has to be the same or the gzip
         # leg is not reading what the plain one read.
-        placed = ("sourceurl", "curruuid")
+        placed = ("crosscode", "currhashcode", "curruuid")
         comparable = [
             table.select([name for name in table.schema.names if name not in placed])
             for table in verified

@@ -20,6 +20,12 @@ directory, so the same relative defaults land here.
 bundled protocol registry; the FIX dictionary the two FIX tasks type against
 ships inside the package.
 
+Ten of the sample's lines sit under the bridge's bracket, and the shipped
+`ULBRIDGE_ROWHEADER` dates every one, spelling its fraction `.147`, `,148`
+and `.147_250`; the four under no bracket -- three Java stack lines and one
+line with no level -- keep their whole text as `body` and take the file's own
+modification time as `currunix`.
+
 The larger 144-line fixture the test suite and every documented count use is
 `python/tests/data/ulbridge.log`, not this sample.
 

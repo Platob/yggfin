@@ -2516,8 +2516,9 @@ def window_filter(column: str, window: tuple[datetime.datetime, datetime.datetim
 
     The reading `rekep.times.within` gives an Arrow column, for a stored one:
     `start <= column < end`, and the rows that state no instant in it -- the
-    `EPOCH` pin a read settles a record it could not date at, and a null for
-    a column that admits one -- which belong to every window. Over a
+    `EPOCH` pin a read settles a record at where nothing dates it, a line off
+    a handle with no clock or a message that stated none, and a null for a
+    column that admits one -- which belong to every window. Over a
     partition source, Iceberg projects the bounds through the transform and
     opens only the partitions the window touches and the pin's own.
     """
