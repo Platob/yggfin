@@ -1,0 +1,420 @@
+[
+  {
+    "name": "currunix",
+    "dtype": {
+      "type": "datetime64",
+      "unit": "nanosecond",
+      "timezone": "UTC"
+    },
+    "nullable": false,
+    "metadata": {
+      "FIX:tag": "65003",
+      "FIX:transient": "false",
+      "description": "When the event happened: the settled instant, UTC.",
+      "display": "CurrUnix"
+    }
+  },
+  {
+    "name": "msgctxid",
+    "dtype": {
+      "type": "string"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65008",
+      "description": "The message context a bridge handled the message in, as its own log names it.",
+      "display": "MsgCtxId"
+    }
+  },
+  {
+    "name": "msgpluginid",
+    "dtype": {
+      "type": "string"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65009",
+      "description": "The plugin that logged the line inside a bridge, as the bridge names it: the row's own msgpluginid column, never derived.",
+      "display": "MsgPluginId"
+    }
+  },
+  {
+    "name": "currhashcode",
+    "dtype": {
+      "type": "uint64"
+    },
+    "nullable": false,
+    "metadata": {
+      "FIX:tag": "65017",
+      "FIX:transient": "false",
+      "description": "The XXH3-64 of what the event states and the named FIX content behind it.",
+      "display": "CurrHashCode"
+    }
+  },
+  {
+    "name": "crosshashcode",
+    "dtype": {
+      "type": "uint64"
+    },
+    "nullable": false,
+    "metadata": {
+      "FIX:tag": "65018",
+      "FIX:transient": "false",
+      "description": "The XXH3-64 of the cross code; zero where the event names none.",
+      "display": "CrossHashCode"
+    }
+  },
+  {
+    "name": "prevunix",
+    "dtype": {
+      "type": "datetime64",
+      "unit": "nanosecond",
+      "timezone": "UTC"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65021",
+      "FIX:transient": "false",
+      "description": "When the event this one follows happened, where it follows one.",
+      "display": "PrevUnix"
+    }
+  },
+  {
+    "name": "prevuuid",
+    "dtype": {
+      "type": "uuid"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65022",
+      "FIX:transient": "false",
+      "description": "The identity of the event this one follows, where it follows one.",
+      "display": "PrevUuid"
+    }
+  },
+  {
+    "name": "creaunix",
+    "dtype": {
+      "type": "datetime64",
+      "unit": "nanosecond",
+      "timezone": "UTC"
+    },
+    "nullable": false,
+    "metadata": {
+      "FIX:names": [
+        "CreationTime"
+      ],
+      "FIX:tag": "65023",
+      "FIX:transient": "false",
+      "description": "When the message was created: what it states, else when the original was sent, else when it happened; the earliest its chain knows once followed.",
+      "display": "CreaUnix"
+    }
+  },
+  {
+    "name": "snapunix",
+    "dtype": {
+      "type": "datetime64",
+      "unit": "nanosecond",
+      "timezone": "UTC"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65025",
+      "FIX:transient": "false",
+      "description": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of.",
+      "display": "SnapUnix"
+    }
+  },
+  {
+    "name": "sourceurl",
+    "dtype": {
+      "type": "url"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65026",
+      "FIX:transient": "false",
+      "description": "The object this message's line was read from; the capture's own column, carried beside the row and never one of its own.",
+      "display": "SourceUrl"
+    }
+  },
+  {
+    "name": "nofixentries",
+    "dtype": {
+      "type": "int32"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65027",
+      "FIX:transient": "false",
+      "description": "How many residual entries remain outside the row's projected columns.",
+      "display": "NoFixEntries"
+    }
+  },
+  {
+    "name": "msgsessionid",
+    "dtype": {
+      "type": "string"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65032",
+      "description": "The session instance a bridge handled a line on, as its own row header brackets it - never what the message states about itself.",
+      "display": "MsgSessionId"
+    }
+  },
+  {
+    "name": "curruuid",
+    "dtype": {
+      "type": "uuid"
+    },
+    "nullable": false,
+    "metadata": {
+      "FIX:tag": "65039",
+      "FIX:transient": "false",
+      "description": "The event's identity: the UUIDv7 its microsecond instant and code derive.",
+      "display": "CurrUuid"
+    }
+  },
+  {
+    "name": "crossuuid",
+    "dtype": {
+      "type": "uuid"
+    },
+    "nullable": false,
+    "metadata": {
+      "FIX:tag": "65040",
+      "FIX:transient": "false",
+      "description": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none.",
+      "display": "CrossUuid"
+    }
+  },
+  {
+    "name": "parentuuids",
+    "dtype": {
+      "type": "list",
+      "field": {
+        "name": "parentuuid",
+        "dtype": {
+          "type": "uuid"
+        },
+        "nullable": false,
+        "metadata": {}
+      }
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65041",
+      "FIX:transient": "false",
+      "description": "The identities of the events this one descends from, oldest first, each once.",
+      "display": "ParentUuids"
+    }
+  },
+  {
+    "name": "seqnum",
+    "dtype": {
+      "type": "uint64"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65042",
+      "FIX:transient": "false",
+      "description": "The event's place in its chain: how many came before it.",
+      "display": "SeqNum"
+    }
+  },
+  {
+    "name": "crosscode",
+    "dtype": {
+      "type": "string"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65048",
+      "FIX:transient": "false",
+      "description": "The identifier every message of one lifecycle shares: OrderID, else ClOrdID, OrigClOrdID, QuoteID, QuoteReqID or MDReqID, the first stated.",
+      "display": "CrossCode"
+    }
+  },
+  {
+    "name": "srcuuids",
+    "dtype": {
+      "type": "list",
+      "field": {
+        "name": "srcuuid",
+        "dtype": {
+          "type": "uuid"
+        },
+        "nullable": false,
+        "metadata": {}
+      }
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65051",
+      "FIX:transient": "false",
+      "description": "The identities of the elements this message was read from: the text line it was parsed out of, and none for one parsed from raw bytes. Provenance, never lineage: no walk moves it.",
+      "display": "SrcUuids"
+    }
+  },
+  {
+    "name": "state",
+    "dtype": {
+      "type": "state"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65052",
+      "FIX:transient": "false",
+      "description": "The state the message reached, ranked so the column sorts by lifecycle: OrdStatus, else ExecType, 00UNKNOWN where neither states one; the furthest its chain knows once followed.",
+      "display": "State"
+    }
+  },
+  {
+    "name": "exprtime",
+    "dtype": {
+      "type": "datetime64",
+      "unit": "nanosecond",
+      "timezone": "UTC"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65053",
+      "FIX:transient": "false",
+      "description": "When the message stops being good: ExpireTime, else ValidUntilTime, ExpireDate or MaturityDate; a newer explicit deadline replaces the one its chain carried.",
+      "display": "ExprTime"
+    }
+  },
+  {
+    "name": "msgcat",
+    "dtype": {
+      "type": "string",
+      "layout": "fixed_ascii",
+      "fixed": 4
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:codeset": "msgcatcodeset",
+      "FIX:tag": "65054",
+      "description": "The four-byte business category of the message type.",
+      "display": "MsgCat"
+    }
+  },
+  {
+    "name": "isincode",
+    "dtype": {
+      "type": "isin"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65055",
+      "description": "The normalized ISIN the message identifies.",
+      "display": "IsinCode"
+    }
+  },
+  {
+    "name": "cusipcode",
+    "dtype": {
+      "type": "cusip"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65057",
+      "description": "The normalized CUSIP the message identifies.",
+      "display": "CusipCode"
+    }
+  },
+  {
+    "name": "sedolcode",
+    "dtype": {
+      "type": "sedol"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65058",
+      "description": "The normalized SEDOL the message identifies.",
+      "display": "SedolCode"
+    }
+  },
+  {
+    "name": "bloombergcode",
+    "dtype": {
+      "type": "bloomberg"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65059",
+      "description": "The normalized Bloomberg identifier the message identifies.",
+      "display": "BloombergCode"
+    }
+  },
+  {
+    "name": "miccode",
+    "dtype": {
+      "type": "mic"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65060",
+      "description": "The normalized market MIC the message identifies.",
+      "display": "MicCode"
+    }
+  },
+  {
+    "name": "figicode",
+    "dtype": {
+      "type": "figi"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65061",
+      "description": "The normalized FIGI the message identifies.",
+      "display": "FIGICode"
+    }
+  },
+  {
+    "name": "execunix",
+    "dtype": {
+      "type": "datetime64",
+      "unit": "nanosecond",
+      "timezone": "UTC"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65062",
+      "FIX:transient": "false",
+      "description": "When the message's execution happened: ExecutionTimestamp, an execution TrdRegTimestamp, a proprietary EventTimestamp, or a trade's TransactTime, the first one stated.",
+      "display": "ExecUnix"
+    }
+  },
+  {
+    "name": "recdunix",
+    "dtype": {
+      "type": "datetime64",
+      "unit": "nanosecond",
+      "timezone": "UTC"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65063",
+      "FIX:transient": "false",
+      "description": "When the message was recorded by its carrier, where the carrier states one; the earliest its statements know.",
+      "display": "RecdUnix"
+    }
+  },
+  {
+    "name": "refrecdunix",
+    "dtype": {
+      "type": "datetime64",
+      "unit": "nanosecond",
+      "timezone": "UTC"
+    },
+    "nullable": true,
+    "metadata": {
+      "FIX:tag": "65064",
+      "FIX:transient": "false",
+      "description": "The recording clock of the observation selected as this event's merge reference; the latest its statements know.",
+      "display": "RefRecdUnix"
+    }
+  }
+]

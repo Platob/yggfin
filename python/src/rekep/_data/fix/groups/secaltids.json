@@ -1,0 +1,23 @@
+{
+  "name": "secaltids",
+  "dtype": {
+    "type": "list",
+    "field": {
+      "name": "secaltid",
+      "dtype": {
+        "type": "null"
+      },
+      "nullable": false,
+      "metadata": {
+        "FIX:component": "secaltid"
+      }
+    }
+  },
+  "nullable": false,
+  "metadata": {
+    "FIX:component": "secaltid",
+    "FIX:counter": "454",
+    "FIX:tag": "617267",
+    "display": "SecAltIDs"
+  }
+}

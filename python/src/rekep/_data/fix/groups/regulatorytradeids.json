@@ -1,0 +1,24 @@
+{
+  "name": "regulatorytradeids",
+  "dtype": {
+    "type": "list",
+    "field": {
+      "name": "regulatorytradeidcomponent",
+      "dtype": {
+        "type": "null"
+      },
+      "nullable": false,
+      "metadata": {
+        "FIX:component": "regulatorytradeidcomponent"
+      }
+    }
+  },
+  "nullable": false,
+  "metadata": {
+    "FIX:component": "regulatorytradeidcomponent",
+    "FIX:counter": "1907",
+    "FIX:tag": "497401",
+    "description": "Required if NoRegulatoryTradeIDs(1907) > 0.",
+    "display": "RegulatoryTradeIDs"
+  }
+}

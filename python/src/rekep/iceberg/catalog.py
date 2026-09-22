@@ -9,7 +9,7 @@ from collections.abc import Iterator, Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NamedTuple
 
-from yggdryl import Uri, Url
+from yggdryl import Arn, Uri, Url
 
 from rekep.convert import Convertible
 from rekep.fields import field_of
@@ -34,10 +34,9 @@ S3_TABLES = "s3tables"
 #: The S3 Tables endpoint's own name for a bucket: the table bucket ARN, which
 #: states the region as well. `https://s3tables.<region>.amazonaws.com/iceberg`
 #: serves it, signed for `s3tables`, and Lake Formation is not in that path.
-_TABLE_BUCKET = re.compile(
-    r"^arn:aws[a-z0-9-]*:s3tables:(?P<region>[a-z0-9-]+)"
-    r":(?P<account>\d{12}):bucket/(?P<bucket>[a-z0-9][a-z0-9-]{1,61}[a-z0-9])$"
-)
+#: `yggdryl.Arn` reads the five AWS fields; what is checked here is that they
+#: name a bucket of this service and nothing under it.
+_BUCKET_RESOURCE = "bucket"
 
 #: The Glue endpoint's name for the same bucket, once the table bucket is
 #: integrated with the AWS analytics services and mounted under the
@@ -101,8 +100,8 @@ def _table_bucket(properties: Mapping[str, Any]) -> TableBucket | None:
     if not isinstance(declared, str) or declared.strip().casefold() != S3_TABLES:
         return None
     warehouse = str(properties.get("warehouse") or "").strip()
-    if parsed := _TABLE_BUCKET.match(warehouse):
-        return TableBucket(parsed.group(0), S3_TABLES, parsed["region"])
+    if (arn := _table_bucket_arn(warehouse)) is not None:
+        return TableBucket(warehouse, S3_TABLES, arn.region)
     if parsed := _GLUE_TABLE_BUCKET.match(warehouse):
         return TableBucket(parsed.group(0), "glue", None)
     raise ValueError(
@@ -111,6 +110,29 @@ def _table_bucket(properties: Mapping[str, Any]) -> TableBucket | None:
         "for the S3 Tables endpoint, or <account>:s3tablescatalog/<name> for "
         f"the Glue one; not {warehouse!r}"
     )
+
+
+def _table_bucket_arn(warehouse: str) -> Arn | None:
+    """`warehouse` as the ARN of one table bucket, or None for anything else.
+
+    An ARN of another service, one naming no region, or one reaching under
+    the bucket -- a table, a namespace -- is not the endpoint's name for a
+    bucket, so it is none: the caller says what a warehouse may be.
+    """
+    if not warehouse.startswith("arn:"):
+        return None
+    try:
+        arn = Arn.from_str(warehouse)
+    except ValueError:
+        return None
+    if (
+        arn.service != S3_TABLES
+        or arn.resource_type != _BUCKET_RESOURCE
+        or arn.region is None
+        or "/" in arn.resource_id
+    ):
+        return None
+    return arn
 
 
 def _s3_tables_properties(properties: Mapping[str, str]) -> dict[str, str]:
