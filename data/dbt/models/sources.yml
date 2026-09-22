@@ -6,8 +6,8 @@ version: 2
 # columns the products read and not the full FIX row.
 #
 # All three are declared here because all three are the repository's published
-# contract; only `fix.silver` is read by a model. A product reads the walked
-# rows and never the parsed ones: `fix.bronze` holds the same events under the
+# contract; only `fix.refined` is read by a model. A product reads the walked
+# rows and never the parsed ones: `fix.raw` holds the same events under the
 # identities the parse settled, but nothing there has been placed in its chain
 # yet -- `seqnum` and `prevuuid` are null on every row -- so a product built on
 # it would fold every order from its first event alone.
@@ -20,12 +20,12 @@ sources:
     meta:
       plugin: rekep
     tables:
-      - name: silver
+      - name: refined
         description: >
-          `fix.silver`, keyed on `curruuid`: one row per event, walked, so every
+          `fix.refined`, keyed on `curruuid`: one row per event, walked, so every
           row states the step it follows and the state its chain reached.
         meta:
-          table: fix.silver
+          table: fix.refined
           columns:
             - curruuid
             - srcuuids
@@ -64,13 +64,13 @@ sources:
         columns:
           - name: curruuid
             description: >
-              The event's own identity: a UUIDv7 over the millisecond it
-              settled on, its place in its chain and the code of its content,
+              The event's own identity: a UUIDv7 packing the microsecond of
+              the instant it settled on and the whole code of its content,
               so every hop that logged one message merges into one of these.
           - name: srcuuids
             description: >
-              Native raw-line identities. Join each value to
-              `logs.messages.curruuid` for capture detail.
+              The identities of the lines the event was logged on. Join each
+              value to `logs.messages.curruuid` for capture detail.
           - name: crossuuid
             description: The chain's identity, over the first identifier the message states.
           - name: crosscode
@@ -103,13 +103,13 @@ sources:
           - name: lastpx
             description: The price this occurrence executed at.
 
-      - name: bronze
+      - name: raw
         description: >
-          `fix.bronze`, keyed on `curruuid`: the same events as `fix.silver`,
+          `fix.raw`, keyed on `curruuid`: the same events as `fix.refined`,
           as the parse answered them and before any walk. No model reads it: a
-          product needs the chain, and bronze carries none.
+          product needs the chain, and `fix.raw` carries none.
         meta:
-          table: fix.bronze
+          table: fix.raw
         columns:
           - name: curruuid
             description: >
@@ -122,7 +122,7 @@ sources:
 
   - name: logs
     description: >
-      Raw capture lines, one per physical line, each as the read decoded it.
+      Capture lines, one per physical line, each as the read decoded it.
     schema: logs
     meta:
       plugin: rekep
@@ -142,12 +142,19 @@ sources:
             description: The line's own identity, which every message parsed out of it names as its source.
           - name: currhashcode
             description: >
-              The content code the read states over the line's bytes;
-              identical bytes share it wherever they were read, and are still
-              separate rows.
-          - name: sourceurl
-            description: The capture object the line was read from.
-          - name: rownum
-            description: The physical line number inside that object.
+              The line's content code: the read digests the object it was
+              read from, the header's captures except the clock, its row
+              number and then its body, so two lines of identical bytes
+              answer two codes.
+          - name: crosscode
+            description: >
+              The object the line was read from, as the identifier the read
+              was addressed under: a URL where that is a location, the name
+              itself where a `urn:` or an `arn:` addressed a handle, and null
+              for a buffer nothing addressed.
+          - name: seqnum
+            description: >
+              The physical line number inside that object, counted from 1;
+              the same column a FIX row holds its chain step in.
           - name: body
-            description: The whole line as the read retains it, the row header included.
+            description: The line past its row header, as the read retains it.

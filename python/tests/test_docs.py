@@ -64,7 +64,7 @@ def test_navigation_names_existing_pages() -> None:
 
 def test_docs_publish_the_native_message_contracts() -> None:
     config = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
-    raw_schema = (ROOT / "schemas" / "rekep" / "message.json").read_text(encoding="utf-8")
+    message_schema = (ROOT / "schemas" / "rekep" / "message.json").read_text(encoding="utf-8")
     fix_schema = (ROOT / "schemas" / "rekep" / "fixmsg.json").read_text(encoding="utf-8")
 
     assert Field.__name__ == "Field"
@@ -72,8 +72,8 @@ def test_docs_publish_the_native_message_contracts() -> None:
         "currunix",
         "curruuid",
         "currhashcode",
-        "sourceurl",
-        "rownum",
+        "crosscode",
+        "seqnum",
         "body",
         "msgthreadid",
         "msgsessionid",
@@ -82,8 +82,8 @@ def test_docs_publish_the_native_message_contracts() -> None:
         "msgpluginid",
         "loglevel",
     ]
-    assert "pipeline/tasks/parse-fix-bronze.md" in config
-    assert "pipeline/tasks/parse-fix-silver.md" in config
+    assert "pipeline/tasks/parse-fix-raw.md" in config
+    assert "pipeline/tasks/parse-fix-refined.md" in config
     assert "pipeline/tasks/parse-fix.md" not in config
     assert "pipeline/tasks/build-dbt.md" in config
     assert "market/" not in config
@@ -91,18 +91,12 @@ def test_docs_publish_the_native_message_contracts() -> None:
         "fixmsg.json",
         "message.json",
     ]
-    # The FIX contract is the native projected event row. Raw text remains
-    # solely in Message, linked by the event row's `srcuuids`.
-    assert '"name": "body"' in raw_schema
+    # The FIX contract is the native projected event row. A line's text
+    # remains solely in Message, linked by the event row's `srcuuids`.
+    assert '"name": "body"' in message_schema
     assert '"name": "msgtype"' in fix_schema
     assert '"name": "srcuuids"' in fix_schema
-    for capture in (
-        "sourceurl",
-        "rownum",
-        "msgthreadid",
-        "loglevel",
-        "body",
-    ):
+    for capture in ("msgthreadid", "loglevel", "body"):
         assert f'"name": "{capture}"' not in fix_schema
 
 
@@ -122,16 +116,16 @@ def test_docs_record_the_measured_message_rates() -> None:
 
 
 def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
-    bronze = (DOCS / "pipeline" / "tasks" / "parse-fix-bronze.md").read_text(encoding="utf-8")
-    silver = (DOCS / "pipeline" / "tasks" / "parse-fix-silver.md").read_text(encoding="utf-8")
+    raw = (DOCS / "pipeline" / "tasks" / "parse-fix-raw.md").read_text(encoding="utf-8")
+    refined = (DOCS / "pipeline" / "tasks" / "parse-fix-refined.md").read_text(encoding="utf-8")
     schemas = (ROOT / "schemas" / "README.md").read_text(encoding="utf-8")
 
-    assert "parse_text_arrow_reader" in bronze
-    assert "128-column" in bronze
-    assert "FixMsg" in bronze and "FixMsg" in silver
-    assert "fix_schema_carrying" not in bronze
-    assert "fix_lifecycle_arrow_reader" in silver
-    assert "fix_window_filter" in silver
+    assert "parse_text_arrow_reader" in raw
+    assert "128-column" in raw
+    assert "FixMsg" in raw and "FixMsg" in refined
+    assert "fix_schema_carrying" not in raw
+    assert "fix_lifecycle_arrow_reader" in refined
+    assert "fix_window_filter" in refined
     assert "not alternate implementations" in schemas
     assert "`fixmsg.json`" in schemas
     assert "iceberg_contract" in schemas
@@ -173,8 +167,8 @@ def test_each_task_page_publishes_its_document_verbatim() -> None:
     """
     pages = {
         "pipeline/tasks/parse-messages.md": "parse_messages",
-        "pipeline/tasks/parse-fix-bronze.md": "parse_fix_bronze",
-        "pipeline/tasks/parse-fix-silver.md": "parse_fix_silver",
+        "pipeline/tasks/parse-fix-raw.md": "parse_fix_raw",
+        "pipeline/tasks/parse-fix-refined.md": "parse_fix_refined",
         "pipeline/tasks/build-dbt.md": "build_dbt",
     }
 

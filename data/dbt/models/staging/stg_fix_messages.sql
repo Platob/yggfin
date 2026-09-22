@@ -1,10 +1,11 @@
 -- One FIX message, narrowed to what the order and execution products read.
 --
--- Read off `fix.silver` and never `fix.bronze`: a product needs the chain --
+-- Read off `fix.refined` and never `fix.raw`: a product needs the chain --
 -- the step an event follows, the state its chain reached -- and only the
 -- walked rows carry one. A row here is an event and not a line: the walk
 -- folds every hop that logged one message onto one `curruuid`. Native
--- `srcuuids` retains the raw-line identities for a later `logs.messages` lookup.
+-- `srcuuids` retains the identity of every line the event was logged on, for
+-- a later `logs.messages` lookup.
 --
 -- The native lifecycle owns event time, including expiry: using an inherited
 -- OrigSendingTime would move an expired event back to the send it repeats.
@@ -47,4 +48,4 @@ select
     state,
     ordrejreason,
     "text"
-from {{ source('fix', 'silver') }}
+from {{ source('fix', 'refined') }}

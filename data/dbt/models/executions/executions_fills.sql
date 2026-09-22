@@ -26,7 +26,7 @@
 -- A message becomes a row when it states a quantity and a price this
 -- occurrence executed at. A status-only report states neither and does not
 -- become a zero fill; a stated quantity with no price is not an occurrence
--- this product can price, and both stay in `fix.silver`.
+-- this product can price, and both stay in `fix.refined`.
 --
 -- `executionkey` scopes the venue's execution id by the chain it arrived in.
 -- A bridge relays one execution into every chain it belongs to, so an

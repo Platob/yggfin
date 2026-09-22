@@ -1,6 +1,6 @@
 {
-  "name": "parse_fix_bronze",
-  "application": "parse_fix_bronze.py",
+  "name": "parse_fix_raw",
+  "application": "parse_fix_raw.py",
   "parameters": {
     "messages": "logs.messages",
     "registry": null,

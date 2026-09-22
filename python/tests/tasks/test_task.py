@@ -20,8 +20,8 @@ DOCUMENTS = sorted((ROOT / "tasks").glob("*/*.json"))
 NAMES = (
     "build_dbt",
     "optimize_iceberg",
-    "parse_fix_bronze",
-    "parse_fix_silver",
+    "parse_fix_raw",
+    "parse_fix_refined",
     "parse_messages",
 )
 
@@ -53,7 +53,7 @@ def test_every_document_declares_its_parameters(document: Path) -> None:
     if document.stem == "parse_messages":
         assert set(parameters) == {"filesystem", "rowheader", "start", "end", "catalog"}
         assert parameters["start"] is None and parameters["end"] is None, "the last day"
-    elif document.stem == "parse_fix_bronze":
+    elif document.stem == "parse_fix_raw":
         assert set(parameters) == {
             "messages",
             "registry",
@@ -65,16 +65,16 @@ def test_every_document_declares_its_parameters(document: Path) -> None:
         assert parameters["messages"] == "logs.messages"
         assert parameters["codec_options"] is None
         assert parameters["start"] is None and parameters["end"] is None, "the last day"
-    elif document.stem == "parse_fix_silver":
+    elif document.stem == "parse_fix_refined":
         assert set(parameters) == {
-            "bronze",
+            "raw",
             "registry",
             "codec_options",
             "start",
             "end",
             "catalog",
         }
-        assert parameters["bronze"] == "fix.bronze"
+        assert parameters["raw"] == "fix.raw"
         assert parameters["codec_options"] is None
         assert parameters["start"] is None and parameters["end"] is None, "the last day"
     elif document.stem == "build_dbt":

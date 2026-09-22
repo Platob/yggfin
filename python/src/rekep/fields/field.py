@@ -30,11 +30,11 @@ SORT_ORDER = "ICEBERG:sort_order"
 #: writes; a transform is this package's `PARTITION_KEY` beside it.
 IDENTITY_PARTITION = "FIELD:partition"
 
-#: The transform every capture table is laid out by, named once.
+#: The transform every table here is laid out by, named once.
 #:
 #: Every published table takes it over `currunix`, the instant its own read
 #: settled: the hour a line was printed in on `logs.messages`, the hour its
-#: message happened in on `fix.bronze` and `fix.silver`. One hour of a busy
+#: message happened in on `fix.raw` and `fix.refined`. One hour of a busy
 #: bridge is a file a scan can skip whole, and a run's window is a whole
 #: number of them, so a replay replaces exactly the partitions it covers.
 #: What tells the three apart is the key, not the layout.
@@ -182,22 +182,24 @@ def stored_arrow_reader(
     """Any stage's rows as a table stores them, ready for the write.
 
     The one storage boundary every task crosses: the text read's rows on
-    their way into `logs.messages`, the parse's into `fix.bronze`, the walk's
-    into `fix.silver`. Projecting onto `field` is most of it, and the field
+    their way into `logs.messages`, the parse's into `fix.raw`, the walk's
+    into `fix.refined`. Projecting onto `field` is most of it, and the field
     apply does that for free -- a column the stage carried and the table does
     not declare is dropped here rather than written.
 
-    The rest exists for one column type. A content code is an unsigned
-    sixty-four-bit integer and Iceberg's only sixty-four-bit integer is
-    signed, so a code above 2**63 has no `int64` to be cast to: the native
-    cast refuses it rather than wrapping, and PyIceberg's own metrics refuse
-    it a second time when it packs the column's bounds. The same eight bytes
-    read as signed are the code, so the column is *viewed* rather than
-    converted: one zero-copy reinterpretation per batch, no row pass, and a
-    filter on either side names the same rows.
+    The rest exists for one column type: the unsigned sixty-four-bit integer
+    the read states a content code and a row number at. Iceberg's only
+    sixty-four-bit integer is signed, so a code above 2**63 has no `int64` to
+    be cast to: the native cast refuses it rather than wrapping, and
+    PyIceberg's own metrics refuse it a second time when it packs the
+    column's bounds. The same eight bytes read as signed are the code, so the
+    column is *viewed* rather than converted: one zero-copy reinterpretation
+    per batch, no row pass, and a filter on either side names the same rows.
 
-    The field apply runs after it, in its native order, so the cast, the
-    derived partitions and the digests still happen where they always did.
+    The field apply runs after it, in its native order, so the cast -- a
+    nanosecond instant to the microsecond a table holds, a `uuid` to the
+    sixteen bytes it keys on -- the derived partitions and the digests still
+    happen where they always did.
     """
     stored = field.into_arrow_schema()
     unsigned = [

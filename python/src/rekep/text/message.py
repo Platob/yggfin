@@ -60,8 +60,9 @@ class Message(Convertible):
     """One ULBridge text line, before the FIX codec reads its body.
 
     Every column is one the native text read already states, under the name
-    the read states it with: the event it settles over the line, the two
-    columns its traversal names, the line itself, and the bridge's own
+    the read states it with: the event it settles over the line -- its
+    instant, its identity, its content code, the object it was read from and
+    its row number -- the line past its header, and the bridge's own
     captures. Four of those are named for the fields a parse fills from them,
     so a stored row goes on through the codec without one spelling being
     translated into another; the two the graph names nothing for --
@@ -79,18 +80,21 @@ class Message(Convertible):
     materialized copy of it would be a second owner of one fact.
 
     It is the clock the bridge stamped the *line* with, read off the header's
-    `mtime` capture, so it dates no message and never reaches one. What dates
-    a message is what the message states -- the `TransactTime` or event
+    `mtime` capture, so it dates no message: a message parsed out of the line
+    keeps it as `recdunix` and `refrecdunix`, the instant it was recorded at,
+    and is dated by what it states -- the `TransactTime` or event
     `TrdRegTimestamp` standing within the codec's `official_time_delay_ms` of
     its `SendingTime`, else that `SendingTime`, else the one instant the codec
     is pinned with, which the walk then replaces by the `TransactTime` it
-    states -- so the same bytes logged at
-    three hops settle on one instant however each line was stamped.
+    states -- so the same bytes logged at three hops settle on one instant
+    however each line was stamped.
 
-    A line the header could not date settles at `EPOCH`, the same pin an
-    undated message takes in `fix.bronze`: one hour of one partition, read
-    back into every window, and the same instant on every re-read of those
-    bytes -- which is what keeps the identity below a replay answers again.
+    A line the header could not date takes the modification time of the
+    object it was read from -- the one clock the read has left for it, and
+    the same instant on every re-read of that object -- and `EPOCH` only
+    where a handle has none. The identity below is derived from this instant,
+    which is why a capture is replayed from where it was read and never from
+    a copy written at another time.
     """
 
     curruuid: Annotated[
@@ -102,6 +106,9 @@ class Message(Convertible):
 
     A text line is an event of the graph, and the read stamps every row with
     the columns an event opens with; this is the one of them a message keeps.
+    A UUIDv7 packing the microsecond of `currunix` and the whole
+    sixty-four-bit content code below -- no seed, no sequence bits -- so it is
+    derived from the instant the line settled on and what the line holds.
     A message parsed out of a stored line names it here and nowhere else --
     as its `srcuuids`, exact provenance rather than an identity recomputed
     from the bytes -- so a FIX row joins the line it was read from on this
@@ -119,39 +126,61 @@ class Message(Convertible):
     ] = 0
     """The line's own content code, as the native text read states it.
 
-    A text line is an event of the graph and the read codes its content, so
-    identical bytes answer one code -- and nothing here computes a second
-    digest beside the one the read already states. It is content metadata,
-    not table identity; `curruuid` is the only key.
+    A text line is an event of the graph and the read codes the line: its
+    cross code, the header's captures except the clock, its row number and
+    then its body, in that order, so two lines of identical bytes answer two
+    codes -- and nothing here computes a second digest beside the one the
+    read already states. It is content metadata, not table identity;
+    `curruuid` is the only key.
 
     It is the line's code and not a message's. A FIX row's `currhashcode`
     covers the settled event -- its facts, its text, its metadata and its
     entry tree -- so two lines that state one message share that code and not
-    this one, which is why a FIX row holds neither this column nor the bytes
-    it was read from.
+    this one, which is why a FIX row carries its own code under this name and
+    never a line's, nor the bytes the line was read from.
 
     A content code is unsigned and the read states it that way. Iceberg's
     only sixty-four-bit integer is signed, so this contract declares the type
-    a table holds and `read_field` widens it back for the read alone: the same
+    a table holds and `read_field` states the read's own, unsigned: the same
     eight bytes cross the boundary through
     `rekep.fields.stored_arrow_reader`, and half of them read back negative.
     """
 
-    sourceurl: str = ""
-    """Canonical URI of the source text object, stored only on the raw line."""
+    crosscode: str | None = None
+    """The object the line was read from, as the native text read states it.
 
-    rownum: int = 0
-    """1-based physical line number within the source object."""
+    The canonical text of the identifier the read was addressed under -- the
+    URL where that is a location, which is the common case, and the name
+    itself where a handle is addressed by a `urn:` or an `arn:`, never the
+    place a name resolves to. Nullable because a line read from a buffer
+    nothing addressed names no object. A FIX row fills the column with
+    something else -- the chain's business identifier, as its `seqnum` is
+    the chain's step -- and `srcuuids` is the join between the two shapes,
+    not this column.
+    """
+
+    seqnum: int | None = None
+    """The line's row number, as the native text read states it.
+
+    Counted from `start_rownum`, so the first line of an object is 1, and the
+    read states no place -- null -- where the number is zero. A `uint64` in
+    the read and the signed `long` Iceberg has here, viewed across the
+    boundary like the content code. A FIX row's `seqnum` is the step the walk
+    placed the message at in its chain, and empty until one has.
+    """
 
     body: str = ""
-    """The whole line as the native read retains it, the row header included.
+    """The line past its row header, as the native read retains it.
 
-    Text, because that is what the read decoded it to. The captures below are
-    read off it, not cut out of it. `logs.messages` is where the line lives
-    and the only place, and so is the code beside it: neither FIX table holds
-    either, because a row there is an event and both of these are one line's.
-    A FIX row names the raw line's `curruuid` in `srcuuids`; capture details
-    are looked up on that raw identity.
+    Text, because that is what the read decoded it to, and what follows the
+    bracket: the captures below are what the header stated, and the body is
+    what the bridge printed after it -- empty exactly where the header
+    consumed the line. `logs.messages` is where the line lives and the only
+    place: neither FIX table holds a body, because a row there is an event
+    and a body is one line's, and the `currhashcode` a FIX row carries under
+    the same name is that event's own code, never the line's. A FIX row
+    names the line's `curruuid` in `srcuuids`; capture details are looked up
+    on that identity.
     """
 
     msgthreadid: int | None = None
@@ -191,9 +220,11 @@ class Message(Convertible):
     """Severity the bridge logged the line at, as its header spells it."""
 
     def __post_init__(self) -> None:
-        """Normalize the raw scalar values once."""
-        self.sourceurl = str(self.sourceurl)
-        self.rownum = int(self.rownum)
+        """Normalize the scalar values once."""
+        if self.crosscode is not None:
+            self.crosscode = str(self.crosscode)
+        if self.seqnum is not None:
+            self.seqnum = int(self.seqnum)
         currunix = datetime_of(self.currunix)
         if currunix is None:
             raise ValueError(f"currunix={self.currunix!r} is not an instant")
@@ -215,12 +246,12 @@ class Message(Convertible):
     #: it, and this contract keeps the settled instant alone.
     RECORD_CLOCK = "mtime"
 
-    #: What a row header does not fill, because something else does: the two
-    #: the traversal names, the payload it frames, and the event the read
-    #: settles over the line.
-    READ_COLUMNS = frozenset(
-        {"sourceurl", "rownum", "body", "currunix", "curruuid", "currhashcode"}
-    )
+    #: What a row header does not fill, because the read itself does: the
+    #: columns a bare text read states with no header at all -- the event it
+    #: settles over every line and the line itself -- read off the native
+    #: options rather than listed here, so a column the read grows is never a
+    #: capture this contract expects a header to name.
+    READ_COLUMNS = frozenset(member.name for member in TextOptions().source_field())
 
     @classmethod
     def captures(cls) -> frozenset[str]:
@@ -245,23 +276,24 @@ class Message(Convertible):
         )
 
     @classmethod
-    def read_field(cls) -> Field:
+    def read_field(cls, rowheader: str | None = None) -> Field:
         """This contract as the read states it, rather than as a table holds it.
 
-        One column apart: a content code is unsigned and the read answers it
-        that way, while Iceberg's only sixty-four-bit integer is signed. The
-        read is given the wide type, because a code above 2**63 has no `int64`
-        to be cast to and the native apply refuses it rather than wrapping;
-        `rekep.fields.stored_arrow_reader` views the same eight bytes back
-        into the stored type on the way to the table.
+        A projection of `TextOptions.source_field()` -- the row the native
+        read answers before a byte is read -- onto the columns this contract
+        declares, in this contract's order and at the read's own types: the
+        instant at nanoseconds, the identity as a `uuid`, the content code and
+        the row number unsigned. The table's types are the storage boundary's
+        business, `rekep.fields.stored_arrow_reader`, which views the two
+        unsigned columns into the signed integer Iceberg has and casts the
+        rest in the field's native order; a code above 2**63 has no `int64`
+        to be cast to, so it is never cast.
         """
+        stated = cls._read_options(rowheader).source_field().into_arrow_schema()
         declared = cls.into_field().into_arrow_schema()
         return Field.from_arrow_schema(
             pyarrow.schema(
-                [
-                    member.with_type(pyarrow.uint64()) if member.name == "currhashcode" else member
-                    for member in declared
-                ],
+                [stated.field(member.name) for member in declared],
                 metadata=declared.metadata,
             ),
             name=cls.__name__,
@@ -275,7 +307,7 @@ class Message(Convertible):
         field on it -- the two are pinned equal by `test_message.py`, because a
         capture this read frames and that one does not is a column the codec
         silently stops filling. It is spelled twice rather than imported so a
-        raw text row stays readable without the dictionary behind it.
+        text row stays readable without the dictionary behind it.
 
         `rowheader` reads a bridge that writes these same facts in a layout of
         its own: a different clock precision, a bracket ordered differently,
@@ -286,15 +318,29 @@ class Message(Convertible):
         omits it leaves a column no bridge fills. Both are checked here, where
         the mismatch is still legible.
         """
+        options = cls._read_options(rowheader)
+        if rowheader is not None:
+            cls._check_captures(options)
+        options.field = cls.read_field(rowheader)
+        return options
+
+    @classmethod
+    def _read_options(cls, rowheader: str | None) -> TextOptions:
+        """The read before its field: the header, the clock and the numbering.
+
+        `parse_mtime` is the native default, on: the header's `mtime` capture
+        dates the line into `currunix` and has no column beside it, and a
+        line the header did not date takes the handle's own modification
+        time, else the epoch. Off, every line would take the handle's time --
+        one instant for a whole day of lines -- and the capture would land as
+        a column of its own. `start_rownum` numbers the first line 1, which
+        is what `seqnum` then states.
+        """
         options = TextOptions()
         options.start_rownum = 1
-        options.parse_mtime = False
         options.rowheader = ULBRIDGE_ROWHEADER if rowheader is None else rowheader
         options.timezone = "UTC"
         options.safe = False
-        options.field = cls.read_field()
-        if rowheader is not None:
-            cls._check_captures(options)
         return options
 
     @classmethod
@@ -314,6 +360,6 @@ class Message(Convertible):
 
     @classmethod
     def from_text(cls, text: str | bytes, **declared: Any) -> Self:
-        """Build one raw record without interpreting its body."""
+        """Build one text record without interpreting its body, `text` past the header."""
         declared["body"] = decoded(text) if isinstance(text, bytes) else text
         return cls(**declared)

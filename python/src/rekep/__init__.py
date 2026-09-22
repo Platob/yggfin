@@ -1,4 +1,4 @@
-"""Stream raw text records through FIX into Iceberg data products."""
+"""Stream captured text lines through FIX into Iceberg data products."""
 
 from importlib.metadata import version as package_version
 

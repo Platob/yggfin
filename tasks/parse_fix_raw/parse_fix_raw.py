@@ -9,9 +9,11 @@ with app.setup:
 
     import marimo as mo
     import pyarrow
+
     from rekep.fields import stored_arrow_reader
     from rekep.fix import (
         EVENT_CLOCK,
+        PARSE_COLUMNS,
         fix_codec,
         fix_message_field,
         fix_parse_arrow_reader,
@@ -23,13 +25,13 @@ with app.setup:
     from rekep.text import Message
     from rekep.times import window_of
 
-    TARGET = "fix.bronze"
+    TARGET = "fix.raw"
 
 
 @app.cell(hide_code=True)
 def _():
     mo.md("""
-    # Parse FIX: bronze
+    # Parse FIX: raw
 
     Read one window of stored capture lines into parsed FIX rows: every frame
     a line carried, settled where it is read, and nothing walked.
@@ -62,16 +64,16 @@ def _(catalog, codec_options, end, messages, records, registry, start):
     with ExitStack() as opened:
         # The same window `parse_messages` wrote, read back off the stored
         # capture: `[start, end)` over `currunix`, the event the read settled
-        # over each line, with the lines at the epoch pin beside them, because
-        # a line the reader could not stamp belongs to every window. It is the
-        # partition column itself and it is never null, so Iceberg projects
-        # the bounds through the hour transform and opens the partitions the
-        # window touches and the pin's own hour, and nothing else.
+        # over each line, with the lines at the epoch pin beside them, where
+        # a handle with no clock at all leaves a line. It is the partition
+        # column itself and it is never null, so Iceberg projects the bounds
+        # through the hour transform and opens the partitions the window
+        # touches and the pin's own hour, and nothing else.
         window = window_of(start, end)
         stage = Stage(
-            "parse_fix_bronze",
+            "parse_fix_raw",
             sources={"messages": messages},
-            targets={"bronze": TARGET},
+            targets={"raw": TARGET},
             window=window,
         )
         store = IcebergCatalog.from_dict(catalog)
@@ -79,7 +81,14 @@ def _(catalog, codec_options, end, messages, records, registry, start):
         carrier = Message.into_field()
         lines = store.dataset(messages, field=carrier)
         opened.callback(lines.close)
-        source = lines.read_arrow_reader(carrier, row_filter=window_filter(EVENT_CLOCK, window))
+        # Projected to what the parse consumes -- the line's clock and
+        # identity, the body it reads the frames out of, and the four
+        # captures that fill a field by their name -- so the scan opens no
+        # other column: the line's own code, cross code and row number say
+        # nothing about a message, and the thread and level name no field.
+        source = lines.read_arrow_reader(
+            carrier, row_filter=window_filter(EVENT_CLOCK, window), columns=PARSE_COLUMNS
+        )
         opened.callback(source.close)
         counts = {"read": 0, "messages": 0}
 
@@ -110,7 +119,7 @@ def _(catalog, codec_options, end, messages, records, registry, start):
         # one message logged at three hops answers three rows of one identity,
         # which is what the key below folds. `seqnum` and `prevuuid` are empty
         # on every row, because nothing has placed a message in its chain yet;
-        # that is `parse_fix_silver`'s reading of this table.
+        # that is `parse_fix_refined`'s reading of this table.
         parsed = fix_parse_arrow_reader(codec, counted)
         opened.callback(parsed.close)
 
@@ -128,8 +137,8 @@ def _(catalog, codec_options, end, messages, records, registry, start):
         # Iceberg stores, then the field applied in its native order.
         applied = stored_arrow_reader(answered, field)
         opened.callback(applied.close)
-        bronze = store.dataset(TARGET, field=field, merge_schema=True)
-        opened.callback(bronze.close)
+        raw = store.dataset(TARGET, field=field, merge_schema=True)
+        opened.callback(raw.close)
         # What the window answers replaces what the table held under the same
         # `curruuid`, so a replay lands the same events again and a message
         # logged at every hop it passed lands once. A key is scoped to its
@@ -137,7 +146,7 @@ def _(catalog, codec_options, end, messages, records, registry, start):
         # event's own instant: every restatement of one event carries the same
         # one, so they meet. A message the parse could not date sits at the
         # codec's pin -- one hour, one partition -- until the walk dates it.
-        written = bronze.overwrite_arrow_reader(applied, field, merge_by=True)
+        written = raw.overwrite_arrow_reader(applied, field, merge_by=True)
         # A row is a message, not a line: one line carrying two frames answers
         # two and one carrying none answers nothing, so what the write left
         # out -- a restatement of an identity already landed -- is counted

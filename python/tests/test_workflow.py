@@ -1,4 +1,4 @@
-"""Raw and FIX ingestion over the checked-in fixture and a replay, in three steps."""
+"""Text and FIX ingestion over the checked-in fixture and a replay, in three steps."""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
 FIX_CONTRACT = ROOT / "schemas" / "rekep" / "fixmsg.json"
-WORKFLOW = (("parse_messages", {}), ("parse_fix_bronze", {}), ("parse_fix_silver", {}))
+WORKFLOW = (("parse_messages", {}), ("parse_fix_raw", {}), ("parse_fix_refined", {}))
 EPOCH = datetime.datetime(1970, 1, 1, tzinfo=UTC)
 
 #: The day the bridge fixture was captured on. A task covers the last day
@@ -44,21 +44,24 @@ WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
 
 #: What the bridge fixture's 144 physical rows produce, first run.
 #:
-#: `logs.messages` is keyed on `curruuid`, and the native identity carries the
-#: line's place in the read beside its content code, so the 3 exact repeated
-#: lines are 3 rows and every line lands.
+#: `logs.messages` is keyed on `curruuid`, and the native code digests the
+#: line's row number and its object beside its bytes, so the 3 exact repeated
+#: lines are 3 rows and every line lands. The shipped header dates all 144, so
+#: the window's read answers every one of them.
 #: A FIX row is a message and not a line -- prose
 #: answers none and a line carrying two frames answers two -- and
-#: `fix.bronze` is keyed on `curruuid`, so the 79 messages those 144 lines
+#: `fix.raw` is keyed on `curruuid`, so the 79 messages those 144 lines
 #: carry settle on 49 events the capture describes. The walk merges the
-#: observations of one event and adds one expiry, so `fix.silver` reads 49
-#: and writes 22. The gaps
-#: are the point of the keys: one raw identity is one line and the same message
-#: logged at every hop is one event.
+#: observations of one event and adds one expiry, so `fix.refined` reads 49
+#: and writes 19: every line carries the session, context and sequence the
+#: fold merges on, so it folds more than it did when fifteen lines were left
+#: unmatched. The gaps
+#: are the point of the keys: one line identity is one line and the same
+#: message logged at every hop is one event.
 FIRST = {
     "parse_messages": {"read": 144, "written": 144, "skipped": 0},
-    "parse_fix_bronze": {"read": 144, "written": 49, "skipped": 30},
-    "parse_fix_silver": {"read": 49, "written": 22, "skipped": 0},
+    "parse_fix_raw": {"read": 144, "written": 49, "skipped": 30},
+    "parse_fix_refined": {"read": 49, "written": 19, "skipped": 0},
 }
 
 #: What a replay of the same window produces: the same reads and the same
@@ -69,19 +72,19 @@ REPLAY = FIRST
 #: Stored rows after both runs, and the two snapshots each table then holds.
 STORED = {
     "logs.messages": 144,
-    "fix.bronze": 49,
-    "fix.silver": 22,
+    "fix.raw": 49,
+    "fix.refined": 19,
 }
 
 #: The business identifier whose persisted lifecycle chain anchors the
 #: acceptance assertions.
 CHAIN = "00026877711XOEA0"
 CHAIN_EVENTS = 4
-CHAIN_LAST_STEP = 2
+CHAIN_LAST_STEP = 1
 
 #: How many events the parse could not date: the messages that stated no
-#: `SendingTime`, which sit at the codec's pin in `fix.bronze` until the walk
-#: dates them by their `TransactTime` -- so no silver row is at the pin.
+#: `SendingTime`, which sit at the codec's pin in `fix.raw` until the walk
+#: dates them by their `TransactTime` -- so no refined row is at the pin.
 PINNED = 33
 
 
@@ -209,19 +212,22 @@ def sources(rows: pyarrow.Table) -> list[bytes]:
 def test_the_workflow_publishes_ulbridge_and_a_replay_writes_nothing(ran: Ran) -> None:
     first = ran.workflow()
     assert {name: counted(result) for name, result in first.items()} == FIRST
-    assert first["parse_fix_bronze"]["messages"] == 79
+    assert first["parse_fix_raw"]["messages"] == 79
     assert ran.rows() == STORED
     messages = ran.table("logs.messages")
     assert messages.schema.equals(Message.into_field().into_arrow_schema(), check_metadata=False)
     assert messages.schema.field(EVENT_CLOCK).type == pyarrow.timestamp("us", tz="UTC")
     instants = {
-        row["rownum"]: row[EVENT_CLOCK]
-        for row in messages.select(("rownum", EVENT_CLOCK)).to_pylist()
+        row["seqnum"]: row[EVENT_CLOCK]
+        for row in messages.select(("seqnum", EVENT_CLOCK)).to_pylist()
     }
     assert instants[1] == datetime.datetime(2026, 8, 14, 14, 46, 39, 769000, tzinfo=UTC)
-    # A line the row header did not match settles at the pin, and its row says
-    # so rather than being dropped or dated by the run.
-    assert any(instant == EPOCH for instant in instants.values())
+    # The shipped header dates every line of this capture, the fifteen that
+    # group their micros included: no line takes the file's modification
+    # time, and none is at the pin, which dates a line only where its handle
+    # has no clock.
+    assert not any(instant == EPOCH for instant in instants.values())
+    assert set(instants) == set(range(1, 145)), "the row number the read counts from 1"
     # The read states an identity over every line, and states a different one
     # for every line: the column is not a constant the declaration filled in.
     identities = messages.column("curruuid").to_pylist()
@@ -246,32 +252,31 @@ def test_every_result_is_the_shape_a_route_reads(ran: Ran) -> None:
             "end": unix_of("2026-08-15"),
         }, "the window a run covered is what its result reports"
         assert len(json.dumps(result)) < 4096, "XCom carries a summary, never a payload"
-    assert result["targets"] == {"silver": "fix.silver"}
-    assert result["sources"] == {"bronze": "fix.bronze"}
+    assert result["targets"] == {"refined": "fix.refined"}
+    assert result["sources"] == {"raw": "fix.raw"}
 
 
-def test_a_window_the_capture_falls_outside_reads_every_line_and_writes_none(ran: Ran) -> None:
-    """The default window is the last day, and the fixture is not in it."""
+def test_a_window_the_capture_falls_outside_reads_nothing_and_writes_none(ran: Ran) -> None:
+    """The default window is the last day, and the fixture is not in it. The
+    window is the read's own `where`, so the read answers no line at all --
+    every one of the fixture's lines is dated by its header, on a day the
+    window does not cover -- and the table is created empty."""
     result = ran.task("parse_messages", filesystem=FIXTURE.as_uri())
 
-    # Every line is read; only the ones the window covers are written. A line
-    # the row header did not match carries no clock and is in every window, so
-    # what lands is exactly those and nothing the capture dated.
-    assert result["read"] == 144
-    unstamped = result["written"]
-    assert 0 < unstamped < 144
-    assert ran.rows() == {"logs.messages": unstamped}
-    assert ran.table("logs.messages").column(EVENT_CLOCK).to_pylist() == [EPOCH] * unstamped
+    assert counted(result) == {"read": 0, "written": 0, "skipped": 0}
+    assert ran.rows() == {"logs.messages": 0}
 
-    bronze = ran.task("parse_fix_bronze")
-    assert bronze["read"] == unstamped
-    # An unstamped line's message states no sending clock either, so it sits
-    # at the pin -- and a bronze row at the pin is read by the transaction
-    # time the walk will date it with, which the fixture's messages state and
-    # which is the fixture's day, not the last one.
-    assert bronze["written"] > 0
-    assert ran.task("parse_fix_silver")["read"] == 0
-    assert ran.task("parse_fix_silver", **WINDOW)["read"] == bronze["written"]
+    raw = ran.task("parse_fix_raw")
+    assert counted(raw) == {"read": 0, "written": 0, "skipped": 0}
+    assert counted(ran.task("parse_fix_refined")) == {"read": 0, "written": 0, "skipped": 0}
+    # And a line the header could not date is dated by its object's own
+    # modification time, so it is in the window that covers that instant.
+    unframed = ran.root / "unframed.log"
+    unframed.write_bytes(b"one physical line\n")
+    written = ran.task("parse_messages", filesystem=unframed.as_uri())
+    assert counted(written) == {"read": 1, "written": 1, "skipped": 0}
+    assert ran.table("logs.messages").column("msgpluginid").to_pylist() == [None]
+    assert ran.table("logs.messages").column(EVENT_CLOCK).to_pylist() != [EPOCH]
 
 
 def test_a_window_replaces_only_the_lines_it_covers(ran: Ran) -> None:
@@ -292,12 +297,11 @@ def test_a_window_replaces_only_the_lines_it_covers(ran: Ran) -> None:
         end="2026-08-14T14:46:40",
     )
 
-    # Every line is read and the window decides which are written: the dated
-    # ones before the cut, and the ones the row header could not stamp, which
-    # belong to every window.
-    assert first["read"] == 144
-    assert first["written"] == STORED["logs.messages"] - later
-    assert first["skipped"] == 144 - first["written"]
+    # The window is the read's own `where`, so what the run read is what the
+    # window covers: the dated lines before the cut, and nothing it did not
+    # write.
+    assert first["read"] == first["written"] == STORED["logs.messages"] - later
+    assert first["skipped"] == 0
     assert ran.rows() == {"logs.messages": STORED["logs.messages"]}, (
         "the later lines were not the run's to touch"
     )
@@ -315,7 +319,7 @@ def test_an_empty_capture_is_read_and_produces_nothing(ran: Ran, tmp_path: Path)
     assert result["targets"] == {"messages": "logs.messages"}
 
 
-@pytest.mark.parametrize("name", ["parse_fix_bronze", "parse_fix_silver"])
+@pytest.mark.parametrize("name", ["parse_fix_raw", "parse_fix_refined"])
 def test_a_fix_stage_refuses_an_empty_registry_before_creating_a_table(
     ran: Ran, tmp_path: Path, name: str
 ) -> None:
@@ -335,10 +339,8 @@ def test_a_fix_stage_refuses_an_empty_registry_before_creating_a_table(
     assert ran.rows() == {}, "a missing dictionary cannot leave a narrow FIX table"
 
 
-def test_a_bronze_task_forwards_codec_options_without_rewriting_text(
-    ran: Ran, tmp_path: Path
-) -> None:
-    """FIX codec options cross the task boundary unchanged; text stays raw."""
+def test_a_raw_task_forwards_codec_options_without_rewriting_text(ran: Ran, tmp_path: Path) -> None:
+    """FIX codec options cross the task boundary unchanged; the text is not rewritten."""
     capture = tmp_path / "prefixed.log"
     capture.write_bytes(
         b"2026-08-14 12:46:39.769 [1] [ULBridge] (INFO) "
@@ -347,15 +349,15 @@ def test_a_bronze_task_forwards_codec_options_without_rewriting_text(
 
     ran.task("parse_messages", filesystem=capture.as_uri(), **WINDOW)
     result = ran.task(
-        "parse_fix_bronze",
+        "parse_fix_raw",
         codec_options={"threads": 2, "batch_row_size": 2},
         **WINDOW,
     )
 
     assert result["messages"] == result["written"] == 1
-    bronze = ran.table("fix.bronze")
-    assert bronze.column("msgtype").to_pylist() == ["D"]
-    assert bronze.column("clordid").to_pylist() == ["OPTION-1"]
+    raw = ran.table("fix.raw")
+    assert raw.column("msgtype").to_pylist() == ["D"]
+    assert raw.column("clordid").to_pylist() == ["OPTION-1"]
 
 
 def test_the_official_clock_delay_is_a_pin_the_task_forwards(
@@ -381,9 +383,9 @@ def test_the_official_clock_delay_is_a_pin_the_task_forwards(
         root.mkdir()
         held = Ran(root, capsys)
         held.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
-        held.task("parse_fix_bronze", **pinned, **WINDOW)
+        held.task("parse_fix_raw", **pinned, **WINDOW)
         rows = (
-            held.table("fix.bronze")
+            held.table("fix.raw")
             .select((EVENT_CLOCK, "sendingtime", TRANSACTION_CLOCK))
             .to_pylist()
         )
@@ -423,7 +425,7 @@ def test_a_narrow_dictionary_still_answers_every_event(ran: Ran, tmp_path: Path)
     symbol.fix.tag = 55
     FixRegistry.from_fields([sending_time, symbol]).write_into(registry)
 
-    result = ran.task("parse_fix_bronze", registry=registry.as_uri(), **WINDOW)
+    result = ran.task("parse_fix_raw", registry=registry.as_uri(), **WINDOW)
 
     assert result["read"] == STORED["logs.messages"]
     assert result["messages"] == 79
@@ -432,26 +434,26 @@ def test_a_narrow_dictionary_still_answers_every_event(ran: Ran, tmp_path: Path)
     # while this narrow registry retains `/account:0=PBRK6_EDA` as one extra
     # residual entry (63 rather than 62), so the canonical hashes differ.
     assert counted(result)["written"] == 51
-    bronze = ran.table("fix.bronze")
-    assert bronze.num_rows == 51
-    assert "msgtype" not in bronze.column_names
-    assert bronze.num_columns == 35
+    raw = ran.table("fix.raw")
+    assert raw.num_rows == 51
+    assert "msgtype" not in raw.column_names
+    assert raw.num_columns == 35
     # The table is the dictionary's shape, and its clocks are stored at the
     # precision Iceberg v2 holds.
-    assert bronze.schema.field("sendingtime").type == pyarrow.timestamp("us", tz="UTC")
-    assert bronze.schema.field(EVENT_CLOCK).type == pyarrow.timestamp("us", tz="UTC")
-    assert not {"sourceurl", "rownum", "body"} & set(bronze.column_names)
-    assert bronze.column("srcuuids").null_count == 0
+    assert raw.schema.field("sendingtime").type == pyarrow.timestamp("us", tz="UTC")
+    assert raw.schema.field(EVENT_CLOCK).type == pyarrow.timestamp("us", tz="UTC")
+    assert "body" not in raw.column_names
+    assert raw.column("srcuuids").null_count == 0
     # The walk is another matter: a chain is read off what a message is, and
     # a dictionary that cannot name a message's type places none of them. The
-    # silver run reads every bronze row of the window and lands no row, under
+    # refined run reads every `fix.raw` row of the window and lands no row, under
     # the same shape, rather than guessing at a chain.
-    walked = ran.task("parse_fix_silver", registry=registry.as_uri(), **WINDOW)
+    walked = ran.task("parse_fix_refined", registry=registry.as_uri(), **WINDOW)
     # No narrow row has a typed message category to enter lifecycle, so the
     # task reports no emitted or deduplicated candidate.
     assert counted(walked) == {"read": 51, "written": 0, "skipped": 0}
-    assert ran.table("fix.silver").num_rows == 0
-    assert ran.table("fix.silver").schema.equals(bronze.schema)
+    assert ran.table("fix.refined").num_rows == 0
+    assert ran.table("fix.refined").schema.equals(raw.schema)
 
 
 def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> None:
@@ -478,24 +480,24 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
     )
     source = pyarrow.RecordBatchReader.from_batches(schema, [batch])
     store = IcebergCatalog.from_dict(ran.catalog)
-    fixes = store.dataset("fix.bronze", field=field)
+    fixes = store.dataset("fix.raw", field=field)
     try:
         assert fixes.overwrite_arrow_reader(source, field, merge_by=True) == 1
         stored = fixes.read_arrow_table(field)
         assert stored.num_rows == 1
         assert stored.num_columns == 128
         # The native row has event facts only. `srcuuids`, where present,
-        # joins it to raw lines without copying captures into this table.
+        # joins it to stored lines without copying captures into this table.
         assert "body" not in stored.column_names
         assert "currhashcode" in stored.column_names
         assert "srcuuids" in stored.column_names
-        assert not {"sourceurl", "rownum", "body", "loglevel"} & set(stored.column_names)
+        assert not {"body", "loglevel", "msgthreadid"} & set(stored.column_names)
     finally:
         fixes.close()
         store.close()
 
 
-def test_a_raw_table_of_the_previous_shape_is_a_table_of_its_own(ran: Ran) -> None:
+def test_a_text_table_of_the_previous_shape_is_a_table_of_its_own(ran: Ran) -> None:
     """The event the read settles is stated on every row, so a table that
     never held it is not this one: Iceberg adds no required column to rows
     that never had it, and the dataset refuses rather than landing a table
@@ -640,32 +642,26 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
     monkeypatch.setattr(IcebergDataset, "overwrite_arrow_reader", observed_replace)
     ran.workflow()
 
-    assert schema_modes == {"logs.messages": False, "fix.bronze": True, "fix.silver": True}
-    for name in ("fix.bronze", "fix.silver"):
+    assert schema_modes == {"logs.messages": False, "fix.raw": True, "fix.refined": True}
+    for name in ("fix.raw", "fix.refined"):
         fixes = ran.table(name)
         assert handed_to_iceberg[name].names == fixes.column_names
         assert fixes.num_rows == STORED[name]
         assert fixes.num_columns == 128
-        # The native event row starts with its own clocks; raw capture fields
-        # stay in logs.messages and provenance crosses only as srcuuids.
+        # The native event row starts with its own clocks; a line's own
+        # columns stay in logs.messages and provenance crosses only as srcuuids.
         assert fixes.column_names[0] == "currunix"
-        assert not {
-            "sourceurl",
-            "rownum",
-            "msgthreadid",
-            "loglevel",
-            "body",
-        } & set(fixes.column_names)
+        assert not {"msgthreadid", "loglevel", "body"} & set(fixes.column_names)
         lines = ran.table("logs.messages")
-        raw_ids = set(lines.column("curruuid").to_pylist())
-        # A bronze row is one frame read off one line, so it names exactly
-        # that line. A silver row is one event, and the walk folds every
+        line_ids = set(lines.column("curruuid").to_pylist())
+        # A `fix.raw` row is one frame read off one line, so it names exactly
+        # that line. A `fix.refined` row is one event, and the walk folds every
         # observation of it into one row -- so it names every line the event
         # was logged on, which is what joins the event back to all its hops.
         held = [len(source) for source in fixes.column("srcuuids").to_pylist()]
         assert all(count >= 1 for count in held)
-        assert (max(held) == 1) is (name == "fix.bronze")
-        assert set(sources(fixes)) <= raw_ids
+        assert (max(held) == 1) is (name == "fix.raw")
+        assert set(sources(fixes)) <= line_ids
         assert {"msgtype", "msgseqnum", "curruuid", "crosscode", "srcuuids"} <= set(
             fixes.column_names
         )
@@ -695,15 +691,17 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
 def test_a_table_written_before_the_row_grew_gains_the_columns_and_keeps_its_rows(
     ran: Ran,
 ) -> None:
-    """The upgrade path, as a warehouse already holding rows sees it.
+    """A FIX write merges schema, and the rows a table already held stay.
 
-    The row grew by five columns, which renumbers every Iceberg id after the
-    first in the published contract -- but a table carries its own ids, and a
-    FIX write merges schema, so what a running warehouse gets is five added
-    columns and not a rewritten table. The rows it already held stay, read
-    back with the new columns empty, and the run lands beside them.
+    A table created without five of the row's columns is written by the run:
+    a table carries its own Iceberg ids, and a FIX write merges schema, so
+    the table gains five columns and is not rewritten. The row it already
+    held stays, read back with the new columns empty, and the run lands
+    beside it. This pins `merge_schema` and no migration path: a warehouse
+    written under an earlier yggdryl is dropped and replayed from capture,
+    because 0.1.10 states another identity for every row.
     """
-    grew = ("execunix", "recdunix", "refrecdunix", "noregulatorytradeids", "regulatorytradeidgrp")
+    grew = ("execunix", "recdunix", "refrecdunix", "noregulatorytradeids", "regulatorytradeids")
     full = fix_message_field().into_arrow_schema()
     before = iceberg_fix_field(
         pyarrow.schema([member for member in full if member.name not in grew], full.metadata),
@@ -725,7 +723,7 @@ def test_a_table_written_before_the_row_grew_gains_the_columns_and_keeps_its_row
         [{**{member.name: None for member in held}, **settled}], schema=held
     )
     store = IcebergCatalog.from_dict(ran.catalog)
-    dataset = store.dataset("fix.bronze", field=before)
+    dataset = store.dataset("fix.raw", field=before)
     try:
         assert (
             dataset.append_arrow_reader(
@@ -738,46 +736,59 @@ def test_a_table_written_before_the_row_grew_gains_the_columns_and_keeps_its_row
         store.close()
 
     ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
-    result = ran.task("parse_fix_bronze", **WINDOW)
+    result = ran.task("parse_fix_raw", **WINDOW)
 
-    bronze = ran.table("fix.bronze")
-    assert counted(result) == FIRST["parse_fix_bronze"]
-    assert bronze.num_columns == len(full)
-    assert bronze.num_rows == STORED["fix.bronze"] + 1, "the row it already held is still there"
-    assert settled[MESSAGE_KEY] in bronze.column(MESSAGE_KEY).to_pylist()
-    kept = bronze.filter(pyarrow.compute.equal(bronze.column(MESSAGE_KEY), settled[MESSAGE_KEY]))
+    raw = ran.table("fix.raw")
+    assert counted(result) == FIRST["parse_fix_raw"]
+    assert raw.num_columns == len(full)
+    assert raw.num_rows == STORED["fix.raw"] + 1, "the row it already held is still there"
+    assert settled[MESSAGE_KEY] in raw.column(MESSAGE_KEY).to_pylist()
+    kept = raw.filter(pyarrow.compute.equal(raw.column(MESSAGE_KEY), settled[MESSAGE_KEY]))
     for column in grew:
         assert kept.column(column).to_pylist() in ([None], [[]]), column
     # And the walk reads the widened table back without noticing the seam.
-    walked = ran.task("parse_fix_silver", **WINDOW)
-    assert walked["read"] == STORED["fix.bronze"] + 1
-    assert ran.table("fix.silver").num_columns == len(full)
+    walked = ran.task("parse_fix_refined", **WINDOW)
+    assert walked["read"] == STORED["fix.raw"] + 1
+    assert ran.table("fix.refined").num_columns == len(full)
 
 
 def test_the_clocks_and_the_group_the_row_grew_reach_the_stored_table(ran: Ran) -> None:
-    """The five columns 0.1.9 added are the table's, not just the schema's.
+    """The three clocks and the regulatory group are the table's, not just the schema's.
 
     A column a capture never fills is a column nobody would notice going
     missing, so this reads the stored tables rather than the declaration:
-    the execution clock the bridge states, and the regulatory identifiers it
-    carries -- a repeating group persisted whole, which is the one shape a
-    scalar column cannot hold and the one Iceberg has to round-trip as
-    written. `recdunix` and `refrecdunix` stay empty here because this
-    carrier records no clock of its own, and an empty column is still a
-    column: it is what a carrier that does record one would land in.
+    the execution clock the bridge states, the two recording clocks the
+    line's own instant fills -- the parse dates each message's recording by
+    the line it was read off, and the walk keeps the earliest observation in
+    `recdunix` and the reference it merged on in `refrecdunix` -- and the
+    regulatory identifiers it carries, a repeating group persisted whole,
+    which is the one shape a scalar column cannot hold and the one Iceberg
+    has to round-trip as written.
     """
     ran.workflow()
 
-    for name in ("fix.bronze", "fix.silver"):
+    for name in ("fix.raw", "fix.refined"):
         fixes = ran.table(name)
         for column in ("execunix", "recdunix", "refrecdunix"):
             assert fixes.schema.field(column).type == pyarrow.timestamp("us", tz="UTC"), column
         assert fixes.column("execunix").null_count < fixes.num_rows, "the bridge states these"
-        assert fixes.column("recdunix").null_count == fixes.num_rows, "and none of these"
+        recorded = fixes.select(("recdunix", "refrecdunix")).to_pylist()
+        # A parsed row's recording is its one line's clock; a walked row's
+        # is the earliest of the lines its event was logged on, and the
+        # reference is the latest, so the two never cross. The one row no
+        # line recorded is the expiry the walk emitted, and it states none.
+        unrecorded = [row for row in recorded if row["recdunix"] is None]
+        assert len(unrecorded) == (0 if name == "fix.raw" else 1)
+        assert all(row["refrecdunix"] is None for row in unrecorded)
+        assert all(
+            row["recdunix"] <= row["refrecdunix"] for row in recorded if row["recdunix"] is not None
+        )
+        if name == "fix.raw":
+            assert all(row["recdunix"] == row["refrecdunix"] for row in recorded)
 
         # The fourth group persisted whole, beside the counter that counts it.
-        occurrences = fixes.column("regulatorytradeidgrp").to_pylist()
-        members = fixes.schema.field("regulatorytradeidgrp").type.value_type
+        occurrences = fixes.column("regulatorytradeids").to_pylist()
+        members = fixes.schema.field("regulatorytradeids").type.value_type
         assert "regulatorytradeid" in members.names
         assert any(occurrences), "this capture carries regulatory identifiers"
         for held, counted in zip(
@@ -796,14 +807,14 @@ def test_both_fix_tables_are_laid_out_exactly_alike_by_the_event(ran: Ran) -> No
     the field declares, on both tables."""
     ran.workflow()
 
-    for name in ("fix.bronze", "fix.silver"):
+    for name in ("fix.raw", "fix.refined"):
         assert ran.layout(name) == {
             "key": {"curruuid"},
             "spec": [("currunix", "hour")],
             "sort": [("currunix", "identity"), ("seqnum", "identity"), ("curruuid", "identity")],
         }, name
         assert ran.partitions(name) == {"currunix": "hour"}
-    # The raw line is laid out by the same clock under the same transform and
+    # A stored line is laid out by the same clock under the same transform and
     # keyed by its own identity, at a different grain from the FIX identity.
     assert ran.layout("logs.messages")["key"] == {"curruuid"}
     assert ran.layout("logs.messages")["spec"] == [(EVENT_CLOCK, "hour")]
@@ -813,49 +824,43 @@ def test_the_lineage_holds_across_the_three_steps(ran: Ran) -> None:
     """The point of the split, over the committed capture.
 
     A message's `srcuuids` is the `curruuid` of the stored line it was parsed
-    out of -- provenance, never lineage, and no walk moves it. A silver
+    out of -- provenance, never lineage, and no walk moves it. A refined
     message's `prevuuid` and `parentuuids` are the `curruuid` of the messages
-    before it in its chain. And bronze carries no chain at all: nothing has
+    before it in its chain. And `fix.raw` carries no chain at all: nothing has
     walked yet.
     """
     ran.workflow()
     lines = ran.table("logs.messages")
-    bronze = ran.table("fix.bronze")
-    silver = ran.table("fix.silver")
+    raw = ran.table("fix.raw")
+    refined = ran.table("fix.refined")
     named = set(lines.column("curruuid").to_pylist())
     assert len(named) == lines.num_rows, "a stored line has one identity"
 
-    assert all(len(source) == 1 for source in bronze.column(SOURCES).to_pylist()), (
+    assert all(len(source) == 1 for source in raw.column(SOURCES).to_pylist()), (
         "one line per parsed message"
     )
-    # The walk folds the observations of one event, so a silver row names
+    # The walk folds the observations of one event, so a refined row names
     # every line that event was logged on -- and every one of them is a line
     # this run stored.
-    observed = silver.column(SOURCES).to_pylist()
+    observed = refined.column(SOURCES).to_pylist()
     assert all(source for source in observed), "every event names the lines it was read from"
     assert {line for source in observed for line in source} <= named
-    for rows in (bronze, silver):
+    for rows in (raw, refined):
         assert set(sources(rows)) <= named
-        assert not {
-            "sourceurl",
-            "rownum",
-            "msgthreadid",
-            "loglevel",
-            "body",
-        } & set(rows.column_names)
+        assert not {"msgthreadid", "loglevel", "body"} & set(rows.column_names)
 
-    # Bronze: every row at step none, following nobody, at the instant the
+    # fix.raw: every row at step none, following nobody, at the instant the
     # parse settled -- the pin where the message stated no sending clock.
-    assert bronze.column("seqnum").null_count == bronze.num_rows
-    assert bronze.column("prevuuid").null_count == bronze.num_rows
-    assert all(not parents for parents in bronze.column("parentuuids").to_pylist())
-    assert sum(1 for at in bronze.column(EVENT_CLOCK).to_pylist() if at == UNDATED) == PINNED
+    assert raw.column("seqnum").null_count == raw.num_rows
+    assert raw.column("prevuuid").null_count == raw.num_rows
+    assert all(not parents for parents in raw.column("parentuuids").to_pylist())
+    assert sum(1 for at in raw.column(EVENT_CLOCK).to_pylist() if at == UNDATED) == PINNED
 
-    # Silver: the chain, and every step it names is a row this table holds.
-    identities = set(silver.column(MESSAGE_KEY).to_pylist())
+    # fix.refined: the chain, and every step it names is a row this table holds.
+    identities = set(refined.column(MESSAGE_KEY).to_pylist())
     followed = [
         row
-        for row in silver.select((MESSAGE_KEY, "prevuuid", "parentuuids", "seqnum")).to_pylist()
+        for row in refined.select((MESSAGE_KEY, "prevuuid", "parentuuids", "seqnum")).to_pylist()
         if row["prevuuid"] is not None
     ]
     assert followed
@@ -863,15 +868,16 @@ def test_the_lineage_holds_across_the_three_steps(ran: Ran) -> None:
     assert all(row["prevuuid"] in row["parentuuids"] for row in followed)
     assert all(all(parent in identities for parent in row["parentuuids"]) for row in followed)
     assert all(row["seqnum"] >= 1 for row in followed)
-    assert not any(at == UNDATED for at in silver.column(EVENT_CLOCK).to_pylist())
-    # The walk re-settles dated identities and emits the expiry the chain
-    # states, so silver has one event more than bronze.
-    assert len(identities) == STORED["fix.silver"]
-    assert len(set(bronze.column(MESSAGE_KEY).to_pylist())) == STORED["fix.bronze"]
-    assert identities != set(bronze.column(MESSAGE_KEY).to_pylist())
+    assert not any(at == UNDATED for at in refined.column(EVENT_CLOCK).to_pylist())
+    # The walk folds the observations of one event into one row, re-settles
+    # the identities it dates and emits the expiry the chain states, so the
+    # two tables hold different identities.
+    assert len(identities) == STORED["fix.refined"]
+    assert len(set(raw.column(MESSAGE_KEY).to_pylist())) == STORED["fix.raw"]
+    assert identities != set(raw.column(MESSAGE_KEY).to_pylist())
     # The state and the clocks a walk folds forward are filled on every row.
     for column in ("state", "creaunix"):
-        assert silver.column(column).null_count == 0, column
+        assert refined.column(column).null_count == 0, column
 
 
 def test_a_message_logged_at_every_hop_lands_once(ran: Ran) -> None:
@@ -879,25 +885,25 @@ def test_a_message_logged_at_every_hop_lands_once(ran: Ran) -> None:
 
     The capture states 79 messages; storage keeps 49 parsed events, and the
     lifecycle merges the observations of one event and adds one expiry event.
-    primary key is the event's identity, so what either table holds is the
+    The primary key is the event's identity, so what either table holds is the
     events -- and a second write of the same capture replaces them rather than
     adding a second copy of each.
     """
     ran.workflow()
-    silver = ran.table("fix.silver")
-    chain = silver.filter(pyarrow.compute.equal(silver.column("crosscode"), CHAIN))
+    refined = ran.table("fix.refined")
+    chain = refined.filter(pyarrow.compute.equal(refined.column("crosscode"), CHAIN))
 
     assert chain.num_rows == CHAIN_EVENTS
     assert len(set(chain.column(MESSAGE_KEY).to_pylist())) == CHAIN_EVENTS
     assert max(step or 0 for step in chain.column("seqnum").to_pylist()) == CHAIN_LAST_STEP
     lines = ran.table("logs.messages")
     assert lines.num_rows == STORED["logs.messages"]
-    bronze = ran.table("fix.bronze")
+    raw = ran.table("fix.raw")
 
     ran.workflow()
 
     assert ran.rows() == STORED, "a second write of the same capture adds no row"
-    for name, before in (("fix.bronze", bronze), ("fix.silver", silver)):
+    for name, before in (("fix.raw", raw), ("fix.refined", refined)):
         assert sorted(ran.table(name).column(MESSAGE_KEY).to_pylist()) == sorted(
             before.column(MESSAGE_KEY).to_pylist()
         ), f"the second write of {name} replaced its rows with the same identities"
@@ -906,16 +912,19 @@ def test_a_message_logged_at_every_hop_lands_once(ran: Ran) -> None:
 def test_the_native_identity_tells_exact_repeats_apart(ran: Ran) -> None:
     """A line is an event and the table is keyed on its identity alone, so a
     capture that prints the same bytes three times has to land three rows.
-    The native identity carries the line's place in the read beside its
-    content code, so it does -- and the code, which is the content's and not
-    the line's, is what those repeats still share."""
+    The native code digests the line's object and row number beside its body,
+    so the code is the line's and not its bytes', and the identity derived
+    from it tells the repeats apart."""
     ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
     lines = ran.table("logs.messages")
 
     assert lines.num_rows == STORED["logs.messages"] == 144, "every physical line lands"
     codes = lines.column("currhashcode").to_pylist()
     assert lines.schema.field("currhashcode").type == pyarrow.int64()
-    assert len(set(codes)) == 141, "3 lines repeat another's bytes exactly"
+    # Three lines repeat another's bytes exactly, and the code still tells
+    # them apart: the read digests the line's row number and the object it
+    # was read from beside its body, so a code is a line's and not its bytes'.
+    assert len(set(codes)) == 144
     assert len(set(lines.column("curruuid").to_pylist())) == lines.num_rows
     # A key is scoped to its partition, which here is the hour the line was
     # printed in.
@@ -932,8 +941,8 @@ def test_a_chain_read_back_in_order_states_what_each_step_follows(ran: Ran) -> N
     """`currunix, seqnum` is the order the walk gave the chain, and a step read
     back in it names the step before it, which never comes later."""
     ran.workflow()
-    silver = ran.table("fix.silver")
-    chain = silver.filter(pyarrow.compute.equal(silver.column("crosscode"), CHAIN)).sort_by(
+    refined = ran.table("fix.refined")
+    chain = refined.filter(pyarrow.compute.equal(refined.column("crosscode"), CHAIN)).sort_by(
         [(EVENT_CLOCK, "ascending"), ("seqnum", "ascending")]
     )
 
@@ -949,23 +958,23 @@ def test_a_chain_read_back_in_order_states_what_each_step_follows(ran: Ran) -> N
         assert before["seqnum"] is None or before["seqnum"] < step["seqnum"]
 
 
-def test_the_silver_window_walks_what_the_parse_left_at_the_pin(ran: Ran) -> None:
-    """A bronze row the parse could not date sits at the codec's pin, outside
-    any day, and the silver window reads it there by the transaction time the
+def test_the_refined_window_walks_what_the_parse_left_at_the_pin(ran: Ran) -> None:
+    """A `fix.raw` row the parse could not date sits at the codec's pin, outside
+    any day, and the refined window reads it there by the transaction time the
     walk dates it with: a day's run walks the day's events, dated or pinned."""
     ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
-    ran.task("parse_fix_bronze", **WINDOW)
-    bronze = ran.table("fix.bronze")
-    pinned = bronze.filter(pyarrow.compute.equal(bronze.column(EVENT_CLOCK), UNDATED))
+    ran.task("parse_fix_raw", **WINDOW)
+    raw = ran.table("fix.raw")
+    pinned = raw.filter(pyarrow.compute.equal(raw.column(EVENT_CLOCK), UNDATED))
     assert pinned.num_rows == PINNED
     assert pinned.column("transacttime").null_count == 0, "each states the clock the walk reads"
 
-    silver = ran.task("parse_fix_silver", **WINDOW)
+    refined = ran.task("parse_fix_refined", **WINDOW)
 
-    assert silver["read"] == bronze.num_rows, "the pinned rows are the day's too"
+    assert refined["read"] == raw.num_rows, "the pinned rows are the day's too"
     # A window the fixture falls outside walks nothing: neither the dated rows
     # nor the pinned ones belong to it.
-    elsewhere = ran.task("parse_fix_silver", start="2026-08-15", end="2026-08-15")
+    elsewhere = ran.task("parse_fix_refined", start="2026-08-15", end="2026-08-15")
     assert counted(elsewhere) == {"read": 0, "written": 0, "skipped": 0}
 
 
@@ -981,7 +990,7 @@ def test_maintenance_visits_every_table_and_reports_what_it_changed(ran: Ran) ->
     # The capture spans several hours, so each table lands one small file per
     # hour and the first pass settles them.
     assert first["reports"]["logs.messages"]["rewritten"] > 0
-    assert first["reports"]["fix.silver"]["rewritten"] > 0
+    assert first["reports"]["fix.refined"]["rewritten"] > 0
     assert counted(first)["read"] == len(STORED)
     assert ran.rows() == STORED, "compaction rewrites rows, it never drops them"
 

@@ -1,14 +1,14 @@
-# parse_fix_bronze
+# parse_fix_raw
 
-Parse one capture window into settled FIX events and write `fix.bronze`.
+Parse one capture window into settled FIX events and write `fix.raw`.
 Nothing in this task walks lifecycle chains.
 
 ## Task document
 
 ```json
 {
-  "name": "parse_fix_bronze",
-  "application": "parse_fix_bronze.py",
+  "name": "parse_fix_raw",
+  "application": "parse_fix_raw.py",
   "parameters": {
     "messages": "logs.messages",
     "registry": null,
@@ -30,15 +30,24 @@ Nothing in this task walks lifecycle chains.
 ## The parse, and nothing after it
 
 The task prunes `logs.messages` to `[start, end)` on `currunix`, the event the
-read settled over each line, and reads the lines at the epoch pin beside them.
-`currunix` is the partition column itself and is never null, so the predicate
-names it and Iceberg projects the bounds through the hour transform: the
-window's partitions and the pin's own hour are opened, and nothing else.
-`fix_parse_arrow_reader` is the batch form of the
-native `FixCodec.parse_text_arrow_reader`; one line may answer zero, one, or
-several messages. Parsing and local enrichment are independent per event and
-may execute concurrently. `threads` defaults to the available CPU count and
-zero becomes one. Output order remains input order.
+read settled over each line, and reads the lines at the epoch pin beside
+them, where a handle with no clock at all leaves a line. `currunix` is the
+partition column itself and is never null, so the predicate names it and
+Iceberg projects the bounds through the hour transform: the window's
+partitions and the pin's own hour are opened, and nothing else. The scan is
+projected to `rekep.fix.PARSE_COLUMNS`, the seven columns the parse consumes:
+`currunix`, `curruuid`, `body`, `msgsessionid`, `msgctxid`, `msgseqnum` and
+`msgpluginid` -- the line's clock, which becomes the message's `recdunix` and
+`refrecdunix`; its identity, which becomes `srcuuids`; the body the frames
+are read out of; and the four captures that fill a field by name.
+`currhashcode`, `crosscode`, `seqnum`, `msgthreadid` and `loglevel` are not
+read at all. `fix_parse_arrow_reader` is the batch form of the native
+`FixCodec.parse_text_arrow_reader`: it selects the fixed row's 128 columns
+off the parse's answer, which leads with the carried `body`. One line may
+answer zero, one, or several messages. Parsing and local enrichment are
+independent per event and may execute concurrently. `threads` defaults to
+the available CPU count and zero becomes one. Output order remains input
+order.
 
 `codec_options: null` delegates every native default. An object is forwarded
 unchanged to `FixCodec`; Python keeps no whitelist or second interpretation.
@@ -47,10 +56,10 @@ Common pins include
 `threads`, `official_time_delay_ms`, and `snapshot_ns`; native construction
 rejects unknown names.
 Batching defaults to 32,768 rows and 128 MiB.
-`snapshot_ns` is normally zero for bronze because snapshots belong to a
-lifecycle walk.
-`lstrip` belongs to the raw reader's `TextOptions`, changes retained raw bytes,
-and is neither a codec option nor enabled by this task.
+`snapshot_ns` is normally zero for the raw stage because snapshots belong to
+a lifecycle walk.
+`lstrip` belongs to the text read's `TextOptions`, changes the bytes a line
+retains, and is neither a codec option nor enabled by this task.
 
 The default absence values are empty text, `null`, `<null>`, `none`, `n/a`,
 and `[n/a]`, after trimming and case folding. `null_values` replaces that set.
@@ -58,9 +67,11 @@ and `[n/a]`, after trimming and case folding. `null_values` replaces that set.
 ## Read, parse, narrow, write
 
 `fix_message_field(codec)` is the native 128-column row used directly by the
-parse door and `fix.bronze`. `sourceurl`, `rownum`, `msgthreadid`, `loglevel`
-and `body` are raw to `logs.messages` and remain there, so no carried or
-unstored schema is constructed. The reviewed **FixMsg** contract is
+parse door and `fix.raw`. `msgthreadid`, `loglevel` and `body` exist only in
+`logs.messages`, and `crosscode` and `seqnum` stand on both shapes meaning
+the row they sit on -- here the message's chain identifier and its step in
+the chain -- so no carried or unstored schema is constructed. The reviewed
+**FixMsg** contract is
 [`schemas/rekep/fixmsg.json`](../../contracts/index.md).
 
 The dataset is keyed by `curruuid`, partitioned by hour of `currunix`, and sorted by
@@ -101,12 +112,14 @@ rows; it is never inferred from a batch.
 
 ## Row behavior
 
-- `seqnum`, `prevuuid`, and `parentuuids` remain empty because bronze has not
-  walked a chain.
-- `srcuuids` preserves capture provenance by joining to raw
-  `logs.messages.curruuid`; the FIX row carries no raw source columns.
-- Undated messages use the codec's deterministic epoch floor until lifecycle
-  can date them from message facts.
+- `seqnum`, `prevuuid`, and `parentuuids` remain empty because the raw stage
+  has not walked a chain.
+- `srcuuids` preserves capture provenance by joining to the line's
+  `logs.messages.curruuid`; the FIX row carries no column of the line.
+- `recdunix` and `refrecdunix` are both the line's own clock. `execunix` is
+  what the bridge states, where it does.
+- A message that stated no `SendingTime` sits at the codec's epoch pin until
+  the walk dates it by its `TransactTime`.
 - Unknown names remain residual tag-zero entries.
 - A replay of one window overwrites the same partition-scoped `curruuid` rows.
 
@@ -115,11 +128,11 @@ rows; it is never inferred from a batch.
 The checked sample is regenerated from the current codec and contract; the
 include owns its measured counts.
 
---8<-- "docs/pipeline/tasks/samples/parse-fix-bronze.md"
+--8<-- "docs/pipeline/tasks/samples/parse-fix-raw.md"
 
 ## Run
 
 ```bash
-uv run --project python rekep task run tasks/parse_fix_bronze/parse_fix_bronze.json \
+uv run --project python rekep task run tasks/parse_fix_raw/parse_fix_raw.json \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
 ```

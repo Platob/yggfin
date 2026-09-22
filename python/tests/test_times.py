@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import datetime
+import os
 import re
 from pathlib import Path
 
 import pyarrow
 import pytest
 from yggdryl import IOBase
+from yggdryl.fix import ULBRIDGE_ROWHEADER as CORE_ROWHEADER
 
 from rekep.text import Message
 from rekep.times import (
@@ -18,33 +20,26 @@ from rekep.times import (
     WINDOW,
     datetime_of,
     unix_of,
+    where_within,
     window_of,
     within,
 )
 
-#: Where the core states the same bridge layout, when its checkout is beside
-#: this one. The constant reaches Rust but not yet the Python extension, so
-#: the expression is spelled in both places and this is what keeps the two
-#: readings of one bridge from drifting apart.
-CORE_ROWHEADER = (
-    Path(__file__).resolve().parents[3] / "yggdryl" / "rust" / "src" / "fix" / "ulbridge.rs"
-)
-
 #: What this package calls two of the bracket's parts that the core's own
-#: example expression names after the bracket rather than after the column:
-#: the clock the read settles `currunix` from, and the level `logs.messages`
-#: keeps. A capture reaches a column by being called what the column is
-#: called, so these two are renames and the rest is the core's text.
+#: expression names after the bracket rather than after the column: the clock
+#: the read consumes into `currunix`, and the level `logs.messages` keeps. A
+#: capture reaches a column by being called what the column is called, so
+#: these two are renames and the rest is the core's text -- the core's own
+#: header dates nothing, because it names its clock `timestamp`.
 RENAMED = {"timestamp": "mtime", "level": "loglevel"}
 
 #: The one part of the bracket this package reads wider than the core's own
 #: expression does, as `core: ours`. The core requires the bridge's
-#: millisecond fraction; this package makes it optional and reads it under a
-#: comma, which is what `times.ISO` already declares a fraction may be spelled
-#: with. The width stays three digits, because the width a capture can match
-#: is what types it. Stated here so the rest of the bracket is still compared
-#: character for character.
-WIDENED = {r"\d{2}:\d{2}:\d{2}\.\d{3}": r"\d{2}:\d{2}:\d{2}(?:[.,]\d{3})?"}
+#: millisecond fraction, under a point, and admits the grouped micros; this
+#: package makes the fraction optional and reads it under a comma too, which
+#: is what `times.ISO` already declares a fraction may be spelled with. Stated
+#: here so the rest of the bracket is still compared character for character.
+WIDENED = {r"\d{2}:\d{2}:\d{2}\.\d{3}(?:_\d{3})?": r"\d{2}:\d{2}:\d{2}(?:[.,]\d{3}(?:_\d{3})?)?"}
 
 #: 2026-08-14 09:30:00.123456 UTC, in the nanoseconds every `*unix` holds.
 STAMP = 1_786_699_800_123_456_000
@@ -179,19 +174,12 @@ def test_a_wrapped_value_is_asked_what_it_holds() -> None:
 
 
 def test_the_bridge_row_header_is_the_layout_the_core_states() -> None:
-    """The one copy nobody can drift: the bracket this reads is the bracket
-    the core reads, part for part, and every difference is declared -- what
-    two of those parts are called, because a capture reaches its column by
-    being called what the column is called, and how wide the clock reads."""
-    if not CORE_ROWHEADER.is_file():
-        pytest.skip(f"the core checkout is not beside this one: {CORE_ROWHEADER}")
-    stated = re.search(
-        r'pub const ULBRIDGE_ROWHEADER: &str = r"(?P<pattern>.*)";',
-        CORE_ROWHEADER.read_text(encoding="utf-8"),
-    )
-
-    assert stated is not None, f"{CORE_ROWHEADER} no longer states the constant"
-    held = stated["pattern"]
+    """The bracket this reads is the bracket the installed core reads, part
+    for part, and every difference is declared -- what two of those parts are
+    called, because a capture reaches its column by being called what the
+    column is called, and how wide the clock reads. Compared against the
+    constant the extension exports, so the check runs wherever the tests do."""
+    held = CORE_ROWHEADER
     for core, ours in WIDENED.items():
         assert held.count(core) == 1, f"the core no longer spells {core}"
         held = held.replace(core, ours)
@@ -203,7 +191,7 @@ def test_the_bridge_row_header_is_the_layout_the_core_states() -> None:
     assert ULBRIDGE_ROWHEADER == renamed
     # A rename nobody made is a rename nobody needs: each one has to be a
     # capture the core actually states, or this table is stale.
-    assert set(RENAMED) <= set(re.findall(r"\(\?P<([A-Za-z]+)>", stated["pattern"]))
+    assert set(RENAMED) <= set(re.findall(r"\(\?P<([A-Za-z]+)>", CORE_ROWHEADER))
 
 
 def test_every_bridge_capture_is_named_for_the_column_it_fills() -> None:
@@ -229,14 +217,20 @@ def test_every_bridge_capture_is_named_for_the_column_it_fills() -> None:
         (",148", ".148000"),
         # A bridge that states seconds and stops.
         ("", ""),
+        # The grouped micros some of this bridge's loggers append, which the
+        # core reads as a digit group inside the fraction: fifteen lines of
+        # the bundled capture spell their clock this way.
+        (".524_315", ".524315"),
     ],
 )
 def test_the_bridge_clock_reads_every_fraction_the_core_parses(
     tmp_path, fraction: str, settled: str
 ) -> None:
-    """A bracket the expression refuses is a line that lands undated with every
-    capture empty, so the clock reads the fraction absent and the fraction
-    under a comma, which is what `ISO` already says an instant may spell."""
+    """A bracket the expression refuses is a line the header does not date: it
+    takes its object's modification time with every capture empty, and reaches
+    the walk with no session, context or sequence to fold on -- so the clock
+    reads every fraction this bridge writes: absent, under a comma, and with
+    the micros grouped under a `_`."""
     line = f"2026-08-14 00:05:01{fraction} [250] [ULBridge] (INFO) body\n"
     source = tmp_path / "bridge.log"
     source.write_bytes(line.encode())
@@ -252,26 +246,26 @@ def test_the_bridge_clock_reads_every_fraction_the_core_parses(
     assert (row["msgthreadid"], row["msgpluginid"], row["loglevel"]) == (250, "ULBridge", "INFO")
 
 
-@pytest.mark.parametrize("fraction", ["_147", ".", ";147", ".147258", ".147_250"])
-def test_a_fraction_this_header_does_not_read_leaves_the_line_undated(
+@pytest.mark.parametrize("fraction", ["_147", ".", ";147", ".147258"])
+def test_a_fraction_this_header_does_not_read_leaves_the_line_unmatched(
     tmp_path, fraction: str
 ) -> None:
-    """Two reasons a fraction is not matched here, and one outcome.
+    """What this header does not read, and the one outcome.
 
-    `_` groups a fraction's digits in the core and never separates one, so
+    `_` groups a fraction's digits in the core and never opens one, so
     matching `01_147` would hand the instant parser a value it refuses -- and
     a located refusal fails the whole batch the line arrived in, which is
-    worse than not reading the clock. A fraction wider than the millisecond is
-    left out for the other reason: the width a capture can match is what types
-    the column, so admitting a ninth digit would make this a nanosecond
-    instant and change what the walk answers off the same bytes. A bridge
-    writing either is read by naming its own header, which is what
-    `Message.text_options` takes one for.
+    worse than not reading the clock. A fraction this bridge does not write --
+    six digits straight on, a lone point, a stray separator -- is left to a
+    header of its own, which is what `Message.text_options` takes one for.
 
-    Unmatched, the line is not lost: it keeps its body and settles at the pin
-    every window covers."""
+    Unmatched, the line is not lost: it keeps its whole text as its body,
+    states every capture null, and is dated by the object it was read from --
+    its modification time, the one clock the read has left for it."""
     source = tmp_path / "bridge.log"
     source.write_bytes(f"2026-08-14 00:05:01{fraction} [250] [ULBridge] (INFO) body\n".encode())
+    written = datetime.datetime(2026, 8, 14, 18, 0, tzinfo=UTC)
+    os.utime(source, (written.timestamp(), written.timestamp()))
 
     reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=Message.text_options())
     try:
@@ -279,9 +273,9 @@ def test_a_fraction_this_header_does_not_read_leaves_the_line_undated(
     finally:
         reader.close()
 
-    assert row["currunix"] == EPOCH
+    assert row["currunix"] == written
     assert row["msgpluginid"] is None
-    assert row["body"].endswith("body")
+    assert row["body"] == f"2026-08-14 00:05:01{fraction} [250] [ULBridge] (INFO) body"
 
 
 # -- the window a run covers -------------------------------------------------
@@ -344,7 +338,8 @@ def test_within_covers_the_half_open_interval_and_every_row_with_no_clock() -> N
             datetime.datetime(2026, 8, 14, tzinfo=UTC),
             datetime.datetime(2026, 8, 14, 12, tzinfo=UTC),
             datetime.datetime(2026, 8, 15, tzinfo=UTC),
-            # The pin a read settles a record it could not date at, and a
+            # The pin a read settles a record at where its handle has no
+            # clock -- or a message that stated no sending clock -- and a
             # null for a column that admits one: neither states an instant,
             # so no window can place either and every window holds both.
             EPOCH,
@@ -362,3 +357,38 @@ def test_within_covers_the_half_open_interval_and_every_row_with_no_clock() -> N
         True,
         True,
     ]
+
+
+# -- the window as the read's own where -------------------------------------
+
+
+#: The bundled capture, every line of which the shipped header dates.
+FIXTURE = Path(__file__).resolve().parent / "data" / "ulbridge.log"
+
+
+def test_the_window_is_the_reads_own_where_and_not_a_mask_over_its_answer() -> None:
+    """The pushdown, shown to have happened rather than assumed: over one
+    window, the read handed the clause answers fewer rows than the read
+    handed none, and exactly the rows the Arrow reading `within` keeps -- so
+    a task reads the window's lines and never the rest. The decode itself
+    still cuts every line: the clause is the record surface's."""
+    window = window_of("2026-08-14", "2026-08-14T14:46:40")
+    clause = where_within("currunix", window)
+    assert str(clause) == (
+        "currunix >= '2026-08-14T00:00:00+00:00' and currunix < '2026-08-14T14:46:40+00:00' "
+        "or currunix = '1970-01-01T00:00:00+00:00'"
+    )
+    handle = IOBase.from_uri(FIXTURE.as_uri())
+    try:
+        every = handle.read_arrow_reader(options=Message.text_options()).read_all()
+        pushed = Message.text_options()
+        pushed.filter = clause
+        answered = handle.read_arrow_reader(options=pushed).read_all()
+        cut = sum(1 for _ in handle.read_text_lines(options=pushed))
+    finally:
+        handle.close()
+
+    kept = every.filter(within(every.column("currunix"), window))
+    assert every.num_rows == cut == 144, "the decode yields every line either way"
+    assert 0 < answered.num_rows < every.num_rows, "the read answered the window alone"
+    assert answered.equals(kept), "and exactly the rows the Arrow reading keeps"

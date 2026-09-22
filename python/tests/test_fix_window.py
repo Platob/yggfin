@@ -1,4 +1,4 @@
-"""Silver reads only its lifecycle context and writes only its own window."""
+"""Refined reads only its lifecycle context and writes only its own window."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ pytestmark = pytest.mark.integration
 
 @pytest.mark.parametrize("expires", ["10:40:00", "11:40:00"])
 @pytest.mark.parametrize("previous_clock", ["09:59:00", "08:59:00"])
-def test_silver_uses_previous_hour_and_filters_history_and_future_expiry(
+def test_refined_uses_previous_hour_and_filters_history_and_future_expiry(
     tmp_path: Path,
     capsys: pytest.CaptureFixture,
     monkeypatch: pytest.MonkeyPatch,
@@ -73,15 +73,15 @@ def test_silver_uses_previous_hour_and_filters_history_and_future_expiry(
         opened.callback(parsed.close)
         rows = stored_arrow_reader(parsed, field)
         opened.callback(rows.close)
-        bronze = store.dataset("fix.bronze", field=field)
-        opened.callback(bronze.close)
-        assert bronze.append_arrow_reader(rows, field) == 4
+        raw = store.dataset("fix.raw", field=field)
+        opened.callback(raw.close)
+        assert raw.append_arrow_reader(rows, field) == 4
 
     paths: list[str] = []
     original = PyArrowFile.open
 
     def tracked(self, *args, **kwargs):
-        if self.location.endswith(".parquet") and "bronze" in self.location:
+        if self.location.endswith(".parquet") and "raw" in self.location:
             paths.append(self.location)
         return original(self, *args, **kwargs)
 
@@ -89,7 +89,7 @@ def test_silver_uses_previous_hour_and_filters_history_and_future_expiry(
     argv = [
         "task",
         "run",
-        str(ROOT / "tasks/parse_fix_silver/parse_fix_silver.json"),
+        str(ROOT / "tasks/parse_fix_refined/parse_fix_refined.json"),
         "--parameter",
         f"catalog={json.dumps(catalog)}",
         "--parameter",
@@ -109,17 +109,17 @@ def test_silver_uses_previous_hour_and_filters_history_and_future_expiry(
     first_hour = "09" if has_history else "10"
     assert f"currunix_hour=2026-08-14-{first_hour}" in paths[0]
 
-    def silver_rows():
+    def refined_rows():
         with ExitStack() as opened:
             store = IcebergCatalog.from_dict(catalog)
             opened.callback(store.close)
-            silver = store.dataset("fix.silver")
-            opened.callback(silver.close)
-            reader = silver.read_arrow_reader(order_by="currunix")
+            refined = store.dataset("fix.refined")
+            opened.callback(refined.close)
+            reader = refined.read_arrow_reader(order_by="currunix")
             opened.callback(reader.close)
             return reader.read_all()
 
-    held = silver_rows()
+    held = refined_rows()
     rows = held.to_pylist()
     assert rows[0]["currunix"] == datetime.datetime(2026, 8, 14, 10, 10, tzinfo=UTC)
     if has_history:
@@ -137,4 +137,4 @@ def test_silver_uses_previous_hour_and_filters_history_and_future_expiry(
         assert rows[1]["state"] == "95EXPIRED"
     assert cli.main(argv) == 0
     capsys.readouterr()
-    assert silver_rows().equals(held)
+    assert refined_rows().equals(held)

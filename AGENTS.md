@@ -14,7 +14,7 @@ behavior.
 
 ## Ownership
 
-- The published native dependency is pinned to `yggdryl==0.1.9`; public
+- The published native dependency is pinned to `yggdryl==0.1.10`; public
   applications and documentation import only `rekep`.
 
 - Yggdryl owns `Field`, scalar compilation, resource binding, filesystems,
@@ -22,7 +22,7 @@ behavior.
   parsing, the fixed `fixmsg` row, and the lifecycle stage after the parse.
 - Arrow owns columnar shape conversions and kernels.
 - PyIceberg owns table conversion, ids, snapshots, scan planning, and commits.
-- Yggfin owns the raw `Message` contract and its narrow PyArrow/PyIceberg seam.
+- Yggfin owns the text `Message` contract and its narrow PyArrow/PyIceberg seam.
 - Never add a second Field class, filesystem/path layer, text reader, codec, or
   registry in yggfin.
 
@@ -47,28 +47,37 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   identity and opaque paths.
 - `IOBase` and `TextOptions` own traversal, header capture, decompression, and
   physical-line batching.
-- A raw text row names its source only through Yggdryl `sourceurl` and
-  `rownum`.
+- A text row names its source only through the event columns the native
+  read states: `crosscode` is the object it was read from, as the identifier
+  the read was addressed under, and `seqnum` is its row number. Neither is a
+  column of its own beside the event, and `body` is the line past its header.
 - Every capture a row header declares is named for what the native read fills
   from it -- one lowercase column for each of the bracket's own facts, named
   for the fact it holds, and the settled `currunix` for `mtime`, the record
-  clock -- so `capture_names` alone tells the codec which bracket part is
-  which. Never map a capture spelling onto a tag.
+  clock, which `parse_mtime` consumes at its native default and never lands
+  beside it -- so `capture_names` alone tells the codec which bracket part is
+  which. Never map a capture spelling onto a tag, and never turn `parse_mtime`
+  off: every line would then take the handle's modification time, one instant
+  for a whole day of lines, with no error anywhere.
 - `ULBRIDGE_ROWHEADER` is the default and the only one spelled here. A bridge
   writing the same facts in a layout of its own is read by naming its header
   in the task document, never by a second constant: the layout is a parameter
   and the capture names are the contract.
-- A capture's width is what types it, so the shipped clock reads the three
-  digits this bridge writes, under a point or a comma, or none at all -- and
-  a wider fraction stays a header of its own, because admitting a sixth digit
-  makes the column a microsecond instant and a ninth a nanosecond one, and the
-  walk answers a different set of events off the same bytes. `_` groups a
-  fraction's digits in the core and never separates one, so a bracket spelling
+- The shipped clock reads every fraction this bridge writes: three digits
+  under a point or a comma, none at all, and the micros some of its loggers
+  group after them as `.524_315`. The `mtime` capture is consumed at
+  nanoseconds UTC whatever the expression spells, so its width types no
+  column; what the width decides is which lines the header matches, and a
+  line it misses is dated by its object's modification time with every
+  capture null, and reaches the walk with no session, context or sequence to
+  fold on -- so the count of
+  lines a header matches moves the count of events a walk answers. `_` groups
+  a fraction's digits in the core and never opens one, so a bracket spelling
   `01_147` is left unmatched rather than matched into a located refusal that
-  fails the batch. `Message.text_options` refuses a
-  header that renames or omits one, because the read drops a capture it fills
-  nothing from in silence -- a table that lands complete, keyed and empty down
-  one column, or one whose clock settled nothing.
+  fails the batch. `Message.text_options` refuses a header that renames or
+  omits a capture, because the read drops a capture it fills nothing from in
+  silence -- a table that lands complete, keyed and empty down one column, or
+  one whose clock settled nothing.
 - Streams open one leaf at a time with bounded transport read-ahead and
   row-bounded batches. One record is unbounded until Yggdryl provides an
   error-on-overflow byte limit that preserves exact bodies.
@@ -117,30 +126,39 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
 The supported graph is:
 
 ```text
-filesystem URI -> parse_messages   -> logs.messages
-logs.messages  -> parse_fix_bronze -> fix.bronze
-fix.bronze     -> parse_fix_silver -> fix.silver
-fix.silver     -> build_dbt        -> orders.events, orders.current, executions.fills
+filesystem URI -> parse_messages     -> logs.messages
+logs.messages  -> parse_fix_raw      -> fix.raw
+fix.raw        -> parse_fix_refined  -> fix.refined
+fix.refined    -> build_dbt          -> orders.events, orders.current, executions.fills
 ```
+
+`raw` and `refined` are the two FIX tables and nothing else here is called
+either: a `logs.messages` row is a line, or a text row.
 
 Each task directory contains one Marimo application beside its JSON document.
 `parse_messages` passes `filesystem` to `IOBase.from_uri`, frames each line
-under the `rowheader` its document names, applies `Message.into_field()` to
-each batch, keeps the lines whose `currunix` falls in the run's window,
-and writes one schema-bearing reader directly to Iceberg. The window is
-`[start, end)`; a task given neither takes the last day up to now, and a run
-over a window replaces what an earlier run of it landed. `currunix` is the
-instant the read settles over the line, read off the header's `mtime` capture,
-and a line the header could not date settles at `EPOCH`, which every window
-covers -- so a header that matched nothing loses no line, and the table is laid
-out by the hour of that instant and nothing beside it. `logs.messages` is
+under the `rowheader` its document names, hands the read the run's window as
+its `where` -- the decode cuts every line and the record surface answers the
+clause over the rows they become, so nothing is filtered after the read --
+applies `Message.into_field()` at the storage boundary, and writes one
+schema-bearing reader directly to Iceberg. The window is `[start, end)`; a
+task given neither takes the last day up to now, and a run over a window
+replaces what an earlier run of it landed. `currunix` is the
+instant the read settles over the line, read off the header's `mtime` capture;
+a line the header could not date takes the modification time of the object it
+was read from, the one clock the read has left for it, and `EPOCH` only where
+a handle has none -- so a header that matched nothing loses no line, and the
+table is laid out by the hour of that instant and nothing beside it. An
+identity is derived from that instant, so a copy of a capture written at
+another time states another identity for every line its header did not match;
+the capture is replayed from where it was read, never from a copy. `logs.messages` is
 keyed on `curruuid` alone, the line identity the native read states;
 `currhashcode` remains its exact-content code and is not a second key. Nothing
-here computes a digest beside it. A raw text row names its source
-through Yggdryl `sourceurl` and `rownum`, and itself through `curruuid`, the
-line's own identity the native read states. A message parsed out of a stored
+here computes a digest beside it. A text row names its source through the
+read's own `crosscode` and `seqnum`, and itself through `curruuid`, the line's
+own identity the native read states. A message parsed out of a stored
 line records that identity in `srcuuids`, and the walk adds the identity of
-every other line its event was logged on; each joins to a raw row's
+every other line its event was logged on; each joins to a text row's
 `curruuid`, is provenance, never lineage, and no walk changes what the
 identity means.
 
@@ -166,34 +184,41 @@ The two FIX stages one codec exposes are two tasks over two tables, in this
 order and no other:
 
 ```text
-parse -> fix.bronze, lifecycle -> fix.silver
+parse -> fix.raw, lifecycle -> fix.refined
 ```
 
-`parse_fix_bronze` reads the stored rows of the same window off `currunix`,
-the event the read settled over each line, and parses them, and only that: a
-bronze row is what the message implied about itself, and `seqnum`, `prevuuid`
-and `parentuuids` are empty on every one because nothing has walked yet.
-`parse_fix_silver` reads the previous
-hour and the run's window from `fix.bronze`, including undated epoch rows, in
+`parse_fix_raw` reads the stored rows of the same window off `currunix`,
+the event the read settled over each line -- projected to `PARSE_COLUMNS`,
+the seven a parse consumes, so the scan opens no other -- and parses them,
+and only that: a `fix.raw` row is what the message implied about itself, and
+`seqnum`, `prevuuid` and `parentuuids` are empty on every one because nothing
+has walked yet. Its recording clock is the line's own instant, in `recdunix`
+and `refrecdunix` alike.
+`parse_fix_refined` reads the previous
+hour and the run's window from `fix.raw`, including undated epoch rows, in
 `currunix, seqnum, curruuid` order. The previous hour is context only: it lands
 the job window plus still-undated rows and excludes future expiry events. This
 bounded history does not claim arbitrary old-chain completeness. It reads each
 row back as the message that wrote it, walks the chains, and lands the walked
-rows. The walk reads the fixed row alone. A silver row differs from the bronze
-rows it merges in what the walk filled -- its place, its lineage, the merged
-`srcuuids`, the folded `creaunix`, `exprtime` and `state` -- and in the
-identity those re-settle to; a duplicate is not a successor, and the walk folds
-every copy of one message into one row naming every line it was logged on.
+rows. The walk reads the fixed row alone. A `fix.refined` row differs from the
+`fix.raw` rows it merges in what the walk filled -- its place, its lineage,
+the merged `srcuuids`, the earliest recording in `recdunix` and the reference
+it merged on in `refrecdunix`, the folded `creaunix`, `exprtime` and `state`
+-- and in the identity those re-settle to; a duplicate is not a successor, and
+the walk folds every copy of one message into one row naming every line it
+was logged on.
 
 Both tables use the native `fix_message_field(codec)` field directly,
 without a yggfin FIX model. Parse, storage, reconstruction,
-and lifecycle all use the same 128-column **FixMsg** contract. `sourceurl`,
-`rownum`, `msgthreadid`, `loglevel` and `body` remain only in `logs.messages`;
-the bridge's `msgsessionid`, `msgctxid`, `msgseqnum` and `msgpluginid` are
-native FixMsg fields a raw line fills, so they stand on both shapes under one
-spelling and nothing translates between them. `srcuuids` joins a FIX row to
-the `curruuid` of every raw row its event was logged on -- one on bronze, all
-of them after the walk.
+and lifecycle all use the same 128-column **FixMsg** contract. `msgthreadid`,
+`loglevel` and `body` remain only in `logs.messages`, and `crosscode` and
+`seqnum` stand on both shapes meaning the row they sit on -- the object a
+line was read from and its row number there, the chain a message belongs to
+and its step in it here; the bridge's `msgsessionid`, `msgctxid`, `msgseqnum` and `msgpluginid` are
+native FixMsg fields a text line fills, so they stand on both shapes under
+one spelling and nothing translates between them. `srcuuids` joins a FIX row
+to the `curruuid` of every line its event was logged on -- one on `fix.raw`,
+all of them on `fix.refined`.
 The native row contains 32 crate fields; code vocabularies live centrally and
 fields reference them through `FIX:codeset`. `fixentries` is residual and does
 not duplicate successfully lifted scalars or complete groups. A reconstructed
@@ -229,9 +254,9 @@ native defaults and an object is forwarded unchanged. Useful pins include
 `official_time_delay_ms`, and `snapshot_ns`. The doors are named for
 their stage: `fix_parse_*` and `fix_lifecycle_*`, a line door and a batch door each.
 
-The silver Iceberg scan prunes with `fix_window_filter`, requests
+The refined Iceberg scan prunes with `fix_window_filter`, requests
 `SORT_COLUMNS`, and merges at most 16 overlapping file streams at once. It
-does not form a Python `read_all` union. Native 0.1.9 lifecycle processing
+does not form a Python `read_all` union. Native 0.1.10 lifecycle processing
 still collects and stable-sorts its finite scan result. Undated rows read from
 the epoch partition may accumulate, so this path is not batch-memory-bounded.
 
@@ -241,8 +266,8 @@ is written in and nothing else: `rekep.dbt` is the one seam, a source is one
 the DuckDB database is `:memory:` because Iceberg holds the state. A model's
 `config()` block is its Iceberg declaration -- table, key, partition, sort
 order and the storage types SQL cannot spell -- so no second Field, catalog or
-warehouse is declared anywhere under `data/dbt`. A product reads `fix.silver`
-and never `fix.bronze`, because a product needs the chain and bronze carries
+warehouse is declared anywhere under `data/dbt`. A product reads `fix.refined`
+and never `fix.raw`, because a product needs the chain and `fix.raw` carries
 none; a market fact is FIX's own field, and the staging model restates the
 products' reading of it off those fields.
 
@@ -250,7 +275,7 @@ Airflow launches the adjacent standalone runner through the locked `uv`
 `runner` group; the operator never calls the Rekep CLI. `rekep_ingestion` is
 the three streaming stages, daily, each run over its own data interval unless
 the run's conf names `start` or `end`; `rekep_products` is `build_dbt`,
-scheduled on the `fix.silver` Asset the first one publishes last.
+scheduled on the `fix.refined` Asset the first one publishes last.
 
 Every task result and its closing INFO record use `rekep.logs.Stage` and agree
 on `task`, `read`, `written`, `skipped`, `sources`, `targets`, `window`, and
@@ -272,7 +297,7 @@ python/src/rekep/
   fields/       native Field metadata helpers
   iceberg/      catalog, dataset, schema bridge, and PyIceberg FileIO
   tasks/        application configuration only
-  text/         raw Message declaration
+  text/         the text Message declaration
   fix.py        the bundled registry and the two FIX stages over two tables
   times.py      instant readings, the run window and the ULBridge row header
   resources.py  Yggdryl binding and required byte reads
@@ -280,8 +305,8 @@ python/src/rekep/
 tasks/
   airflow/
   parse_messages/
-  parse_fix_bronze/
-  parse_fix_silver/
+  parse_fix_raw/
+  parse_fix_refined/
   optimize_iceberg/
   build_dbt/
 data/dbt/       the dbt project: models, schemas, macros and its one profile

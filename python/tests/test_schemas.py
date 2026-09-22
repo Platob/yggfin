@@ -31,7 +31,7 @@ FIX_CONTRACT = SCHEMAS / "rekep" / "fixmsg.json"
 
 
 def load_contract() -> Field:
-    """Read the raw message contract as the struct it declares."""
+    """Read the `Message` contract as the struct it declares."""
     return iceberg_contract_field(CONTRACT.read_text(encoding="utf-8"), "Message")
 
 
@@ -55,8 +55,8 @@ def test_a_contract_is_the_three_things_iceberg_stores() -> None:
     assert [member["name"] for member in document["schema"]["fields"]] == [
         member.name for member in Message.into_field()
     ]
-    # The line identity is the whole key; the exact-byte content code remains
-    # an ordinary column the native read states beside it.
+    # The line identity is the whole key; the exact-content code remains an
+    # ordinary column the native read states beside it.
     assert document["schema"]["identifier-field-ids"] == [2]
     assert document["schema"]["fields"][1]["name"] == "curruuid"
     assert document["schema"]["fields"][1]["type"] == "fixed[16]"
@@ -126,7 +126,7 @@ def test_the_fix_contract_is_what_the_current_dictionary_answers() -> None:
     bytes with what the installed yggdryl produces today, column for column,
     and a dictionary that moved under it is a failing test rather than a
     schema evolution nobody asked for. One document for two tables, because
-    `fix.bronze` and `fix.silver` are one shape.
+    `fix.raw` and `fix.refined` are one shape.
     """
     document = FIX_CONTRACT.read_text(encoding="utf-8")
     fixed = load_fix_contract()
@@ -141,25 +141,29 @@ def test_the_fix_contract_is_what_the_current_dictionary_answers() -> None:
 
 
 def test_the_stored_row_holds_none_of_the_text_it_was_read_from() -> None:
-    """A FIX row carries native event facts only; `logs.messages` owns where a
-    line was read from, what it printed and the two captures no field takes,
-    and `srcuuids` joins an event back to those lines."""
+    """A FIX row carries native event facts only; `logs.messages` owns what a
+    line printed and the two captures no field takes, and `srcuuids` joins an
+    event back to those lines. Where a line was read from is its `crosscode`
+    and its row number its `seqnum` -- the event columns, which a FIX row
+    holds under the same names meaning the message's chain and its step."""
     stored = fix_message_field().into_arrow_schema()
     parsed = fix_parse_field().into_arrow_schema()
     logged = Message.into_field().into_arrow_schema()
 
-    for column in ("sourceurl", "rownum", "msgthreadid", "loglevel", "body"):
+    for column in ("msgthreadid", "loglevel", "body"):
         assert column not in stored.names, column
         assert column not in parsed.names, column
-    # The bracket's own facts are native fields a raw line fills, so they are
+    for column in ("crosscode", "seqnum"):
+        assert column in stored.names and column in logged.names, column
+    # The bracket's own facts are native fields a text line fills, so they are
     # on both shapes under one spelling and nothing translates between them.
     for column in ("msgsessionid", "msgctxid", "msgseqnum", "msgpluginid"):
         assert column in stored.names and column in logged.names, column
     assert "body" in logged.names
     assert stored.field("srcuuids").type.field(0).type == pyarrow.binary(16)
     assert logged.field("curruuid").type == pyarrow.binary(16)
-    # Raw and fixed rows each declare only their own identity; the content
-    # code remains an ordinary quality/audit column on both shapes.
+    # A text row and a FIX row each declare only their own identity; the
+    # content code remains an ordinary quality/audit column on both shapes.
     assert primary_keys(Message.into_field()) == ["curruuid"]
     assert not [member.name for member in fix_message_field() if member.digest.is_holder()], (
         "no column here is a digest this shape computes"
@@ -207,7 +211,7 @@ def test_the_fix_tables_are_laid_out_by_the_event_and_keyed_by_its_identity() ->
         "beginstring",
     ]
     assert fixed["snapunix"].nullable
-    assert fixed["seqnum"].nullable, "empty on every bronze row"
+    assert fixed["seqnum"].nullable, "empty on every `fix.raw` row"
 
 
 def test_the_fix_declaration_keeps_its_registry_metadata() -> None:
@@ -224,7 +228,7 @@ def test_the_fix_declaration_keeps_its_registry_metadata() -> None:
     }
 
 
-def test_raw_message_contract_keeps_the_captures_the_bridge_names() -> None:
+def test_the_message_contract_keeps_the_captures_the_bridge_names() -> None:
     message = load_contract()
     assert primary_keys(message) == ["curruuid"]
     assert partition_keys(message) == {"currunix": "hour"}

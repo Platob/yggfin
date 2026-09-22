@@ -46,14 +46,14 @@ INGESTED = {shape.table: shape for shape in TABLES}
 #: lifecycle fact, one row per chain, and one occurrence per execution the
 #: bridge relayed into a business-identifier chain.
 PRODUCTS = {
-    "orders.events": 19,
+    "orders.events": 16,
     "orders.current": 8,
     "executions.fills": 7,
 }
 
-#: The whole route, in order: capture to raw rows, raw rows to parsed FIX,
+#: The whole route, in order: capture to text rows, text rows to parsed FIX,
 #: parsed FIX to walked FIX, walked FIX to products.
-WORKFLOW = ("parse_messages", "parse_fix_bronze", "parse_fix_silver", "build_dbt")
+WORKFLOW = ("parse_messages", "parse_fix_raw", "parse_fix_refined", "build_dbt")
 
 #: The day the fixture was captured on, which the two ingestion tasks are
 #: told because each covers the last day when nothing says otherwise.
@@ -485,8 +485,8 @@ def test_the_products_are_built_from_the_fixture_and_a_replay_writes_nothing(
         assert sum(current.column("eventcount").to_pylist()) == PRODUCTS["orders.events"]
         fills = store.dataset("executions.fills").read_arrow_table()
         assert min(fills.column("lastqty").to_pylist()) > 0, "a fill states what it executed"
-        silver = store.dataset("fix.silver").read_arrow_table()
-        expired = silver.filter(pyarrow.compute.equal(silver.column("state"), "95EXPIRED"))
+        refined = store.dataset("fix.refined").read_arrow_table()
+        expired = refined.filter(pyarrow.compute.equal(refined.column("state"), "95EXPIRED"))
         assert expired.num_rows == 1
         expiry = expired.to_pylist()[0]
         expiry_event = events.filter(

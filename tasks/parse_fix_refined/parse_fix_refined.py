@@ -10,6 +10,7 @@ with app.setup:
 
     import marimo as mo
     import pyarrow
+
     from rekep.fields import stored_arrow_reader
     from rekep.fix import (
         EVENT_CLOCK,
@@ -26,13 +27,13 @@ with app.setup:
     from rekep.tasks import Task
     from rekep.times import window_of, within
 
-    TARGET = "fix.silver"
+    TARGET = "fix.refined"
 
 
 @app.cell(hide_code=True)
 def _():
     mo.md("""
-    # Parse FIX: silver
+    # Parse FIX: refined
 
     Read the previous hour and this job's window in event order, walk their
     lifecycle, and land only the events belonging to this job's window.
@@ -44,13 +45,13 @@ def parameters():
     # The adjacent document owns every default. A runner passes the whole
     # mapping to `app.run(defs=...)`, which replaces this cell.
     _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
-    bronze = _defaults["bronze"]
+    raw = _defaults["raw"]
     registry = _defaults["registry"]
     codec_options = _defaults["codec_options"]
     start = _defaults["start"]
     end = _defaults["end"]
     catalog = _defaults["catalog"]
-    return bronze, catalog, codec_options, end, registry, start
+    return raw, catalog, codec_options, end, registry, start
 
 
 @app.cell
@@ -60,26 +61,26 @@ def _():
 
 
 @app.cell
-def _(bronze, catalog, codec_options, end, records, registry, start):
+def _(raw, catalog, codec_options, end, records, registry, start):
     _ = records
     with ExitStack() as opened:
         window = window_of(start, end)
         history = (window[0] - datetime.timedelta(hours=1), window[1])
         stage = Stage(
-            "parse_fix_silver",
-            sources={"bronze": bronze},
-            targets={"silver": TARGET},
+            "parse_fix_refined",
+            sources={"raw": raw},
+            targets={"refined": TARGET},
             window=window,
         )
         store = IcebergCatalog.from_dict(catalog)
         opened.callback(store.close)
-        # The same codec `parse_fix_bronze` pinned: the walk reads each row
+        # The same codec `parse_fix_raw` pinned: the walk reads each row
         # back as the message that wrote it, and the dictionary is what wrote
         # it. The same field too, because a walked row is the parsed row
         # restated: same columns, same key, same layout.
         codec = fix_codec(fix_registry(registry), **(codec_options or {}))
         field = fix_message_field(codec)
-        parsed = store.dataset(bronze, field=field)
+        parsed = store.dataset(raw, field=field)
         opened.callback(parsed.close)
         # The hour transform prunes partitions, then the ordered reader
         # concatenates disjoint file ranges and merges only overlapping ones.
@@ -101,8 +102,9 @@ def _(bronze, catalog, codec_options, end, records, registry, start):
         )
         opened.callback(counted.close)
         # The native lifecycle owns dating, delivery deduplication, state and
-        # expiry. Its finite capture is limited to this input window; there
-        # is no second collected Arrow table or union before the walk.
+        # expiry, and collects and stable-sorts its finite input itself -- the
+        # previous hour and this window; there is no second collected Arrow
+        # table or union before the walk.
         walked = fix_lifecycle_arrow_reader(codec, counted)
         opened.callback(walked.close)
 
@@ -121,16 +123,16 @@ def _(bronze, catalog, codec_options, end, records, registry, start):
 
         events = pyarrow.RecordBatchReader.from_batches(walked.schema, _events())
         opened.callback(events.close)
-        # The storage boundary, the same one bronze crossed: the content codes
+        # The storage boundary, the same one the raw stage crossed: the codes
         # read as the signed integers Iceberg stores, then the field applied
         # in its native order.
         applied = stored_arrow_reader(events, field)
         opened.callback(applied.close)
-        silver = store.dataset(TARGET, field=field, merge_schema=True)
-        opened.callback(silver.close)
+        refined = store.dataset(TARGET, field=field, merge_schema=True)
+        opened.callback(refined.close)
         # Only this window is written. Previous-hour rows warm the lifecycle
         # without replacing the historical chain with a truncated replay.
-        written = silver.overwrite_arrow_reader(applied, field, merge_by=True)
+        written = refined.overwrite_arrow_reader(applied, field, merge_by=True)
         _outcome = stage.finished(
             read=counts["read"],
             written=written,
@@ -150,7 +152,7 @@ def _(outcome):
 
 
 @app.cell
-def datasets(bronze, catalog, end, result, start):
+def datasets(raw, catalog, end, result, start):
     # What the two datasets look like after the run: how each is laid out, and
     # one chain read in the order the walk gave it. A presentation cell -- the
     # runner publishes `result` and nothing else -- and it runs headless, so a
@@ -160,7 +162,7 @@ def datasets(bronze, catalog, end, result, start):
         _store = IcebergCatalog.from_dict(catalog)
         shown.callback(_store.close)
         _layout = {}
-        for _name in (bronze, TARGET):
+        for _name in (raw, TARGET):
             if not _store.table_exists(_name):
                 continue
             _dataset = _store.dataset(_name)
@@ -179,11 +181,11 @@ def datasets(bronze, catalog, end, result, start):
             }
         _chain = None
         if TARGET in _layout and _layout[TARGET]["rows"]:
-            _silver = _store.dataset(TARGET)
-            shown.callback(_silver.close)
+            _refined = _store.dataset(TARGET)
+            shown.callback(_refined.close)
             # The interactive view is a bounded sample of this window; it
             # never scans the full warehouse after an otherwise pruned job.
-            _sample = _silver.read_arrow_reader(
+            _sample = _refined.read_arrow_reader(
                 columns=("crosscode", "currunix", "seqnum", "curruuid", "prevuuid", "state"),
                 row_filter=fix_window_filter(window_of(start, end)),
                 order_by=SORT_COLUMNS,
