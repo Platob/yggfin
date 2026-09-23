@@ -36,8 +36,8 @@ and no compatibility shims.
 ```text
 Market                     the slim facts; a book level or any simple struct
 ├─ MarketEvent             = Event + Market (blanket)          -> Book, BookSide
-└─ MarketOperation         = Market + operation facts          -> OrderEntry, QuoteEntry, ExecutionEntry
-   └─ MarketOperationEvent = Event + MarketOperation (blanket) -> Order, Quote, Execution, Trade, FixMsg
+└─ MarketOperation         = Market + operation facts          -> OperationEntry
+   └─ MarketOperationEvent = Event + MarketOperation (blanket) -> Operation, Trade, FixMsg
 ```
 
 A `Book` is a `MarketEvent` and never carries operation facts. Its
