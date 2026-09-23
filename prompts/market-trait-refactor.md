@@ -6,27 +6,42 @@ written to be pasted into a fresh agent session on its own.
 
 ---
 
-## A. Yggdryl: split `MarketElement` into a slim `Market` trait
+## A. Yggdryl: split `MarketElement` into `Market` and `MarketOperation`
 
 ### Context
 
 `rust/src/graph/element.rs` defines `MarketElement: Element` with 34 facts and
 68 accessors. Every holder carries all of them (`MarketElementData`,
 `MarketEventData` in `rust/src/graph/event.rs`, and through them `BookSide`,
-`Book`, `Quote`, `Order`, `Execution`, `Trade`, `FixMsg`). A book level or a
-simple quote pays for five `Option<Code>` instrument slots, eight bid/ask lane
-fields, `tif`, `tradable`, `symbolticker`, `cumqty` and a heap `String` unit it
-rarely uses. `delegate_market_element!` in `graph/mod.rs` repeats the whole
-surface per wrapper.
+`Book`, `Quote`, `Order`, `Execution`, `Trade`, `FixMsg`). A book pays for
+facts that only an operation states: eight bid/ask lane fields, `tif`,
+`tradable`, `symbolticker`, `cumqty` and `marketoperationid`. On top of that,
+five `Option<Code>` instrument slots and a heap `String` unit. The
+`delegate_market_element!` macro in `graph/mod.rs` repeats the whole surface
+for each wrapper.
 
-Goal: one small `Market` trait that a book level, a quote or any simple struct
-can implement cheaply, with compact value types underneath it.
+Goal:
+- A small `Market` trait that a book level or any simple struct can implement
+  cheaply.
+- A `MarketOperation` trait that adds the operation facts.
+- `Book` implements `MarketEvent` (event plus slim market) and nothing more.
+- Compact value types underneath all of it.
 
 Follow `AGENTS.md`: Rust core first, smoke each step, then Python, then Node,
 then docs. Delete what this replaces in the same change: no deprecated aliases
 and no compatibility shims.
 
-### Target trait
+### Target traits: four layers
+
+```text
+Market                     the slim facts; a book level or any simple struct
+├─ MarketEvent             = Event + Market (blanket)          -> Book, BookSide
+└─ MarketOperation         = Market + operation facts          -> OrderEntry, QuoteEntry, ExecutionEntry
+   └─ MarketOperationEvent = Event + MarketOperation (blanket) -> Order, Quote, Execution, Trade, FixMsg
+```
+
+A `Book` is a `MarketEvent` and never carries operation facts. Its
+`executions` stay `Vec<Execution>`, so they are full operation events.
 
 ```rust
 pub trait Market {
@@ -45,36 +60,67 @@ pub trait Market {
     fn get_prevqty(&self) -> Option<Decimal18>;
     fn get_lastqty(&self) -> Option<Decimal18>;
     fn get_leavesqty(&self) -> Option<Decimal18>;
-    fn get_metadata(&self) -> &MarketMetadata;
+    fn get_metadata(&self) -> &Metadata;
     // A matching `set_*` for each, plus
     // `securityids_mut(&mut self) -> &mut SecurityIds`.
 }
+
+pub trait MarketOperation: Market {
+    fn get_marketoperationid(&self) -> Option<i32>;
+    fn get_ticker(&self) -> Option<&str>;          // was `symbolticker`
+    fn get_tif(&self) -> Option<&str>;
+    fn get_tradable(&self) -> Option<bool>;
+    fn get_cumqty(&self) -> Option<Decimal18>;
+    fn get_bid(&self) -> Option<&Lane>;            // Lane { price, currency, quantity, unit }
+    fn get_ask(&self) -> Option<&Lane>;
+    // A matching `set_*` for each.
+}
 ```
 
-- Keep `Element` (identity, digest, merge) as the supertrait wherever an
-  implementor needs identity. `Market` itself must be implementable by a plain
-  struct with no uuid or digest, such as a book level. Put the digest, merge
-  and follow helpers (`feed_market`, `merge_market`, `follow_market`,
-  `fill_market`) on `Market + Element` blanket impls, not on `Market`.
+- `Market` must be implementable by a plain struct with no uuid or digest,
+  such as a book level. Keep `Element` (identity, digest, merge) out of its
+  supertraits.
+- Put the digest, merge and follow helpers on blanket impls:
+  - `feed_market`, `merge_market` and `follow_market` on `Market + Element`.
+    They cover the 16 slim facts only.
+  - `feed_operation`, `merge_operation` and `follow_operation` on
+    `MarketOperation + Element`. They continue the slim versions with the
+    operation facts.
+- `fill_market` splits the same way. The slim part fills the price and
+  quantity from `lastpx`/`avgpx`/`lastqty` and adds the CUSIP embedded in an
+  ISIN. `fill_operation` adds the lane rules and `fill_lanes`.
 - `execunix` moves from `Event` to `Market`. `Event` keeps the other clocks.
   An undated entry reports `None`.
-- Replace `delegate_market_element!` with one delegate over the 16 facts. The
-  macro should shrink by about half.
+- `metadata` is `Option<Box<BTreeMap<..>>>` internally, holding the free-form
+  facts. A struct that states none pays one pointer, and the getter returns a
+  shared static empty value when it is absent. Decide whether it replaces
+  `Element::identifiers` or sits beside it; never both for one fact.
+- `Lane` is one struct shared by `bid` and `ask`. Store it as
+  `Option<Box<Lane>>` or inline, whichever the size test favours.
+- Rename `symbolticker` to `ticker` everywhere: trait, holders, digest label,
+  Arrow column, both bindings and docs. The digest label changes, so identities
+  move (see Contract).
 
-### Facts leaving the trait (decide, don't drop silently)
+### Holders
 
-| Fact | Default destination |
-| --- | --- |
-| `isincode`, `cusipcode`, `sedolcode`, `bloombergcode`, `figicode` | `SecurityIds` entries |
-| `symbolticker` | `SecurityId` of `SecType::Ticker` |
-| `tif`, `tradable`, `marketoperationid` | `MarketMetadata` |
-| `cumqty` | `MarketMetadata`. It is derivable as `quantity - leavesqty`, so keep it only where a message states it |
-| `bidpx/bidcurrency/bidqty/bidunit`, `ask*` | Off the trait. `Quote` owns two optional lanes `{price, currency, quantity, unit}`. `Book` already has `bid`/`ask` `BookSide`s. `fill_lanes` moves to `Quote` |
-| `Element::identifiers` map | Stays on `Element`. `MarketMetadata` does not duplicate it |
+| Holder | Implements | Wrapped by |
+| --- | --- | --- |
+| `MarketData` (was `MarketElementData`, slimmed) | `Element + Market` | `BookSide` |
+| `MarketEventData` (slimmed) | `MarketEvent` | `Book` |
+| `MarketOperationData` | `Element + MarketOperation` | `OrderEntry`, `QuoteEntry`, `ExecutionEntry` |
+| `MarketOperationEventData` | `MarketOperationEvent` | `Order`, `Quote`, `Execution`, `Trade` |
 
-`MarketMetadata` should be `Option<Box<..>>` internally, so a struct that
-states none of it pays one pointer. The getter returns a shared static empty
-value when it is absent.
+- `FixMsg` implements `MarketOperationEvent` directly.
+- Each operation holder embeds the slim holder
+  (`MarketOperationEventData { event: MarketEventData, operation: .. }`), so
+  converting an operation into a book's view moves the slim part without
+  cloning.
+- `MarketEntryValue` converts through `MarketOperationData` and
+  `MarketOperationValue` converts through `MarketOperationEventData`. Both keep
+  their names and by-value moves.
+- Replace `delegate_market_element!` with two delegates, one over the 16
+  `Market` facts and one over the 7 `MarketOperation` facts. A wrapper that
+  only needs `Market` generates only the first.
 
 ### `SecType`: a `#[repr(u8)]` enum
 
@@ -85,7 +131,8 @@ value when it is absent.
   `J` OPRA, `K` ISDA/FpML URL, `L` letter of credit, `M` marketplace,
   `N`/`P` Markit RED, `Q` CFTC, `R` ISDA commodity, `S` FIGI, `T` LEI,
   `U` synthetic, `V` FIM, `W` index name, `X` UMTF, `Y` DTI.
-- Add a `Ticker` variant for `Symbol(55)`, and `Other = 255`.
+- Add `Other = 255`. There is no `Ticker` variant, because `ticker` is its own
+  field on `MarketOperation` and one fact has one owner.
 - Discriminants are a wire and digest contract: fix them explicitly, never by
   declaration order.
 - `SecType::from_spelling` reads the wire code, the spec name and the stored
@@ -122,7 +169,9 @@ value when it is absent.
   O(n + m), with no re-sort. Returns whether anything was added. This replaces
   the per-code `CodeValue::merge_with` calls in `merge_market`.
 - `Deref<Target = [SecurityId]>`, so the trait hands out `&[SecurityId]`.
-- Fold the ISIN-to-CUSIP rule from `instrument::embedded_cusip` into
+- `SecurityIds` replaces the five code fields (`isincode`, `cusipcode`,
+  `sedolcode`, `bloombergcode`, `figicode`).
+- Fold the ISIN-to-CUSIP rule from `instrument::embedded_cusip` into the slim
   `fill_market` as an `insert`. `InstrumentCodes::enrich` reads and writes
   `SecurityIds`.
 - Digest: feed the ids in sorted order as `tag byte + code`, so the digest
@@ -143,8 +192,7 @@ value when it is absent.
 - Arrow and Iceberg storage stay the `yggdryl.side` string extension, written
   from `as_str()` at the boundary. SQL readers keep `side = 'BUY'`. Changing
   the column to `uint8` is a separate, explicit decision; do not make it here.
-- The digest keeps feeding the spelling bytes, so `curruuid` for side does not
-  move. The `SecurityIds` change moves identities anyway (see Contract).
+- The digest keeps feeding the spelling bytes.
 - Remove `Side` from the `family_value!` `Code` family if it no longer fits
   the `SmolStr` leaf shape. Keep it a `Scalar` variant.
 
@@ -155,32 +203,46 @@ value when it is absent.
   fixed max width (pick and document it, for example 32).
 - `Unit::none()` is the empty unit and `is_none()` tests for it. Add a
   `yggdryl.unit` Arrow extension beside `yggdryl.currency`.
-- Replaces `unit: String` and the lane `Option<String>` units.
+- Replaces `unit: String` and the unit inside `Lane`.
 
 ### Contract and storage
 
-- The market schema changes: five code columns and `symbolticker` become one
-  `securityids` column, the lane columns leave the market row (they stay on the
-  quote row only), and `tif`, `tradable`, `marketoperationid` and `cumqty` move
-  under `metadata`.
+- The market row (`MarketEventData`, a book's row and each book side's level)
+  is the 16 slim facts plus the event clocks:
+  - one `securityids` column replaces the five code columns;
+  - the `bid*`/`ask*` lane columns, `tif`, `tradable`, `marketoperationid`,
+    `cumqty` and `ticker` leave it.
+- The operation row (orders, quotes, executions, trades, `fixmsg`) is the
+  market row plus `marketoperationid`, `ticker`, `tif`, `tradable`, `cumqty`,
+  and `bid`/`ask` as two nullable `struct<price, currency, quantity, unit>`
+  columns.
 - Pick the `securityids` Arrow shape and state it in the schema docs.
   Default: `list<struct<sectype: dictionary<uint8, utf8>, code: utf8>>`,
   sorted.
-- Identity changes: the digest input changes, so every `curruuid` of a market
-  row changes. Say so in the changelog and bump the minor version.
-  Consumers rebuild from capture and never dual-write.
+- Identity changes: the digest inputs (`securityids`, `ticker`, the split
+  between the slim and operation digests) change, so every market `curruuid`
+  changes. Say so in the changelog and bump the minor version. Consumers
+  rebuild from capture and never dual-write.
 - Update `.api-inventory.txt`, both bindings (Python `graph`/`fix` getters,
   Node `fix.rs`) and the docs pages for the market graph. Python and Node
-  expose `securityids` as a list of `(sectype, code)` and `side` as its stored
-  spelling.
+  expose:
+  - `securityids` as a list of `(sectype, code)`;
+  - `side` as its stored spelling;
+  - `ticker` in place of `symbolticker`;
+  - `bid`/`ask` as lane objects.
 
 ### Done means
 
 - Smoke clean per `AGENTS.md`, with `rust/tests/graph*` covering book, quote,
-  order and execution folding.
-- A size and allocation test pins `size_of::<Side>() == 1`,
-  `SecurityId` zero-alloc for ISIN, and `size_of` for the holders before and
-  after. Put the numbers in the PR body.
+  order and execution folding. Add a test that a `Book` built from orders
+  keeps no operation facts, and that its executions keep theirs.
+- A size and allocation test pins:
+  - `size_of::<Side>() == 1`;
+  - `SecurityId` zero-alloc for an ISIN;
+  - `size_of` of all four holders, before and after. `MarketEventData` must
+    shrink, and `Book` with it.
+
+  Put the numbers in the PR body.
 - A benchmark covers book building on the existing `rust/benchmarks/fix`
   capture, before and after.
 - CI is green, and a release is tagged for yggfin to pin.
@@ -193,11 +255,14 @@ Run after A is released as Yggdryl `X.Y.Z`.
 
 1. Bump `python/pyproject.toml` to the exact release and relock `python/uv.lock`.
 2. Regenerate `schemas/rekep/marketevent.json` and `schemas/rekep/book.json`
-   from the native fields. Never hand-edit them. The fields are
-   `securityids` in place of `isincode`/`cusipcode`/`sedolcode`/
-   `bloombergcode`/`figicode`/`symbolticker`, lanes gone from non-quote rows,
-   `metadata` holding `tif`/`tradable`/`marketoperationid`/`cumqty`, and
-   `execunix` on every market row, including book levels.
+   from the native fields. Never hand-edit them.
+   - `book.json` and the `bid`/`ask` book levels take the slim market row:
+     `securityids`, `execunix`, no lanes, no `ticker`/`tif`/`tradable`/
+     `marketoperationid`/`cumqty`. The `executions` list keeps the full
+     operation row.
+   - `marketevent.json` (orders, quotes, executions) takes the operation row,
+     with `ticker` in place of `symbolticker` and `bid`/`ask` lane structs in
+     place of the eight lane columns.
 3. Field ids renumber, so `market.books`, `market.orders`, `market.quotes` and
    `market.executions` are **recreated and rebuilt from `fix.refined`**, not
    evolved. Record this beside the existing 0.1.10 identity migration note in
@@ -205,11 +270,13 @@ Run after A is released as Yggdryl `X.Y.Z`.
 4. Adapt `python/src/rekep/market.py` (the `bid`/`ask` `deltas` flatten) and
    the `parse_books`, `parse_orders`, `parse_quotes` and `parse_executions`
    tasks to the new columns. Use Arrow kernels only, with no Python row loops.
-5. dbt: `stg_fix_messages.sql`, `orders_events.sql`, `orders_current.sql` and
-   `executions_fills.sql` read `isincode`, `symbolticker`, `side` and `cumqty`
-   today. Read ISIN and ticker out of `securityids` with one macro, for example
-   `security_id(securityids, 'ISIN')`, and `cumqty` out of `metadata`.
-   `side` is still the same string.
+5. dbt: in `stg_fix_messages.sql`, `orders_events.sql`, `orders_current.sql`
+   and `executions_fills.sql`:
+   - rename `symbolticker` to `ticker`;
+   - read the ISIN out of `securityids` with one macro, for example
+     `security_id(securityids, 'ISIN')`.
+
+   `side` and `cumqty` stay plain columns on operation rows.
 6. Update `docs/contracts/types.md`, `docs/roadmap/order-book.md` and the
    pipeline task pages, then regenerate the samples.
 7. `uv run pytest` must be green, including `test_schemas` and `test_docs`.
@@ -219,11 +286,10 @@ Run after A is released as Yggdryl `X.Y.Z`.
 
 ## Open decisions to confirm before running A
 
-1. Lanes: do they leave the trait for `Quote` only (default), or stay as
-   `MarketMetadata`?
+1. `metadata`: does it replace `Element::identifiers` or sit beside it?
 2. `SecurityIds` uniqueness: `(sectype, code)` (default, which allows two
-   tickers on two venues) or one id per `SecType`?
+   listings of one type) or one id per `SecType`?
 3. `Side` on the wire: keep the string extension (default) or move to `uint8`?
 4. `Unit` max width.
-5. Does `symbolticker` become `SecType::Ticker` (default), or stay a plain
-   field?
+5. `Lane` storage: boxed (small operations) or inline (lane-heavy quotes)?
+   Decide it by the size test.
