@@ -158,20 +158,127 @@ pub trait MarketOperation: Market {
 | --- | --- | --- |
 | `MarketData` (was `MarketElementData`, slimmed) | `Element + Market` | `BookSide` |
 | `MarketEventData` (slimmed) | `MarketEvent` | `Book` |
-| `MarketOperationData` | `Element + MarketOperation` | `OrderEntry`, `QuoteEntry`, `ExecutionEntry` |
-| `MarketOperationEventData` | `MarketOperationEvent` | `Order`, `Quote`, `Execution`, `Trade` |
+| `MarketOperationData` | `Element + MarketOperation` | `OperationEntry` |
+| `MarketOperationEventData` | `MarketOperationEvent` | `Operation`, the `Trade` root |
 
 - `FixMsg` implements `MarketOperationEvent` directly.
 - Each operation holder embeds the slim holder
   (`MarketOperationEventData { event: MarketEventData, operation: .. }`), so
   converting an operation into a book's view moves the slim part without
   cloning.
-- `MarketEntryValue` converts through `MarketOperationData` and
-  `MarketOperationValue` converts through `MarketOperationEventData`. Both keep
-  their names and by-value moves.
+- `MarketEntryValue` and `MarketOperationValue` are deleted with the per-kind
+  wrappers they converted between (see "Simplify `Book`, `Order`, `Quote`,
+  `Execution`"). `Operation` and `OperationEntry` are the only operation
+  values, and they convert by moving their holder.
 - Replace `delegate_market_element!` with two delegates, one over the 20
   `Market` facts and one over the 8 `MarketOperation` facts. A wrapper that
   only needs `Market` generates only the first.
+
+### Simplify `Book`, `Order`, `Quote`, `Execution`
+
+With the slim `Market` / `MarketOperation` split, the per-kind types carry
+no behavior of their own. Collapse them.
+
+**What exists today** (`rust/src/graph/`):
+- `order.rs`, `quote.rs` and `execution.rs` are the same 85-line file three
+  times. Each holds a `#[repr(transparent)]` wrapper over `MarketEventData`
+  plus an `…Entry` wrapper over `MarketElementData`, and they differ only
+  in the kind's name and the `is_execution` flag passed to
+  `delegate_market_event!`.
+- `book.rs` wraps them again, in two enums:
+  - `enum MarketOperation { Order, Quote, Execution, Trade, Snapshot }`;
+  - `enum MarketEntry { Order, Quote, Execution }`.
+
+  It also keeps `MarketOperationKind` and the
+  `operation_try_from!` conversions.
+- The existing enum is named `MarketOperation`, which collides with the new
+  trait's name.
+- `book.rs` keeps its book-control facts in `Element::identifiers`, which
+  this refactor deletes:
+  - `MDUpdateAction` (with the `SNAPSHOT` value that
+    `is_full_snapshot` reads);
+  - `BookScope`;
+  - `MDEntryID`, `MDEntryRefID` and `MDEntryPositionNo`.
+
+**Target:**
+
+- **One operation type.** `graph/operation.rs` defines three types:
+  - `Operation { kind: OperationKind, data: MarketOperationEventData,
+    book: Option<Box<BookRef>> }`;
+  - `OperationEntry { kind: OperationKind, data: MarketOperationData }`;
+  - `#[repr(u8)] enum OperationKind { Order = 1, Quote = 2, Execution = 3,
+    Trade = 4 }`, with explicit discriminants and `as_str()` spelling the
+    stored `operationkind` (`order`, `quote`, `execution`, `trade`).
+
+  Supporting details:
+  - Constructors are `Operation::order(data)`, `::quote(data)` and
+    `::execution(data)`.
+  - `is_execution()` is `kind == Execution`, which replaces the macro flag.
+  - `Operation::entry(self) -> OperationEntry` and
+    `OperationEntry::at(self, unix) -> Operation` move the holder.
+  - Delete `order.rs`, `quote.rs` and `execution.rs`, the six wrapper
+    types, `MarketEntry`, `operation_try_from!`, and the `existing` /
+    `event_only` arms of `delegate_market_event!`. Add no type aliases.
+- **`BookRef`: the book-control facts, typed.** They move out of the
+  deleted `identifiers` map:
+  - `action: Option<MdUpdateAction>`: a `#[repr(u8)]` enum read from
+    `MDUpdateAction(279)`'s code set (`New`, `Change`, `Delete`, …), plus a
+    `Snapshot` value for a full-refresh entry, which replaces the `SNAPSHOT`
+    string;
+  - `scope: Option<SmolStr>`: the `BookScope` / `BookSnapshotScope:` key;
+  - `position: Option<u32>`: `MDEntryPositionNo(290)`.
+
+  `MDEntryID(278)` and `MDEntryRefID(280)` are IDs, so they go in `altids`
+  as `MDENTRYID` and `MDENTRYREFID`, not in `BookRef`. `BookRef` is boxed
+  and absent on every non-market-data operation, so an order pays one
+  pointer. `is_full_snapshot()` and `scope()` read it.
+- **`Trade`** keeps its composite shape:
+  - a `MarketOperationEventData` root, plus `executions: Vec<Operation>`,
+    each with `kind == Execution`, checked in `from_parts`;
+  - the canonical execution ordering and the validation rules
+    (`validate_parts`) are unchanged.
+- **Book inputs.** The heterogeneous input a book folds is
+  `enum BookInput { Operation(Operation), Trade(Trade), Snapshot(BookControl) }`,
+  where `BookControl` is a `MarketEventData` with its `BookRef`. Renaming the
+  enum also frees the name `MarketOperation` for the trait.
+- **`Book`:**
+  - `Book { event: MarketEventData, bid: BookSide, ask: BookSide,
+    executions: Vec<Operation> }`;
+  - the root is the slim market event: no operation facts, and no
+    `accountids`, `userids` or `altids`;
+  - its executions keep every operation fact.
+- **`BookSide`:**
+  - `BookSide { summary: MarketData, levels: BTreeMap<BookPrice,
+    Vec<Arc<Operation>>>, deltas: Vec<Operation> }`;
+  - the summary is the slim `Market` of the side's best level, with no lane
+    fields;
+  - the level and delta operations are the single `Operation` type;
+  - `SideJournal` and `BookJournal` keep their logic over the new types.
+- **Arrow.**
+  - The `market.orders`, `market.quotes` and `market.executions` rows
+    already share one `marketevent` shape with an `operationkind` column,
+    and that shape stays.
+  - The book's `bid`/`ask` structs and their `live`/`deltas` lists are
+    rebuilt from the slim side summary and the single operation shape.
+  - `book_field()` and `market_event_field()` in yggfin still derive from
+    the native readers, so yggfin only regenerates its schemas.
+- **Bindings.**
+  - Python and Node expose `Operation` (with `kind`), `OperationEntry`,
+    `Trade`, `Book` and `BookSide`, and drop `Order`, `Quote`,
+    `Execution` and their entries.
+  - yggfin reads only the `operationkind` column (`python/src/rekep/
+    market.py`), so its tasks need no change beyond the regenerated
+    schemas.
+- **Tests:**
+  - A size test pins `size_of::<Operation>()` and
+    `size_of::<Option<Box<BookRef>>>() == 8`.
+  - A book built from `ulbridge.log` and from the existing
+    `rust/tests/graph` fixtures gives the same bid/ask depth, deltas and
+    executions as before the refactor. Compare levels by price, quantity and
+    `altids`, not by `curruuid`, because identities move.
+  - A market-data incremental with `279=0|278=A|290=1` gives
+    `BookRef { action: New, position: 1 }` and `altids`
+    `{MDENTRYID: A}`, and a delete referencing `A` removes that level.
 
 ### `FixMsg` lifts the FX tags
 
