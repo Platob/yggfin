@@ -73,7 +73,6 @@ pub trait MarketOperation: Market {
     fn get_marketoperationid(&self) -> Option<i32>;
     fn get_tif(&self) -> Option<&TimeInForce>;    // the crate's `TimeInForce`, not a String
     fn get_tradable(&self) -> Option<bool>;
-    fn get_orderorigination(&self) -> Option<i32>;  // FIX OrderOrigination(1724)
     fn get_bid(&self) -> Option<&Lane>;            // Lane { price, spotrate, forwardpoints, currency, quantity, unit }
     fn get_ask(&self) -> Option<&Lane>;
     // A matching `set_*` for each.
@@ -163,10 +162,10 @@ pub trait MarketOperation: Market {
   `MarketOperationValue` converts through `MarketOperationEventData`. Both keep
   their names and by-value moves.
 - Replace `delegate_market_element!` with two delegates, one over the 20
-  `Market` facts and one over the 6 `MarketOperation` facts. A wrapper that
+  `Market` facts and one over the 5 `MarketOperation` facts. A wrapper that
   only needs `Market` generates only the first.
 
-### `FixMsg` lifts the FX tags and `OrderOrigination`
+### `FixMsg` lifts the FX tags
 
 Today `FixLifted` (`rust/src/fix/identity.rs`) holds 17 tags typed beside the
 row (`LIFTED_TAGS`): the prices, the quantities and the order, quote and trade
@@ -207,37 +206,6 @@ Lift the six FX tags the same way:
   `MDEntries` repeating group, so they are not message-level lifts. The book
   walk reads them per entry onto each level.
 - Python and Node expose the six on the `lifted` view beside `lastpx`.
-
-Lift `OrderOrigination(1724)` too:
-
-- **What it is:** an `int32` field with `FIX:codeset:
-  orderoriginationcodeset`, with codes `1` to `7`: from a customer, from
-  within the firm, from another broker-dealer, from a customer or the firm,
-  from a direct-access customer, from a foreign dealer equivalent, from an
-  execution-only service. Today no Rust code reads it, and the fixed `fixmsg`
-  row has no column for it.
-- **Where it is declared:** `newordersingle`, `ordercancelreplacerequest`,
-  `newordermultileg`, `multilegordercancelreplace` and `executionreport`,
-  directly. `sidecrossordmod`, `tradereportorderdetail` and `relatedorder`
-  declare it inside components.
-- **Lifting:** add it to `LIFTED_TAGS` as a plain `Option<i32>` slot in
-  `FixLifted`, not in the FX box. It is 8 bytes, and stated on most order
-  flow. Give it `fact`/`record` arms and an `orderorigination()` accessor.
-  It re-emits `1724=`, and the `fixmsg` row gains an `int32`
-  `orderorigination` column carrying `FIX:codeset`.
-  - Only the message-level occurrence is lifted. The copies inside
-    `sidecrossordmod`, `tradereportorderdetail` and `relatedorder` stay where
-    they are, because they describe another side or another order.
-  - A value outside the code set is kept as stated, the way every coded
-    `int32` column is, never refused or nulled.
-- **Market fact:** `MarketOperation::get_orderorigination` answers from the
-  lifted slot, under the same `forced` rule as the other derived facts.
-  - Merge: the leading statement's value stands, else the other's.
-  - Follow: carried forward where the event states none, like `tif`. Where an
-    order came from is a fact about the chain, so an execution report that
-    omits it inherits the order's.
-  - Digest: fed where stated, like `tif`. That moves identities only for rows
-    that state it, which the rebuild already covers.
 
 ### Delete the `identifiers` map field
 
@@ -415,7 +383,6 @@ are row fields. Delete the map.
   - decimal columns stay `decimal128(38, 18)`.
 - The operation row (orders, quotes, executions, trades, `fixmsg`) is the
   market row plus `marketoperationid`, `tif` (`yggdryl.timeinforce`), `tradable`,
-  `orderorigination` (`int32` with `FIX:codeset`),
   and `bid`/`ask` as two nullable `struct<price, currency, quantity, unit>`
   columns.
 - Pick the `securityids` Arrow shape and state it in the schema docs.
@@ -451,11 +418,6 @@ are row fields. Delete the map.
   - they round-trip on the wire;
   - the price is their sum;
   - both facts survive into the `Book`'s executions.
-- A test parses a `NewOrderSingle` stating `1724=5` and a later
-  `ExecutionReport` of the same order that omits it. It checks that:
-  - the tag is lifted;
-  - it round-trips on the wire;
-  - the execution inherits `5` by following.
 - A benchmark covers book building on the existing `rust/benchmarks/fix`
   capture, before and after.
 - CI is green, and a release is tagged for yggfin to pin.
@@ -477,12 +439,10 @@ Run after A is released as Yggdryl `X.Y.Z`.
    - `ticker` replaces `symbolticker` in both schemas.
    - Regenerate `schemas/rekep/fixmsg.json` too. It gains the six lifted FX
      columns (`lastspotrate`, `lastforwardpoints`, `bidspotrate`,
-     `bidforwardpoints`, `offerspotrate`, `offerforwardpoints`) and
-     `orderorigination` becomes a lifted typed column, so
+     `bidforwardpoints`, `offerspotrate`, `offerforwardpoints`), so
      `fix.refined` is recreated with the market tables.
    - `marketevent.json` (orders, quotes, executions) takes the operation row,
-     with `bid`/`ask` lane structs in place of the eight lane columns, and
-     gains `orderorigination`.
+     with `bid`/`ask` lane structs in place of the eight lane columns.
 3. Field ids renumber, so `fix.refined`, `market.books`, `market.orders`,
    `market.quotes` and `market.executions` are **recreated, not evolved**.
    `fix.refined` is rebuilt from `fix.raw` first, then the market tables are
