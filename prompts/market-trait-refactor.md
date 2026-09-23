@@ -477,12 +477,58 @@ own copy.
     compile-time asserts, and cap keys per instrument so the charge stays an
     upper bound.
 - **One place for embedded identifiers.** `embedded_cusip` becomes
-  `securityid::embedded(isin: &IsinCode) -> impl Iterator<Item = SecurityId>`.
-  Today it yields only the US/CA CUSIP rule, byte for byte, including the
-  check-digit guard. The slim `fill_market` and `MarketEventData` (the two
-  callers in `graph/element.rs` and `graph/event.rs`) call it. Other national
-  numbers an ISIN carries, such as a GB/IE SEDOL or a DE WKN, are open
-  decision 7; do not add them silently.
+  `securityid::embedded(isin: &IsinCode) -> impl Iterator<Item = SecurityId>`,
+  with four rules. The slim `fill_market` and `MarketEventData` (the two
+  callers in `graph/element.rs` and `graph/event.rs`) call it.
+
+  Every rule first requires `IsinCode::is_canonical`, so the ISIN's own check
+  digit closes. It then yields at most one code, and nothing when its guard
+  fails. An ISIN matches at most one rule, because each rule is keyed by
+  country prefix.
+
+  | Key | Countries | ISIN shape | Code | Guard |
+  | --- | --- | --- | --- | --- |
+  | `CUSIP` | `US`, `CA` | `CC` + 9-char CUSIP + check | positions 2–10 | `CusipCode::new` (CUSIP check digit). Today's rule, byte for byte. |
+  | `SEDOL` | `GB`, `IE`, `GG`, `JE`, `IM` | `CC00` + 7-char SEDOL + check | positions 4–10 | positions 2–3 are `00`, and `SedolCode::new` (SEDOL check digit) |
+  | `WKN` | `DE` | `DE000` + 6-char WKN + check | positions 5–10 | positions 2–4 are `000`, and 6 of `[0-9A-HJ-NP-Z]` (WKN excludes `I` and `O`) |
+  | `VALOR` | `CH`, `LI` | `CC` + 9-digit Valor, zero-padded, + check | positions 2–10, leading zeros stripped | all 9 are digits, and the stripped Valor is non-empty |
+
+  - WKN and Valor have no check digit of their own, so the ISIN check digit
+    plus the exact shape is the whole guard. Add each as a `SecType` code
+    validator in `securityid.rs` (`WKN`: 6 of that alphabet; `VALOR`: 1–9
+    digits, no leading zero). No new `code_leaf!` types.
+  - The Valor is stored without leading zeros, as SIX publishes it
+    (`CH0038863350` → `3886335`).
+  - **Fill, never contradict.** A rule inserts only when the element states
+    no code under that key, which is today's CUSIP behavior. A stated SEDOL
+    that differs from the embedded one stays, and the embedded one is
+    dropped.
+  - Embedded codes are derived. They go to the overlay, never to a
+    `FixMsg`'s FIX fields or the wire.
+  - They are digest inputs, because `fill_market` runs before `finalize`, as
+    the embedded CUSIP does today. GB, IE, GG, JE, IM, DE, CH and LI rows
+    therefore get new identities, which the rebuild covers.
+  - Tests, all real ISINs whose check digits close:
+
+    | ISIN | Yields |
+    | --- | --- |
+    | `US0378331005` | `CUSIP:037833100` |
+    | `GB0002634946` | `SEDOL:0263494` |
+    | `IE00B4BNMY34` | `SEDOL:B4BNMY3` |
+    | `JE00B4T3BW64` | `SEDOL:B4T3BW6` |
+    | `DE0007164600` | `WKN:716460` |
+    | `DE000BASF111` | `WKN:BASF11` |
+    | `CH0038863350` | `VALOR:3886335` |
+    | `LI0010737216` | `VALOR:1073721` |
+    | `XS0203470157` | nothing |
+
+    Negative cases:
+    - a GB ISIN whose embedded SEDOL fails its check digit yields nothing;
+    - a GB ISIN not starting `GB00` yields nothing;
+    - a DE ISIN not starting `DE000`, or whose WKN part contains `I` or
+      `O`, yields nothing;
+    - any ISIN whose own check digit fails yields nothing;
+    - an element stating `SEDOL:B000000` keeps it over the embedded one.
 - **FIX interop lives here, not in `fix/`.** `SecType::fix_source(&self) ->
   Option<&'static str>` and `SecType::from_fix_source(&str) -> SecType` are
   the only code-to-key translation. `derive_market`, the setters and
@@ -721,6 +767,3 @@ Run after A is released as Yggdryl `X.Y.Z`.
 6. A key with no `SecurityIDSource` code (a venue's own key) set on a
    `FixMsg`: keep it in the event overlay only, not on the wire (default), or
    refuse it?
-7. `securityid::embedded`: keep only the US/CA CUSIP rule (default), or also
-   derive a GB/IE SEDOL (`GB00` + 7-character SEDOL + check digit), a DE WKN
-   and a CH Valor from the ISIN, each check-digit guarded?
