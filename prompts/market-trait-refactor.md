@@ -75,7 +75,8 @@ pub trait MarketOperation: Market {
     fn get_tradable(&self) -> Option<bool>;
     fn get_accountids(&self) -> &IdMap;           // source key → account, sorted by key
     fn get_userids(&self) -> &IdMap;              // source key → user, sorted by key
-    // plus `accountids_mut` / `userids_mut`
+    fn get_altids(&self) -> &IdMap;               // source key → the operation's own IDs
+    // plus `accountids_mut` / `userids_mut` / `altids_mut`
     fn get_bid(&self) -> Option<&Lane>;            // Lane { price, spotrate, forwardpoints, currency, quantity, unit }
     fn get_ask(&self) -> Option<&Lane>;
     // A matching `set_*` for each.
@@ -169,7 +170,7 @@ pub trait MarketOperation: Market {
   `MarketOperationValue` converts through `MarketOperationEventData`. Both keep
   their names and by-value moves.
 - Replace `delegate_market_element!` with two delegates, one over the 20
-  `Market` facts and one over the 7 `MarketOperation` facts. A wrapper that
+  `Market` facts and one over the 8 `MarketOperation` facts. A wrapper that
   only needs `Market` generates only the first.
 
 ### `FixMsg` lifts the FX tags
@@ -812,7 +813,8 @@ are row fields. Delete the map.
   macro, binding and doc example. The holders
   (`MarketData`, `MarketEventData` and both operation holders) lose the
   `BTreeMap` field. Merge and follow stop folding it.
-- **Accessor only, on `FixMsg`.** `FixMsg::identifiers(&self) -> impl
+- **Accessor only, on `FixMsg`.** (It now feeds the transient
+  `MarketOperation::altids`; see that section.) `FixMsg::identifiers(&self) -> impl
   Iterator<Item = (&str, Cow<'_, str>)>` answers from
   `self.registry.get_msgtype(msgtype).identifier_values(self)`. The message
   type's own `FIX:identifiers` declaration decides which members count, and
@@ -1277,6 +1279,103 @@ insertion order does not matter because the map is sorted.
     `userids` holding `OMSUSERID: trader1`, `ENTERINGTRADER: TRADER2` and
     `EXECUTINGTRADER: trader1`. Pin the full maps per flow.
 
+### `MarketOperation::altids`: the operation's own IDs, hashed
+
+A third `IdMap` on every operation: each ID the order, execution or quote
+goes by, keyed by the field that stated it. This is not the deleted
+`Element::identifiers` (see that section). It lives on `MarketOperation`
+only, holds business IDs only, and **is a digest input**.
+
+**Keys and sources**, all dictionary data (`FIX:idmap: {"map": "altids",
+"key": …, "follow": …}` on each source field). Values from
+`ulbridge.log`:
+
+| Key | Source | Follows | Log example |
+| --- | --- | --- | --- |
+| `ORDERID` | `OrderID(37)` | yes | `00026877711XOEA0` |
+| `SECONDARYORDERID` | `SecondaryOrderID(198)` | yes | `20260814-2419724` |
+| `CLORDID` | `ClOrdID(11)` | no | `00026877711XOEA0.1` |
+| `ORIGCLORDID` | `OrigClOrdID(41)` | no | `0102000452788801` |
+| `EXECID` | `ExecID(17)` | no | `00011377090XEEA0` |
+| `TRDMATCHID` | `TrdMatchID(880)` | no | `035B40AQK6702PNR` |
+| `QUOTEID`, `QUOTEREQID`, `MDREQID`, `TRADEID` | `117`, `131`, `262`, `1003` | no | — |
+| `PARENTORDERID` | bridge field `parentorderid` | yes | `OD9EOEDJ000` |
+| `PARENTCLORDID` | bridge field `parentclordid` | yes | `0101001362980701` |
+| `OMSDEALERPARENTORDERID` | bridge field | yes | `-9EOE8GR-00` |
+| `EXCHANGECLIENTORDERID` | bridge field | yes | `00023770097XREA0…` |
+| `TRANSVERSALKEY` | bridge field `transversal_key` | yes | `0101016435504` |
+| `ULTRADERCLORDID` | bridge field `ultrader_clordid` | no | `OD9EOEDJ6-00` |
+| `MARKETORDERID`, `OMSDEALERORDERID` | an `OrderID` alias that did not fill `37` (see the alias section) | yes | `L9EOEDJ0-00` |
+
+- **Follows** marks a chain-level ID: an order's ID, which every execution
+  of it shares. A per-event ID is not chain-level: an `ExecID`, a `ClOrdID`
+  that a replace renews, a `TrdMatchID`.
+- **Key spelling.** The dictionary name, upper-cased, with `_` folded out
+  (`ULTRADERCLORDID`), so a bridge's spelling variants reach one key.
+- **Bridge fields.** Declare them as dictionary fields (nullable `utf8`,
+  crate-range tags, not projected), like `omsuserid`. The originals stay in
+  `fixentries`.
+- **Aliases.** An `OrderID` alias that stayed its own field, because
+  `ORDERID` was also stated, fills `altids` under the alias's own key. The
+  12 `#MARKETORDERID` and 9 `#OMSDEALERORDERID` values in the log land there,
+  instead of only in `fixentries`.
+- **Marked and bare twins.** They can disagree, for example `PARENTORDERID=
+  OD9EOEDJ000` beside `#PARENTORDERID=-9EOE8GR-00` on the same messages. The
+  bare field fills the key, and the marked value is recorded as an anomaly,
+  never a second entry.
+- **What stays out.** `msgsesseventid` is delivery provenance, not a
+  business ID, and is not in `altids`.
+  `crosscode` keeps its own rule (`identity::CROSS_TAGS`). It reads the same
+  fields, but `altids` does not replace it.
+
+**On `FixMsg`, `altids` is transient.** It is never stored in the message or
+as a `fixmsg` column, because FIX content already holds every source field.
+
+- It is built by `settle` from the stated content: the message type's
+  `FIX:identifiers` members (the definition-driven accessor from the
+  identifiers section, which `get_altids` now serves) plus every field
+  carrying `FIX:idmap` for `altids`. It is cached on the message.
+- Any write through a setter or `sync_*` that touches a source field
+  invalidates the cache, and the next read rebuilds it, so it is always
+  current. It is never persisted, and nothing reads a stale copy.
+- `altids_mut` on `FixMsg` writes through to the source field of each key it
+  changes (`CLORDID` → `11`, `MARKETORDERID` → its alias field). A key with
+  no source field is refused with a located error.
+- Arrow writes of `fix.raw` and `fix.refined` carry no `altids` column. The
+  market operation rows do, because there the map is stored, merged and
+  followed.
+
+**On the operation holders**, `altids` is a stored `IdMap`:
+- **Merge:** `IdMap::merge`, where the leading statement's value stands on a
+  shared key.
+- **Follow:** carries only the keys marked `follow`, so an execution takes
+  its order's `ORDERID`, `SECONDARYORDERID` and parents, and never a
+  previous execution's `EXECID`.
+
+**Hash.** `feed_operation` feeds `altids` in key order, as length-prefixed
+key then value, so every operation's identity covers its IDs.
+- On `FixMsg`, the content digest already covers every source field. A test
+  pins that changing any one of them (`11`, `17`, `#MARKETORDERID`, …)
+  changes `curruuid`.
+- On the holders, a test pins that two operations differing only in one
+  `altids` value get different identities, and that insertion order does not
+  matter.
+- This moves every operation identity. The rebuild covers it.
+
+**Tests:**
+- An ABB execution report gives `{CLORDID, EXECID, ORDERID,
+  SECONDARYORDERID, PARENTORDERID, EXCHANGECLIENTORDERID}` with the log's
+  values.
+- A Holcim order-out execution adds `MARKETORDERID`, `OMSDEALERORDERID`,
+  `OMSDEALERPARENTORDERID`, `PARENTCLORDID`, `TRANSVERSALKEY` and
+  `ULTRADERCLORDID`, and its `#PARENTORDERID` conflict is recorded as an
+  anomaly.
+- Following an order with two executions: each execution keeps its own
+  `EXECID` and inherits the order's `follow` keys.
+- `set_clordid` on a `FixMsg`, then `get_altids()`, shows the new
+  `CLORDID` with no stale value.
+- `fix.raw` has no `altids` column; `market.executions` has one.
+
 ### Crated field `pluginoriginator`
 
 `msgpluginid` (crated `65_009`) is the plugin that **logged** a line, and
@@ -1397,7 +1496,8 @@ no deprecated re-export, no second spelling accepted.
   - decimal columns stay `decimal128(38, 18)`.
 - The operation row (orders, quotes, executions, trades, `fixmsg`) is the
   market row plus `marketoperationid`, `tif` (`yggdryl.timeinforce`), `tradable`,
-  `accountids` and `userids` (each `map<utf8, utf8>`, `keys_sorted = true`),
+  `accountids`, `userids` and `altids` (each `map<utf8, utf8>`,
+  `keys_sorted = true`),
   and `bid`/`ask` as two nullable `struct<price, currency, quantity, unit>`
   columns.
 - Pick the `securityids` Arrow shape and state it in the schema docs.
@@ -1466,7 +1566,7 @@ Run after A is released as Yggdryl `X.Y.Z`.
      `fix.refined` is recreated with the market tables.
    - `marketevent.json` (orders, quotes, executions) takes the operation row,
      with `bid`/`ask` lane structs in place of the eight lane columns, and
-     gains `accountids` and `userids`.
+     gains `accountids`, `userids` and `altids`.
 3. Field ids renumber, so `fix.refined`, `market.books`, `market.orders`,
    `market.quotes` and `market.executions` are **recreated, not evolved**.
    `fix.refined` is rebuilt from `fix.raw` first, then the market tables are
