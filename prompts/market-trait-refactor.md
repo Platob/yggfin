@@ -50,7 +50,7 @@ pub trait Market {
     fn get_cficode(&self) -> Option<&CfiCode>;
     fn get_securityids(&self) -> &SecurityIds;     // derefs to &[SecurityId]
     fn get_side(&self) -> Side;                    // Copy, one byte
-    fn get_currency(&self) -> &Currency;
+    fn get_currency(&self) -> &Ccy;               // type renamed from `Currency`
     fn get_unit(&self) -> &Unit;
     fn get_price(&self) -> Decimal18;
     fn get_prevpx(&self) -> Option<Decimal18>;
@@ -531,7 +531,7 @@ from it naively.
   `SecurityExchange(207)`. A fact
   that already has a value is left alone. There is no cross-check and no
   anomaly. A part that its type refuses (`IsinCode`, `MicCode::is_iso`,
-  `Currency`) is skipped, and the other parts still lift.
+  `Ccy`) is skipped, and the other parts still lift.
 - The ISIN goes into `securityids`, so `securityid::embedded` and
   `SecurityIdRegistry` see it. Nothing is written back to the FIX fields, and
   the source field re-emits unchanged.
@@ -1015,13 +1015,49 @@ fact, and one of them wins by the rules below. They never sit side by side.
 - Remove `Side` from the `family_value!` `Code` family if it no longer fits
   the `SmolStr` leaf shape. Keep it a `Scalar` variant.
 
+### Rename the `Currency` type to `Ccy`
+
+Rename the currency **type** everywhere it is spelled. Field and column
+**names** stay FIX's (`currency`, `bidcurrency`, `askcurrency`,
+`settlcurrency`, `Currency(15)`), so no SQL changes. Prefer deletion: no alias,
+no deprecated re-export, no second spelling accepted.
+
+| Before | After |
+| --- | --- |
+| `rust/src/currency.rs`, `pub struct Currency` | `rust/src/ccy.rs`, `pub struct Ccy` |
+| `Currency::new`, `Currency::none` (`XXX`), `as_str` | `Ccy::new`, `Ccy::none`, `as_str` |
+| `CURRENCY_WIDTH`, `CURRENCY_EXTENSION_NAME` | `CCY_WIDTH`, `CCY_EXTENSION_NAME` |
+| Arrow extension `yggdryl.currency` | `yggdryl.ccy` |
+| `DataType::Currency`, `DataType::currency()`, `Scalar::Currency`, `CurrencyType`, the `Code` family variant | `DataType::Ccy`, `DataType::ccy()`, `Scalar::Ccy`, `CcyType`, `Code::Ccy` |
+| dtype spelling `"currency"` (`serde.rs`, `datatype_id.rs`) | `"ccy"` |
+| `NativeKind::Currency` (`fix/native_derivations.rs`) | `NativeKind::Ccy` |
+| `{"type": "currency"}` in the 51 files under `config/fix/` | `{"type": "ccy"}` |
+| Python `yggdryl.Currency`, Node `Currency` | `yggdryl.Ccy`, `Ccy` |
+
+- It covers about 169 lines in `rust/src`, and 38 `.rs` files across
+  `rust/src`, `python/src` and `node/src`. Do it as one mechanical rename in its own commit, before the
+  market changes, so review can tell it apart from behavior. Then check that
+  no `Currency` (the type) or `yggdryl.currency` spelling is left:
+  `rg -w 'Currency|CurrencyType|yggdryl\.currency'` should find only FIX
+  field names and prose about currencies.
+- `.api-inventory.txt`, `.api-bindings.txt`, the rustdoc and binding doc
+  examples, and the docs pages move with it.
+- Row IDs do not move: the digest feeds `as_str()` bytes, not the type
+  name. Iceberg columns do not change either, because the narrowing strips
+  semantic extensions to storage.
+- Arrow data written with `yggdryl.currency` metadata (IPC, Parquet key-value
+  metadata, field JSON) is not read as a `Ccy` after this. That is
+  acceptable because every affected product is rebuilt. Test that reading
+  one fails with a located error naming the retired extension, rather than
+  silently falling back to `utf8`.
+
 ### `Unit`: a validated string type
 
 - `code_leaf!`-style newtype over `SmolStr`, so short units (`bbl`, `MWh`,
   `shares`) stay inline with no allocation. It is validated ASCII within a
   fixed max width (pick and document it, for example 32).
 - `Unit::none()` is the empty unit and `is_none()` tests for it. Add a
-  `yggdryl.unit` Arrow extension beside `yggdryl.currency`.
+  `yggdryl.unit` Arrow extension beside `yggdryl.ccy`.
 - Replaces `unit: String` and the unit inside `Lane`.
 
 ### Contract and storage
@@ -1125,7 +1161,16 @@ Run after A is released as Yggdryl `X.Y.Z`.
    lists its sources today. When
    the samples are regenerated, check that captures stating only `LASTMKT`
    still land a MIC.
-7. The `identifiers` column is gone from `fix.refined` and every market
+7. `Currency` is now `Ccy` in yggdryl:
+   - `python/tests/fields/test_storage.py` asserts `yggdryl.ccy`, not
+     `yggdryl.currency`;
+   - the bundled registry under `python/src/rekep/_data/fix` is refreshed
+     from the release, with `{"type": "ccy"}`;
+   - any `yggdryl.Currency` in `python/src`, `tasks/` or the docs becomes
+     `yggdryl.Ccy`.
+
+   Column names stay `currency`.
+8. The `identifiers` column is gone from `fix.refined` and every market
    table.
    - Replace every `identifiers["msgsesseventid"]` with the new
      `msgsesseventid` column. That covers `docs/products/fixmsg.md`,
@@ -1136,9 +1181,9 @@ Run after A is released as Yggdryl `X.Y.Z`.
      `execid`, …), never from a map.
    - Remove "identifiers" from the column lists in `parse-orders.md`,
      `parse-quotes.md`, `parse-books.md` and `docs/roadmap/orders.md`.
-8. Update `docs/contracts/types.md`, `docs/roadmap/order-book.md` and the
+9. Update `docs/contracts/types.md`, `docs/roadmap/order-book.md` and the
    pipeline task pages, then regenerate the samples.
-9. `uv run pytest` must be green, including `test_schemas` and `test_docs`.
+10. `uv run pytest` must be green, including `test_schemas` and `test_docs`.
    Push the branch and read CI.
 
 ---
