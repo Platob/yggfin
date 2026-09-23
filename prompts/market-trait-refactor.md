@@ -15,7 +15,7 @@ written to be pasted into a fresh agent session on its own.
 `MarketEventData` in `rust/src/graph/event.rs`, and through them `BookSide`,
 `Book`, `Quote`, `Order`, `Execution`, `Trade`, `FixMsg`). A book pays for
 facts that only an operation states: eight bid/ask lane fields, `tif`,
-`tradable`, `symbolticker` and `marketoperationid`. On top of that,
+`tradable` and `marketoperationid`. On top of that,
 five `Option<Code>` instrument slots and a heap `String` unit. The
 `delegate_market_element!` macro in `graph/mod.rs` repeats the whole surface
 for each wrapper.
@@ -61,6 +61,7 @@ pub trait Market {
     fn get_lastqty(&self) -> Option<Decimal18>;
     fn get_leavesqty(&self) -> Option<Decimal18>;
     fn get_cumqty(&self) -> Option<Decimal18>;
+    fn get_ticker(&self) -> Option<&str>;          // was `symbolticker`
     fn get_metadata(&self) -> &Metadata;
     // A matching `set_*` for each, plus
     // `securityids_mut(&mut self) -> &mut SecurityIds`.
@@ -68,7 +69,6 @@ pub trait Market {
 
 pub trait MarketOperation: Market {
     fn get_marketoperationid(&self) -> Option<i32>;
-    fn get_ticker(&self) -> Option<&str>;          // was `symbolticker`
     fn get_tif(&self) -> Option<&str>;
     fn get_tradable(&self) -> Option<bool>;
     fn get_bid(&self) -> Option<&Lane>;            // Lane { price, currency, quantity, unit }
@@ -82,7 +82,7 @@ pub trait MarketOperation: Market {
   supertraits.
 - Put the digest, merge and follow helpers on blanket impls:
   - `feed_market`, `merge_market` and `follow_market` on `Market + Element`.
-    They cover the 17 slim facts only.
+    They cover the 18 slim facts only.
   - `feed_operation`, `merge_operation` and `follow_operation` on
     `MarketOperation + Element`. They continue the slim versions with the
     operation facts.
@@ -96,12 +96,14 @@ pub trait MarketOperation: Market {
   An undated entry reports `None`.
 - `metadata` is `Option<Box<BTreeMap<..>>>` internally, holding the free-form
   facts. A struct that states none pays one pointer, and the getter returns a
-  shared static empty value when it is absent. Decide whether it replaces
-  `Element::identifiers` or sits beside it; never both for one fact.
+  shared static empty value when it is absent. It sits beside
+  `Element::identifiers` and never holds an identifier.
 - `Lane` is one struct shared by `bid` and `ask`. Store it as
   `Option<Box<Lane>>` or inline, whichever the size test favours.
 - `cumqty` is a slim fact: a book level and a fill both state how much is
   done, and `leavesqty` is already slim beside it.
+- `ticker` is a slim fact: a book is about one instrument, and a screen
+  names it by its ticker.
 - Rename `symbolticker` to `ticker` everywhere: trait, holders, digest label,
   Arrow column, both bindings and docs. The digest label changes, so identities
   move (see Contract).
@@ -123,9 +125,60 @@ pub trait MarketOperation: Market {
 - `MarketEntryValue` converts through `MarketOperationData` and
   `MarketOperationValue` converts through `MarketOperationEventData`. Both keep
   their names and by-value moves.
-- Replace `delegate_market_element!` with two delegates, one over the 17
-  `Market` facts and one over the 6 `MarketOperation` facts. A wrapper that
+- Replace `delegate_market_element!` with two delegates, one over the 18
+  `Market` facts and one over the 5 `MarketOperation` facts. A wrapper that
   only needs `Market` generates only the first.
+
+### `identifiers`: read-only, derived from the definitions
+
+Today `Element` has `get_identifiers() -> &BTreeMap<String, String>` and
+`set_identifiers(..)`. The FIX layer writes the map once in
+`fix/enrich.rs::enrich_restated` from the message type's `FIX:identifiers`
+declaration (`FixMsgType::identifier_mapping`), and stores it as the
+`identifiers` column (tag `65_020`). The graph holders copy it and union it on
+merge and follow.
+
+Target:
+
+- `Element` exposes a getter only: `fn get_identifiers(&self) ->
+  Cow<'_, Identifiers>`. Delete `set_identifiers` from the trait and from
+  every implementor, delegate macro, binding and doc example.
+- `Identifiers` is a sorted small vector of `(scheme, value)` pairs, both
+  `SmolStr`, unique by scheme. It shares the sorted-union merge helper with
+  `SecurityIds`. It replaces `BTreeMap<String, String>`.
+- **`FixMsg` stores no identifiers.** Its `get_identifiers` answers
+  `Cow::Owned` from `self.registry.get_msgtype(msgtype).identifier_values(self)`.
+  The message type's own `FIX:identifiers` declaration is the only thing that
+  decides which members count, and values are read off the message's own
+  fields. Delete the `set_unsettled(IDENTIFIERS_TAG_NAME…)` write in
+  `enrich_restated`.
+- The `identifiers` column of the `fixmsg` row is written at the Arrow boundary
+  from that accessor. There is no stored copy to drift from the fields it
+  names.
+- Graph holders (`MarketData`, `MarketEventData` and the operation holders)
+  still keep an `Identifiers`, because an order learns `ClOrdID` from one
+  message and `OrderID` from another. They fill it when built from a
+  `FixMsg`. Merge and follow union it through a crate-private
+  `identifiers_mut`, never a public setter. Python and Node expose a getter
+  only.
+- The definitions do the work, so fill them in. Only 64 of the 181
+  `FIX:msgtype` components under `config/fix/components/` declare
+  `FIX:identifiers`.
+  - Declare it for every message type that reaches the market graph or names
+    a request. That includes at least `marketdataincrementalrefresh` (X),
+    `marketdatasnapshotfullrefresh` (W), `marketdatarequest` (V), `ioi`,
+    `crossrequest`, `bidrequest`, `bidresponse` and
+    `businessmessagereject`.
+  - List each message's own direct scalar `…ID` members, in component order,
+    the same way the existing 64 are written.
+  - Session messages (`heartbeat`, `logon`, `logout`, …) declare none, on
+    purpose.
+  - Add a test that every message type mapped to a `marketoperationid`
+    declares a non-empty `FIX:identifiers`, and that each declared member
+    resolves to a direct scalar child. `identifier_positions` already refuses
+    a bad one.
+- `identifiers` is not a digest input today. Keep it that way, so this change
+  moves no identity on its own.
 
 ### `SecType`: a `#[repr(u8)]` enum
 
@@ -137,7 +190,7 @@ pub trait MarketOperation: Market {
   `N`/`P` Markit RED, `Q` CFTC, `R` ISDA commodity, `S` FIGI, `T` LEI,
   `U` synthetic, `V` FIM, `W` index name, `X` UMTF, `Y` DTI.
 - Add `Other = 255`. There is no `Ticker` variant, because `ticker` is its own
-  field on `MarketOperation` and one fact has one owner.
+  field on `Market` and one fact has one owner.
 - Discriminants are a wire and digest contract: fix them explicitly, never by
   declaration order.
 - `SecType::from_spelling` reads the wire code, the spec name and the stored
@@ -215,11 +268,12 @@ pub trait MarketOperation: Market {
 - The market row (`MarketEventData`, a book's row and each book side's level)
   is the 17 slim facts plus the event clocks:
   - one `securityids` column replaces the five code columns;
-  - the `bid*`/`ask*` lane columns, `tif`, `tradable`, `marketoperationid`
-    and `ticker` leave it;
+  - `ticker` replaces `symbolticker`;
+  - the `bid*`/`ask*` lane columns, `tif`, `tradable` and
+    `marketoperationid` leave it;
   - decimal columns stay `decimal128(38, 18)`.
 - The operation row (orders, quotes, executions, trades, `fixmsg`) is the
-  market row plus `marketoperationid`, `ticker`, `tif`, `tradable`,
+  market row plus `marketoperationid`, `tif`, `tradable`,
   and `bid`/`ask` as two nullable `struct<price, currency, quantity, unit>`
   columns.
 - Pick the `securityids` Arrow shape and state it in the schema docs.
@@ -262,11 +316,12 @@ Run after A is released as Yggdryl `X.Y.Z`.
 2. Regenerate `schemas/rekep/marketevent.json` and `schemas/rekep/book.json`
    from the native fields. Never hand-edit them.
    - `book.json` and the `bid`/`ask` book levels take the slim market row:
-     `securityids`, `execunix`, `cumqty`, no lanes, no `ticker`/`tif`/
+     `securityids`, `execunix`, `cumqty`, `ticker`, no lanes, no `tif`/
      `tradable`/`marketoperationid`. The `executions` list keeps the full
      operation row.
+   - `ticker` replaces `symbolticker` in both schemas.
    - `marketevent.json` (orders, quotes, executions) takes the operation row,
-     with `ticker` in place of `symbolticker` and `bid`/`ask` lane structs in
+     with `bid`/`ask` lane structs in
      place of the eight lane columns.
 3. Field ids renumber, so `market.books`, `market.orders`, `market.quotes` and
    `market.executions` are **recreated and rebuilt from `fix.refined`**, not
@@ -282,16 +337,21 @@ Run after A is released as Yggdryl `X.Y.Z`.
      `security_id(securityids, 'ISIN')`.
 
    `side` and `cumqty` stay plain columns.
-6. Update `docs/contracts/types.md`, `docs/roadmap/order-book.md` and the
+6. `identifiers` keeps its column. It now reflects the message type's
+   `FIX:identifiers` declaration, so market data rows gain `MDReqID` and the
+   others newly declared. Check the dbt models and
+   `docs/products/fixmsg.md` that read `identifiers[...]` keys.
+7. Update `docs/contracts/types.md`, `docs/roadmap/order-book.md` and the
    pipeline task pages, then regenerate the samples.
-7. `uv run pytest` must be green, including `test_schemas` and `test_docs`.
+8. `uv run pytest` must be green, including `test_schemas` and `test_docs`.
    Push the branch and read CI.
 
 ---
 
 ## Open decisions to confirm before running A
 
-1. `metadata`: does it replace `Element::identifiers` or sit beside it?
+1. `metadata` sits beside `identifiers` and never holds an identifier. Is
+   that right?
 2. `SecurityIds` uniqueness: `(sectype, code)` (default, which allows two
    listings of one type) or one id per `SecType`?
 3. `Side` on the wire: keep the string extension (default) or move to `uint8`?
