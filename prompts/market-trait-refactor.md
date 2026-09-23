@@ -115,6 +115,10 @@ pub trait MarketOperation: Market {
   - The digest keeps feeding `as_str()` bytes, so identities do not move for
     `tif`.
   - Do not add a second time-in-force type or a string path beside it.
+  - Normalize with `TimeInForce::from_spelling` to the FIX code, so
+    `TIMEINFORCE=day` and `59=0` are one value (see "What `ulbridge.log`
+    requires", item 4). That moves identities for rows that spelled a
+    name, which the rebuild covers.
   - Its width is 8 bytes. Before settling, survey the `rust/benchmarks/fix`
     captures and test corpora for any stated `TimeInForce(59)` wider than
     that. A value wider than 8 must be a located error naming the field,
@@ -429,6 +433,98 @@ entry:
   - `set` ISIN on a message carrying only `#ISINCODE` writes `secaltids`,
     removes `#ISINCODE`, and the wire shows the new value once.
 
+### What `ulbridge.log` requires
+
+`rust/tests/fix/ulbridge.log` (the same file as yggfin's
+`python/tests/data/ulbridge.log`) has 144 lines: 63 named `KEY=value|` bodies,
+21 raw FIX lines and 2 FIXML lines. Its instruments are
+- ABB (`CH0012221716`),
+- Novartis (`CH0012005267`),
+- Holcim (`CH0012214059`),
+- `TW0001605004`,
+- MediaTek (`TW0002454006`).
+
+Every rule above must hold on it. It shows six things the rules must handle:
+
+1. **Named bodies spell codes as names, in lower case.**
+   `SECURITYIDSOURCE=isin` and `SECURITYALTIDSOURCE=isin|bloomberg|ric`,
+   where raw FIX says `22=4` and `456=4`. Today `FixMsg::identifier(&["4"],
+   …)` compares the literal `"4"`, so it misses every named-body ISIN, and
+   only the crated `ISINCODE` column rescues it. The `FixMsg` securityids
+   view reads each source through `SecType::read`, which accepts the code,
+   the key and the name folded, so `isin`, `bloomberg` and `ric` resolve. A
+   write always emits the code-set value (`4`, `A`, `5`). The same applies
+   to `SIDE=buy` (already handled by `Side::from_spelling`) and
+   `TIMEINFORCE=day` (see 4).
+2. **Marked alternate-ID groups carry identifiers the plain fields lack.** The
+   MediaTek flow states `#NOSECURITYALTID=2`,
+   `#NOSECURITYALTID[0]=SECURITYALTID=2454 TT Equity••SECURITYALTIDSOURCE=bloomberg••`
+   and `#NOSECURITYALTID[1]=SECURITYALTID=2454.TW••SECURITYALTIDSOURCE=ric••`.
+   The builder keeps each as one flat child with a packed value (`fix/build.rs`,
+   the `#NoPartyIDs[0]` row). The unmapped-field rule reads a top-level
+   marked `NOSECURITYALTID[n]` child: it unpacks `SECURITYALTID` and
+   `SECURITYALTIDSOURCE` with the reader's existing occurrence separators
+   (`••`, and the `\x04\x03` form lines 9 and 105 use; `fix/codec.rs`
+   already knows both), and adds each as a stated entry after the real
+   `secaltids`. So MediaTek gets `BLOOMBERG:2454 TT Equity`, `RIC:2454.TW`
+   and `ISIN:TW0002454006`.
+   - A marked `#SECURITYID` with no marked source (`#SECURITYID=TW0002454006`)
+     is keyed by the same guess shipped derivation `22` makes: try ISIN, then
+     CUSIP, then SEDOL, and keep the first whose check digit closes.
+   - A marked `#SYMBOL` is never an ID, even when it holds an ISIN.
+   - Line 105's `SECURITYALTID=XX0000000001` fails the ISIN check digit, so
+     it is dropped with an anomaly. Test that.
+3. **Venue codes are not MICs, and `MicCode::new` accepts them.** The flows
+   state `EXDESTINATION=S` and `EXDESTINATION=TW`. `MicCode` is a
+   `code_leaf!` over `ascii_text(4, …)`, which only refuses text *longer*
+   than 4, so `S` and `TW` are valid `MicCode`s today. The `miccode` rule's
+   per-source check must therefore be ISO 10383's shape: exactly 4 of
+   `[A-Z0-9]`. Add `MicCode::is_iso(&str)` and use it for each of `207`, `30`
+   and `100`. Do not tighten `MicCode::new` itself in this change, because
+   stored columns may hold short codes.
+   - Test: `SECURITYEXCHANGE` missing, `LASTMKT` missing and
+     `EXDESTINATION=S` gives no MIC.
+   - Test: line 123's `30=RJEA` (no `207`) gives `RJEA`.
+4. **Time in force arrives as a name and as a code.** It is `TIMEINFORCE=day`
+   in named bodies and `59=0` in raw FIX, for the same order, and `59=6`
+   once. `TimeInForce` keeps the spelling, so one order has two values, and
+   merge and digest see a conflict. Add `TimeInForce::from_spelling`,
+   mirroring `Side::from_spelling`: it reads the FIX `TimeInForce(59)` code,
+   the code set's name (`Day`, `GoodTillCancel`, `ImmediateOrCancel`,
+   `FillOrKill`, `GoodTillDate`, …) and the stored value, folded, and stores
+   the code (`0`). A spelling it does not know is kept as stated, never
+   refused. Pin the name table to the shipped `timeinforcecodeset` with a
+   test, like the `SecurityIDSource` table.
+5. **A detailed CFI rides beside a coarse one.** The Holcim and Novartis flows
+   state `CFICODE=ESXXXX` with `#DETAILEDCFICODE=ESVTFR`. The classification
+   chain reads `461` only, so it answers `ESXXXX`. Add one step after step 1
+   of `FixMsg::classification`: a top-level unmapped `DETAILEDCFICODE` (the
+   same name folding) that is a classified code folds in through
+   `CfiCode::merged`. It fills the `X`s of the stated code and is dropped if
+   it names another instrument. Holcim and Novartis then answer `ESVTFR`.
+6. **The security type arrives as a name** (`SECURITYTYPE=equity` in named
+   bodies, `167=CS` in raw FIX). `classification_of_security_type` matches
+   codes only, so named bodies get no category from `167`, and CFI must come
+   from `461`. Make no change here; this is open decision 7.
+
+**`ulbridge.log` tests**, run in `rust/tests/fix/ulbridge.rs` over the whole
+file:
+
+| Flow | Expect |
+| --- | --- |
+| ABB | `securityids` = `ISIN:CH0012221716` stated (from `22=4`/`48`, or `SECURITYIDSOURCE=isin`/`SECURITYID`, `secaltids`, `#ISINCODE`, deduplicated to one), and `VALOR:1222171` derived; `miccode` `XSWX`; `cficode` `ESVTFR`; `tif` `0` on both the named and the raw form |
+| Novartis | `ISIN:CH0012005267`, `BLOOMBERG:NOVN SW`, derived `VALOR:1200526`; `cficode` `ESVTFR` (from `DETAILEDCFICODE`) |
+| Holcim | `ISIN:CH0012214059`, `BLOOMBERG:HOLN SW`, derived `VALOR:1221405`; `miccode` `XSWX`, never `S` |
+| `TW0001605004` | `ISIN:TW0001605004`; `miccode` `RJEA` |
+| MediaTek | `ISIN:TW0002454006`, `BLOOMBERG:2454 TT Equity`, `RIC:2454.TW`; `miccode` `XTAI`, never `TW` |
+
+Also check:
+- no line produces a `securityids` entry the message did not state, apart
+  from the derived `VALOR`s;
+- `ticker` is the `SYMBOL` (`ABBN.S`, `NOVN`, `HOLN`, `1605`, `2454`),
+  never `#SYMBOL`;
+- every line still round-trips byte for byte on the wire.
+
 ### `miccode`: `SecurityExchange`, then `LastMkt`, then `ExDestination`
 
 Today `FixMsg` derives the MIC in `rust/src/fix/msg.rs` (the market-facts
@@ -453,8 +549,10 @@ let miccode = [207, 30, 100].into_iter()
   fill's actual venue says more than the route the order asked for.
 - `ExDestination` is often a broker code rather than a MIC. The per-source
   validation lets it answer only when it is one.
-- Validate each candidate before falling through. A `207` that is not a valid
-  MIC (a venue's own exchange code) no longer hides a valid `30`.
+- Validate each candidate before falling through, with `MicCode::is_iso`
+  (exactly 4 of `[A-Z0-9]`), not `MicCode::new`, which accepts `S` and
+  `TW` (see "What `ulbridge.log` requires", item 3). A `207` that is not
+  a MIC no longer hides a valid `30`.
 - A row that states `miccode` itself (`ROW_STATED_MIC`) still wins over both.
   The rule only answers where the row says nothing.
 - Update the comment above the rule and the `crated.rs` module doc to the
@@ -914,3 +1012,6 @@ Run after A is released as Yggdryl `X.Y.Z`.
 6. A key with no `SecurityIDSource` code (a venue's own key) set on a
    `FixMsg`: keep it in the event overlay only, not on the wire (default), or
    refuse it?
+7. Named `SecurityType` spellings from bridges (`SECURITYTYPE=equity`): map
+   the bridge's words onto a category in `fix/cfi.rs` (`equity` → `E`), or
+   leave CFI to `461` (default)?
