@@ -673,6 +673,30 @@ let miccode = [30, 100].into_iter()
   `ExDestination` falls through instead of answering.
 - A row that states `miccode` itself (`ROW_STATED_MIC`) still wins over the
   whole ladder. The ladder only answers where the row says nothing.
+- **`INSTRUMENT[EXCHANGE]` is an alias of the crated `miccode`** (tag
+  `65_060`). `ulbridge.log` states `#INSTRUMENT[EXCHANGE]=XSWX` on 9 lines,
+  and today's parser keeps it as an unmapped flat child named
+  `instrument[exchange]`.
+  - Give `miccode` in `config/fix/fields/000000650.json`
+    `"FIX:names": ["instrument[exchange]"]`. `is_word` accepts the
+    brackets: any non-empty text needing no JSON escape.
+  - Check first that the builder resolves the bracketed spelling as a flat
+    name through the alias table, not as a group `INSTRUMENT` with
+    occurrence `EXCHANGE`. `Key::parse` must leave a non-numeric bracket
+    flat, as the probe shows it does today. Pin that with a test.
+  - Being an alias of the stated column, a valid value **counts as a stated
+    `miccode`**, so it wins over the whole ladder, like `MICCODE` itself.
+    It follows the alias rules in the `OrderID` section: the canonical
+    `MICCODE` wins when both arrive, and the alias then stays its own field.
+  - The value must pass `MicCode::is_iso`. A value that does not (`S`,
+    `TW`) sets no `ROW_STATED_MIC`, stays as its own field, and records an
+    anomaly, and the ladder answers.
+  - Tests:
+    - `INSTRUMENT[EXCHANGE]=XSWX` with `30=XLON` gives `XSWX`;
+    - `MICCODE=XLON|INSTRUMENT[EXCHANGE]=XSWX` gives `XLON`;
+    - `INSTRUMENT[EXCHANGE]=S` with `30=XSWX` gives `XSWX` and an anomaly;
+    - over `ulbridge.log`, the 9 lines keep `XSWX`, which already agrees
+      with `30` and `207` there.
 - Update the comment above the rule and the `crated.rs` module doc to the
   new order.
 - **Tests:**
