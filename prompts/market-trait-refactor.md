@@ -1184,8 +1184,9 @@ All 67 values are well-formed UUIDs.
   - `CONVERSATIONID_TAG_NAME: (i32, &str) = (<next>, "conversationid")` in
     `fix/crated.rs`, with the next free crate tag after `pluginoriginator`,
     never a retired one.
-  - Typed as the crate's `Uuid` (`fixed[16]` in Iceberg, like `curruuid`),
-    nullable.
+  - Typed as a nullable `utf8` string, stored exactly as stated (trimmed of
+    padding). It is not parsed as a UUID, so any bridge's conversation key
+    is kept, whatever its shape.
   - It has a `Crated::event` entry documented beside `msgpluginid` and
     `pluginoriginator`, a field entry in `config/fix/fields/000000650.json`,
     and a column on the `fixmsg` row.
@@ -1193,16 +1194,14 @@ All 67 values are well-formed UUIDs.
   1. the field itself. Because the crated field is named `conversationid`,
      `CONVERSATIONID` and `#CONVERSATIONID` resolve to it by name, with no
      alias needed;
-  2. ULBridge's text `{conversationId: <uuid>}`, read in `fix/ulbridge.rs`
+  2. ULBridge's text `{conversationId: <value>}`, read in `fix/ulbridge.rs`
      by a named pattern beside the `pluginoriginator` ones.
 
   When both are present and disagree, the field wins, and an anomaly records
   the text's value.
-- **Not a UUID.** A value that does not parse as a UUID leaves the column
-  null and records an anomaly. The original stays where it arrived
-  (`fixentries` for the field, the line body for the text), so another
-  bridge's non-UUID conversation keys are not lost. If you want those
-  stored, make it `utf8` instead. That is the one type decision here.
+- **Empty values.** An empty value, or one of the null-like spellings
+  (`null`, `none`, `[n/a]`), is no value. Any other text is stored as is.
+  Values are compared byte-exact, with no case folding.
 - **Lifecycle.** Every hop of one event carries the same conversation. The
   walk keeps the value of the earliest `recdunix` statement that states
   one. Differing values across hops of one event keep the earliest, with an
@@ -1214,11 +1213,10 @@ All 67 values are well-formed UUIDs.
   Python and Node. `schemas/rekep/fixmsg.json` gains the column, and the
   AGENTS.md sentence naming the bridge's native fields lists it.
 - **Tests** over `ulbridge.log`:
-  - every row whose line states either source gets that UUID;
+  - every row whose line states either source gets that value, as text;
   - the 7 lines with both agree, with no anomaly;
   - a refined row folded from several hops keeps the one conversation;
-  - a synthetic `CONVERSATIONID=not-a-uuid` gives null plus an anomaly,
-    with the original still in `fixentries`;
+  - a synthetic `CONVERSATIONID=conv-42` is stored as `conv-42`;
   - pin the count of distinct conversations (10 from the field).
 
 ### `MarketOperation::accountids` and `userids`: sorted maps
