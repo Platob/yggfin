@@ -296,8 +296,9 @@ and every write goes back into them with the correct code-set value.
     text as its key, upper-cased, so nothing the message stated is dropped.
   - Duplicates collapse under the `SecurityIds` invariant. The primary and an
     alternate stating the same `(key, code)` is one entry.
-  - The CUSIP and SEDOL special case in `FixMsg::fill_market` goes away: a
-    CUSIP the message stated is a `CUSIP` entry like any other. That changes
+  - The CUSIP and SEDOL special case in `FixMsg::fill_market` goes away with
+    their crated tags: a CUSIP the message stated is a `CUSIP` entry like any
+    other. That changes
     `securityids` and the digest for CUSIP/SEDOL rows, which the rebuild
     covers.
 - **Derived entries never reach the wire.** `securityid::embedded` and the
@@ -350,26 +351,43 @@ maps. The shipped capture does this: `#CFICODE=ESVTFR|#ISINCODE=CH0012221716|
 #LASTMKT=XSWX`. The builder already keeps them rather than dropping them
 (`fix/build.rs`): an unknown tag stays nullable `utf8` under its decimal
 spelling, an unknown or `#`-marked name stays one flat child under its own
-name, and either records tag zero. Today `ISINCODE` resolves only because the
-crate declares its own `isincode` column.
+name, and either records tag zero. `ISINCODE` and `BLOOMBERGCODE` resolve
+because the crate declares its own `isincode` and `bloombergcode` columns.
 
-**Delete the crated code columns.** This refactor deletes them, because
-`securityids` owns the fact:
+**Crated code columns: delete CUSIP and SEDOL, keep ISIN, Bloomberg and
+FIGI.**
 
-| Constant | Tag |
-| --- | --- |
-| `ISINCODE_TAG_NAME` | 65_055 |
-| `CUSIPCODE_TAG_NAME` | 65_057 |
-| `SEDOLCODE_TAG_NAME` | 65_058 |
-| `BLOOMBERGCODE_TAG_NAME` | 65_059 |
-| `FIGICODE_TAG_NAME` | 65_061 |
+| Constant | Tag | Fate |
+| --- | --- | --- |
+| `CUSIPCODE_TAG_NAME` | 65_057 | deleted |
+| `SEDOLCODE_TAG_NAME` | 65_058 | deleted |
+| `ISINCODE_TAG_NAME` | 65_055 | kept |
+| `BLOOMBERGCODE_TAG_NAME` | 65_059 | kept |
+| `FIGICODE_TAG_NAME` | 65_061 | kept |
 
-- Also delete their `Crated::own` entries, their `ROW_STATED_*` bits, and
-  their field entries in `config/fix/fields/000000650.json` and
-  `components/fixmsg.json`. The tags are retired, not reused.
-- `fixmsg` gains one `securityids` column instead.
-- After that, `#ISINCODE` is an unmapped name, and this rule is what keeps
-  its ISIN.
+- **Deleted (CUSIP, SEDOL).** Delete their `Crated::own` entries,
+  `ROW_STATED_CUSIP`/`ROW_STATED_SEDOL`, their field entries in
+  `config/fix/fields/000000650.json` and `components/fixmsg.json`, and the
+  CUSIP/SEDOL branch of `FixMsg::fill_market`. The tags are retired, not
+  reused. A CUSIP or SEDOL now lives only in `securityids`, from `48`/`22`,
+  `secaltids`, an unmapped `CUSIPCODE`/`SEDOLCODE` (this rule), or
+  `securityid::embedded`.
+- **Kept (ISIN, Bloomberg, FIGI).** These are one scalar column each on the
+  `fixmsg` row, and they are views of `securityids`, never a second owner:
+  - **In:** a value arriving under the crated name (`ISINCODE`,
+    `#ISINCODE` with no differing bare twin, `BLOOMBERGCODE`, `FIGICODE`)
+    is a stated `securityids` entry. It keeps its `ROW_STATED_*` bit and
+    ranks after `48`/`22` and `secaltids`.
+  - **Out:** at the Arrow boundary the column is written from
+    `securityids.get("ISIN" | "BLOOMBERG" | "FIGI")`, the first code under
+    that key, including derived ones, as today's derived `isincode` is.
+  - **Writes:** `latest::sync_security_id` removes a stated crated child
+    for the key it writes, so the next boundary re-derives the column from
+    `securityids`, and the message states that key in one place.
+  - The crated tag itself never re-emits on the wire unless the line stated
+    it, exactly as today.
+- `fixmsg` also gains the `securityids` column, beside the three kept
+  scalars.
 
 **Rule.** After the builder has resolved every field, each **top-level,
 unmapped** field (tag zero: an unknown name, a `#`-marked name, or an unknown
@@ -422,16 +440,22 @@ entry:
   from an ISIN that came this way.
 - **Tests:**
   - The shipped capture line `…#CFICODE=ESVTFR|#ISINCODE=CH0012221716|
-    #LASTMKT=XSWX…` gives `ISIN:CH0012221716` stated and `VALOR:1222171`
-    derived, with `cficode` `ESVTFR` and `miccode` `XSWX` as before.
-  - `isin_code=US0378331005` gives `ISIN` and derived `CUSIP:037833100`.
-  - `#ISINCODE=US0378331006` (bad check digit) gives nothing, records an
+    #LASTMKT=XSWX…` gives `ISIN:CH0012221716` stated (through the kept
+    crated `isincode`) and `VALOR:1222171` derived, with `cficode` `ESVTFR`
+    and `miccode` `XSWX` as before.
+  - `cusip_code=037833100` and `#SEDOLCODE=0263494` (names that are
+    unmapped once their crated tags are gone) give `CUSIP:037833100` and
+    `SEDOL:0263494`.
+  - `#CUSIPCODE=037833101` (bad check digit) gives nothing, records an
     anomaly, and the field still re-emits.
   - `LegISIN=…` and a `#ISINCODE` inside a group give nothing.
   - `#TICKER=AAPL` gives nothing in `securityids`.
   - `22=4|48=US0378331005|#ISINCODE=US0378331005` gives one entry.
-  - `set` ISIN on a message carrying only `#ISINCODE` writes `secaltids`,
-    removes `#ISINCODE`, and the wire shows the new value once.
+  - `set` ISIN on a message carrying only `ISINCODE` writes `secaltids`,
+    removes the stated crated child, and the `isincode` column and the wire
+    show the new value once.
+  - `set` CUSIP on a message carrying only `CUSIPCODE` writes `secaltids`
+    (`456=1`) and removes the unmapped `CUSIPCODE`.
 
 ### What `ulbridge.log` requires
 
@@ -444,7 +468,9 @@ entry:
 - `TW0001605004`,
 - MediaTek (`TW0002454006`).
 
-Every rule above must hold on it. It shows six things the rules must handle:
+Every rule above must hold on it. A probe run of today's codec over it read
+each message's `22`, `48`, `207`, `30`, `100`, `461`, `59` and `55` and its
+market getters, and confirmed six things the rules must handle:
 
 1. **Named bodies spell codes as names, in lower case.**
    `SECURITYIDSOURCE=isin` and `SECURITYALTIDSOURCE=isin|bloomberg|ric`,
@@ -456,24 +482,24 @@ Every rule above must hold on it. It shows six things the rules must handle:
    write always emits the code-set value (`4`, `A`, `5`). The same applies
    to `SIDE=buy` (already handled by `Side::from_spelling`) and
    `TIMEINFORCE=day` (see 4).
-2. **Marked alternate-ID groups carry identifiers the plain fields lack.** The
-   MediaTek flow states `#NOSECURITYALTID=2`,
+2. **Marked alternate-ID groups become real `secaltids`.** The MediaTek
+   flow states `#NOSECURITYALTID=2`,
    `#NOSECURITYALTID[0]=SECURITYALTID=2454 TT Equity••SECURITYALTIDSOURCE=bloomberg••`
-   and `#NOSECURITYALTID[1]=SECURITYALTID=2454.TW••SECURITYALTIDSOURCE=ric••`.
-   The builder keeps each as one flat child with a packed value (`fix/build.rs`,
-   the `#NoPartyIDs[0]` row). The unmapped-field rule reads a top-level
-   marked `NOSECURITYALTID[n]` child: it unpacks `SECURITYALTID` and
-   `SECURITYALTIDSOURCE` with the reader's existing occurrence separators
-   (`••`, and the `\x04\x03` form lines 9 and 105 use; `fix/codec.rs`
-   already knows both), and adds each as a stated entry after the real
-   `secaltids`. So MediaTek gets `BLOOMBERG:2454 TT Equity`, `RIC:2454.TW`
-   and `ISIN:TW0002454006`.
-   - A marked `#SECURITYID` with no marked source (`#SECURITYID=TW0002454006`)
-     is keyed by the same guess shipped derivation `22` makes: try ISIN, then
-     CUSIP, then SEDOL, and keep the first whose check digit closes.
-   - A marked `#SYMBOL` is never an ID, even when it holds an ISIN.
-   - Line 105's `SECURITYALTID=XX0000000001` fails the ISIN check digit, so
-     it is dropped with an anomaly. Test that.
+   and `#NOSECURITYALTID[1]=SECURITYALTID=2454.TW••SECURITYALTIDSOURCE=ric••`,
+   with no bare twin.
+   - `judge_hashed` (`fix/codec.rs`) answers `Bare` for a marked key with no
+     bare twin, so the reader strips the `#`. The probe shows a real
+     `secaltids` child, `207=XTAI` from `#SECURITYEXCHANGE`, and
+     `48=TW0002454006` from `#SECURITYID`. No packed-value parsing is needed
+     in the unmapped rule.
+   - The gap is item 1: the sources are the names `bloomberg` and `ric`, so
+     today nothing surfaces the RIC. Through `SecType::read` the view gives
+     `RIC:2454.TW` and `BLOOMBERG:2454 TT Equity`.
+   - A marked key *with* a differing bare twin stays a `#`-named flat child
+     (a marked group with a bare twin is reindexed into it). Only a flat
+     marked child whose name matches the unmapped rule feeds `securityids`.
+   - The line with `22=isin|48=XX0000000001` fails the ISIN check digit and
+     already gives no ISIN. Keep that: no entry, plus an anomaly.
 3. **Venue codes are not MICs, and `MicCode::new` accepts them.** The flows
    state `EXDESTINATION=S` and `EXDESTINATION=TW`. `MicCode` is a
    `code_leaf!` over `ascii_text(4, …)`, which only refuses text *longer*
@@ -485,16 +511,17 @@ Every rule above must hold on it. It shows six things the rules must handle:
    - Test: `SECURITYEXCHANGE` missing, `LASTMKT` missing and
      `EXDESTINATION=S` gives no MIC.
    - Test: line 123's `30=RJEA` (no `207`) gives `RJEA`.
-4. **Time in force arrives as a name and as a code.** It is `TIMEINFORCE=day`
-   in named bodies and `59=0` in raw FIX, for the same order, and `59=6`
-   once. `TimeInForce` keeps the spelling, so one order has two values, and
+4. **Time in force sometimes keeps its name.** Execution reports store
+   `59=0` whether the line said `TIMEINFORCE=day` or `59=0`, but the
+   MediaTek `cancelreject` keeps `59="day"`, and `TW0001605004` states
+   `59=6`. So one lifecycle can hold `0` and `day` for the same order, and
    merge and digest see a conflict. Add `TimeInForce::from_spelling`,
-   mirroring `Side::from_spelling`: it reads the FIX `TimeInForce(59)` code,
-   the code set's name (`Day`, `GoodTillCancel`, `ImmediateOrCancel`,
+   mirroring `Side::from_spelling`: it reads the `TimeInForce(59)` code, the
+   code set's name (`Day`, `GoodTillCancel`, `ImmediateOrCancel`,
    `FillOrKill`, `GoodTillDate`, …) and the stored value, folded, and stores
-   the code (`0`). A spelling it does not know is kept as stated, never
-   refused. Pin the name table to the shipped `timeinforcecodeset` with a
-   test, like the `SecurityIDSource` table.
+   the code. Apply it wherever `tif` is set, whatever message type. A
+   spelling it does not know is kept as stated, never refused. Pin the name
+   table to the shipped `timeinforcecodeset` with a test.
 5. **A detailed CFI rides beside a coarse one.** The Holcim and Novartis flows
    state `CFICODE=ESXXXX` with `#DETAILEDCFICODE=ESVTFR`. The classification
    chain reads `461` only, so it answers `ESXXXX`. Add one step after step 1
@@ -516,7 +543,7 @@ file:
 | Novartis | `ISIN:CH0012005267`, `BLOOMBERG:NOVN SW`, derived `VALOR:1200526`; `cficode` `ESVTFR` (from `DETAILEDCFICODE`) |
 | Holcim | `ISIN:CH0012214059`, `BLOOMBERG:HOLN SW`, derived `VALOR:1221405`; `miccode` `XSWX`, never `S` |
 | `TW0001605004` | `ISIN:TW0001605004`; `miccode` `RJEA` |
-| MediaTek | `ISIN:TW0002454006`, `BLOOMBERG:2454 TT Equity`, `RIC:2454.TW`; `miccode` `XTAI`, never `TW` |
+| MediaTek | `ISIN:TW0002454006`, `BLOOMBERG:2454 TT Equity`, `RIC:2454.TW` (from the marked `secaltids` with named sources); `miccode` `XTAI`, never `TW`; `tif` `0`, not `day` |
 
 Also check:
 - no line produces a `securityids` entry the message did not state, apart
@@ -948,12 +975,14 @@ Run after A is released as Yggdryl `X.Y.Z`.
      `tradable`/`marketoperationid`. The `executions` list keeps the full
      operation row.
    - `ticker` replaces `symbolticker` in both schemas.
-   - `fixmsg.json` loses `isincode`, `cusipcode`, `sedolcode`,
-     `bloombergcode` and `figicode`, and gains `securityids`. Update
-     `docs/pipeline/tasks/parse-fix-raw.md` (its "normalized code columns"
-     line) and any dbt model reading `isincode` to read
-     `securityids['ISIN']`. The sample captures' `#ISINCODE` must still land
-     an ISIN, through the unmapped-field rule.
+   - `fixmsg.json` loses `cusipcode` and `sedolcode`, keeps `isincode`,
+     `bloombergcode` and `figicode` (now views of `securityids`), and gains
+     `securityids`. Update `docs/pipeline/tasks/parse-fix-raw.md` (its
+     "normalized code columns" line) to drop CUSIP and SEDOL. dbt models
+     reading `isincode` on `fix.refined` keep working. Anything reading
+     `cusipcode` or `sedolcode` reads `securityids['CUSIP']` or
+     `securityids['SEDOL']`. The sample captures' `#ISINCODE` must still land
+     an ISIN.
    - Regenerate `schemas/rekep/fixmsg.json` too. It gains the six lifted FX
      columns (`lastspotrate`, `lastforwardpoints`, `bidspotrate`,
      `bidforwardpoints`, `offerspotrate`, `offerforwardpoints`), so
