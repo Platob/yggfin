@@ -207,7 +207,7 @@ Lift the six FX tags the same way:
   walk reads them per entry onto each level.
 - Python and Node expose the six on the `lifted` view beside `lastpx`.
 
-### `miccode`: `SecurityExchange`, then `LastMkt`
+### `miccode`: `SecurityExchange`, then `LastMkt`, then `ExDestination`
 
 Today `FixMsg` derives the MIC in `rust/src/fix/msg.rs` (the market-facts
 block, near `// The market it is listed on, routed to, or last traded on.`):
@@ -217,32 +217,35 @@ let miccode = word(207).or_else(|| word(100)).or_else(|| word(30))
     .and_then(|held| MicCode::new(&held).ok());
 ```
 
-Change it to two sources, each validated before the next is tried:
+Change the order, and validate each source before the next is tried:
 
 ```rust
-let miccode = [207, 30].into_iter()
+let miccode = [207, 30, 100].into_iter()
     .find_map(|tag| word(tag).and_then(|held| MicCode::new(&held).ok()));
 ```
 
 - `SecurityExchange(207)` names where the instrument is listed, and it comes
-  first. `LastMkt(30)` names where the last fill traded, and it is the
-  fallback.
-- Drop `ExDestination(100)`. It is where the order was routed, not a market
-  the instrument or the fill was on, and it is often a broker code rather
-  than a MIC.
+  first. `LastMkt(30)` names where the last fill traded, and it comes second.
+  `ExDestination(100)` names where the order was routed, and it comes last.
+- `LastMkt` now outranks `ExDestination`, which reverses today's order: a
+  fill's actual venue says more than the route the order asked for.
+- `ExDestination` is often a broker code rather than a MIC. The per-source
+  validation lets it answer only when it is one.
 - Validate each candidate before falling through. A `207` that is not a valid
   MIC (a venue's own exchange code) no longer hides a valid `30`.
 - A row that states `miccode` itself (`ROW_STATED_MIC`) still wins over both.
   The rule only answers where the row says nothing.
-- Update the comment above the rule and the `crated.rs` module doc, which
-  lists `ExDestination(100)` among the market sources.
+- Update the comment above the rule and the `crated.rs` module doc to the
+  new order.
 - Tests:
   - `207` and `30` both valid MICs gives `207`'s;
   - `207` invalid and `30` valid gives `30`'s;
-  - only `100` stated gives no MIC;
+  - `30` and `100` both valid, no `207`, gives `30`'s;
+  - only a valid `100` gives `100`'s;
+  - only a non-MIC `100` (a broker code) gives no MIC;
   - a row-stated `miccode` wins over both.
-- `miccode` is a digest input, so rows whose MIC changes (they stated only
-  `100`, or an invalid `207` beside a valid `30`) get a new identity. The
+- `miccode` is a digest input, so rows whose MIC changes get a new identity. That means rows
+  with both `30` and `100`, or an invalid `207` beside a valid later source. The
   rebuild already covers that.
 
 ### Delete the `identifiers` map field
@@ -497,7 +500,7 @@ Run after A is released as Yggdryl `X.Y.Z`.
 
    `side`, `tif` and `cumqty` keep the same spelling in SQL.
 6. `miccode` now comes from `SecurityExchange(207)`, then `LastMkt(30)`,
-   never `ExDestination(100)`. No yggfin page lists its sources today. When
+   then `ExDestination(100)`. No yggfin page lists its sources today. When
    the samples are regenerated, check that captures stating only `LASTMKT`
    still land a MIC.
 7. The `identifiers` column is gone from `fix.refined` and every market
