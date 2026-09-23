@@ -213,7 +213,7 @@ MarketEvent derives from its execution child. Their reviewed
 
 `merge_schema=True` cannot retire or rename columns or translate native
 identities. An obsolete schema or identity contract requires rebuilding
-affected source tables and dependent products under the pinned revision;
+affected source tables and dependent products under the pinned release;
 see [deployment](../pipeline/operations/deploy.md). Exact market-window
 replacement removes stale rows inside its predicate but does not repair an
 incompatible table schema.

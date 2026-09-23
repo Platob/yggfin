@@ -21,9 +21,8 @@
 pip install "rekep[iceberg]"
 ```
 
-Market tasks require the native Git revision locked by this checkout; the
-published Yggdryl 0.1.10 wheel is insufficient. See the
-[pipeline guide](pipeline/index.md) for installing and running the pinned environment.
+Market tasks require Yggdryl 0.1.11. See the [pipeline guide](pipeline/index.md)
+for installing and running the pinned environment.
 
 ## Run
 

@@ -14,10 +14,9 @@ behavior.
 
 ## Ownership
 
-- The native dependency is the exact unreleased Yggdryl Git revision declared
-  in `python/pyproject.toml` and locked in `python/uv.lock`. Published 0.1.10
-  lacks the required book admission behavior. Public applications and
-  documentation import only `rekep`.
+- The native dependency is the exact Yggdryl 0.1.11 release declared in
+  `python/pyproject.toml` and locked in `python/uv.lock`. Public applications
+  and documentation import only `rekep`.
 
 - Yggdryl owns `Field`, scalar compilation, resource binding, filesystems,
   streams, codecs, decompression, text media, FIX registries, FIX batch

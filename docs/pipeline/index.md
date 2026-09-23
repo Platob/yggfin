@@ -30,9 +30,8 @@ flowchart LR
 
 The adjacent JSON documents own defaults and the Marimo applications own task
 execution. CLI and Airflow run those same applications. The market stages
-require native revision `1d4a4b9f2794cde0b993a21664eacac966bd0b05`, declared as
-a direct Git dependency in `python/pyproject.toml` and locked in `python/uv.lock`;
-published Yggdryl 0.1.10 alone is insufficient.
+require Yggdryl 0.1.11, declared in `python/pyproject.toml` and locked in
+`python/uv.lock`.
 
 ## Run a window
 

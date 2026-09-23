@@ -9,10 +9,8 @@ FIX codec, and a complete FIX registry; applications and examples import only
 pip install "rekep[iceberg]"
 ```
 
-Market tasks require the unreleased Yggdryl revision pinned in
-`python/pyproject.toml` and `python/uv.lock`; published 0.1.10 does not include
-the required book admission behavior. Install the declared dependency rather
-than substituting the release with the same version number.
+Market tasks require Yggdryl 0.1.11, pinned in `python/pyproject.toml` and
+`python/uv.lock`.
 
 The package ships its registry, so no dictionary path or environment variable
 is required:

@@ -48,8 +48,8 @@ uv run --project <repository>/python --group runner --no-sync --offline \
   --parameters-file <attempt>/parameters.json --result-file <attempt>/result.json
 ```
 
-Install the locked environment, including the required unreleased native Git
-revision, before enabling the DAG. `--no-sync --offline` prevents dependency
+Install the locked environment, including Yggdryl 0.1.11, before enabling the
+DAG. `--no-sync --offline` prevents dependency
 resolution during a scheduled run. The child works from the repository root.
 
 | argument | required | meaning |

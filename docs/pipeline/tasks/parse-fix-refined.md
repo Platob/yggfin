@@ -124,7 +124,7 @@ row counts.
 ## Migrating a warehouse that holds an older table
 
 An older native schema or identity contract requires rebuilding affected
-tables from capture under the pinned revision; keyed replay does not remove
+tables from capture under the pinned release; keyed replay does not remove
 obsolete identities or repair field IDs. The steps are on
 [Deploy](../operations/deploy.md#migrating-a-warehouse-written-under-an-earlier-yggdryl).
 

@@ -12,9 +12,8 @@ These are the executable defaults:
 --8<-- "tasks/parse_books/parse_books.json"
 ```
 
-The native dependency is the unreleased Git revision pinned by the project,
-not the published 0.1.10 wheel. Install the locked environment before running
-or deploying the Book schema.
+The native dependency is Yggdryl 0.1.11. Install the locked environment before
+running or deploying the Book schema.
 
 ## Native fold
 

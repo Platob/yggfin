@@ -22,7 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - uses: dtolnay/rust-toolchain@stable
       - name: Sync
         run: uv sync --python ${{ matrix.python }}
       - name: Lint
@@ -42,7 +41,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - uses: dtolnay/rust-toolchain@stable
       - name: Sync
         run: uv sync --group docs
       # --strict: a broken link or a page nobody navigates to fails the build

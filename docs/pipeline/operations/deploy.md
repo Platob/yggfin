@@ -7,8 +7,7 @@ Message for `logs.messages`, FixMsg for `fix.raw` and `fix.refined`, Book for
 is idempotent: existing tables are reported as `present` and left unchanged.
 
 The optional dbt models declare their own shapes and create their tables on
-first commit. Install the pinned unreleased native dependency before deploy;
-published 0.1.10 cannot provide the required book boundary.
+first commit. Install the pinned Yggdryl 0.1.11 dependency before deploy.
 
 ## Local SQLite and files
 
@@ -341,7 +340,7 @@ replayed from capture, as the next section says.
 ## Migrating a warehouse written under an earlier yggdryl
 
 An existing table with an obsolete native schema or identity contract must
-be rebuilt from its source under the pinned revision. Deployment reports an
+be rebuilt from its source under the pinned release. Deployment reports an
 existing table as `present`; it does not validate or rewrite its schema.
 There is no second identity spelling or translation layer in Yggfin.
 
