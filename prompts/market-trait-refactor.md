@@ -165,6 +165,48 @@ pub trait MarketOperation: Market {
   `Market` facts and one over the 5 `MarketOperation` facts. A wrapper that
   only needs `Market` generates only the first.
 
+### `FixMsg` lifts the FX tags
+
+Today `FixLifted` (`rust/src/fix/identity.rs`) holds 17 tags typed beside the
+row (`LIFTED_TAGS`): the prices, the quantities and the order, quote and trade
+IDs. The FX tags are only declared as native derivation inputs in
+`fix/native_derivations.rs`, and read back out of the row.
+
+Lift the six FX tags the same way:
+
+| Tag | Lifted slot | Answers |
+| --- | --- | --- |
+| `LastSpotRate(194)` | `lastspotrate` | `Market::get_spotrate` |
+| `LastForwardPoints(195)` | `lastforwardpoints` | `Market::get_forwardpoints` |
+| `BidSpotRate(188)` | `bidspotrate` | `bid` lane `spotrate` |
+| `BidForwardPoints(189)` | `bidforwardpoints` | `bid` lane `forwardpoints` |
+| `OfferSpotRate(190)` | `offerspotrate` | `ask` lane `spotrate` |
+| `OfferForwardPoints(191)` | `offerforwardpoints` | `ask` lane `forwardpoints` |
+
+- Each slot is `Option<Decimal18>`, holding exactly what the message stated.
+  Add the six tags to `LIFTED_TAGS`, give each a `FixLifted::fact` and
+  `FixLifted::record` arm, and add a `FixLifted` accessor documented like
+  `lastpx()`.
+- Most messages are not FX, so keep the six slots in one
+  `Option<Box<LiftedFx>>` inside `FixLifted`. It is allocated only when a
+  message states one of them, so a non-FX message pays one pointer, not
+  192 bytes. Pin both sizes in `rust/tests/allocations.rs`.
+- A lifted tag re-emits under its own tag on the wire and lands as its own
+  typed `decimal128(38, 18)` column on the `fixmsg` row, exactly as `lastpx`
+  does. A line that said `194=` re-emits `194=`.
+- The shipped derivation `LastPx(31) = lastspotrate + lastforwardpoints`
+  (`fix/constants.rs`) reads the lifted slots through `get_by_tag`. Add a test
+  that it still fires with the tags lifted and no `LastPx` stated. Do not
+  change the derivation text or `SHIPPED_DERIVATIONS_SHA256` unless the text
+  itself must change.
+- `FixMsg`'s `Market` and `MarketOperation` getters answer from the lifted
+  slots, and follow the `forced` rule the other derived facts follow. A
+  write through a setter stops the derivation from answering over it.
+- `MDEntrySpotRate(1026)` and `MDEntryForwardPoints(1027)` live inside the
+  `MDEntries` repeating group, so they are not message-level lifts. The book
+  walk reads them per entry onto each level.
+- Python and Node expose the six on the `lifted` view beside `lastpx`.
+
 ### `identifiers`: read-only, derived from the definitions
 
 Today `Element` has `get_identifiers() -> &BTreeMap<String, String>` and
@@ -355,9 +397,12 @@ Target:
     shrink, and `Book` with it.
 
   Put the numbers in the PR body.
-- A test builds an FX forward execution from `LastSpotRate`/`LastForwardPoints`
-  with no `LastPx`, and checks that the price is their sum and both facts
-  survive into the `Book`'s executions.
+- A test parses a FIX FX forward execution stating `194=` and `195=` and no
+  `31=`. It checks that:
+  - both are lifted;
+  - they round-trip on the wire;
+  - the price is their sum;
+  - both facts survive into the `Book`'s executions.
 - A benchmark covers book building on the existing `rust/benchmarks/fix`
   capture, before and after.
 - CI is green, and a release is tagged for yggfin to pin.
@@ -377,12 +422,16 @@ Run after A is released as Yggdryl `X.Y.Z`.
      `tradable`/`marketoperationid`. The `executions` list keeps the full
      operation row.
    - `ticker` replaces `symbolticker` in both schemas.
+   - Regenerate `schemas/rekep/fixmsg.json` too. It gains the six lifted FX
+     columns (`lastspotrate`, `lastforwardpoints`, `bidspotrate`,
+     `bidforwardpoints`, `offerspotrate`, `offerforwardpoints`), so
+     `fix.refined` is recreated with the market tables.
    - `marketevent.json` (orders, quotes, executions) takes the operation row,
-     with `bid`/`ask` lane structs in
-     place of the eight lane columns.
-3. Field ids renumber, so `market.books`, `market.orders`, `market.quotes` and
-   `market.executions` are **recreated and rebuilt from `fix.refined`**, not
-   evolved. Record this beside the existing 0.1.10 identity migration note in
+     with `bid`/`ask` lane structs in place of the eight lane columns.
+3. Field ids renumber, so `fix.refined`, `market.books`, `market.orders`,
+   `market.quotes` and `market.executions` are **recreated, not evolved**.
+   `fix.refined` is rebuilt from `fix.raw` first, then the market tables are
+   rebuilt from it. Record this beside the existing 0.1.10 identity migration note in
    `AGENTS.md` and `docs/`.
 4. Adapt `python/src/rekep/market.py` (the `bid`/`ask` `deltas` flatten) and
    the `parse_books`, `parse_orders`, `parse_quotes` and `parse_executions`
