@@ -1015,6 +1015,47 @@ fact, and one of them wins by the rules below. They never sit side by side.
 - Remove `Side` from the `family_value!` `Code` family if it no longer fits
   the `SmolStr` leaf shape. Keep it a `Scalar` variant.
 
+### `MARKETORDERID` is an alias of `OrderID(37)`
+
+Bridges send the order's ID under their own name: `ulbridge.log` states
+`#MARKETORDERID=L9EOEDIz-00` on 12 lines. Declare it with the dictionary's
+existing alias mechanism, not a new one:
+
+- In `config/fix/fields/000000000.json`, give `orderid` (tag `37`)
+  `"FIX:names": ["marketorderid"]`, as 43 fields already declare alternate
+  names (`tradetype` for `418`, `cardissno` for `491`). The name folds like
+  every other name, so `MARKETORDERID`, `MarketOrderID`, `market_order_id`
+  and `#MARKETORDERID` all resolve to `37`.
+- **The alias is a fallback, never a rival.** In all 12 lines the message
+  *also* states `ORDERID` with a different value (`00026877712XOEA0` beside
+  `L9EOEDIz-00`). `OrderID` leads `crosscode`, so a naive alias would move
+  every chain. The builder therefore:
+  - uses the alias value for `37` only when no value arrives under the
+    canonical name or tag `37` itself;
+  - keeps the alias value as an unmapped child under its own name when both
+    arrive. It re-emits unchanged, is not an anomaly, never overwrites `37`,
+    and never becomes a second `37`.
+
+  Make this the rule for every `FIX:names` alias, not a special case, and
+  check first whether the builder already behaves this way. If it does not,
+  the change covers the other 43 aliased fields too. Pin that each of them
+  still resolves exactly as today when only one spelling arrives.
+- **Everything reading `OrderID` sees the fallback.** That covers
+  `FixLifted::orderid`, `crosscode` (`identity::CROSS_TAGS`), the
+  definition-driven `FixMsg::identifiers()`, and the wire, where a message
+  that stated only `MARKETORDERID` re-emits it as written, since the arrival
+  spelling is preserved. They see it because it resolved to `37`, not
+  because anything special-cases it.
+- **Tests:**
+  - `MARKETORDERID=X` alone gives `orderid` `X` and `crosscode` `X`;
+  - `ORDERID=A|MARKETORDERID=B` gives `orderid` `A`, `crosscode` `A`, and a
+    `marketorderid` child `B`;
+  - over `ulbridge.log`, every `orderid` and `crosscode` is unchanged from
+    today, and the 12 `#MARKETORDERID` values survive as their own field.
+- **Row IDs.** They move only for messages that stated `MARKETORDERID`
+  without `ORDERID`, because their `orderid` and `crosscode` now fill. None
+  in `ulbridge.log` do. Other captures are covered by the rebuild.
+
 ### Rename the `Currency` type to `Ccy`
 
 Rename the currency **type** everywhere it is spelled. Field and column
