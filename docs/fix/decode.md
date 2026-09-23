@@ -290,10 +290,9 @@ message by the official transaction clock standing within
 never the capture's own clock, which stamps nothing, and never the instant the
 parse ran -- until the walk dates it by the `TransactTime(60)` it states.
 `currhashcode` is the content code over the event's facts, its text, its
-metadata, the stated header cells and the entry tree; `curruuid` is an RFC 9562
-UUIDv7 packing the microsecond of the instant the event settled on and the
-whole 64-bit code -- no seed and no sequence bits -- which is the derivation
-a line's identity takes from its own instant and code.
+metadata, the stated header cells and the entry tree. `curruuid` is the
+identity supplied by the pinned native revision; Yggfin stores it unchanged
+and never reconstructs it from the timestamp or content code.
 No partition column is materialized beside them, because a FIX row has none of
 its own.
 

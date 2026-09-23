@@ -1,0 +1,4102 @@
+{
+  "schema": {
+    "type": "struct",
+    "fields": [
+      {
+        "id": 1,
+        "name": "currunix",
+        "type": "timestamptz",
+        "required": true,
+        "doc": "When the event happened: the settled instant, UTC."
+      },
+      {
+        "id": 2,
+        "name": "creaunix",
+        "type": "timestamptz",
+        "required": false,
+        "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
+      },
+      {
+        "id": 3,
+        "name": "execunix",
+        "type": "timestamptz",
+        "required": false,
+        "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
+      },
+      {
+        "id": 4,
+        "name": "recdunix",
+        "type": "timestamptz",
+        "required": false,
+        "doc": "When this event was recorded, where that is known; the earliest its statements know."
+      },
+      {
+        "id": 5,
+        "name": "refrecdunix",
+        "type": "timestamptz",
+        "required": false,
+        "doc": "The recording clock of the observation selected as this event's merge reference; the latest its statements know."
+      },
+      {
+        "id": 6,
+        "name": "exprtime",
+        "type": "timestamptz",
+        "required": false,
+        "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
+      },
+      {
+        "id": 7,
+        "name": "prevunix",
+        "type": "timestamptz",
+        "required": false,
+        "doc": "When the event this one follows happened, where it follows one."
+      },
+      {
+        "id": 8,
+        "name": "snapunix",
+        "type": "timestamptz",
+        "required": false,
+        "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
+      },
+      {
+        "id": 9,
+        "name": "curruuid",
+        "type": "fixed[16]",
+        "required": true,
+        "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
+      },
+      {
+        "id": 10,
+        "name": "crossuuid",
+        "type": "fixed[16]",
+        "required": true,
+        "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
+      },
+      {
+        "id": 11,
+        "name": "crosscode",
+        "type": "string",
+        "required": false,
+        "doc": "The code every event of one chain shares, as the event spells it; empty where none."
+      },
+      {
+        "id": 12,
+        "name": "currhashcode",
+        "type": "long",
+        "required": true,
+        "doc": "The XXH3-64 of what the event states."
+      },
+      {
+        "id": 13,
+        "name": "crosshashcode",
+        "type": "long",
+        "required": true,
+        "doc": "The XXH3-64 of the cross code; zero where the event names none."
+      },
+      {
+        "id": 14,
+        "name": "prevuuid",
+        "type": "fixed[16]",
+        "required": false,
+        "doc": "The identity of the event this one follows, where it follows one."
+      },
+      {
+        "id": 15,
+        "name": "seqnum",
+        "type": "long",
+        "required": false,
+        "doc": "The event's place in its chain: how many came before it."
+      },
+      {
+        "id": 16,
+        "name": "parentuuids",
+        "type": {
+          "type": "list",
+          "element-id": 54,
+          "element": "fixed[16]",
+          "element-required": true
+        },
+        "required": false,
+        "doc": "The identities of the events this one descends from, sorted and unique."
+      },
+      {
+        "id": 17,
+        "name": "srcuuids",
+        "type": {
+          "type": "list",
+          "element-id": 55,
+          "element": "fixed[16]",
+          "element-required": true
+        },
+        "required": false,
+        "doc": "The sorted unique identities of the elements this event was read from: provenance, never lineage - no walk moves it."
+      },
+      {
+        "id": 18,
+        "name": "identifiers",
+        "type": {
+          "type": "map",
+          "key-id": 56,
+          "key": "string",
+          "value-id": 57,
+          "value": "string",
+          "value-required": false
+        },
+        "required": false,
+        "doc": "The names this event goes by, each under the scheme that issued it, in sorted order."
+      },
+      {
+        "id": 19,
+        "name": "state",
+        "type": "string",
+        "required": false,
+        "doc": "The state the event reached, ranked so it sorts by lifecycle; 00UNKNOWN where nothing states one, the furthest its chain knows once followed."
+      },
+      {
+        "id": 20,
+        "name": "marketoperationid",
+        "type": "int",
+        "required": false
+      },
+      {
+        "id": 21,
+        "name": "price",
+        "type": "decimal(38, 18)",
+        "required": true
+      },
+      {
+        "id": 22,
+        "name": "currency",
+        "type": "string",
+        "required": true
+      },
+      {
+        "id": 23,
+        "name": "quantity",
+        "type": "decimal(38, 18)",
+        "required": true
+      },
+      {
+        "id": 24,
+        "name": "unit",
+        "type": "string",
+        "required": true
+      },
+      {
+        "id": 25,
+        "name": "side",
+        "type": "string",
+        "required": true
+      },
+      {
+        "id": 26,
+        "name": "isincode",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 27,
+        "name": "cusipcode",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 28,
+        "name": "sedolcode",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 29,
+        "name": "bloombergcode",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 30,
+        "name": "figicode",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 31,
+        "name": "cficode",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 32,
+        "name": "miccode",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 33,
+        "name": "lastpx",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 34,
+        "name": "lastqty",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 35,
+        "name": "avgpx",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 36,
+        "name": "cumqty",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 37,
+        "name": "leavesqty",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 38,
+        "name": "tif",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 39,
+        "name": "tradable",
+        "type": "boolean",
+        "required": false
+      },
+      {
+        "id": 40,
+        "name": "symbolticker",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 41,
+        "name": "prevpx",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 42,
+        "name": "prevqty",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 43,
+        "name": "bidpx",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 44,
+        "name": "bidcurrency",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 45,
+        "name": "bidqty",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 46,
+        "name": "bidunit",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 47,
+        "name": "askpx",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 48,
+        "name": "askcurrency",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 49,
+        "name": "askqty",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 50,
+        "name": "askunit",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 51,
+        "name": "bid",
+        "type": {
+          "type": "struct",
+          "fields": [
+            {
+              "id": 58,
+              "name": "curruuid",
+              "type": "fixed[16]",
+              "required": true,
+              "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
+            },
+            {
+              "id": 59,
+              "name": "crossuuid",
+              "type": "fixed[16]",
+              "required": true,
+              "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
+            },
+            {
+              "id": 60,
+              "name": "crosscode",
+              "type": "string",
+              "required": false,
+              "doc": "The code every event of one chain shares, as the event spells it; empty where none."
+            },
+            {
+              "id": 61,
+              "name": "currhashcode",
+              "type": "long",
+              "required": true,
+              "doc": "The XXH3-64 of what the event states."
+            },
+            {
+              "id": 62,
+              "name": "crosshashcode",
+              "type": "long",
+              "required": true,
+              "doc": "The XXH3-64 of the cross code; zero where the event names none."
+            },
+            {
+              "id": 63,
+              "name": "parentuuids",
+              "type": {
+                "type": "list",
+                "element-id": 99,
+                "element": "fixed[16]",
+                "element-required": true
+              },
+              "required": false,
+              "doc": "The identities of the events this one descends from, sorted and unique."
+            },
+            {
+              "id": 64,
+              "name": "srcuuids",
+              "type": {
+                "type": "list",
+                "element-id": 100,
+                "element": "fixed[16]",
+                "element-required": true
+              },
+              "required": false,
+              "doc": "The sorted unique identities of the elements this event was read from: provenance, never lineage - no walk moves it."
+            },
+            {
+              "id": 65,
+              "name": "identifiers",
+              "type": {
+                "type": "map",
+                "key-id": 101,
+                "key": "string",
+                "value-id": 102,
+                "value": "string",
+                "value-required": false
+              },
+              "required": false,
+              "doc": "The names this event goes by, each under the scheme that issued it, in sorted order."
+            },
+            {
+              "id": 66,
+              "name": "marketoperationid",
+              "type": "int",
+              "required": false
+            },
+            {
+              "id": 67,
+              "name": "price",
+              "type": "decimal(38, 18)",
+              "required": true
+            },
+            {
+              "id": 68,
+              "name": "currency",
+              "type": "string",
+              "required": true
+            },
+            {
+              "id": 69,
+              "name": "quantity",
+              "type": "decimal(38, 18)",
+              "required": true
+            },
+            {
+              "id": 70,
+              "name": "unit",
+              "type": "string",
+              "required": true
+            },
+            {
+              "id": 71,
+              "name": "side",
+              "type": "string",
+              "required": true
+            },
+            {
+              "id": 72,
+              "name": "isincode",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 73,
+              "name": "cusipcode",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 74,
+              "name": "sedolcode",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 75,
+              "name": "bloombergcode",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 76,
+              "name": "figicode",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 77,
+              "name": "cficode",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 78,
+              "name": "miccode",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 79,
+              "name": "lastpx",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 80,
+              "name": "lastqty",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 81,
+              "name": "avgpx",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 82,
+              "name": "cumqty",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 83,
+              "name": "leavesqty",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 84,
+              "name": "tif",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 85,
+              "name": "tradable",
+              "type": "boolean",
+              "required": false
+            },
+            {
+              "id": 86,
+              "name": "symbolticker",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 87,
+              "name": "prevpx",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 88,
+              "name": "prevqty",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 89,
+              "name": "bidpx",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 90,
+              "name": "bidcurrency",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 91,
+              "name": "bidqty",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 92,
+              "name": "bidunit",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 93,
+              "name": "askpx",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 94,
+              "name": "askcurrency",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 95,
+              "name": "askqty",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 96,
+              "name": "askunit",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 97,
+              "name": "live",
+              "type": {
+                "type": "list",
+                "element-id": 103,
+                "element": {
+                  "type": "struct",
+                  "fields": [
+                    {
+                      "id": 104,
+                      "name": "operationkind",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 105,
+                      "name": "currunix",
+                      "type": "timestamptz",
+                      "required": true,
+                      "doc": "When the event happened: the settled instant, UTC."
+                    },
+                    {
+                      "id": 106,
+                      "name": "creaunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
+                    },
+                    {
+                      "id": 107,
+                      "name": "execunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
+                    },
+                    {
+                      "id": 108,
+                      "name": "recdunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When this event was recorded, where that is known; the earliest its statements know."
+                    },
+                    {
+                      "id": 109,
+                      "name": "refrecdunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "The recording clock of the observation selected as this event's merge reference; the latest its statements know."
+                    },
+                    {
+                      "id": 110,
+                      "name": "exprtime",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
+                    },
+                    {
+                      "id": 111,
+                      "name": "prevunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When the event this one follows happened, where it follows one."
+                    },
+                    {
+                      "id": 112,
+                      "name": "snapunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
+                    },
+                    {
+                      "id": 113,
+                      "name": "curruuid",
+                      "type": "fixed[16]",
+                      "required": true,
+                      "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
+                    },
+                    {
+                      "id": 114,
+                      "name": "crossuuid",
+                      "type": "fixed[16]",
+                      "required": true,
+                      "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
+                    },
+                    {
+                      "id": 115,
+                      "name": "crosscode",
+                      "type": "string",
+                      "required": false,
+                      "doc": "The code every event of one chain shares, as the event spells it; empty where none."
+                    },
+                    {
+                      "id": 116,
+                      "name": "currhashcode",
+                      "type": "long",
+                      "required": true,
+                      "doc": "The XXH3-64 of what the event states."
+                    },
+                    {
+                      "id": 117,
+                      "name": "crosshashcode",
+                      "type": "long",
+                      "required": true,
+                      "doc": "The XXH3-64 of the cross code; zero where the event names none."
+                    },
+                    {
+                      "id": 118,
+                      "name": "prevuuid",
+                      "type": "fixed[16]",
+                      "required": false,
+                      "doc": "The identity of the event this one follows, where it follows one."
+                    },
+                    {
+                      "id": 119,
+                      "name": "seqnum",
+                      "type": "long",
+                      "required": false,
+                      "doc": "The event's place in its chain: how many came before it."
+                    },
+                    {
+                      "id": 120,
+                      "name": "parentuuids",
+                      "type": {
+                        "type": "list",
+                        "element-id": 156,
+                        "element": "fixed[16]",
+                        "element-required": true
+                      },
+                      "required": false,
+                      "doc": "The identities of the events this one descends from, sorted and unique."
+                    },
+                    {
+                      "id": 121,
+                      "name": "srcuuids",
+                      "type": {
+                        "type": "list",
+                        "element-id": 157,
+                        "element": "fixed[16]",
+                        "element-required": true
+                      },
+                      "required": false,
+                      "doc": "The sorted unique identities of the elements this event was read from: provenance, never lineage - no walk moves it."
+                    },
+                    {
+                      "id": 122,
+                      "name": "identifiers",
+                      "type": {
+                        "type": "map",
+                        "key-id": 158,
+                        "key": "string",
+                        "value-id": 159,
+                        "value": "string",
+                        "value-required": false
+                      },
+                      "required": false,
+                      "doc": "The names this event goes by, each under the scheme that issued it, in sorted order."
+                    },
+                    {
+                      "id": 123,
+                      "name": "state",
+                      "type": "string",
+                      "required": false,
+                      "doc": "The state the event reached, ranked so it sorts by lifecycle; 00UNKNOWN where nothing states one, the furthest its chain knows once followed."
+                    },
+                    {
+                      "id": 124,
+                      "name": "marketoperationid",
+                      "type": "int",
+                      "required": false
+                    },
+                    {
+                      "id": 125,
+                      "name": "price",
+                      "type": "decimal(38, 18)",
+                      "required": true
+                    },
+                    {
+                      "id": 126,
+                      "name": "currency",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 127,
+                      "name": "quantity",
+                      "type": "decimal(38, 18)",
+                      "required": true
+                    },
+                    {
+                      "id": 128,
+                      "name": "unit",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 129,
+                      "name": "side",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 130,
+                      "name": "isincode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 131,
+                      "name": "cusipcode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 132,
+                      "name": "sedolcode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 133,
+                      "name": "bloombergcode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 134,
+                      "name": "figicode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 135,
+                      "name": "cficode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 136,
+                      "name": "miccode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 137,
+                      "name": "lastpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 138,
+                      "name": "lastqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 139,
+                      "name": "avgpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 140,
+                      "name": "cumqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 141,
+                      "name": "leavesqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 142,
+                      "name": "tif",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 143,
+                      "name": "tradable",
+                      "type": "boolean",
+                      "required": false
+                    },
+                    {
+                      "id": 144,
+                      "name": "symbolticker",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 145,
+                      "name": "prevpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 146,
+                      "name": "prevqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 147,
+                      "name": "bidpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 148,
+                      "name": "bidcurrency",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 149,
+                      "name": "bidqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 150,
+                      "name": "bidunit",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 151,
+                      "name": "askpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 152,
+                      "name": "askcurrency",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 153,
+                      "name": "askqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 154,
+                      "name": "askunit",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 155,
+                      "name": "executions",
+                      "type": {
+                        "type": "list",
+                        "element-id": 160,
+                        "element": {
+                          "type": "struct",
+                          "fields": [
+                            {
+                              "id": 161,
+                              "name": "currunix",
+                              "type": "timestamptz",
+                              "required": true,
+                              "doc": "When the event happened: the settled instant, UTC."
+                            },
+                            {
+                              "id": 162,
+                              "name": "creaunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
+                            },
+                            {
+                              "id": 163,
+                              "name": "execunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
+                            },
+                            {
+                              "id": 164,
+                              "name": "recdunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When this event was recorded, where that is known; the earliest its statements know."
+                            },
+                            {
+                              "id": 165,
+                              "name": "refrecdunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "The recording clock of the observation selected as this event's merge reference; the latest its statements know."
+                            },
+                            {
+                              "id": 166,
+                              "name": "exprtime",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
+                            },
+                            {
+                              "id": 167,
+                              "name": "prevunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When the event this one follows happened, where it follows one."
+                            },
+                            {
+                              "id": 168,
+                              "name": "snapunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
+                            },
+                            {
+                              "id": 169,
+                              "name": "curruuid",
+                              "type": "fixed[16]",
+                              "required": true,
+                              "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
+                            },
+                            {
+                              "id": 170,
+                              "name": "crossuuid",
+                              "type": "fixed[16]",
+                              "required": true,
+                              "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
+                            },
+                            {
+                              "id": 171,
+                              "name": "crosscode",
+                              "type": "string",
+                              "required": false,
+                              "doc": "The code every event of one chain shares, as the event spells it; empty where none."
+                            },
+                            {
+                              "id": 172,
+                              "name": "currhashcode",
+                              "type": "long",
+                              "required": true,
+                              "doc": "The XXH3-64 of what the event states."
+                            },
+                            {
+                              "id": 173,
+                              "name": "crosshashcode",
+                              "type": "long",
+                              "required": true,
+                              "doc": "The XXH3-64 of the cross code; zero where the event names none."
+                            },
+                            {
+                              "id": 174,
+                              "name": "prevuuid",
+                              "type": "fixed[16]",
+                              "required": false,
+                              "doc": "The identity of the event this one follows, where it follows one."
+                            },
+                            {
+                              "id": 175,
+                              "name": "seqnum",
+                              "type": "long",
+                              "required": false,
+                              "doc": "The event's place in its chain: how many came before it."
+                            },
+                            {
+                              "id": 176,
+                              "name": "parentuuids",
+                              "type": {
+                                "type": "list",
+                                "element-id": 211,
+                                "element": "fixed[16]",
+                                "element-required": true
+                              },
+                              "required": false,
+                              "doc": "The identities of the events this one descends from, sorted and unique."
+                            },
+                            {
+                              "id": 177,
+                              "name": "srcuuids",
+                              "type": {
+                                "type": "list",
+                                "element-id": 212,
+                                "element": "fixed[16]",
+                                "element-required": true
+                              },
+                              "required": false,
+                              "doc": "The sorted unique identities of the elements this event was read from: provenance, never lineage - no walk moves it."
+                            },
+                            {
+                              "id": 178,
+                              "name": "identifiers",
+                              "type": {
+                                "type": "map",
+                                "key-id": 213,
+                                "key": "string",
+                                "value-id": 214,
+                                "value": "string",
+                                "value-required": false
+                              },
+                              "required": false,
+                              "doc": "The names this event goes by, each under the scheme that issued it, in sorted order."
+                            },
+                            {
+                              "id": 179,
+                              "name": "state",
+                              "type": "string",
+                              "required": false,
+                              "doc": "The state the event reached, ranked so it sorts by lifecycle; 00UNKNOWN where nothing states one, the furthest its chain knows once followed."
+                            },
+                            {
+                              "id": 180,
+                              "name": "marketoperationid",
+                              "type": "int",
+                              "required": false
+                            },
+                            {
+                              "id": 181,
+                              "name": "price",
+                              "type": "decimal(38, 18)",
+                              "required": true
+                            },
+                            {
+                              "id": 182,
+                              "name": "currency",
+                              "type": "string",
+                              "required": true
+                            },
+                            {
+                              "id": 183,
+                              "name": "quantity",
+                              "type": "decimal(38, 18)",
+                              "required": true
+                            },
+                            {
+                              "id": 184,
+                              "name": "unit",
+                              "type": "string",
+                              "required": true
+                            },
+                            {
+                              "id": 185,
+                              "name": "side",
+                              "type": "string",
+                              "required": true
+                            },
+                            {
+                              "id": 186,
+                              "name": "isincode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 187,
+                              "name": "cusipcode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 188,
+                              "name": "sedolcode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 189,
+                              "name": "bloombergcode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 190,
+                              "name": "figicode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 191,
+                              "name": "cficode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 192,
+                              "name": "miccode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 193,
+                              "name": "lastpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 194,
+                              "name": "lastqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 195,
+                              "name": "avgpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 196,
+                              "name": "cumqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 197,
+                              "name": "leavesqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 198,
+                              "name": "tif",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 199,
+                              "name": "tradable",
+                              "type": "boolean",
+                              "required": false
+                            },
+                            {
+                              "id": 200,
+                              "name": "symbolticker",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 201,
+                              "name": "prevpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 202,
+                              "name": "prevqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 203,
+                              "name": "bidpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 204,
+                              "name": "bidcurrency",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 205,
+                              "name": "bidqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 206,
+                              "name": "bidunit",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 207,
+                              "name": "askpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 208,
+                              "name": "askcurrency",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 209,
+                              "name": "askqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 210,
+                              "name": "askunit",
+                              "type": "string",
+                              "required": false
+                            }
+                          ]
+                        },
+                        "element-required": true
+                      },
+                      "required": false
+                    }
+                  ]
+                },
+                "element-required": true
+              },
+              "required": true
+            },
+            {
+              "id": 98,
+              "name": "deltas",
+              "type": {
+                "type": "list",
+                "element-id": 215,
+                "element": {
+                  "type": "struct",
+                  "fields": [
+                    {
+                      "id": 216,
+                      "name": "operationkind",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 217,
+                      "name": "currunix",
+                      "type": "timestamptz",
+                      "required": true,
+                      "doc": "When the event happened: the settled instant, UTC."
+                    },
+                    {
+                      "id": 218,
+                      "name": "creaunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
+                    },
+                    {
+                      "id": 219,
+                      "name": "execunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
+                    },
+                    {
+                      "id": 220,
+                      "name": "recdunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When this event was recorded, where that is known; the earliest its statements know."
+                    },
+                    {
+                      "id": 221,
+                      "name": "refrecdunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "The recording clock of the observation selected as this event's merge reference; the latest its statements know."
+                    },
+                    {
+                      "id": 222,
+                      "name": "exprtime",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
+                    },
+                    {
+                      "id": 223,
+                      "name": "prevunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When the event this one follows happened, where it follows one."
+                    },
+                    {
+                      "id": 224,
+                      "name": "snapunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
+                    },
+                    {
+                      "id": 225,
+                      "name": "curruuid",
+                      "type": "fixed[16]",
+                      "required": true,
+                      "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
+                    },
+                    {
+                      "id": 226,
+                      "name": "crossuuid",
+                      "type": "fixed[16]",
+                      "required": true,
+                      "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
+                    },
+                    {
+                      "id": 227,
+                      "name": "crosscode",
+                      "type": "string",
+                      "required": false,
+                      "doc": "The code every event of one chain shares, as the event spells it; empty where none."
+                    },
+                    {
+                      "id": 228,
+                      "name": "currhashcode",
+                      "type": "long",
+                      "required": true,
+                      "doc": "The XXH3-64 of what the event states."
+                    },
+                    {
+                      "id": 229,
+                      "name": "crosshashcode",
+                      "type": "long",
+                      "required": true,
+                      "doc": "The XXH3-64 of the cross code; zero where the event names none."
+                    },
+                    {
+                      "id": 230,
+                      "name": "prevuuid",
+                      "type": "fixed[16]",
+                      "required": false,
+                      "doc": "The identity of the event this one follows, where it follows one."
+                    },
+                    {
+                      "id": 231,
+                      "name": "seqnum",
+                      "type": "long",
+                      "required": false,
+                      "doc": "The event's place in its chain: how many came before it."
+                    },
+                    {
+                      "id": 232,
+                      "name": "parentuuids",
+                      "type": {
+                        "type": "list",
+                        "element-id": 268,
+                        "element": "fixed[16]",
+                        "element-required": true
+                      },
+                      "required": false,
+                      "doc": "The identities of the events this one descends from, sorted and unique."
+                    },
+                    {
+                      "id": 233,
+                      "name": "srcuuids",
+                      "type": {
+                        "type": "list",
+                        "element-id": 269,
+                        "element": "fixed[16]",
+                        "element-required": true
+                      },
+                      "required": false,
+                      "doc": "The sorted unique identities of the elements this event was read from: provenance, never lineage - no walk moves it."
+                    },
+                    {
+                      "id": 234,
+                      "name": "identifiers",
+                      "type": {
+                        "type": "map",
+                        "key-id": 270,
+                        "key": "string",
+                        "value-id": 271,
+                        "value": "string",
+                        "value-required": false
+                      },
+                      "required": false,
+                      "doc": "The names this event goes by, each under the scheme that issued it, in sorted order."
+                    },
+                    {
+                      "id": 235,
+                      "name": "state",
+                      "type": "string",
+                      "required": false,
+                      "doc": "The state the event reached, ranked so it sorts by lifecycle; 00UNKNOWN where nothing states one, the furthest its chain knows once followed."
+                    },
+                    {
+                      "id": 236,
+                      "name": "marketoperationid",
+                      "type": "int",
+                      "required": false
+                    },
+                    {
+                      "id": 237,
+                      "name": "price",
+                      "type": "decimal(38, 18)",
+                      "required": true
+                    },
+                    {
+                      "id": 238,
+                      "name": "currency",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 239,
+                      "name": "quantity",
+                      "type": "decimal(38, 18)",
+                      "required": true
+                    },
+                    {
+                      "id": 240,
+                      "name": "unit",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 241,
+                      "name": "side",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 242,
+                      "name": "isincode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 243,
+                      "name": "cusipcode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 244,
+                      "name": "sedolcode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 245,
+                      "name": "bloombergcode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 246,
+                      "name": "figicode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 247,
+                      "name": "cficode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 248,
+                      "name": "miccode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 249,
+                      "name": "lastpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 250,
+                      "name": "lastqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 251,
+                      "name": "avgpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 252,
+                      "name": "cumqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 253,
+                      "name": "leavesqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 254,
+                      "name": "tif",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 255,
+                      "name": "tradable",
+                      "type": "boolean",
+                      "required": false
+                    },
+                    {
+                      "id": 256,
+                      "name": "symbolticker",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 257,
+                      "name": "prevpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 258,
+                      "name": "prevqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 259,
+                      "name": "bidpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 260,
+                      "name": "bidcurrency",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 261,
+                      "name": "bidqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 262,
+                      "name": "bidunit",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 263,
+                      "name": "askpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 264,
+                      "name": "askcurrency",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 265,
+                      "name": "askqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 266,
+                      "name": "askunit",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 267,
+                      "name": "executions",
+                      "type": {
+                        "type": "list",
+                        "element-id": 272,
+                        "element": {
+                          "type": "struct",
+                          "fields": [
+                            {
+                              "id": 273,
+                              "name": "currunix",
+                              "type": "timestamptz",
+                              "required": true,
+                              "doc": "When the event happened: the settled instant, UTC."
+                            },
+                            {
+                              "id": 274,
+                              "name": "creaunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
+                            },
+                            {
+                              "id": 275,
+                              "name": "execunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
+                            },
+                            {
+                              "id": 276,
+                              "name": "recdunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When this event was recorded, where that is known; the earliest its statements know."
+                            },
+                            {
+                              "id": 277,
+                              "name": "refrecdunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "The recording clock of the observation selected as this event's merge reference; the latest its statements know."
+                            },
+                            {
+                              "id": 278,
+                              "name": "exprtime",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
+                            },
+                            {
+                              "id": 279,
+                              "name": "prevunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When the event this one follows happened, where it follows one."
+                            },
+                            {
+                              "id": 280,
+                              "name": "snapunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
+                            },
+                            {
+                              "id": 281,
+                              "name": "curruuid",
+                              "type": "fixed[16]",
+                              "required": true,
+                              "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
+                            },
+                            {
+                              "id": 282,
+                              "name": "crossuuid",
+                              "type": "fixed[16]",
+                              "required": true,
+                              "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
+                            },
+                            {
+                              "id": 283,
+                              "name": "crosscode",
+                              "type": "string",
+                              "required": false,
+                              "doc": "The code every event of one chain shares, as the event spells it; empty where none."
+                            },
+                            {
+                              "id": 284,
+                              "name": "currhashcode",
+                              "type": "long",
+                              "required": true,
+                              "doc": "The XXH3-64 of what the event states."
+                            },
+                            {
+                              "id": 285,
+                              "name": "crosshashcode",
+                              "type": "long",
+                              "required": true,
+                              "doc": "The XXH3-64 of the cross code; zero where the event names none."
+                            },
+                            {
+                              "id": 286,
+                              "name": "prevuuid",
+                              "type": "fixed[16]",
+                              "required": false,
+                              "doc": "The identity of the event this one follows, where it follows one."
+                            },
+                            {
+                              "id": 287,
+                              "name": "seqnum",
+                              "type": "long",
+                              "required": false,
+                              "doc": "The event's place in its chain: how many came before it."
+                            },
+                            {
+                              "id": 288,
+                              "name": "parentuuids",
+                              "type": {
+                                "type": "list",
+                                "element-id": 323,
+                                "element": "fixed[16]",
+                                "element-required": true
+                              },
+                              "required": false,
+                              "doc": "The identities of the events this one descends from, sorted and unique."
+                            },
+                            {
+                              "id": 289,
+                              "name": "srcuuids",
+                              "type": {
+                                "type": "list",
+                                "element-id": 324,
+                                "element": "fixed[16]",
+                                "element-required": true
+                              },
+                              "required": false,
+                              "doc": "The sorted unique identities of the elements this event was read from: provenance, never lineage - no walk moves it."
+                            },
+                            {
+                              "id": 290,
+                              "name": "identifiers",
+                              "type": {
+                                "type": "map",
+                                "key-id": 325,
+                                "key": "string",
+                                "value-id": 326,
+                                "value": "string",
+                                "value-required": false
+                              },
+                              "required": false,
+                              "doc": "The names this event goes by, each under the scheme that issued it, in sorted order."
+                            },
+                            {
+                              "id": 291,
+                              "name": "state",
+                              "type": "string",
+                              "required": false,
+                              "doc": "The state the event reached, ranked so it sorts by lifecycle; 00UNKNOWN where nothing states one, the furthest its chain knows once followed."
+                            },
+                            {
+                              "id": 292,
+                              "name": "marketoperationid",
+                              "type": "int",
+                              "required": false
+                            },
+                            {
+                              "id": 293,
+                              "name": "price",
+                              "type": "decimal(38, 18)",
+                              "required": true
+                            },
+                            {
+                              "id": 294,
+                              "name": "currency",
+                              "type": "string",
+                              "required": true
+                            },
+                            {
+                              "id": 295,
+                              "name": "quantity",
+                              "type": "decimal(38, 18)",
+                              "required": true
+                            },
+                            {
+                              "id": 296,
+                              "name": "unit",
+                              "type": "string",
+                              "required": true
+                            },
+                            {
+                              "id": 297,
+                              "name": "side",
+                              "type": "string",
+                              "required": true
+                            },
+                            {
+                              "id": 298,
+                              "name": "isincode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 299,
+                              "name": "cusipcode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 300,
+                              "name": "sedolcode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 301,
+                              "name": "bloombergcode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 302,
+                              "name": "figicode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 303,
+                              "name": "cficode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 304,
+                              "name": "miccode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 305,
+                              "name": "lastpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 306,
+                              "name": "lastqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 307,
+                              "name": "avgpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 308,
+                              "name": "cumqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 309,
+                              "name": "leavesqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 310,
+                              "name": "tif",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 311,
+                              "name": "tradable",
+                              "type": "boolean",
+                              "required": false
+                            },
+                            {
+                              "id": 312,
+                              "name": "symbolticker",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 313,
+                              "name": "prevpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 314,
+                              "name": "prevqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 315,
+                              "name": "bidpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 316,
+                              "name": "bidcurrency",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 317,
+                              "name": "bidqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 318,
+                              "name": "bidunit",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 319,
+                              "name": "askpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 320,
+                              "name": "askcurrency",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 321,
+                              "name": "askqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 322,
+                              "name": "askunit",
+                              "type": "string",
+                              "required": false
+                            }
+                          ]
+                        },
+                        "element-required": true
+                      },
+                      "required": false
+                    }
+                  ]
+                },
+                "element-required": true
+              },
+              "required": true
+            }
+          ]
+        },
+        "required": true
+      },
+      {
+        "id": 52,
+        "name": "ask",
+        "type": {
+          "type": "struct",
+          "fields": [
+            {
+              "id": 327,
+              "name": "curruuid",
+              "type": "fixed[16]",
+              "required": true,
+              "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
+            },
+            {
+              "id": 328,
+              "name": "crossuuid",
+              "type": "fixed[16]",
+              "required": true,
+              "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
+            },
+            {
+              "id": 329,
+              "name": "crosscode",
+              "type": "string",
+              "required": false,
+              "doc": "The code every event of one chain shares, as the event spells it; empty where none."
+            },
+            {
+              "id": 330,
+              "name": "currhashcode",
+              "type": "long",
+              "required": true,
+              "doc": "The XXH3-64 of what the event states."
+            },
+            {
+              "id": 331,
+              "name": "crosshashcode",
+              "type": "long",
+              "required": true,
+              "doc": "The XXH3-64 of the cross code; zero where the event names none."
+            },
+            {
+              "id": 332,
+              "name": "parentuuids",
+              "type": {
+                "type": "list",
+                "element-id": 368,
+                "element": "fixed[16]",
+                "element-required": true
+              },
+              "required": false,
+              "doc": "The identities of the events this one descends from, sorted and unique."
+            },
+            {
+              "id": 333,
+              "name": "srcuuids",
+              "type": {
+                "type": "list",
+                "element-id": 369,
+                "element": "fixed[16]",
+                "element-required": true
+              },
+              "required": false,
+              "doc": "The sorted unique identities of the elements this event was read from: provenance, never lineage - no walk moves it."
+            },
+            {
+              "id": 334,
+              "name": "identifiers",
+              "type": {
+                "type": "map",
+                "key-id": 370,
+                "key": "string",
+                "value-id": 371,
+                "value": "string",
+                "value-required": false
+              },
+              "required": false,
+              "doc": "The names this event goes by, each under the scheme that issued it, in sorted order."
+            },
+            {
+              "id": 335,
+              "name": "marketoperationid",
+              "type": "int",
+              "required": false
+            },
+            {
+              "id": 336,
+              "name": "price",
+              "type": "decimal(38, 18)",
+              "required": true
+            },
+            {
+              "id": 337,
+              "name": "currency",
+              "type": "string",
+              "required": true
+            },
+            {
+              "id": 338,
+              "name": "quantity",
+              "type": "decimal(38, 18)",
+              "required": true
+            },
+            {
+              "id": 339,
+              "name": "unit",
+              "type": "string",
+              "required": true
+            },
+            {
+              "id": 340,
+              "name": "side",
+              "type": "string",
+              "required": true
+            },
+            {
+              "id": 341,
+              "name": "isincode",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 342,
+              "name": "cusipcode",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 343,
+              "name": "sedolcode",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 344,
+              "name": "bloombergcode",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 345,
+              "name": "figicode",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 346,
+              "name": "cficode",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 347,
+              "name": "miccode",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 348,
+              "name": "lastpx",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 349,
+              "name": "lastqty",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 350,
+              "name": "avgpx",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 351,
+              "name": "cumqty",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 352,
+              "name": "leavesqty",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 353,
+              "name": "tif",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 354,
+              "name": "tradable",
+              "type": "boolean",
+              "required": false
+            },
+            {
+              "id": 355,
+              "name": "symbolticker",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 356,
+              "name": "prevpx",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 357,
+              "name": "prevqty",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 358,
+              "name": "bidpx",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 359,
+              "name": "bidcurrency",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 360,
+              "name": "bidqty",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 361,
+              "name": "bidunit",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 362,
+              "name": "askpx",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 363,
+              "name": "askcurrency",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 364,
+              "name": "askqty",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 365,
+              "name": "askunit",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 366,
+              "name": "live",
+              "type": {
+                "type": "list",
+                "element-id": 372,
+                "element": {
+                  "type": "struct",
+                  "fields": [
+                    {
+                      "id": 373,
+                      "name": "operationkind",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 374,
+                      "name": "currunix",
+                      "type": "timestamptz",
+                      "required": true,
+                      "doc": "When the event happened: the settled instant, UTC."
+                    },
+                    {
+                      "id": 375,
+                      "name": "creaunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
+                    },
+                    {
+                      "id": 376,
+                      "name": "execunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
+                    },
+                    {
+                      "id": 377,
+                      "name": "recdunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When this event was recorded, where that is known; the earliest its statements know."
+                    },
+                    {
+                      "id": 378,
+                      "name": "refrecdunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "The recording clock of the observation selected as this event's merge reference; the latest its statements know."
+                    },
+                    {
+                      "id": 379,
+                      "name": "exprtime",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
+                    },
+                    {
+                      "id": 380,
+                      "name": "prevunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When the event this one follows happened, where it follows one."
+                    },
+                    {
+                      "id": 381,
+                      "name": "snapunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
+                    },
+                    {
+                      "id": 382,
+                      "name": "curruuid",
+                      "type": "fixed[16]",
+                      "required": true,
+                      "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
+                    },
+                    {
+                      "id": 383,
+                      "name": "crossuuid",
+                      "type": "fixed[16]",
+                      "required": true,
+                      "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
+                    },
+                    {
+                      "id": 384,
+                      "name": "crosscode",
+                      "type": "string",
+                      "required": false,
+                      "doc": "The code every event of one chain shares, as the event spells it; empty where none."
+                    },
+                    {
+                      "id": 385,
+                      "name": "currhashcode",
+                      "type": "long",
+                      "required": true,
+                      "doc": "The XXH3-64 of what the event states."
+                    },
+                    {
+                      "id": 386,
+                      "name": "crosshashcode",
+                      "type": "long",
+                      "required": true,
+                      "doc": "The XXH3-64 of the cross code; zero where the event names none."
+                    },
+                    {
+                      "id": 387,
+                      "name": "prevuuid",
+                      "type": "fixed[16]",
+                      "required": false,
+                      "doc": "The identity of the event this one follows, where it follows one."
+                    },
+                    {
+                      "id": 388,
+                      "name": "seqnum",
+                      "type": "long",
+                      "required": false,
+                      "doc": "The event's place in its chain: how many came before it."
+                    },
+                    {
+                      "id": 389,
+                      "name": "parentuuids",
+                      "type": {
+                        "type": "list",
+                        "element-id": 425,
+                        "element": "fixed[16]",
+                        "element-required": true
+                      },
+                      "required": false,
+                      "doc": "The identities of the events this one descends from, sorted and unique."
+                    },
+                    {
+                      "id": 390,
+                      "name": "srcuuids",
+                      "type": {
+                        "type": "list",
+                        "element-id": 426,
+                        "element": "fixed[16]",
+                        "element-required": true
+                      },
+                      "required": false,
+                      "doc": "The sorted unique identities of the elements this event was read from: provenance, never lineage - no walk moves it."
+                    },
+                    {
+                      "id": 391,
+                      "name": "identifiers",
+                      "type": {
+                        "type": "map",
+                        "key-id": 427,
+                        "key": "string",
+                        "value-id": 428,
+                        "value": "string",
+                        "value-required": false
+                      },
+                      "required": false,
+                      "doc": "The names this event goes by, each under the scheme that issued it, in sorted order."
+                    },
+                    {
+                      "id": 392,
+                      "name": "state",
+                      "type": "string",
+                      "required": false,
+                      "doc": "The state the event reached, ranked so it sorts by lifecycle; 00UNKNOWN where nothing states one, the furthest its chain knows once followed."
+                    },
+                    {
+                      "id": 393,
+                      "name": "marketoperationid",
+                      "type": "int",
+                      "required": false
+                    },
+                    {
+                      "id": 394,
+                      "name": "price",
+                      "type": "decimal(38, 18)",
+                      "required": true
+                    },
+                    {
+                      "id": 395,
+                      "name": "currency",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 396,
+                      "name": "quantity",
+                      "type": "decimal(38, 18)",
+                      "required": true
+                    },
+                    {
+                      "id": 397,
+                      "name": "unit",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 398,
+                      "name": "side",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 399,
+                      "name": "isincode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 400,
+                      "name": "cusipcode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 401,
+                      "name": "sedolcode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 402,
+                      "name": "bloombergcode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 403,
+                      "name": "figicode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 404,
+                      "name": "cficode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 405,
+                      "name": "miccode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 406,
+                      "name": "lastpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 407,
+                      "name": "lastqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 408,
+                      "name": "avgpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 409,
+                      "name": "cumqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 410,
+                      "name": "leavesqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 411,
+                      "name": "tif",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 412,
+                      "name": "tradable",
+                      "type": "boolean",
+                      "required": false
+                    },
+                    {
+                      "id": 413,
+                      "name": "symbolticker",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 414,
+                      "name": "prevpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 415,
+                      "name": "prevqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 416,
+                      "name": "bidpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 417,
+                      "name": "bidcurrency",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 418,
+                      "name": "bidqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 419,
+                      "name": "bidunit",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 420,
+                      "name": "askpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 421,
+                      "name": "askcurrency",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 422,
+                      "name": "askqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 423,
+                      "name": "askunit",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 424,
+                      "name": "executions",
+                      "type": {
+                        "type": "list",
+                        "element-id": 429,
+                        "element": {
+                          "type": "struct",
+                          "fields": [
+                            {
+                              "id": 430,
+                              "name": "currunix",
+                              "type": "timestamptz",
+                              "required": true,
+                              "doc": "When the event happened: the settled instant, UTC."
+                            },
+                            {
+                              "id": 431,
+                              "name": "creaunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
+                            },
+                            {
+                              "id": 432,
+                              "name": "execunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
+                            },
+                            {
+                              "id": 433,
+                              "name": "recdunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When this event was recorded, where that is known; the earliest its statements know."
+                            },
+                            {
+                              "id": 434,
+                              "name": "refrecdunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "The recording clock of the observation selected as this event's merge reference; the latest its statements know."
+                            },
+                            {
+                              "id": 435,
+                              "name": "exprtime",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
+                            },
+                            {
+                              "id": 436,
+                              "name": "prevunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When the event this one follows happened, where it follows one."
+                            },
+                            {
+                              "id": 437,
+                              "name": "snapunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
+                            },
+                            {
+                              "id": 438,
+                              "name": "curruuid",
+                              "type": "fixed[16]",
+                              "required": true,
+                              "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
+                            },
+                            {
+                              "id": 439,
+                              "name": "crossuuid",
+                              "type": "fixed[16]",
+                              "required": true,
+                              "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
+                            },
+                            {
+                              "id": 440,
+                              "name": "crosscode",
+                              "type": "string",
+                              "required": false,
+                              "doc": "The code every event of one chain shares, as the event spells it; empty where none."
+                            },
+                            {
+                              "id": 441,
+                              "name": "currhashcode",
+                              "type": "long",
+                              "required": true,
+                              "doc": "The XXH3-64 of what the event states."
+                            },
+                            {
+                              "id": 442,
+                              "name": "crosshashcode",
+                              "type": "long",
+                              "required": true,
+                              "doc": "The XXH3-64 of the cross code; zero where the event names none."
+                            },
+                            {
+                              "id": 443,
+                              "name": "prevuuid",
+                              "type": "fixed[16]",
+                              "required": false,
+                              "doc": "The identity of the event this one follows, where it follows one."
+                            },
+                            {
+                              "id": 444,
+                              "name": "seqnum",
+                              "type": "long",
+                              "required": false,
+                              "doc": "The event's place in its chain: how many came before it."
+                            },
+                            {
+                              "id": 445,
+                              "name": "parentuuids",
+                              "type": {
+                                "type": "list",
+                                "element-id": 480,
+                                "element": "fixed[16]",
+                                "element-required": true
+                              },
+                              "required": false,
+                              "doc": "The identities of the events this one descends from, sorted and unique."
+                            },
+                            {
+                              "id": 446,
+                              "name": "srcuuids",
+                              "type": {
+                                "type": "list",
+                                "element-id": 481,
+                                "element": "fixed[16]",
+                                "element-required": true
+                              },
+                              "required": false,
+                              "doc": "The sorted unique identities of the elements this event was read from: provenance, never lineage - no walk moves it."
+                            },
+                            {
+                              "id": 447,
+                              "name": "identifiers",
+                              "type": {
+                                "type": "map",
+                                "key-id": 482,
+                                "key": "string",
+                                "value-id": 483,
+                                "value": "string",
+                                "value-required": false
+                              },
+                              "required": false,
+                              "doc": "The names this event goes by, each under the scheme that issued it, in sorted order."
+                            },
+                            {
+                              "id": 448,
+                              "name": "state",
+                              "type": "string",
+                              "required": false,
+                              "doc": "The state the event reached, ranked so it sorts by lifecycle; 00UNKNOWN where nothing states one, the furthest its chain knows once followed."
+                            },
+                            {
+                              "id": 449,
+                              "name": "marketoperationid",
+                              "type": "int",
+                              "required": false
+                            },
+                            {
+                              "id": 450,
+                              "name": "price",
+                              "type": "decimal(38, 18)",
+                              "required": true
+                            },
+                            {
+                              "id": 451,
+                              "name": "currency",
+                              "type": "string",
+                              "required": true
+                            },
+                            {
+                              "id": 452,
+                              "name": "quantity",
+                              "type": "decimal(38, 18)",
+                              "required": true
+                            },
+                            {
+                              "id": 453,
+                              "name": "unit",
+                              "type": "string",
+                              "required": true
+                            },
+                            {
+                              "id": 454,
+                              "name": "side",
+                              "type": "string",
+                              "required": true
+                            },
+                            {
+                              "id": 455,
+                              "name": "isincode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 456,
+                              "name": "cusipcode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 457,
+                              "name": "sedolcode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 458,
+                              "name": "bloombergcode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 459,
+                              "name": "figicode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 460,
+                              "name": "cficode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 461,
+                              "name": "miccode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 462,
+                              "name": "lastpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 463,
+                              "name": "lastqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 464,
+                              "name": "avgpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 465,
+                              "name": "cumqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 466,
+                              "name": "leavesqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 467,
+                              "name": "tif",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 468,
+                              "name": "tradable",
+                              "type": "boolean",
+                              "required": false
+                            },
+                            {
+                              "id": 469,
+                              "name": "symbolticker",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 470,
+                              "name": "prevpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 471,
+                              "name": "prevqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 472,
+                              "name": "bidpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 473,
+                              "name": "bidcurrency",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 474,
+                              "name": "bidqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 475,
+                              "name": "bidunit",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 476,
+                              "name": "askpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 477,
+                              "name": "askcurrency",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 478,
+                              "name": "askqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 479,
+                              "name": "askunit",
+                              "type": "string",
+                              "required": false
+                            }
+                          ]
+                        },
+                        "element-required": true
+                      },
+                      "required": false
+                    }
+                  ]
+                },
+                "element-required": true
+              },
+              "required": true
+            },
+            {
+              "id": 367,
+              "name": "deltas",
+              "type": {
+                "type": "list",
+                "element-id": 484,
+                "element": {
+                  "type": "struct",
+                  "fields": [
+                    {
+                      "id": 485,
+                      "name": "operationkind",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 486,
+                      "name": "currunix",
+                      "type": "timestamptz",
+                      "required": true,
+                      "doc": "When the event happened: the settled instant, UTC."
+                    },
+                    {
+                      "id": 487,
+                      "name": "creaunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
+                    },
+                    {
+                      "id": 488,
+                      "name": "execunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
+                    },
+                    {
+                      "id": 489,
+                      "name": "recdunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When this event was recorded, where that is known; the earliest its statements know."
+                    },
+                    {
+                      "id": 490,
+                      "name": "refrecdunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "The recording clock of the observation selected as this event's merge reference; the latest its statements know."
+                    },
+                    {
+                      "id": 491,
+                      "name": "exprtime",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
+                    },
+                    {
+                      "id": 492,
+                      "name": "prevunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "When the event this one follows happened, where it follows one."
+                    },
+                    {
+                      "id": 493,
+                      "name": "snapunix",
+                      "type": "timestamptz",
+                      "required": false,
+                      "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
+                    },
+                    {
+                      "id": 494,
+                      "name": "curruuid",
+                      "type": "fixed[16]",
+                      "required": true,
+                      "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
+                    },
+                    {
+                      "id": 495,
+                      "name": "crossuuid",
+                      "type": "fixed[16]",
+                      "required": true,
+                      "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
+                    },
+                    {
+                      "id": 496,
+                      "name": "crosscode",
+                      "type": "string",
+                      "required": false,
+                      "doc": "The code every event of one chain shares, as the event spells it; empty where none."
+                    },
+                    {
+                      "id": 497,
+                      "name": "currhashcode",
+                      "type": "long",
+                      "required": true,
+                      "doc": "The XXH3-64 of what the event states."
+                    },
+                    {
+                      "id": 498,
+                      "name": "crosshashcode",
+                      "type": "long",
+                      "required": true,
+                      "doc": "The XXH3-64 of the cross code; zero where the event names none."
+                    },
+                    {
+                      "id": 499,
+                      "name": "prevuuid",
+                      "type": "fixed[16]",
+                      "required": false,
+                      "doc": "The identity of the event this one follows, where it follows one."
+                    },
+                    {
+                      "id": 500,
+                      "name": "seqnum",
+                      "type": "long",
+                      "required": false,
+                      "doc": "The event's place in its chain: how many came before it."
+                    },
+                    {
+                      "id": 501,
+                      "name": "parentuuids",
+                      "type": {
+                        "type": "list",
+                        "element-id": 537,
+                        "element": "fixed[16]",
+                        "element-required": true
+                      },
+                      "required": false,
+                      "doc": "The identities of the events this one descends from, sorted and unique."
+                    },
+                    {
+                      "id": 502,
+                      "name": "srcuuids",
+                      "type": {
+                        "type": "list",
+                        "element-id": 538,
+                        "element": "fixed[16]",
+                        "element-required": true
+                      },
+                      "required": false,
+                      "doc": "The sorted unique identities of the elements this event was read from: provenance, never lineage - no walk moves it."
+                    },
+                    {
+                      "id": 503,
+                      "name": "identifiers",
+                      "type": {
+                        "type": "map",
+                        "key-id": 539,
+                        "key": "string",
+                        "value-id": 540,
+                        "value": "string",
+                        "value-required": false
+                      },
+                      "required": false,
+                      "doc": "The names this event goes by, each under the scheme that issued it, in sorted order."
+                    },
+                    {
+                      "id": 504,
+                      "name": "state",
+                      "type": "string",
+                      "required": false,
+                      "doc": "The state the event reached, ranked so it sorts by lifecycle; 00UNKNOWN where nothing states one, the furthest its chain knows once followed."
+                    },
+                    {
+                      "id": 505,
+                      "name": "marketoperationid",
+                      "type": "int",
+                      "required": false
+                    },
+                    {
+                      "id": 506,
+                      "name": "price",
+                      "type": "decimal(38, 18)",
+                      "required": true
+                    },
+                    {
+                      "id": 507,
+                      "name": "currency",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 508,
+                      "name": "quantity",
+                      "type": "decimal(38, 18)",
+                      "required": true
+                    },
+                    {
+                      "id": 509,
+                      "name": "unit",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 510,
+                      "name": "side",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "id": 511,
+                      "name": "isincode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 512,
+                      "name": "cusipcode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 513,
+                      "name": "sedolcode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 514,
+                      "name": "bloombergcode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 515,
+                      "name": "figicode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 516,
+                      "name": "cficode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 517,
+                      "name": "miccode",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 518,
+                      "name": "lastpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 519,
+                      "name": "lastqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 520,
+                      "name": "avgpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 521,
+                      "name": "cumqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 522,
+                      "name": "leavesqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 523,
+                      "name": "tif",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 524,
+                      "name": "tradable",
+                      "type": "boolean",
+                      "required": false
+                    },
+                    {
+                      "id": 525,
+                      "name": "symbolticker",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 526,
+                      "name": "prevpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 527,
+                      "name": "prevqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 528,
+                      "name": "bidpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 529,
+                      "name": "bidcurrency",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 530,
+                      "name": "bidqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 531,
+                      "name": "bidunit",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 532,
+                      "name": "askpx",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 533,
+                      "name": "askcurrency",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 534,
+                      "name": "askqty",
+                      "type": "decimal(38, 18)",
+                      "required": false
+                    },
+                    {
+                      "id": 535,
+                      "name": "askunit",
+                      "type": "string",
+                      "required": false
+                    },
+                    {
+                      "id": 536,
+                      "name": "executions",
+                      "type": {
+                        "type": "list",
+                        "element-id": 541,
+                        "element": {
+                          "type": "struct",
+                          "fields": [
+                            {
+                              "id": 542,
+                              "name": "currunix",
+                              "type": "timestamptz",
+                              "required": true,
+                              "doc": "When the event happened: the settled instant, UTC."
+                            },
+                            {
+                              "id": 543,
+                              "name": "creaunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
+                            },
+                            {
+                              "id": 544,
+                              "name": "execunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
+                            },
+                            {
+                              "id": 545,
+                              "name": "recdunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When this event was recorded, where that is known; the earliest its statements know."
+                            },
+                            {
+                              "id": 546,
+                              "name": "refrecdunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "The recording clock of the observation selected as this event's merge reference; the latest its statements know."
+                            },
+                            {
+                              "id": 547,
+                              "name": "exprtime",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
+                            },
+                            {
+                              "id": 548,
+                              "name": "prevunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "When the event this one follows happened, where it follows one."
+                            },
+                            {
+                              "id": 549,
+                              "name": "snapunix",
+                              "type": "timestamptz",
+                              "required": false,
+                              "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
+                            },
+                            {
+                              "id": 550,
+                              "name": "curruuid",
+                              "type": "fixed[16]",
+                              "required": true,
+                              "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
+                            },
+                            {
+                              "id": 551,
+                              "name": "crossuuid",
+                              "type": "fixed[16]",
+                              "required": true,
+                              "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
+                            },
+                            {
+                              "id": 552,
+                              "name": "crosscode",
+                              "type": "string",
+                              "required": false,
+                              "doc": "The code every event of one chain shares, as the event spells it; empty where none."
+                            },
+                            {
+                              "id": 553,
+                              "name": "currhashcode",
+                              "type": "long",
+                              "required": true,
+                              "doc": "The XXH3-64 of what the event states."
+                            },
+                            {
+                              "id": 554,
+                              "name": "crosshashcode",
+                              "type": "long",
+                              "required": true,
+                              "doc": "The XXH3-64 of the cross code; zero where the event names none."
+                            },
+                            {
+                              "id": 555,
+                              "name": "prevuuid",
+                              "type": "fixed[16]",
+                              "required": false,
+                              "doc": "The identity of the event this one follows, where it follows one."
+                            },
+                            {
+                              "id": 556,
+                              "name": "seqnum",
+                              "type": "long",
+                              "required": false,
+                              "doc": "The event's place in its chain: how many came before it."
+                            },
+                            {
+                              "id": 557,
+                              "name": "parentuuids",
+                              "type": {
+                                "type": "list",
+                                "element-id": 592,
+                                "element": "fixed[16]",
+                                "element-required": true
+                              },
+                              "required": false,
+                              "doc": "The identities of the events this one descends from, sorted and unique."
+                            },
+                            {
+                              "id": 558,
+                              "name": "srcuuids",
+                              "type": {
+                                "type": "list",
+                                "element-id": 593,
+                                "element": "fixed[16]",
+                                "element-required": true
+                              },
+                              "required": false,
+                              "doc": "The sorted unique identities of the elements this event was read from: provenance, never lineage - no walk moves it."
+                            },
+                            {
+                              "id": 559,
+                              "name": "identifiers",
+                              "type": {
+                                "type": "map",
+                                "key-id": 594,
+                                "key": "string",
+                                "value-id": 595,
+                                "value": "string",
+                                "value-required": false
+                              },
+                              "required": false,
+                              "doc": "The names this event goes by, each under the scheme that issued it, in sorted order."
+                            },
+                            {
+                              "id": 560,
+                              "name": "state",
+                              "type": "string",
+                              "required": false,
+                              "doc": "The state the event reached, ranked so it sorts by lifecycle; 00UNKNOWN where nothing states one, the furthest its chain knows once followed."
+                            },
+                            {
+                              "id": 561,
+                              "name": "marketoperationid",
+                              "type": "int",
+                              "required": false
+                            },
+                            {
+                              "id": 562,
+                              "name": "price",
+                              "type": "decimal(38, 18)",
+                              "required": true
+                            },
+                            {
+                              "id": 563,
+                              "name": "currency",
+                              "type": "string",
+                              "required": true
+                            },
+                            {
+                              "id": 564,
+                              "name": "quantity",
+                              "type": "decimal(38, 18)",
+                              "required": true
+                            },
+                            {
+                              "id": 565,
+                              "name": "unit",
+                              "type": "string",
+                              "required": true
+                            },
+                            {
+                              "id": 566,
+                              "name": "side",
+                              "type": "string",
+                              "required": true
+                            },
+                            {
+                              "id": 567,
+                              "name": "isincode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 568,
+                              "name": "cusipcode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 569,
+                              "name": "sedolcode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 570,
+                              "name": "bloombergcode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 571,
+                              "name": "figicode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 572,
+                              "name": "cficode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 573,
+                              "name": "miccode",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 574,
+                              "name": "lastpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 575,
+                              "name": "lastqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 576,
+                              "name": "avgpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 577,
+                              "name": "cumqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 578,
+                              "name": "leavesqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 579,
+                              "name": "tif",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 580,
+                              "name": "tradable",
+                              "type": "boolean",
+                              "required": false
+                            },
+                            {
+                              "id": 581,
+                              "name": "symbolticker",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 582,
+                              "name": "prevpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 583,
+                              "name": "prevqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 584,
+                              "name": "bidpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 585,
+                              "name": "bidcurrency",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 586,
+                              "name": "bidqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 587,
+                              "name": "bidunit",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 588,
+                              "name": "askpx",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 589,
+                              "name": "askcurrency",
+                              "type": "string",
+                              "required": false
+                            },
+                            {
+                              "id": 590,
+                              "name": "askqty",
+                              "type": "decimal(38, 18)",
+                              "required": false
+                            },
+                            {
+                              "id": 591,
+                              "name": "askunit",
+                              "type": "string",
+                              "required": false
+                            }
+                          ]
+                        },
+                        "element-required": true
+                      },
+                      "required": false
+                    }
+                  ]
+                },
+                "element-required": true
+              },
+              "required": true
+            }
+          ]
+        },
+        "required": true
+      },
+      {
+        "id": 53,
+        "name": "executions",
+        "type": {
+          "type": "list",
+          "element-id": 596,
+          "element": {
+            "type": "struct",
+            "fields": [
+              {
+                "id": 597,
+                "name": "currunix",
+                "type": "timestamptz",
+                "required": true,
+                "doc": "When the event happened: the settled instant, UTC."
+              },
+              {
+                "id": 598,
+                "name": "creaunix",
+                "type": "timestamptz",
+                "required": false,
+                "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
+              },
+              {
+                "id": 599,
+                "name": "execunix",
+                "type": "timestamptz",
+                "required": false,
+                "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
+              },
+              {
+                "id": 600,
+                "name": "recdunix",
+                "type": "timestamptz",
+                "required": false,
+                "doc": "When this event was recorded, where that is known; the earliest its statements know."
+              },
+              {
+                "id": 601,
+                "name": "refrecdunix",
+                "type": "timestamptz",
+                "required": false,
+                "doc": "The recording clock of the observation selected as this event's merge reference; the latest its statements know."
+              },
+              {
+                "id": 602,
+                "name": "exprtime",
+                "type": "timestamptz",
+                "required": false,
+                "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
+              },
+              {
+                "id": 603,
+                "name": "prevunix",
+                "type": "timestamptz",
+                "required": false,
+                "doc": "When the event this one follows happened, where it follows one."
+              },
+              {
+                "id": 604,
+                "name": "snapunix",
+                "type": "timestamptz",
+                "required": false,
+                "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
+              },
+              {
+                "id": 605,
+                "name": "curruuid",
+                "type": "fixed[16]",
+                "required": true,
+                "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
+              },
+              {
+                "id": 606,
+                "name": "crossuuid",
+                "type": "fixed[16]",
+                "required": true,
+                "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
+              },
+              {
+                "id": 607,
+                "name": "crosscode",
+                "type": "string",
+                "required": false,
+                "doc": "The code every event of one chain shares, as the event spells it; empty where none."
+              },
+              {
+                "id": 608,
+                "name": "currhashcode",
+                "type": "long",
+                "required": true,
+                "doc": "The XXH3-64 of what the event states."
+              },
+              {
+                "id": 609,
+                "name": "crosshashcode",
+                "type": "long",
+                "required": true,
+                "doc": "The XXH3-64 of the cross code; zero where the event names none."
+              },
+              {
+                "id": 610,
+                "name": "prevuuid",
+                "type": "fixed[16]",
+                "required": false,
+                "doc": "The identity of the event this one follows, where it follows one."
+              },
+              {
+                "id": 611,
+                "name": "seqnum",
+                "type": "long",
+                "required": false,
+                "doc": "The event's place in its chain: how many came before it."
+              },
+              {
+                "id": 612,
+                "name": "parentuuids",
+                "type": {
+                  "type": "list",
+                  "element-id": 647,
+                  "element": "fixed[16]",
+                  "element-required": true
+                },
+                "required": false,
+                "doc": "The identities of the events this one descends from, sorted and unique."
+              },
+              {
+                "id": 613,
+                "name": "srcuuids",
+                "type": {
+                  "type": "list",
+                  "element-id": 648,
+                  "element": "fixed[16]",
+                  "element-required": true
+                },
+                "required": false,
+                "doc": "The sorted unique identities of the elements this event was read from: provenance, never lineage - no walk moves it."
+              },
+              {
+                "id": 614,
+                "name": "identifiers",
+                "type": {
+                  "type": "map",
+                  "key-id": 649,
+                  "key": "string",
+                  "value-id": 650,
+                  "value": "string",
+                  "value-required": false
+                },
+                "required": false,
+                "doc": "The names this event goes by, each under the scheme that issued it, in sorted order."
+              },
+              {
+                "id": 615,
+                "name": "state",
+                "type": "string",
+                "required": false,
+                "doc": "The state the event reached, ranked so it sorts by lifecycle; 00UNKNOWN where nothing states one, the furthest its chain knows once followed."
+              },
+              {
+                "id": 616,
+                "name": "marketoperationid",
+                "type": "int",
+                "required": false
+              },
+              {
+                "id": 617,
+                "name": "price",
+                "type": "decimal(38, 18)",
+                "required": true
+              },
+              {
+                "id": 618,
+                "name": "currency",
+                "type": "string",
+                "required": true
+              },
+              {
+                "id": 619,
+                "name": "quantity",
+                "type": "decimal(38, 18)",
+                "required": true
+              },
+              {
+                "id": 620,
+                "name": "unit",
+                "type": "string",
+                "required": true
+              },
+              {
+                "id": 621,
+                "name": "side",
+                "type": "string",
+                "required": true
+              },
+              {
+                "id": 622,
+                "name": "isincode",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 623,
+                "name": "cusipcode",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 624,
+                "name": "sedolcode",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 625,
+                "name": "bloombergcode",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 626,
+                "name": "figicode",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 627,
+                "name": "cficode",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 628,
+                "name": "miccode",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 629,
+                "name": "lastpx",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 630,
+                "name": "lastqty",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 631,
+                "name": "avgpx",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 632,
+                "name": "cumqty",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 633,
+                "name": "leavesqty",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 634,
+                "name": "tif",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 635,
+                "name": "tradable",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "id": 636,
+                "name": "symbolticker",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 637,
+                "name": "prevpx",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 638,
+                "name": "prevqty",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 639,
+                "name": "bidpx",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 640,
+                "name": "bidcurrency",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 641,
+                "name": "bidqty",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 642,
+                "name": "bidunit",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 643,
+                "name": "askpx",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 644,
+                "name": "askcurrency",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 645,
+                "name": "askqty",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 646,
+                "name": "askunit",
+                "type": "string",
+                "required": false
+              }
+            ]
+          },
+          "element-required": true
+        },
+        "required": true
+      }
+    ],
+    "schema-id": 0,
+    "identifier-field-ids": [
+      9
+    ]
+  },
+  "partition-spec": {
+    "spec-id": 0,
+    "fields": [
+      {
+        "source-id": 1,
+        "field-id": 1000,
+        "transform": "hour",
+        "name": "currunix_hour"
+      }
+    ]
+  },
+  "sort-order": {
+    "order-id": 1,
+    "fields": [
+      {
+        "source-id": 1,
+        "transform": "identity",
+        "direction": "asc",
+        "null-order": "nulls-last"
+      },
+      {
+        "source-id": 15,
+        "transform": "identity",
+        "direction": "asc",
+        "null-order": "nulls-last"
+      },
+      {
+        "source-id": 9,
+        "transform": "identity",
+        "direction": "asc",
+        "null-order": "nulls-last"
+      }
+    ]
+  }
+}

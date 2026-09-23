@@ -1,39 +1,50 @@
 # Data products
 
-rekep publishes three Iceberg tables, and these are the contracts a reader
-reviews: the text lines, the parsed events, and the walked events. Every later
-product starts from `fix.refined`, never from `fix.raw` and never by
-reparsing source files.
+rekep publishes seven Iceberg tables under four runtime-derived shapes.
+Native market products start from `fix.refined`; they do not reparse captures
+or repeat lifecycle processing. Existing dbt products remain optional.
 
 ```mermaid
 flowchart LR
     C["capture objects"] --> M[("logs.messages")]
-    M --> B[("fix.raw")]
-    B --> S[("fix.refined")]
-    S --> O[("orders.events<br/>orders.current")]
-    S --> E[("executions.fills")]
-    S -.planned.-> K[("book")]
+    M --> B[("fix.raw")] --> S[("fix.refined")]
+    S --> K[("market.books")]
+    K --> O[("market.orders")]
+    K --> Q[("market.quotes")]
+    K --> E[("market.executions")]
+    S -.optional dbt.-> D[("orders.events / orders.current / executions.fills")]
 ```
 
-The order and execution tables are the first cut of the
-[roadmap](../roadmap/index.md)'s products, derived in SQL by the dbt project
-[`build_dbt`](../pipeline/tasks/build-dbt.md) runs. Their shape is the model's
-own configuration rather than a reviewed `Field` declaration, which is what
-the three tables below have and the gate the roadmap still holds them to.
-
-| product | row grain | key | purpose |
+| product | row grain | native key | runtime shape |
 | --- | --- | --- | --- |
-| [`logs.messages`](message.md) | one physical source line | `curruuid` | exact replayable capture record |
-| [`fix.raw`](fixmsg.md) | one parsed event, however many lines stated it | `curruuid` | the parse's answer, no chain |
-| [`fix.refined`](fixmsg.md) | one walked event, identities settled at lifecycle time | `curruuid` | the chain filled, what the products read |
+| [`logs.messages`](message.md) | physical source line | `curruuid` | Message |
+| [`fix.raw`](fixmsg.md) | parsed event | `curruuid` | FixMsg |
+| [`fix.refined`](fixmsg.md) | lifecycle event | `curruuid` | FixMsg |
+| [`market.books`](../pipeline/tasks/parse-books.md) | symbol and effective book instant | `curruuid` | Book |
+| [`market.orders`](../pipeline/tasks/parse-orders.md) | order mutation in book deltas | `curruuid` | MarketEvent |
+| [`market.quotes`](../pipeline/tasks/parse-quotes.md) | quote mutation in book deltas | `curruuid` | MarketEvent |
+| [`market.executions`](../pipeline/tasks/parse-executions.md) | execution leaf | `curruuid` | MarketEvent |
 
-All three are laid out by the hour of `currunix` alone -- on a text row the
-instant the read settled over the line, on a FIX row the one the event settled
-on -- so what tells them apart is the key above and not the layout. Only
-`logs.messages` keeps `body`, and its `currhashcode` is the line's own code
-rather than the event's the two FIX tables carry. A FIX row names stored
-lines only through `srcuuids`, and adds the event's `curruuid`, its normalized
-identifiers, message direction, and parsed or residual facts.
+All are partitioned by the hour of `currunix`. The four [portable contracts](../contracts/index.md)
+record their native-derived Iceberg declarations. Price and quantity remain
+exact decimals; native UUIDs become fixed bytes, uint64 codes become signed
+bit views and timestamps narrow to Iceberg v2 microseconds.
+
+Books contain persistent `live` depth, per-emission `deltas`, and execution
+leaves. Flat order/quote products use deltas; unchanged live members are not
+new events. Native code already decomposes AE trade sides into executions.
+Book input is strictly the requested window and starts without pre-window
+depth, so this product is not a historical checkpoint reconstruction.
+
+The three flat stages read one pinned book snapshot. Market writes atomically
+replace exactly the requested window, including empty reruns; records outside
+it survive. Native `curruuid` stays the event key even when a rerun changes
+which events belong in the window.
+
+Only `logs.messages` keeps `body`. FIX provenance follows `srcuuids` back to
+those lines. The [optional dbt build](../pipeline/tasks/build-dbt.md) retains
+its existing model-owned contracts for `orders.events`, `orders.current` and
+`executions.fills`; these are separate from the native `market.*` products.
 
 ## Read products
 

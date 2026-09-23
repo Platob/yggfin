@@ -193,8 +193,10 @@ def stored_arrow_reader(
     be cast to: the native cast refuses it rather than wrapping, and
     PyIceberg's own metrics refuse it a second time when it packs the
     column's bounds. The same eight bytes read as signed are the code, so the
-    column is *viewed* rather than converted: one zero-copy reinterpretation
-    per batch, no row pass, and a filter on either side names the same rows.
+    column is *viewed* rather than converted, including codes inside nested
+    records: the view is planned once against the declared types, preserves
+    offsets and null buffers, and never visits a row. Smaller unsigned
+    integers widen through the ordinary cast.
 
     The field apply runs after it, in its native order, so the cast -- a
     nanosecond instant to the microsecond a table holds, a `uuid` to the
@@ -202,19 +204,22 @@ def stored_arrow_reader(
     happen where they always did.
     """
     stored = field.into_arrow_schema()
-    unsigned = [
-        member.name
-        for member in source.schema
-        if pyarrow.types.is_unsigned_integer(member.type)
-        and member.name in stored.names
-        and pyarrow.types.is_signed_integer(stored.field(member.name).type)
-    ]
-    if not unsigned:
+    projected = {
+        index: _storage_view(member.type, stored.field(member.name).type)
+        for index, member in enumerate(source.schema)
+        if member.name in stored.names
+    }
+    projected = {
+        index: dtype
+        for index, dtype in projected.items()
+        if not dtype.equals(source.schema.field(index).type)
+    }
+    if not projected:
         return field.apply_arrow_reader(source, safe=False, nullability="strict")
     viewed = pyarrow.schema(
         [
-            member.with_type(stored.field(member.name).type) if member.name in unsigned else member
-            for member in source.schema
+            member.with_type(projected[index]) if index in projected else member
+            for index, member in enumerate(source.schema)
         ],
         metadata=source.schema.metadata,
     )
@@ -222,8 +227,8 @@ def stored_arrow_reader(
     def _viewed() -> Iterator[pyarrow.RecordBatch]:
         for batch in source:
             columns = [
-                batch.column(index).view(viewed.field(index).type)
-                if viewed.field(index).name in unsigned
+                batch.column(index).view(projected[index])
+                if index in projected
                 else batch.column(index)
                 for index in range(batch.num_columns)
             ]
@@ -234,6 +239,36 @@ def stored_arrow_reader(
         safe=False,
         nullability="strict",
     )
+
+
+def _storage_view(source: pyarrow.DataType, stored: pyarrow.DataType) -> pyarrow.DataType:
+    """The source layout with declared uint64 leaves read as signed bits."""
+    if source.equals(stored):
+        return source
+    if source == pyarrow.uint64() and stored == pyarrow.int64():
+        return stored
+    if pyarrow.types.is_struct(source) and pyarrow.types.is_struct(stored):
+        names = {member.name: member.type for member in stored}
+        return pyarrow.struct(
+            [
+                member.with_type(_storage_view(member.type, names[member.name]))
+                if member.name in names
+                else member
+                for member in source
+            ]
+        )
+    if (pyarrow.types.is_list(source) or pyarrow.types.is_large_list(source)) and (
+        pyarrow.types.is_list(stored) or pyarrow.types.is_large_list(stored)
+    ):
+        item = source.value_field.with_type(_storage_view(source.value_type, stored.value_type))
+        return pyarrow.list_(item) if pyarrow.types.is_list(source) else pyarrow.large_list(item)
+    if pyarrow.types.is_map(source) and pyarrow.types.is_map(stored):
+        return pyarrow.map_(
+            source.key_field.with_type(_storage_view(source.key_type, stored.key_type)),
+            source.item_field.with_type(_storage_view(source.item_type, stored.item_type)),
+            keys_sorted=source.keys_sorted,
+        )
+    return source
 
 
 __all__ = [

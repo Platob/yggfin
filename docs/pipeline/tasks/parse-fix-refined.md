@@ -41,7 +41,7 @@ With `snapshot_ns > 0`, the walk also emits owned views of every live event on
 the requested nanosecond grid. Zero, the default, disables snapshots.
 
 Parsing and local per-event enrichment may run in parallel, but prior-event
-state belongs only to lifecycle. Native 0.1.10 lifecycle processing still
+state belongs only to lifecycle. Native lifecycle processing still
 collects and stable-sorts its finite scan result. The Arrow scan streams
 batches into that door, yet lifecycle still collects the selected rows.
 Undated rows are read
@@ -123,9 +123,9 @@ row counts.
 
 ## Migrating a warehouse that holds an older table
 
-A warehouse written under yggdryl 0.1.9 or earlier is dropped and replayed
-from capture; nothing evolves an existing table into the new shape, because
-every `curruuid` differs under 0.1.10. The steps are on
+An older native schema or identity contract requires rebuilding affected
+tables from capture under the pinned release; keyed replay does not remove
+obsolete identities or repair field IDs. The steps are on
 [Deploy](../operations/deploy.md#migrating-a-warehouse-written-under-an-earlier-yggdryl).
 
 ## Run

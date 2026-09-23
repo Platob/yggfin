@@ -16,6 +16,7 @@ BENCHMARKS = Path(__file__).resolve().parents[1] / "benchmarks"
 SCRIPTS = {
     "bench_iceberg": ("--quick", "--only", "write"),
     "bench_message": ("--quick",),
+    "bench_market": ("--quick",),
 }
 
 

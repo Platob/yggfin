@@ -11,7 +11,7 @@ atomic result file.
 | `task` | string | stage name |
 | `read` | integer | source rows consumed |
 | `written` | integer | target rows the run carried into the table |
-| `skipped` | integer | what a run had and did not write: a restatement of a key the write folded, or a row the write left out; the window is pushed into every read, so nothing is read and then found outside it |
+| `skipped` | integer | rows or derived events not written, under the stage's own counting unit; generated lifecycle/book events may require output-window filtering |
 | `sources` | object | logical source names to masked locations |
 | `targets` | object | logical target names to table identifiers |
 | `window` | object | `start` and `end`, each epoch nanoseconds or null |
@@ -22,8 +22,11 @@ Anything else a task knows keeps its own name beside those fields.
 not a line, so what the codec answered is counted separately from the lines
 it was handed, and its `skipped` is counted against those messages -- a
 restatement of an identity the key already folded -- rather than against the
-lines. `parse_fix_refined` returns nothing beside the contract: the walk
-answers one row per event, folding every observation of it. `build_dbt` returns `models`, `tests` and
+lines. `parse_fix_refined` reports derived events and those outside the output
+window beside its source-row count. `parse_books` publishes its committed
+`snapshot_id`; downstream market tasks report `source_snapshot_id`, the exact source snapshot used.
+This ID, rather than a fresh head lookup, is the fan-out handoff. Zero means
+the source had no committed head. `build_dbt` returns `models`, `tests` and
 `rows`, because its unit of work is a dbt node: `read` and `skipped` count
 nodes there, and `written` and `rows` count the rows its models committed.
 
@@ -53,6 +56,19 @@ it was given none; `build_dbt` declares no window and reports the open one,
 `Stage.validated` -- which both the runner and the operator call before a
 result is published or pushed to XCom -- refuses anything that is not a
 mapping of exactly `start` and `end`.
+
+## Market task handoff
+
+`parse_books.snapshot_id` and its validated `window` are copied into every
+market child by Airflow. The source table name is pinned from the same result. No data rows or Arrow
+schemas enter XCom. A task
+result appears only after its atomic window replacement succeeds; failure
+leaves the previous table snapshot visible and publishes no successful handoff.
+
+`parse_books.read` counts refined source rows and `written` counts books;
+`skipped` is zero because those are different units. Flat tasks count source
+books in `read`, selected stored events in `written`, and selected events
+not written in `skipped` (normally zero). Predicate replacement retains source duplicates.
 
 ## Monitoring rules
 

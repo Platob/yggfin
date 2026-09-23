@@ -21,14 +21,17 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 TASKS = ROOT / "tasks"
 
-#: Text ingestion, the two native FIX stages, the dbt products derived from
-#: the second of them, and generic Iceberg maintenance.
+#: Text and FIX ingestion, native books and events, dbt products and maintenance.
 NAMES = (
     "build_dbt",
     "optimize_iceberg",
+    "parse_books",
+    "parse_executions",
     "parse_fix_raw",
     "parse_fix_refined",
     "parse_messages",
+    "parse_orders",
+    "parse_quotes",
 )
 
 #: The one cell a runner replaces. Everything else runs.

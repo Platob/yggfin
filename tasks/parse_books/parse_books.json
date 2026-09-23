@@ -1,0 +1,20 @@
+{
+  "name": "parse_books",
+  "application": "parse_books.py",
+  "parameters": {
+    "refined": "fix.refined",
+    "registry": null,
+    "codec_options": null,
+    "snapshot_millis": 0,
+    "start": null,
+    "end": null,
+    "catalog": {
+      "name": "rekep",
+      "properties": {
+        "type": "sql",
+        "uri": "sqlite:///data/catalog.db",
+        "warehouse": "data/warehouse"
+      }
+    }
+  }
+}

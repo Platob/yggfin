@@ -678,6 +678,7 @@ class IcebergDataset(Dataset):
         merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
         *,
+        row_filter: Any = None,
         commit_batch_num: int | None = None,
         merge_schema: bool | None = None,
         branch: str | None = None,
@@ -686,7 +687,14 @@ class IcebergDataset(Dataset):
     ) -> int:
         """Replace what a stream carries, then expire snapshots under the configured cutoff.
 
-        One commit per bounded chunk, and every commit is the same three
+        A given `row_filter` (SQL or PyIceberg expression) replaces exactly
+        its matching rows in one atomic snapshot, even for an empty source.
+        Every incoming row must match; a source or validation error publishes
+        nothing. This mode ignores `merge_by` and retains source duplicates.
+        Commit limits bound staging chunks, not commits: completed chunks
+        live in the table's FileIO, with only their file metadata retained.
+
+        Otherwise, one commit per bounded chunk, and every commit is the same three
         steps: the chunk is written to the table's store as Parquet, one
         transformed partition at a time; the stored rows it replaces are
         taken out -- the rows carrying its keys under `merge_by`, or every
@@ -714,6 +722,7 @@ class IcebergDataset(Dataset):
                 schema,
                 merge_by,
                 commit_row_size,
+                row_filter=row_filter,
                 commit_batch_num=commit_batch_num,
                 merge_schema=merge_schema,
                 branch=branch,
@@ -727,30 +736,31 @@ class IcebergDataset(Dataset):
         merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
         *,
+        row_filter: Any = None,
         commit_batch_num: int | None = None,
         merge_schema: bool | None = None,
         branch: str | None = None,
         properties: dict[str, str] | None = None,
     ) -> int:
-        """Stage, take out, append: one commit per bounded chunk."""
+        """Stage, take out, append: one predicate or one bounded chunk per commit."""
         reader: pyarrow.RecordBatchReader | None = None
         try:
             rows, batches = self._commit_limits(commit_row_size, commit_batch_num)
             table = self.get_or_create_table()
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
-            join = self.merge_columns(merge_by)
+            join = [] if row_filter is not None else self.merge_columns(merge_by)
             target = self._write_field(schema, merge_schema)
             table = self.iceberg_table
             partitions = _partition_columns(table)
-            if not join and not partitions:
+            if row_filter is None and not join and not partitions:
                 raise ValueError(
                     f"merge_by={merge_by!r} names nothing to match on and the table is not "
                     "partitioned, so nothing says which stored rows this replaces -- pass True "
                     "for the primary key or the columns to match on, or use append_arrow_* to "
                     "add rows blindly"
                 )
-            if not join:
+            if row_filter is None and not join:
                 source = _requiring_columns(
                     source, [column.source for column in partitions], derived_keys(target)
                 )
@@ -760,6 +770,14 @@ class IcebergDataset(Dataset):
                 nullability="strict",
             )
             snapshot = properties or {}
+            if row_filter is not None:
+                return self._replace_where(
+                    table,
+                    arrow_chunks(reader, rows, batches),
+                    _delete_expression(row_filter),
+                    reference,
+                    snapshot,
+                )
             replaced: set[tuple[Any, ...]] = set()
             written = 0
             for chunk in arrow_chunks(reader, rows, batches):
@@ -773,6 +791,58 @@ class IcebergDataset(Dataset):
             return written
         finally:
             _close_write_source(source, reader)
+
+    def _replace_where(
+        self,
+        table: Any,
+        chunks: Iterable[pyarrow.Table],
+        expression: Any,
+        reference: str,
+        properties: Mapping[str, str],
+    ) -> int:
+        """Replace a predicate atomically, retaining staged file metadata only."""
+        from pyiceberg.expressions.visitors import ROWS_MUST_MATCH, _StrictMetricsEvaluator, bind
+        from pyiceberg.io.pyarrow import _expression_to_complementary_pyarrow
+
+        schema = table.schema()
+        preserve = _expression_to_complementary_pyarrow(bind(schema, expression, True), schema)
+        strict = _StrictMetricsEvaluator(schema, expression, True).eval
+        scan = self._branch_scan(table, table.scan(row_filter=expression), reference)
+        tasks = list(scan.plan_files())
+        file_rows = max((int(task.file.record_count) for task in tasks), default=1)
+        written = 0
+        with _PartitionStager(table, self.sort_fields(), file_rows) as stager:
+            staged: list[_StagedPartition] = []
+            for chunk in chunks:
+                outside = chunk.filter(preserve).num_rows
+                if outside:
+                    raise ValueError(
+                        f"replacement source rows [{written}, {written + chunk.num_rows}) "
+                        f"contain {outside} rows outside row_filter {expression}"
+                    )
+                staged.extend(_stage_chunk(table, chunk, stager))
+                written += chunk.num_rows
+                del chunk
+            originals, rewritten = self._rewritten_without(
+                table,
+                tasks,
+                stager,
+                lambda rows: rows.filter(preserve),
+                doomed=lambda data_file: strict(data_file) == ROWS_MUST_MATCH,
+            )
+            table = self._commit_replacement(
+                table,
+                stager,
+                originals,
+                [*rewritten, *staged],
+                reference,
+                properties,
+                rebuild=False,
+                conflicts=expression,
+                force_overwrite=True,
+            )
+            self.__dict__["iceberg_table"] = table
+        return written
 
     def _replace_chunk(
         self,
@@ -986,10 +1056,13 @@ class IcebergDataset(Dataset):
         *,
         rebuild: bool,
         conflicts: Any = None,
+        force_overwrite: bool = False,
     ) -> Any:
         """One snapshot: `originals` deleted and `additions` appended.
 
-        An append snapshot when nothing is deleted, which is the cheaper
+        `force_overwrite` declares a predicate replacement even when the
+        planned window held no files or the incoming stream is empty.
+        Otherwise an append snapshot when nothing is deleted, which is the cheaper
         metadata and says in the log what happened; an overwrite otherwise. A
         blind append may be rebuilt after another writer wins a commit -- its
         staged files are still there to commit again. A replacement passes
@@ -1007,7 +1080,7 @@ class IcebergDataset(Dataset):
         predicate's partition projection is what prunes the manifests the
         overwrite rewrites, beside the partitions of the files it deletes.
         """
-        if not originals and not any(part.data_files for part in additions):
+        if not force_overwrite and not originals and not any(part.data_files for part in additions):
             return table
 
         def commit(current: Any, summary: Mapping[str, str]) -> None:
@@ -1015,7 +1088,7 @@ class IcebergDataset(Dataset):
                 transaction = current.transaction()
                 try:
                     _ensure_name_mapping(transaction)
-                    if originals:
+                    if originals or force_overwrite:
                         with transaction.update_snapshot(
                             snapshot_properties=dict(summary), branch=reference
                         ).overwrite() as overwrite:

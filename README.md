@@ -9,6 +9,9 @@ FIX codec, and a complete FIX registry; applications and examples import only
 pip install "rekep[iceberg]"
 ```
 
+Market tasks require Yggdryl 0.1.11, pinned in `python/pyproject.toml` and
+`python/uv.lock`.
+
 The package ships its registry, so no dictionary path or environment variable
 is required:
 
@@ -30,9 +33,14 @@ The supported ingestion graph is deliberately short:
 filesystem URI -> parse_messages    -> logs.messages
 logs.messages  -> parse_fix_raw     -> fix.raw
 fix.raw        -> parse_fix_refined -> fix.refined
+fix.refined    -> parse_books       -> market.books
+market.books   -> parse_orders      -> market.orders
+               -> parse_quotes      -> market.quotes
+               -> parse_executions  -> market.executions
 ```
 
-and one dbt build derives the business products from its end:
+The three event tasks run independently after books commit, reading the same
+pinned book snapshot. The optional dbt build remains available from refined FIX:
 
 ```text
 fix.refined -> build_dbt -> orders.events, orders.current, executions.fills
@@ -57,7 +65,7 @@ follows, the `seqnum` it stands at, the `parentuuids` it descends from, and the
 Refined scans the previous hour plus the job window with `fix_window_filter`
 and `SORT_COLUMNS`. Iceberg streams chronological hour paths and merges no more
 than 16 overlapping files at once; there is no Python-wide `read_all` union.
-Native 0.1.10 lifecycle processing still collects and stable-sorts that
+Native lifecycle processing still collects and stable-sorts that
 finite scan result. Undated rows come from the epoch partition and may
 accumulate, so this is not a batch-bounded memory path. The previous hour
 provides context only, and the job window is selected after the walk, in
@@ -65,7 +73,20 @@ Python, because the walk needs its context rows: output is the job window
 plus unresolved epoch rows, with future expiry excluded, so this bounded run
 does not claim arbitrary older-chain completeness.
 
-Run it locally from the repository root:
+`parse_books` reads strict `[start, end)` refined events in native event order
+and starts with empty depth. It does not reconstruct resting entries opened
+before `start`, and it does not repeat lifecycle enrichment. Native scheduled
+expirations outside the window are excluded. Orders and quotes flatten the
+book side deltas; executions flatten the native execution list, including
+already decomposed AE trade sides. Unchanged live depth is not emitted again
+as event history.
+
+Market writes atomically replace exactly the requested window, including an
+empty rerun, while preserving rows outside it. Native identities and exact
+decimals survive the Arrow projection; Iceberg v2 stores timestamps at
+microsecond resolution and uint64 codes as signed views of the same bits.
+
+Run ingestion locally from the repository root:
 
 ```bash
 uv sync --project python --all-extras --dev
@@ -89,7 +110,7 @@ replay leaves each table holding each row once.
 header's captures typed, the `body` past the header -- and where it was read
 from, in `crosscode` and `seqnum`, keyed only on `curruuid`, the line identity
 the native read states. `currhashcode` is its exact-content code, not a second
-key. All three tables are laid out by the hour of `currunix` alone. On a
+key. The three source tables are laid out by the hour of `currunix` alone. On a
 `logs.messages` row that instant is what the native text read settles over
 the line: the line's own clock where the header dated it, else the
 modification time of the object it was read from, and `EPOCH` only where the
@@ -126,10 +147,12 @@ reads `fix.refined`: DuckDB owns the SQL, and every read and commit goes through
 the same Iceberg dataset the tasks write through, so there is no second catalog
 and no extract.
 
-The reviewed contracts are [Message](schemas/rekep/message.json) and
-[FixMsg](schemas/rekep/fixmsg.json), the Iceberg schema, partition
-spec and sort order PyIceberg records for `logs.messages` and the one both FIX
-tables share.
+The reviewed contracts are [Message](schemas/rekep/message.json),
+[FixMsg](schemas/rekep/fixmsg.json), [Book](schemas/rekep/book.json), and
+[MarketEvent](schemas/rekep/marketevent.json). Their runtime constructors own
+the schemas, keys, hour partitions and sort orders; all three flat market
+tables share MarketEvent. Continue with the [market tasks](docs/pipeline/tasks/parse-books.md)
+or use Airflow to pin one book snapshot for the parallel event stages.
 The [pipeline guide](docs/pipeline/index.md) covers local files, S3, AWS Glue,
 AWS S3 Tables, Airflow, and operations; the
 [data-product guide](docs/products/index.md) defines every published column.

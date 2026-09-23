@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import json
 import re
+from collections.abc import Iterator
 from pathlib import Path
 
 import yaml
@@ -17,11 +18,21 @@ FENCE = re.compile(r"^```python\n(.*?)^```", re.MULTILINE | re.DOTALL)
 JSON_FENCE = re.compile(r"^```json\n(.*?)^```", re.MULTILINE | re.DOTALL)
 
 
+def code_fences(page: Path, pattern: re.Pattern[str]) -> Iterator[str]:
+    """Read fenced examples, including an exact repository snippet."""
+    for source in pattern.findall(page.read_text(encoding="utf-8")):
+        if match := re.fullmatch(r'\s*--8<-- "([^"]+)"\s*', source):
+            snippet = (ROOT / match.group(1)).resolve()
+            assert snippet.is_relative_to(ROOT), f"{page} includes a file outside the repository"
+            source = snippet.read_text(encoding="utf-8")
+        yield source
+
+
 def test_python_examples_compile() -> None:
     examples = [
         (page, index, source)
         for page in sorted(DOCS.rglob("*.md"))
-        for index, source in enumerate(FENCE.findall(page.read_text(encoding="utf-8")))
+        for index, source in enumerate(code_fences(page, FENCE))
     ]
 
     assert len(examples) >= 6
@@ -33,7 +44,7 @@ def test_json_examples_parse() -> None:
     examples = [
         (page, source)
         for page in sorted(DOCS.rglob("*.md"))
-        for source in JSON_FENCE.findall(page.read_text(encoding="utf-8"))
+        for source in code_fences(page, JSON_FENCE)
     ]
 
     assert examples
@@ -62,7 +73,7 @@ def test_navigation_names_existing_pages() -> None:
     assert all((DOCS / page).is_file() for page in declared)
 
 
-def test_docs_publish_the_native_message_contracts() -> None:
+def test_docs_publish_the_native_message_and_market_contracts() -> None:
     config = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
     message_schema = (ROOT / "schemas" / "rekep" / "message.json").read_text(encoding="utf-8")
     fix_schema = (ROOT / "schemas" / "rekep" / "fixmsg.json").read_text(encoding="utf-8")
@@ -84,11 +95,15 @@ def test_docs_publish_the_native_message_contracts() -> None:
     ]
     assert "pipeline/tasks/parse-fix-raw.md" in config
     assert "pipeline/tasks/parse-fix-refined.md" in config
+    for kind in ("books", "orders", "quotes", "executions"):
+        assert f"pipeline/tasks/parse-{kind}.md" in config
     assert "pipeline/tasks/parse-fix.md" not in config
     assert "pipeline/tasks/build-dbt.md" in config
     assert "market/" not in config
     assert sorted(path.name for path in (ROOT / "schemas" / "rekep").glob("*.json")) == [
+        "book.json",
         "fixmsg.json",
+        "marketevent.json",
         "message.json",
     ]
     # The FIX contract is the native projected event row. A line's text
@@ -98,6 +113,14 @@ def test_docs_publish_the_native_message_contracts() -> None:
     assert '"name": "srcuuids"' in fix_schema
     for capture in ("msgthreadid", "loglevel", "body"):
         assert f'"name": "{capture}"' not in fix_schema
+    book = json.loads((ROOT / "schemas" / "rekep" / "book.json").read_text(encoding="utf-8"))
+    market_event = json.loads(
+        (ROOT / "schemas" / "rekep" / "marketevent.json").read_text(encoding="utf-8")
+    )
+    book_names = [member["name"] for member in book["schema"]["fields"]]
+    event_names = [member["name"] for member in market_event["schema"]["fields"]]
+    assert book_names[-3:] == ["bid", "ask", "executions"]
+    assert event_names == book_names[:-3]
 
 
 def test_docs_record_the_measured_message_rates() -> None:
@@ -140,9 +163,7 @@ def test_public_python_uses_the_rekep_surface() -> None:
             if path.is_file() and path.suffix == ".py":
                 sources.append((path, path.read_text(encoding="utf-8")))
             elif path.is_file() and path.suffix == ".md":
-                sources.extend(
-                    (path, source) for source in FENCE.findall(path.read_text(encoding="utf-8"))
-                )
+                sources.extend((path, source) for source in code_fences(path, FENCE))
 
     assert sources
     for path, source in sources:
@@ -159,23 +180,19 @@ def test_public_python_uses_the_rekep_surface() -> None:
 
 
 def test_each_task_page_publishes_its_document_verbatim() -> None:
-    """A pasted document is only documentation while it still matches.
-
-    `mkdocs.yml` enables `pymdownx.snippets` so a page can include a file from
-    the checkout, but these pages paste the JSON instead, which nothing stops
-    from drifting. This is what stops it.
-    """
+    """Pasted documents and repository snippets state the executable defaults."""
     pages = {
         "pipeline/tasks/parse-messages.md": "parse_messages",
         "pipeline/tasks/parse-fix-raw.md": "parse_fix_raw",
         "pipeline/tasks/parse-fix-refined.md": "parse_fix_refined",
+        "pipeline/tasks/parse-books.md": "parse_books",
+        "pipeline/tasks/parse-orders.md": "parse_orders",
+        "pipeline/tasks/parse-quotes.md": "parse_quotes",
+        "pipeline/tasks/parse-executions.md": "parse_executions",
         "pipeline/tasks/build-dbt.md": "build_dbt",
     }
 
     for page, name in pages.items():
         document = json.loads((ROOT / "tasks" / name / f"{name}.json").read_text(encoding="utf-8"))
-        shown = [
-            json.loads(source)
-            for source in JSON_FENCE.findall((DOCS / page).read_text(encoding="utf-8"))
-        ]
+        shown = [json.loads(source) for source in code_fences(DOCS / page, JSON_FENCE)]
         assert document in shown, f"{page} no longer shows {name}.json as it is"

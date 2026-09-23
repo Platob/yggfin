@@ -308,7 +308,7 @@ def test_the_retired_columns_are_gone_rather_than_kept_beside_the_new_ones() -> 
     ):
         assert retired not in names, retired
     # Tags 44, 38 and 53 are their own columns again; what a message is about
-    # is the trait `FixMsg.px` answers off them, never a second column.
+    # is the trait `FixMsg.price` answers off them, never a second column.
     assert {"price", "orderqty", "quantity", "lastpx", "avgpx", "lastqty"} <= names
 
 
@@ -554,7 +554,7 @@ def test_every_restatement_of_an_event_settles_on_one_identity(raw) -> None:
 
 def test_a_market_fact_is_fixs_own_field_and_the_trait_answers_off_it(raw) -> None:
     """`Price(44)`, `OrderQty(38)` and `LastPx(31)` are columns of the row and
-    the ladder is not: what a message is about is `FixMsg.px`, read off those
+        the ladder is not: what a message is about is `FixMsg.price`, read off those
     columns by a reader holding the message, never a second column stored
     beside them."""
     rows = raw.select(("price", "lastpx", "avgpx", "orderqty", "lastqty")).to_pylist()
@@ -566,7 +566,7 @@ def test_a_market_fact_is_fixs_own_field_and_the_trait_answers_off_it(raw) -> No
         stated = next(
             (row[name] for name in ("price", "lastpx", "avgpx") if row[name] is not None), None
         )
-        answered = message.px.as_py() if message.px is not None else None
+        answered = message.price.as_py() if message.price is not None else None
         if stated is not None:
             assert answered is not None and float(answered) == float(stated)
 
@@ -778,8 +778,7 @@ def test_the_walk_sorts_distinct_effective_instants_and_keeps_equal_ties(raw) ->
 
     # Two observations of one event at one instant are one event, so the tie
     # is no longer two rows to order but one row's provenance: the walk keeps
-    # both lines under one identity, and which line it records first is the
-    # input's to decide, never the walk's own.
+    # both lines under one identity in the core's canonical identity order.
     tied = raw.take(pyarrow.array([0, 1]))
     reversed_tied = tied.take(pyarrow.array([1, 0]))
     held, reversed_held = _refined(tied), _refined(reversed_tied)
@@ -787,7 +786,7 @@ def test_the_walk_sorts_distinct_effective_instants_and_keeps_equal_ties(raw) ->
 
     assert held.num_rows == reversed_held.num_rows == 1
     assert set(lines(held)[0]) == set(lines(reversed_held)[0]) == set(_sources(tied))
-    assert lines(held)[0] == list(reversed(lines(reversed_held)[0]))
+    assert lines(held)[0] == lines(reversed_held)[0] == sorted(lines(held)[0])
     assert _refined(raw.slice(0, 0)).num_rows == 0
 
 

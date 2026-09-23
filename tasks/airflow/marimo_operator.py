@@ -47,6 +47,7 @@ class MarimoOperator(BaseOperator):
         "repository",
         "parameters",
         "environment",
+        "upstream_task_id",
     )
     template_fields_renderers: ClassVar[dict[str, str]] = {
         "parameters": "json",
@@ -61,6 +62,7 @@ class MarimoOperator(BaseOperator):
         parameters: dict[str, Any] | None = None,
         environment: dict[str, str] | None = None,
         cache_dir: str | None = None,
+        upstream_task_id: str | None = None,
         outlets: list[Asset] | None = None,
         **kwargs: Any,
     ) -> None:
@@ -70,6 +72,7 @@ class MarimoOperator(BaseOperator):
         self.parameters = dict(parameters or {})
         self.environment = dict(environment or {})
         self.cache_dir = cache_dir
+        self.upstream_task_id = upstream_task_id
         #: The running child, for `on_kill`. Never a constructor argument and
         #: never a template field, so nothing live reaches the serialized DAG.
         self.hook: SubprocessHook | None = None
@@ -88,6 +91,8 @@ class MarimoOperator(BaseOperator):
         # process is started with it.
         task.into_application_path(document)
         parameters = self._merged(task.parameters, context)
+        if self.upstream_task_id is not None:
+            parameters = self._pinned(parameters, context)
         attempt = Path(tempfile.mkdtemp(prefix=f"{self._attempt(context)}-"))
         try:
             written = attempt / "parameters.json"
@@ -143,6 +148,46 @@ class MarimoOperator(BaseOperator):
                 if name in defaults and name not in conf:
                     parameters[name] = moment.isoformat()
         return parameters
+
+    def _pinned(self, parameters: dict[str, Any], context: Context) -> dict[str, Any]:
+        """Use the completed upstream stage's window, snapshot and named tables.
+
+        This handoff runs after ordinary scheduler parameters: all fanout
+        readers must observe the same commit, even if a later run advances it.
+        """
+        from rekep.logs import Stage
+
+        required = {"start", "end", "snapshot_id"}
+        missing = sorted(required - parameters.keys())
+        if missing:
+            raise AirflowException(f"{self.document} declares no {', '.join(missing)}")
+        try:
+            upstream = Stage.validated(
+                context["task_instance"].xcom_pull(task_ids=self.upstream_task_id)
+            )
+            window = upstream["window"]
+            lower, upper = window["start"], window["end"]
+            if type(lower) is not int or type(upper) is not int or lower >= upper:
+                raise ValueError("expected an ordered window of epoch nanoseconds")
+            snapshot = upstream.get("snapshot_id")
+            if type(snapshot) is not int or snapshot < 0:
+                raise ValueError("expected a nonnegative snapshot_id")
+            sources = {
+                name: table for name, table in upstream["targets"].items() if name in parameters
+            }
+            if not sources:
+                raise ValueError("no upstream target names a declared source parameter")
+        except (AttributeError, KeyError, TypeError, ValueError) as error:
+            raise AirflowException(
+                f"{self.upstream_task_id} published no usable snapshot: {error}"
+            ) from error
+        return {
+            **parameters,
+            **sources,
+            "start": lower,
+            "end": upper,
+            "snapshot_id": snapshot,
+        }
 
     def _argv(self, repository: Path, document: Path, parameters: Path, result: Path) -> list[str]:
         """The locked offline runner command, as a list: nothing reaches a shell."""

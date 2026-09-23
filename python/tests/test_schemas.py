@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import pyarrow
+import pytest
 from yggdryl.fix import fix_schema
 
 from rekep import Message
@@ -24,10 +25,15 @@ from rekep.iceberg import (
     primary_keys,
     sort_keys,
 )
+from rekep.market import book_field, market_event_field
 
 SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
 CONTRACT = SCHEMAS / "rekep" / "message.json"
 FIX_CONTRACT = SCHEMAS / "rekep" / "fixmsg.json"
+MARKET_CONTRACTS = {
+    SCHEMAS / "rekep" / "book.json": book_field,
+    SCHEMAS / "rekep" / "marketevent.json": market_event_field,
+}
 
 
 def load_contract() -> Field:
@@ -44,7 +50,12 @@ def test_only_the_runtime_table_shapes_are_published() -> None:
     contracts = sorted(
         path for suffix in ("*.yaml", "*.yml", "*.json") for path in SCHEMAS.rglob(suffix)
     )
-    assert contracts == sorted([CONTRACT, FIX_CONTRACT])
+    assert contracts == sorted([CONTRACT, FIX_CONTRACT, *MARKET_CONTRACTS])
+
+
+@pytest.mark.parametrize(("path", "factory"), MARKET_CONTRACTS.items())
+def test_market_contracts_are_native_storage_projections(path, factory):
+    assert path.read_text(encoding="utf-8") == f"{iceberg_contract(factory())}\n"
 
 
 def test_a_contract_is_the_three_things_iceberg_stores() -> None:

@@ -26,7 +26,9 @@ flowchart LR
 | text | physical-line framing, header capture, `crosscode` and `seqnum` |
 | field | schema metadata, casts, digests, partitions, Arrow conversion |
 | FIX | dictionary, dialect membership, code sets, line classification, parsing, lifecycle, fixed Arrow projection |
-| Iceberg | table conversion, identifiers, snapshots, scan planning, commits |
+| market core | admission, continuation, book state, expirations, native event identities and AE decomposition |
+| Arrow | columnar delta selection and list flattening |
+| Iceberg | table conversion, identifiers, snapshots, scan planning, atomic window commits |
 | tasks | application parameters, stage boundaries, counts, and orchestration |
 
 There is one `Field`, one resource handle, one text reader, one codec, and one
@@ -52,7 +54,10 @@ field at the storage boundary, and gives one `RecordBatchReader` directly to
 Iceberg. `parse_fix_raw` reads that table as another reader, projected to the
 seven columns the parse consumes, passes it through the codec's parse, and
 writes the native FixMsg row directly. `parse_fix_refined` reads `fix.raw` in
-turn, walks those native rows, and writes the same shape. No production stage
+turn, walks those native rows, and writes the same shape. `parse_books` reads
+strictly its refined window into the native book reader, then the three flat
+event tasks select deltas or execution leaves with Arrow kernels from one
+pinned book snapshot. The book fold starts without pre-window depth. No production stage
 converts rows through Python dictionaries or stages an S3 object on local
 disk.
 
@@ -78,10 +83,12 @@ keyed on a `curruuid` of their own.
 A line's `currhashcode` identifies the line itself: the read digests its
 cross code, the header's captures except the clock, its row number and then
 its body, so two lines of identical bytes answer two codes. Its `curruuid` is
-a UUIDv7 packing the microsecond of `currunix` and that whole 64-bit code. A
-FIX row's `curruuid` is derived the same way from the settled message's own
-instant and content code, so it identifies the message and not a line the
-message was logged on. They intentionally answer different questions.
+the identity the pinned native revision derives; no Python stage reconstructs
+it from rounded timestamps or stored content codes. A FIX row identifies a
+settled message rather than a capture line, and a projected market event has
+the native identity of its own facts. Preserve these values and their explicit
+provenance links across storage.
+
 
 ## Repository layout
 
@@ -90,6 +97,10 @@ python/src/rekep/         public package and bundled registry
 tasks/parse_messages/     text-line Marimo application + JSON parameters
 tasks/parse_fix_raw/      FIX parse Marimo application + JSON parameters
 tasks/parse_fix_refined/  FIX lifecycle Marimo application + JSON parameters
+tasks/parse_books/        native book Marimo application + JSON parameters
+tasks/parse_orders/       order-delta projection
+tasks/parse_quotes/       quote-delta projection
+tasks/parse_executions/   execution projection
 tasks/build_dbt/          dbt Marimo application + JSON parameters
 tasks/optimize_iceberg/   maintenance Marimo application + JSON parameters
 tasks/airflow/            DAGs, operator, and standalone child runner

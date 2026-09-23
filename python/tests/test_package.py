@@ -35,6 +35,7 @@ PACKAGES = (
     "rekep.fields",
     "rekep.fix",
     "rekep.iceberg",
+    "rekep.market",
     "rekep.tasks",
     "rekep.text",
 )

@@ -15,14 +15,17 @@ ROOT = Path(__file__).resolve().parents[3]
 #: Every job this repository schedules, as the document that configures it.
 DOCUMENTS = sorted((ROOT / "tasks").glob("*/*.json"))
 
-#: Text ingestion, the two native FIX stages, the dbt products derived from
-#: the second of them, and generic Iceberg maintenance.
+#: Text and FIX ingestion, native books and events, dbt products and maintenance.
 NAMES = (
     "build_dbt",
     "optimize_iceberg",
+    "parse_books",
+    "parse_executions",
     "parse_fix_raw",
     "parse_fix_refined",
     "parse_messages",
+    "parse_orders",
+    "parse_quotes",
 )
 
 
@@ -76,6 +79,25 @@ def test_every_document_declares_its_parameters(document: Path) -> None:
         }
         assert parameters["raw"] == "fix.raw"
         assert parameters["codec_options"] is None
+        assert parameters["start"] is None and parameters["end"] is None, "the last day"
+    elif document.stem == "parse_books":
+        assert set(parameters) == {
+            "refined",
+            "registry",
+            "codec_options",
+            "snapshot_millis",
+            "start",
+            "end",
+            "catalog",
+        }
+        assert parameters["refined"] == "fix.refined"
+        assert parameters["registry"] is None and parameters["codec_options"] is None
+        assert parameters["snapshot_millis"] == 0
+        assert parameters["start"] is None and parameters["end"] is None, "the last day"
+    elif document.stem in {"parse_orders", "parse_quotes", "parse_executions"}:
+        assert set(parameters) == {"books", "snapshot_id", "start", "end", "catalog"}
+        assert parameters["books"] == "market.books"
+        assert parameters["snapshot_id"] is None, "standalone reads pin the latest snapshot"
         assert parameters["start"] is None and parameters["end"] is None, "the last day"
     elif document.stem == "build_dbt":
         assert set(parameters) == {

@@ -5,7 +5,7 @@ application, replaces the `parameters` cell, validates the returned stage
 result, and writes one compact JSON result to stdout. Logs and tracebacks go to
 stderr.
 
-## Whole pipeline
+## Ingestion and optional dbt
 
 ```bash
 uv run --project python rekep task run tasks/parse_messages/parse_messages.json \
@@ -22,9 +22,47 @@ source files, `parse_fix_refined` reads `fix.raw` rather than either, and
 [`build_dbt`](../tasks/build-dbt.md) reads `fix.refined` and nothing before
 it.
 
+## Market events from one book snapshot
+
+This example assumes deployed refined rows containing valid market messages
+in the named September window. The bundled August ingestion fixture contains
+an incomplete AE side and is not a book demo. Capture the book result:
+
+```bash
+uv run --project python rekep task run tasks/parse_books/parse_books.json \
+  --parameter 'start="2026-09-21T10:00:00Z"' --parameter 'end="2026-09-21T10:00:10Z"' \
+  --result-file /tmp/rekep-books.json
+BOOK_SNAPSHOT=$(python -c 'import json; print(json.load(open("/tmp/rekep-books.json"))["snapshot_id"])')
+pids=()
+for KIND in orders quotes executions; do
+  uv run --project python rekep task run "tasks/parse_${KIND}/parse_${KIND}.json" \
+    --parameter 'start="2026-09-21T10:00:00Z"' --parameter 'end="2026-09-21T10:00:10Z"' \
+    --parameter "snapshot_id=$BOOK_SNAPSHOT" &
+  pids+=("$!")
+done
+status=0
+for pid in "${pids[@]}"; do
+  wait "$pid" || status=1
+done
+test "$status" -eq 0
+```
+
+All three readers now use the same source snapshot even if another writer
+advances `market.books`. The shell checks every child process's exit status; Airflow manages their
+failures separately when scheduled. A standalone task
+with `snapshot_id=null` resolves one current snapshot for itself; it does not
+promise the same one another independently started task resolves. Zero means
+an empty source with no head.
+
+Market time filtering is strict `[start, end)` on both source and output;
+unresolved epoch rows are not included automatically. Book creation starts
+without pre-window depth and does not rerun refined lifecycle. Orders and
+quotes flatten deltas; executions flatten native execution leaves. See the
+[book task](../tasks/parse-books.md) for these limits.
+
 ## One window
 
-The three streaming tasks cover one window, `[start, end)`. Each bound is an
+The three original ingestion tasks cover one window, `[start, end)`. Each bound is an
 instant or a date -- a date as `end` is the end of that day -- and a task
 given neither takes the last day up to now, which is the window a nightly run
 means. The sample capture is dated 2026-08-14, so the runs above name that
@@ -117,7 +155,8 @@ never table rows. A non-zero exit means no valid result was published.
 
 ## Replay
 
-Run the same three commands again, over the same window. All three stages
+For the three original ingestion stages, run the same commands again over
+the same window. All three stages
 read the same rows, land them over the rows the first run landed, and report
 them as written: the table holds each line and each event once, and the
 replay is one more snapshot per table. Running a window again after a
@@ -129,3 +168,11 @@ The walk re-settles the identity of a message it dates, which is why
 `fix.refined` is written from `fix.raw` and never in place: a walked row's
 key is not always the key of the parsed row it restates, and a walk landing
 over the parsed rows would leave the old identity beside the new one.
+
+
+The four market tasks use exact window replacement instead: old rows matching
+`[start, end)` and the new staged rows publish in one snapshot. Changed native
+identities or events absent on rerun cannot leave stale rows inside that
+window. Empty output clears it, outside rows survive, and failures leave the
+previous committed state visible. Rerun the fan-out against the new book
+snapshot after a successful book replacement.
