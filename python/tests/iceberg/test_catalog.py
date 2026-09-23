@@ -355,6 +355,187 @@ def test_a_federated_table_bucket_without_a_region_says_where_to_state_one(
         _ = store.catalog
 
 
+def test_nothing_in_the_environment_still_reaches_the_public_regional_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No variable set is the ordinary run: AWS's own endpoint, and Arrow's
+    own S3 endpoint for the files, with nothing stated for either."""
+    seen = _loaded(monkeypatch)
+
+    _ = IcebergCatalog(properties={"type": "s3tables", "warehouse": TABLE_BUCKET}).catalog
+
+    assert seen["uri"] == "https://s3tables.eu-west-1.amazonaws.com/iceberg"
+    assert "s3.endpoint" not in seen
+
+
+@pytest.mark.parametrize(
+    ("warehouse", "variable", "service"),
+    [
+        (TABLE_BUCKET, "AWS_ENDPOINT_URL_S3TABLES", "s3tables"),
+        (LOCATED_BUCKET, "AWS_ENDPOINT_URL_S3TABLES", "s3tables"),
+        (GLUE_TABLE_BUCKET, "AWS_ENDPOINT_URL_GLUE", "glue"),
+    ],
+    ids=["arn", "locator", "glue"],
+)
+def test_the_environment_states_the_endpoint_of_the_door_the_warehouse_names(
+    monkeypatch: pytest.MonkeyPatch, warehouse: str, variable: str, service: str
+) -> None:
+    """`AWS_ENDPOINT_URL_<SERVICE>` is where the CLI reads a service's
+    endpoint, and the catalog answers under `/iceberg` there."""
+    seen = _loaded(monkeypatch)
+    monkeypatch.setenv("AWS_REGION", "eu-west-1")
+    monkeypatch.setenv(variable, "http://localhost:4566")
+
+    catalog = IcebergCatalog(properties={"type": "s3tables", "warehouse": warehouse})
+    _ = catalog.catalog
+
+    assert seen["uri"] == "http://localhost:4566/iceberg"
+    assert seen["rest.signing-name"] == service
+    # The endpoint moves; the name it takes the bucket under does not.
+    assert seen["warehouse"] == catalog.table_bucket
+
+
+@pytest.mark.parametrize(
+    ("warehouse", "variable", "regional"),
+    [
+        (TABLE_BUCKET, "AWS_ENDPOINT_URL_GLUE", "https://s3tables.eu-west-1.amazonaws.com/iceberg"),
+        (
+            GLUE_TABLE_BUCKET,
+            "AWS_ENDPOINT_URL_S3TABLES",
+            "https://glue.eu-west-1.amazonaws.com/iceberg",
+        ),
+    ],
+    ids=["arn ignores glue", "glue ignores s3tables"],
+)
+def test_each_door_reads_only_its_own_variable(
+    monkeypatch: pytest.MonkeyPatch, warehouse: str, variable: str, regional: str
+) -> None:
+    seen = _loaded(monkeypatch)
+    monkeypatch.setenv("AWS_REGION", "eu-west-1")
+    monkeypatch.setenv(variable, "http://localhost:4566")
+
+    _ = IcebergCatalog(properties={"type": "s3tables", "warehouse": warehouse}).catalog
+
+    assert seen["uri"] == regional
+
+
+@pytest.mark.parametrize(
+    "stated",
+    [
+        "http://localhost:4566",
+        "http://localhost:4566/",
+        "http://localhost:4566/iceberg",
+        "http://localhost:4566/iceberg/",
+        "  http://localhost:4566  ",
+    ],
+    ids=["host", "trailing slash", "with path", "path and slash", "padded"],
+)
+def test_an_environment_endpoint_is_given_its_path_once(
+    monkeypatch: pytest.MonkeyPatch, stated: str
+) -> None:
+    seen = _loaded(monkeypatch)
+    monkeypatch.setenv("AWS_ENDPOINT_URL_S3TABLES", stated)
+
+    _ = IcebergCatalog(properties={"type": "s3tables", "warehouse": TABLE_BUCKET}).catalog
+
+    assert seen["uri"] == "http://localhost:4566/iceberg"
+
+
+def test_the_generic_endpoint_names_where_the_files_are_and_not_the_catalog(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`AWS_ENDPOINT_URL` names one endpoint for every service. The files are
+    read through S3 alone, so it is theirs; the catalog could be either of two
+    doors, and one value cannot be the right host for both."""
+    seen = _loaded(monkeypatch)
+    monkeypatch.setenv("AWS_ENDPOINT_URL", "http://localhost:4566/")
+
+    _ = IcebergCatalog(properties={"type": "s3tables", "warehouse": TABLE_BUCKET}).catalog
+
+    assert seen["uri"] == "https://s3tables.eu-west-1.amazonaws.com/iceberg"
+    assert seen["s3.endpoint"] == "http://localhost:4566"
+
+
+def test_the_s3_variable_names_where_the_files_are(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`AWS_ENDPOINT_URL_S3` is read before the generic variable, as the CLI reads it."""
+    seen = _loaded(monkeypatch)
+    monkeypatch.setenv("AWS_ENDPOINT_URL", "http://localhost:4566")
+    monkeypatch.setenv("AWS_ENDPOINT_URL_S3", "http://localhost:9000/")
+
+    _ = IcebergCatalog(properties={"type": "s3tables", "warehouse": TABLE_BUCKET}).catalog
+
+    assert seen["s3.endpoint"] == "http://localhost:9000"
+
+
+def test_the_document_then_the_locator_then_the_environment_state_the_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The environment is a default for every catalog the worker runs, and a
+    document names one catalog: what the document states wins."""
+    seen = _loaded(monkeypatch)
+    monkeypatch.setenv("AWS_ENDPOINT_URL_S3TABLES", "http://localhost:4566")
+    monkeypatch.setenv("AWS_ENDPOINT_URL_S3", "http://localhost:4566")
+    located = LOCATED_BUCKET + "&endpoint_override=vpce-0abc.s3tables.eu-west-1.vpce.amazonaws.com"
+
+    _ = IcebergCatalog(properties={"type": "s3tables", "warehouse": located}).catalog
+    assert seen["uri"] == "https://vpce-0abc.s3tables.eu-west-1.vpce.amazonaws.com/iceberg"
+
+    _ = IcebergCatalog(
+        properties={
+            "type": "s3tables",
+            "warehouse": located,
+            "uri": "https://s3tables.eu-west-1.example.net/iceberg",
+            "s3.endpoint": "https://s3.eu-west-1.example.net",
+        }
+    ).catalog
+    assert seen["uri"] == "https://s3tables.eu-west-1.example.net/iceberg"
+    assert seen["s3.endpoint"] == "https://s3.eu-west-1.example.net"
+
+
+@pytest.mark.parametrize(
+    "variable",
+    ["AWS_ENDPOINT_URL_S3TABLES", "AWS_ENDPOINT_URL_S3", "AWS_ENDPOINT_URL"],
+)
+def test_an_empty_variable_states_nothing(monkeypatch: pytest.MonkeyPatch, variable: str) -> None:
+    seen = _loaded(monkeypatch)
+    monkeypatch.setenv(variable, " ")
+
+    _ = IcebergCatalog(properties={"type": "s3tables", "warehouse": TABLE_BUCKET}).catalog
+
+    assert seen["uri"] == "https://s3tables.eu-west-1.amazonaws.com/iceberg"
+    assert "s3.endpoint" not in seen
+
+
+def test_the_environment_can_turn_its_endpoints_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`AWS_IGNORE_CONFIGURED_ENDPOINT_URLS` switches off every variable the
+    CLI reads an endpoint from, so it switches them off here too."""
+    seen = _loaded(monkeypatch)
+    monkeypatch.setenv("AWS_IGNORE_CONFIGURED_ENDPOINT_URLS", "True")
+    monkeypatch.setenv("AWS_ENDPOINT_URL_S3TABLES", "http://localhost:4566")
+    monkeypatch.setenv("AWS_ENDPOINT_URL_S3", "http://localhost:4566")
+
+    _ = IcebergCatalog(properties={"type": "s3tables", "warehouse": TABLE_BUCKET}).catalog
+
+    assert seen["uri"] == "https://s3tables.eu-west-1.amazonaws.com/iceberg"
+    assert "s3.endpoint" not in seen
+
+
+def test_the_environment_leaves_every_other_catalog_as_written(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only a table bucket is resolved here; any other type is pyiceberg's."""
+    seen = _loaded(monkeypatch)
+    monkeypatch.setenv("AWS_ENDPOINT_URL_S3", "http://localhost:4566")
+    monkeypatch.setenv("AWS_ENDPOINT_URL_GLUE", "http://localhost:4566")
+
+    _ = IcebergCatalog(
+        properties={"type": "glue", "warehouse": "s3://market/rekep", "glue.region": "eu-west-1"}
+    ).catalog
+
+    assert "s3.endpoint" not in seen
+    assert "uri" not in seen
+
+
 def test_a_bucket_is_listed_one_level_deep() -> None:
     """S3 Tables namespaces are one deep; walking asks per namespace for nothing."""
 
