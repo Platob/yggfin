@@ -268,13 +268,13 @@ and every write goes back into them with the correct code-set value.
   | `7` | `ISOCTRY` | `I` | `FPMLSPEC` | `V` | `FIM` |
   | `8` | `EXCHSYMB` | `J` | `OPRA` | `W` | `INDEX` |
   | `9` | `CTA` | `K` | `FPMLURL` | `X` | `UMTF` |
-  | `A` | `BBGSYMB` | `L` | `LOC` | `Y` | `DTI` |
+  | `A` | `BLOOMBERG` | `L` | `LOC` | `Y` | `DTI` |
   | `B` | `WKN` | `M` | `MKTASSIGNED` | | |
   | | | `N` | `REDENTITY` | | |
 
   - The code set's own names (`ISINNumber`, `RICCode`,
     `FinancialInstrumentGlobalIdentifier`, …) are aliases that
-    `SecType::read` accepts.
+    `SecType::read` accepts. `BBGSYMB` and `BloombergSymbol` read as `BLOOMBERG`.
   - A test loads the shipped registry and checks that the table and
     `securityidsourcecodeset` agree exactly. Every code must have one key,
     every key one code, and every code-set name must read to its key. A new
@@ -475,7 +475,10 @@ own copy.
     majority vote.
   - Re-derive `ENTRY_CHARGE` for a variable key set. Keep the
     compile-time asserts, and cap keys per instrument so the charge stays an
-    upper bound.
+    upper bound. `MAX_BLOOMBERG_HEAP_ALLOWANCE` becomes the per-key heap
+    allowance for the widest code, `SecType::max_code_width` of `BLOOMBERG`,
+    charged once per learned key, because every key may hold a heap-sized
+    code.
 - **One place for embedded identifiers.** `embedded_cusip` becomes
   `securityid::embedded(isin: &IsinCode) -> impl Iterator<Item = SecurityId>`,
   with four rules. The slim `fill_market` and `MarketEventData` (the two
@@ -552,7 +555,7 @@ own copy.
 - Known keys have one canonical spelling, and `SecType::read` maps the other
   spellings onto it:
   - the FIX `SecurityIDSource(22)` wire code (`1` → `CUSIP`, `2` → `SEDOL`,
-    `3` → `QUIK`, `4` → `ISIN`, `5` → `RIC`, `8` → `EXCHSYMB`, `A` → `BBGSYMB`,
+    `3` → `QUIK`, `4` → `ISIN`, `5` → `RIC`, `8` → `EXCHSYMB`, `A` → `BLOOMBERG`,
     `S` → `FIGI`, `T` → `LEI`, and every other code in the code set);
   - the spec's name for it;
   - the canonical key itself.
@@ -574,21 +577,68 @@ own copy.
 
 ### `SecurityId`: a key and a code in one allocation at most
 
-- A newtype over one buffer: a 1-byte key length, then the key, then the code.
-  For example `SmolStr` holding `[len][KEY][CODE]`.
-- `ISIN` plus 12 characters, `CUSIP` plus 9, `SEDOL` plus 7, `FIGI` plus 12
-  and `RIC` plus about 12 all fit `SmolStr`'s 23-byte inline limit, with zero
-  heap allocations. A long key or code allocates once.
-- Accessors:
-  - `sectype() -> &str` borrows the key;
+- **Layout.** A newtype over one `SmolStr` buffer, with the key compacted so
+  the code keeps as much of the 23-byte inline room as possible:
+  - **A known key is one byte:** a tag byte `0x01..=0x7F` indexing the
+    key-to-code table in `securityid.rs`, then the code. The index is internal
+    to the buffer and never stored or digested (see Digest), so it may be
+    renumbered freely.
+  - **An unknown key is spelled out:** a `0x80 | len` byte, then the key,
+    then the code.
+- **Fits inline, zero allocations:** a 2-byte overhead leaves 21 bytes for
+  the code, so `ISIN` (12), `CUSIP` (9), `SEDOL` (7), `FIGI` (12), `WKN` (6),
+  `VALOR` (≤9), `RIC` (about 12) and short Bloomberg spellings all fit
+  (`AAPL US Equity` is 14, `EURUSD Curncy` 13, `SPX Index` 9).
+- **Bloomberg is the big code.** `BloombergCode` allows up to
+  `BLOOMBERG_WIDTH` = 32 bytes (`T 4 1/2 02/15/36 Govt`, long option and
+  bond spellings), so a 22-to-32-byte Bloomberg code is the expected heap
+  case. It allocates exactly once, for the whole buffer. Design for it
+  rather than treating it as an edge case:
+  - **Width per key.** `SecType::max_code_width(&self)` is 32 for
+    `BLOOMBERG`, the fixed width for the fixed-shape keys, and a documented
+    default (32) for any other key. It is the single bound
+    `SecurityId::new` checks. `BLOOMBERG_WIDTH` stays the constant it reads.
+    The widest known code, and so the per-key allocation bound, is
+    Bloomberg's.
+  - **Preserve case and spaces.** A Bloomberg code keeps its case and its
+    inner spaces exactly, as `BloombergCode::new` does today. It is never
+    upper-cased, trimmed inside, or folded. Only the fixed-shape keys (ISIN,
+    CUSIP, SEDOL, FIGI, WKN) fold to upper case, as their validators do now.
+    `Ord`, `Eq` and `Hash` compare Bloomberg codes byte-exact, so
+    `AAPL US Equity` and `AAPL US EQUITY` are two codes.
+  - **Refuse the usual non-values.** Refuse the empty code, and the
+    null-like spellings `null`, `none` and `[n/a]` (case-insensitive), which
+    the registry rejects today in `InstrumentCodes::enrich`. That check moves
+    into `SecType::validate_code` for `BLOOMBERG`, so every path refuses them,
+    not only the registry.
+  - **A FIGI in a Bloomberg field stays Bloomberg.** A Bloomberg field may
+    hold a 12-byte FIGI. It stays under `BLOOMBERG` as stated, and is never
+    moved or copied to `FIGI` by guessing. `FIGI` comes only from its own
+    source (`S`).
+- **Accessors:**
+  - `sectype() -> &str` borrows the key: the table's static spelling for a
+    known key, or the buffer's bytes for an unknown key;
   - `code() -> &str` borrows the code;
   - `new(key: &str, code: &str) -> Result<Self>` reads the key through
-    `SecType::read` and validates the code;
-  - `Display` shows `ISIN:US0378331005`.
-- `Ord` compares `(sectype, code)` as byte strings, so a sorted list groups by
-  key.
-- Pin the size with `size_of::<SecurityId>()` in `rust/tests/allocations.rs`,
-  and assert zero allocations for an ISIN.
+    `SecType::read` and validates the code against that key's width and
+    shape;
+  - `is_inline() -> bool`, for tests and benchmarks;
+  - `Display` shows `ISIN:US0378331005`, or `BLOOMBERG:AAPL US Equity` with
+    the space kept.
+- **Order.** `Ord` compares `(sectype(), code())` as byte strings, never the
+  tag byte, so ordering and the sorted `SecurityIds` invariant do not depend
+  on table order.
+- **Tests** in `rust/tests/allocations.rs`:
+  - `size_of::<SecurityId>() == size_of::<SmolStr>()`;
+  - zero allocations for ISIN, CUSIP, SEDOL, FIGI, WKN, Valor and
+    `AAPL US Equity`;
+  - exactly one allocation for a 32-byte Bloomberg code, and a 33-byte one
+    refused;
+  - clone of a heap Bloomberg `SecurityId` shares the buffer (`SmolStr` is
+    reference-counted on the heap) and allocates nothing;
+  - a round trip of `T 4 1/2 02/15/36 Govt` through `SecurityIds`, the Arrow
+    column and a `FixMsg` `secaltids` write (`456=A`) is byte-identical;
+  - `null`, `NONE` and `[N/A]` under `BLOOMBERG` are refused.
 
 ### `SecurityIds`: a sorted set with merge, add and remove
 
