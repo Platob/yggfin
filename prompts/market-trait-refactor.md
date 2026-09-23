@@ -207,6 +207,44 @@ Lift the six FX tags the same way:
   walk reads them per entry onto each level.
 - Python and Node expose the six on the `lifted` view beside `lastpx`.
 
+### `miccode`: `SecurityExchange`, then `LastMkt`
+
+Today `FixMsg` derives the MIC in `rust/src/fix/msg.rs` (the market-facts
+block, near `// The market it is listed on, routed to, or last traded on.`):
+
+```rust
+let miccode = word(207).or_else(|| word(100)).or_else(|| word(30))
+    .and_then(|held| MicCode::new(&held).ok());
+```
+
+Change it to two sources, each validated before the next is tried:
+
+```rust
+let miccode = [207, 30].into_iter()
+    .find_map(|tag| word(tag).and_then(|held| MicCode::new(&held).ok()));
+```
+
+- `SecurityExchange(207)` names where the instrument is listed, and it comes
+  first. `LastMkt(30)` names where the last fill traded, and it is the
+  fallback.
+- Drop `ExDestination(100)`. It is where the order was routed, not a market
+  the instrument or the fill was on, and it is often a broker code rather
+  than a MIC.
+- Validate each candidate before falling through. A `207` that is not a valid
+  MIC (a venue's own exchange code) no longer hides a valid `30`.
+- A row that states `miccode` itself (`ROW_STATED_MIC`) still wins over both.
+  The rule only answers where the row says nothing.
+- Update the comment above the rule and the `crated.rs` module doc, which
+  lists `ExDestination(100)` among the market sources.
+- Tests:
+  - `207` and `30` both valid MICs gives `207`'s;
+  - `207` invalid and `30` valid gives `30`'s;
+  - only `100` stated gives no MIC;
+  - a row-stated `miccode` wins over both.
+- `miccode` is a digest input, so rows whose MIC changes (they stated only
+  `100`, or an invalid `207` beside a valid `30`) get a new identity. The
+  rebuild already covers that.
+
 ### Delete the `identifiers` map field
 
 Today there are three copies of the same facts:
@@ -458,7 +496,11 @@ Run after A is released as Yggdryl `X.Y.Z`.
      `security_id(securityids, 'ISIN')`.
 
    `side`, `tif` and `cumqty` keep the same spelling in SQL.
-6. The `identifiers` column is gone from `fix.refined` and every market
+6. `miccode` now comes from `SecurityExchange(207)`, then `LastMkt(30)`,
+   never `ExDestination(100)`. No yggfin page lists its sources today. When
+   the samples are regenerated, check that captures stating only `LASTMKT`
+   still land a MIC.
+7. The `identifiers` column is gone from `fix.refined` and every market
    table.
    - Replace every `identifiers["msgsesseventid"]` with the new
      `msgsesseventid` column. That covers `docs/products/fixmsg.md`,
@@ -469,9 +511,9 @@ Run after A is released as Yggdryl `X.Y.Z`.
      `execid`, …), never from a map.
    - Remove "identifiers" from the column lists in `parse-orders.md`,
      `parse-quotes.md`, `parse-books.md` and `docs/roadmap/orders.md`.
-7. Update `docs/contracts/types.md`, `docs/roadmap/order-book.md` and the
+8. Update `docs/contracts/types.md`, `docs/roadmap/order-book.md` and the
    pipeline task pages, then regenerate the samples.
-8. `uv run pytest` must be green, including `test_schemas` and `test_docs`.
+9. `uv run pytest` must be green, including `test_schemas` and `test_docs`.
    Push the branch and read CI.
 
 ---
