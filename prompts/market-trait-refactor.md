@@ -326,9 +326,11 @@ and every write goes back into them with the correct code-set value.
   - **Spelling:** each value goes through `typed_spelling` against the
     registry, so a code-set-typed column holds its declared type.
   - **Keys without a code:** a key with no `SecurityIDSource` value (a
-    venue's own key) has nowhere to go in FIX. It is kept in the event's
-    overlay, and a debug assertion plus a test cover it. It never takes a
-    private tag or an invented code. See open decision 5.
+    venue's own key, `OMSINSTRUMENTID`) is written to `secaltids` with the
+    key itself as the `456` text, outside the code set. Reading reads it
+    back under the same key, so the round trip is exact. It never takes a
+    private tag, and a key is never replaced by an invented code (no `M`
+    for "marketplace").
   - **Flags:** every write sets `forced` and the matching row-stated bit, as
     the setters do today, and invalidates the cached view.
 - **Derivations.** Keep derivations `22`, `48` and `55` as they are. They
@@ -413,8 +415,9 @@ entry:
 - **Not identifiers.** `TICKER`, `SYMBOL` and `SYMBOLTICKER` are not
   `securityids`; `ticker` owns them. Neither is anything with a
   `LEG`/`UNDERLYING`/`CONTRA`/`RELATED`/`BENCHMARK` prefix: those describe
-  another instrument. A name for a key with no FIX code (a venue key) is not
-  matched by default; it stays a plain unmapped field (see open decision 5).
+  another instrument. A venue's own instrument ID is declared as a
+  dictionary field (see "Instrument-ID fields"), not matched by this
+  name rule.
 - **Top level only.** A field inside a repeating group describes that
   occurrence's instrument, not the message's, and is never read.
 - **Value.** The value is trimmed of padding and validated by the matched
@@ -513,15 +516,71 @@ four attributes `X`) is not accepted as a CFI. The `cficode` field holds a
   - a stored `EMXXXX` in an Arrow `cficode` column reads null, with an
     anomaly.
 
+### Instrument-ID fields land in `secaltids` and `securityids`
+
+The bridge's instrument IDs are identifiers in their own right, whatever
+they embed. `ulbridge.log` states them 21 times:
+- `#OMSINSTRUMENTID=dbi;CH0012214059_XSWX_CHF`;
+- `ULLINK.INSTRUMENTID=dbi;TW0002454006_XTAI_TWD`.
+
+Keep each whole value as an alternate security ID, keyed by the field's
+name.
+
+- **Mechanism: the one `ExecBroker(76)` uses.** A dictionary field with a
+  `FIX:replacements` plan that restates into a group. The probe verified
+  on this capture that `fix/latest.rs` restates while carrying the arrival
+  entries through untouched, so the wire stays byte-identical and the
+  original value stays in `fixentries`. No new mechanism, and no
+  special case in `derive_market`.
+- **Declare two fields.** Put them in `config/fix/fields/000000650.json`,
+  with tags taken in the crate's range after `pluginoriginator`. They are
+  nullable `utf8`, and **not projected** as `fixmsg` columns, so their
+  values stay in the residual exactly as `execbroker`'s does:
+
+  | Field | `FIX:names` | Replacement plan |
+  | --- | --- | --- |
+  | `omsinstrumentid` | — | `select [{securityaltid: omsinstrumentid, securityaltidsource: 'OMSINSTRUMENTID'}] as secaltids where omsinstrumentid is not null` |
+  | `ullinkinstrumentid` | `ullink.instrumentid` | `select [{securityaltid: ullinkinstrumentid, securityaltidsource: 'ULLINK.INSTRUMENTID'}] as secaltids where ullinkinstrumentid is not null` |
+
+  A new bridge's instrument ID is one more such entry in the dictionary,
+  never code.
+- **The `456` value.** It is the field's own name, upper-cased
+  (`OMSINSTRUMENTID`, `ULLINK.INSTRUMENTID`), a source outside
+  `securityidsourcecodeset`. Check that `typed_spelling` keeps text outside
+  a string field's code set rather than nulling it. If it does not, the
+  replacement's all-or-nothing check blocks the whole rule, so fix that
+  first, with a test.
+- **The `securityids` view.** It already reads a `456` outside the code set
+  as its raw text, upper-cased, so each occurrence becomes
+  `OMSINSTRUMENTID:dbi;CH0012214059_XSWX_CHF` and
+  `ULLINK.INSTRUMENTID:dbi;TW0002454006_XTAI_TWD`, ranked as a stated
+  `secaltids` entry. Nothing extra is written for the view.
+- **Widths.** Keys like `ULLINK.INSTRUMENTID` (19) need `SecType`'s key
+  width at 32, not 16. The values (up to 25 here) fit the default 32-byte
+  code width. A value over 32 blocks the rule, keeps the field in
+  `fixentries`, and records an anomaly.
+- **Merging.** The restatement merges into an existing `secaltids`
+  occurrence with the same source and value, and never duplicates it. It
+  never overwrites an occurrence whose value differs under the same
+  source: what the message stated stands.
+- **Tests:**
+  - every `ulbridge.log` line carrying either field gets exactly one
+    matching `secaltids` occurrence and `securityids` entry;
+  - the wire output stays byte-identical;
+  - `fixentries` still holds the original `omsinstrumentid` or
+    `ullinkinstrumentid` entry;
+  - a message stating the same `secaltids` occurrence already gets no
+    duplicate.
+
 ### Instrument-key fields: `{ISIN}_{MIC}_{CCY}`
 
 Bridges name the listing in one field: `#OMSINSTRUMENTID=dbi;CH0012214059_XSWX_CHF`
 and `ULLINK.INSTRUMENTID=dbi;TW0002454006_XTAI_TWD` in `ulbridge.log`. Lift
 from it naively.
 
-- **Where to look.** The instrument-ID fields the unmapped-field pass already
-  grabbed: top-level unmapped fields whose folded name ends in
-  `INSTRUMENTID`. Nothing else is scanned.
+- **Where to look.** The instrument IDs already grabbed into `securityids`:
+  entries whose key ends in `INSTRUMENTID`, such as `OMSINSTRUMENTID` and
+  `ULLINK.INSTRUMENTID`, from the section above. Nothing else is scanned.
 - **Pattern.** Take the text after the last `;`, if any, and match
   `{ISIN}_{MIC}_{CCY}`: 12, 4 and 3 alphanumerics joined by `_`. The first
   value that matches wins.
@@ -890,7 +949,8 @@ own copy.
 ### `SecType`: an open string key
 
 - `SecType` is a validated string, `code_leaf!`-style over `SmolStr`: ASCII,
-  folded to upper case, up to a fixed max width (for example 16). It is an
+  folded to upper case, up to a fixed max width of 32 (`ULLINK.INSTRUMENTID`
+  is 19). It is an
   open set. Any key a source states is accepted (`ISIN`, `RIC`, `BBGTICKER`,
   a venue's own `XETRA_WKN`), and there is no `Other` bucket.
 - Known keys have one canonical spelling, and `SecType::read` maps the other
@@ -1345,6 +1405,3 @@ Run after A is released as Yggdryl `X.Y.Z`.
 3. `Unit` max width.
 4. `Lane` storage: boxed (small operations) or inline (lane-heavy quotes)?
    Decide it by the size test.
-5. A key with no `SecurityIDSource` code (a venue's own key) set on a
-   `FixMsg`: keep it in the event overlay only, not on the wire (default), or
-   refuse it?
