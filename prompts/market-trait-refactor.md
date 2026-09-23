@@ -457,6 +457,119 @@ entry:
   - `set` CUSIP on a message carrying only `CUSIPCODE` writes `secaltids`
     (`456=1`) and removes the unmapped `CUSIPCODE`.
 
+### `cficode`: a detailed code, or null
+
+A code with only a category and a group (`ESXXXX`, `EMXXXX`, `OPXXXX`: all
+four attributes `X`) is not accepted as a CFI. The `cficode` field holds a
+**detailed** code, or it is null.
+
+- **Definition.** Add `CfiCode::is_detailed(&str)`: the code is well formed
+  and classified (`CfiCode::is_classified`), and at least one attribute
+  (positions 3–6) is not `X`. `X` inside a detailed code stays legal, as
+  ISO 10962 uses it for "not applicable" (`FFICSX`).
+- **Where it applies.** Everywhere a `cficode` is set or read in:
+  - `Market::set_cficode` stores `None` for a non-detailed code. The setter
+    is infallible, so it records nothing, and a debug assertion flags a
+    caller passing one.
+  - `FixMsg` derivation: the classification chain's result must pass
+    `is_detailed`, else `cficode` is null.
+  - Arrow reads: a stored `cficode` that is not detailed reads as null and
+    records an anomaly, like any value that will not type.
+  - Merge and follow: `CfiCode::merged` of two detailed codes is detailed,
+    and a non-detailed operand never reaches them.
+  - `SecurityIdRegistry`: it already ignores all-`X` codes when learning
+    (`Association::classify`), and now fills only detailed ones.
+- **The chain shrinks** (`fix/cfi.rs`, `FixMsg::classification`). A coarse
+  step can only produce a category and group, and merging never lets it
+  change a stated group, so on its own it can never make a detailed code.
+  Delete the steps that only ever produced coarse codes:
+  - `classification_of_security_type` (`SecurityType(167)`);
+  - `category_of_product` (`Product(460)`);
+  - `category_of_id_source` (`SecurityIDSource(22)`).
+
+  What remains, in order:
+  1. a stated `CFICode(461)`;
+  2. an unmapped `DETAILEDCFICODE`, merged in to fill `X`s;
+  3. `PutOrCall(201)`, refining a stated `OM` group.
+
+  The result is kept only if it is detailed. `classification()` keeps its
+  name and returns `None` where it used to return a coarse code. Rewrite
+  its doctests: `167=CS`, `460=5` and `55=AAPL` alone now give `None`, and
+  `461=ESXXXX|167=CS` gives `None`.
+- **The raw fallback goes.** Delete the fallback in `fix/msg.rs` that
+  takes raw `461` text when the chain answers `None` (`.or_else(|| word(
+  CFICODE_TAG)…)`). It could only reintroduce a coarse code.
+- **Row IDs.** `cficode` is a digest input, so rows whose code was coarse get
+  a new identity. The rebuild covers that.
+- **Tests:**
+  - `461=ESXXXX` gives null;
+  - `461=ESXXXX` with `DETAILEDCFICODE=ESVTFR` gives `ESVTFR`;
+  - `461=ESVUFR` gives `ESVUFR`;
+  - `461=OMAXXX|201=0` gives `OPAXXX`;
+  - `167=OPT|201=0` alone gives null;
+  - a stored `EMXXXX` in an Arrow `cficode` column reads null, with an
+    anomaly.
+
+### Instrument-key fields: `{ISIN}_{MIC}_{CCY}`
+
+Bridges name the listing in one field: `#OMSINSTRUMENTID=dbi;CH0012214059_XSWX_CHF`
+and `ULLINK.INSTRUMENTID=dbi;TW0002454006_XTAI_TWD` in `ulbridge.log`.
+When a message lacks any of its ISIN, its MIC or its currency, read them from
+such a field.
+
+- **When it runs.** In `FixMsg::derive_market`, after every other source for
+  the three facts has answered, and only if one of them is still missing:
+  - no `ISIN` in `securityids`;
+  - no `miccode` after `207` → `30` → `100`;
+  - no `currency` after `15` → `120`.
+- **Which fields.** Top-level fields whose name, folded (case, `_`, `-` and
+  spaces ignored), has a last `.`-separated segment ending in
+  `INSTRUMENTID`: `OMSINSTRUMENTID`, `ULLINK.INSTRUMENTID`, `INSTRUMENTID`.
+  - Only unmapped names qualify. `SecurityID(48)` and any dictionary field
+    never do.
+  - Prefixes `LEG`, `UNDERLYING`, `CONTRA`, `RELATED` and `BENCHMARK` are
+    skipped.
+  - The name table lives in `securityid.rs` beside
+    `SecType::from_field_name`.
+- **Parsing.** Strip everything up to and including the last `;` (the
+  namespace, `dbi;`). The rest must split on `_` into exactly three parts:
+  - an ISIN, with `IsinCode::is_canonical` (check digit);
+  - a MIC, with `MicCode::is_iso` (exactly 4 of `[A-Z0-9]`);
+  - a currency, with `Currency::new` (ISO 4217).
+
+  A value that fails any part yields nothing at all. No part is taken on its
+  own.
+- **Coalescing.** Take the first field that parses, in the message's field
+  order. Coalesce into each fact only if it is still missing: a stated ISIN,
+  MIC or currency always wins.
+- **Consistency guard.** If the message states an ISIN and a parsed key names
+  a different one, the key describes another listing. Take none of its
+  parts, and record an anomaly. The same holds for a stated MIC or currency
+  that disagrees.
+- **What kind of entry.** The ISIN is a stated entry, because the message
+  said it, ranked after every other stated source. It feeds
+  `securityid::embedded` (a CH ISIN gives its Valor) and
+  `SecurityIdRegistry`. That is how a CFI can follow: the registry fills a
+  detailed CFI learned for that ISIN from another message of the lifecycle.
+  The MIC and currency fill `miccode` and `currency` as derived facts.
+  Nothing is written to `48`, `22`, `207`, `15` or `secaltids`, and the
+  field re-emits exactly as it arrived.
+- **Row IDs.** These are digest inputs where they fill, and the rebuild
+  covers that.
+- **Tests:**
+  - A synthetic line with only `ULLINK.INSTRUMENTID=dbi;CH0012214059_XSWX_CHF`
+    gives `ISIN:CH0012214059`, derived `VALOR:1221405`, `miccode` `XSWX` and
+    `currency` `CHF`.
+  - With `15=EUR` also stated, the currency stays `EUR` and the ISIN and MIC
+    still fill.
+  - `…_XSWX_CHF` beside a stated ISIN `CH0012005267` gives nothing from the
+    key, plus an anomaly.
+  - `dbi;CH0012214058_XSWX_CHF` (bad check digit) and `dbi;CH0012214059_S_CHF`
+    (not a MIC) give nothing.
+  - Over `ulbridge.log`, record for each message carrying the key which of
+    the three it fills and whether it agrees. Pin the counts. Any disagreement
+    is a finding to report, not to paper over.
+
 ### What `ulbridge.log` requires
 
 `rust/tests/fix/ulbridge.log` (the same file as yggfin's
@@ -523,16 +636,14 @@ market getters, and confirmed six things the rules must handle:
    spelling it does not know is kept as stated, never refused. Pin the name
    table to the shipped `timeinforcecodeset` with a test.
 5. **A detailed CFI rides beside a coarse one.** The Holcim and Novartis flows
-   state `CFICODE=ESXXXX` with `#DETAILEDCFICODE=ESVTFR`. The classification
-   chain reads `461` only, so it answers `ESXXXX`. Add one step after step 1
-   of `FixMsg::classification`: a top-level unmapped `DETAILEDCFICODE` (the
-   same name folding) that is a classified code folds in through
-   `CfiCode::merged`. It fills the `X`s of the stated code and is dropped if
-   it names another instrument. Holcim and Novartis then answer `ESVTFR`.
-6. **The security type arrives as a name** (`SECURITYTYPE=equity` in named
-   bodies, `167=CS` in raw FIX). `classification_of_security_type` matches
-   codes only, so named bodies get no category from `167`, and CFI must come
-   from `461`. Make no change here; this is open decision 7.
+   state `CFICODE=ESXXXX` with `#DETAILEDCFICODE=ESVTFR`, and the probe
+   classifies them `ESXXXX`. Under the `cficode` rules above, they answer
+   `ESVTFR` where `DETAILEDCFICODE` is stated and null where it is not. The
+   MediaTek and `TW0001605004` flows (`ESXXXX` or nothing) answer null, and
+   so does the `AE` trade capture's `461=OXXXXX`, which the probe classified
+   `OMXXXX`.
+6. **The security type arrives as a name** (`SECURITYTYPE=equity`). It no
+   longer matters, because the `SecurityType` step is deleted.
 
 **`ulbridge.log` tests**, run in `rust/tests/fix/ulbridge.rs` over the whole
 file:
@@ -540,10 +651,10 @@ file:
 | Flow | Expect |
 | --- | --- |
 | ABB | `securityids` = `ISIN:CH0012221716` stated (from `22=4`/`48`, or `SECURITYIDSOURCE=isin`/`SECURITYID`, `secaltids`, `#ISINCODE`, deduplicated to one), and `VALOR:1222171` derived; `miccode` `XSWX`; `cficode` `ESVTFR`; `tif` `0` on both the named and the raw form |
-| Novartis | `ISIN:CH0012005267`, `BLOOMBERG:NOVN SW`, derived `VALOR:1200526`; `cficode` `ESVTFR` (from `DETAILEDCFICODE`) |
-| Holcim | `ISIN:CH0012214059`, `BLOOMBERG:HOLN SW`, derived `VALOR:1221405`; `miccode` `XSWX`, never `S` |
-| `TW0001605004` | `ISIN:TW0001605004`; `miccode` `RJEA` |
-| MediaTek | `ISIN:TW0002454006`, `BLOOMBERG:2454 TT Equity`, `RIC:2454.TW` (from the marked `secaltids` with named sources); `miccode` `XTAI`, never `TW`; `tif` `0`, not `day` |
+| Novartis | `ISIN:CH0012005267`, `BLOOMBERG:NOVN SW`, derived `VALOR:1200526`; `cficode` `ESVTFR` where `DETAILEDCFICODE` is stated, else null (never `ESXXXX`) |
+| Holcim | `ISIN:CH0012214059`, `BLOOMBERG:HOLN SW`, derived `VALOR:1221405`; `miccode` `XSWX`, never `S`; `cficode` `ESVTFR` |
+| `TW0001605004` | `ISIN:TW0001605004`; `miccode` `RJEA`; `cficode` null |
+| MediaTek | `ISIN:TW0002454006`, `BLOOMBERG:2454 TT Equity`, `RIC:2454.TW` (from the marked `secaltids` with named sources); `miccode` `XTAI`, never `TW`; `tif` `0`, not `day`; `cficode` null (was `ESXXXX`) |
 
 Also check:
 - no line produces a `securityids` entry the message did not state, apart
@@ -1041,6 +1152,3 @@ Run after A is released as Yggdryl `X.Y.Z`.
 6. A key with no `SecurityIDSource` code (a venue's own key) set on a
    `FixMsg`: keep it in the event overlay only, not on the wire (default), or
    refuse it?
-7. Named `SecurityType` spellings from bridges (`SECURITYTYPE=equity`): map
-   the bridge's words onto a category in `fix/cfi.rs` (`equity` → `E`), or
-   leave CFI to `461` (default)?
