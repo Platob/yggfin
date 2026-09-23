@@ -61,6 +61,8 @@ pub trait Market {
     fn get_lastqty(&self) -> Option<Decimal18>;
     fn get_leavesqty(&self) -> Option<Decimal18>;
     fn get_cumqty(&self) -> Option<Decimal18>;
+    fn get_spotrate(&self) -> Option<Decimal18>;
+    fn get_forwardpoints(&self) -> Option<Decimal18>;
     fn get_ticker(&self) -> Option<&str>;          // was `symbolticker`
     fn get_metadata(&self) -> &Metadata;
     // A matching `set_*` for each, plus
@@ -71,7 +73,7 @@ pub trait MarketOperation: Market {
     fn get_marketoperationid(&self) -> Option<i32>;
     fn get_tif(&self) -> Option<&TimeInForce>;    // the crate's `TimeInForce`, not a String
     fn get_tradable(&self) -> Option<bool>;
-    fn get_bid(&self) -> Option<&Lane>;            // Lane { price, currency, quantity, unit }
+    fn get_bid(&self) -> Option<&Lane>;            // Lane { price, spotrate, forwardpoints, currency, quantity, unit }
     fn get_ask(&self) -> Option<&Lane>;
     // A matching `set_*` for each.
 }
@@ -82,7 +84,7 @@ pub trait MarketOperation: Market {
   supertraits.
 - Put the digest, merge and follow helpers on blanket impls:
   - `feed_market`, `merge_market` and `follow_market` on `Market + Element`.
-    They cover the 18 slim facts only.
+    They cover the 20 slim facts only.
   - `feed_operation`, `merge_operation` and `follow_operation` on
     `MarketOperation + Element`. They continue the slim versions with the
     operation facts.
@@ -117,6 +119,25 @@ pub trait MarketOperation: Market {
     captures and test corpora for any stated `TimeInForce(59)` wider than
     that. A value wider than 8 must be a located error naming the field,
     never a truncation.
+- `spotrate` and `forwardpoints` are the FX parts of a price, and they are
+  slim facts because a book of FX forwards is quoted in them.
+  - **FIX sources:** `LastSpotRate(194)` and `LastForwardPoints(195)` on
+    executions and trades. `fix/native_derivations.rs` already lifts both as
+    `Decimal18`. On quotes, `BidSpotRate(188)`/`OfferSpotRate(190)` and
+    `BidForwardPoints(189)`/`OfferForwardPoints(191)` go on the `bid`/`ask`
+    `Lane`. In market data (`mdinc`, `mdfull`), each entry's
+    `MDEntrySpotRate(1026)` and `MDEntryForwardPoints(1027)` go on the level.
+    `BidForwardPoints2`/`OfferForwardPoints2` (swap far legs) stay out of
+    scope.
+  - **Fill ladder:** the existing derivation in `fix/constants.rs`
+    (`LastPx(31) = lastspotrate + lastforwardpoints`) stays the one rule. The
+    slim `fill_market` does not add a second one, and never splits a price
+    back into spot and points.
+  - **Merge and follow:** the leading statement's value stands, like `lastpx`.
+    Following does not carry them forward, because a spot rate is not a chain
+    fact.
+  - **Digest:** fed where stated, like `lastpx`. That moves identities only
+    for rows that state them, which the rebuild already covers.
 - `ticker` is a slim fact: a book is about one instrument, and a screen
   names it by its ticker.
 - Rename `symbolticker` to `ticker` everywhere: trait, holders, digest label,
@@ -140,7 +161,7 @@ pub trait MarketOperation: Market {
 - `MarketEntryValue` converts through `MarketOperationData` and
   `MarketOperationValue` converts through `MarketOperationEventData`. Both keep
   their names and by-value moves.
-- Replace `delegate_market_element!` with two delegates, one over the 18
+- Replace `delegate_market_element!` with two delegates, one over the 20
   `Market` facts and one over the 5 `MarketOperation` facts. A wrapper that
   only needs `Market` generates only the first.
 
@@ -195,36 +216,48 @@ Target:
 - `identifiers` is not a digest input today. Keep it that way, so this change
   moves no identity on its own.
 
-### `SecType`: a `#[repr(u8)]` enum
+### `SecType`: an open string key
 
-- One variant per FIX `SecurityIDSource(22)` code: `1` CUSIP, `2` SEDOL,
-  `3` QUIK, `4` ISIN, `5` RIC, `6` ISO currency, `7` ISO country, `8` exchange
-  symbol, `9` CTA, `A` Bloomberg symbol, `B` Wertpapier, `C` Dutch, `D` Valoren,
-  `E` Sicovam, `F` Belgian, `G` Common, `H` clearing house, `I` ISDA/FpML,
-  `J` OPRA, `K` ISDA/FpML URL, `L` letter of credit, `M` marketplace,
-  `N`/`P` Markit RED, `Q` CFTC, `R` ISDA commodity, `S` FIGI, `T` LEI,
-  `U` synthetic, `V` FIM, `W` index name, `X` UMTF, `Y` DTI.
-- Add `Other = 255`. There is no `Ticker` variant, because `ticker` is its own
-  field on `Market` and one fact has one owner.
-- Discriminants are a wire and digest contract: fix them explicitly, never by
-  declaration order.
-- `SecType::from_spelling` reads the wire code, the spec name and the stored
-  name, folded the same way `Side::from_spelling` folds today.
-- `SecType::validate(&str)` dispatches to the existing validators (`IsinCode`,
-  `CusipCode`, `SedolCode`, `FIGICode`, `BloombergCode`). Every other type is
-  ASCII text up to a fixed max width.
+- `SecType` is a validated string, `code_leaf!`-style over `SmolStr`: ASCII,
+  folded to upper case, up to a fixed max width (for example 16). It is an
+  open set. Any key a source states is accepted (`ISIN`, `RIC`, `BBGTICKER`,
+  a venue's own `XETRA_WKN`), and there is no `Other` bucket.
+- Known keys have one canonical spelling, and `SecType::read` maps the other
+  spellings onto it:
+  - the FIX `SecurityIDSource(22)` wire code (`1` → `CUSIP`, `2` → `SEDOL`,
+    `3` → `QUIK`, `4` → `ISIN`, `5` → `RIC`, `8` → `EXCHSYMB`, `A` → `BBGSYMB`,
+    `S` → `FIGI`, `T` → `LEI`, and every other code in the code set);
+  - the spec's name for it;
+  - the canonical key itself.
 
-### `SecurityId`: one type-tagged value, at most one allocation
+  Names fold the way `Side::from_spelling` folds, and wire codes do not fold.
+  An unknown key is kept as written, upper-cased. One table holds the aliases,
+  in `rust/src/`, beside the code set it mirrors.
+- `SecType::validate_code(&str)` dispatches the known keys to the existing
+  validators (`IsinCode`, `CusipCode`, `SedolCode`, `FIGICode`,
+  `BloombergCode`). Any other key checks only ASCII text up to the code's max
+  width.
+- There is no `TICKER` key: `ticker` is its own field on `Market`, and one fact
+  has one owner. `SecurityIds::insert` refuses `TICKER` with a located error
+  pointing at `set_ticker`.
+- Keys are data, not discriminants. Nothing hashes or stores a key's position,
+  so adding a key later changes no identity.
 
-- A newtype over a single buffer: the `SecType` tag byte followed by the
-  validated code bytes, for example `SmolStr` or `Box<str>` with a 1-byte
-  prefix.
-- ISIN, CUSIP, SEDOL, FIGI, QUICK and RIC must fit inline with zero heap
-  allocations. Only an unusually long code may allocate, and then once.
-- Accessors: `sectype() -> SecType` (reads byte 0), `as_str() -> &str` (the
-  code), `new(SecType, &str) -> Result<Self>` (validated), and `Display` as
-  `ISIN:US0378331005`.
-- `Ord` compares `(sectype, code)`, so a sorted list groups by type.
+### `SecurityId`: a key and a code in one allocation at most
+
+- A newtype over one buffer: a 1-byte key length, then the key, then the code.
+  For example `SmolStr` holding `[len][KEY][CODE]`.
+- `ISIN` plus 12 characters, `CUSIP` plus 9, `SEDOL` plus 7, `FIGI` plus 12
+  and `RIC` plus about 12 all fit `SmolStr`'s 23-byte inline limit, with zero
+  heap allocations. A long key or code allocates once.
+- Accessors:
+  - `sectype() -> &str` borrows the key;
+  - `code() -> &str` borrows the code;
+  - `new(key: &str, code: &str) -> Result<Self>` reads the key through
+    `SecType::read` and validates the code;
+  - `Display` shows `ISIN:US0378331005`.
+- `Ord` compares `(sectype, code)` as byte strings, so a sorted list groups by
+  key.
 - Pin the size with `size_of::<SecurityId>()` in `rust/tests/allocations.rs`,
   and assert zero allocations for an ISIN.
 
@@ -235,9 +268,10 @@ Target:
 - Invariant: sorted by `(sectype, code)` with no duplicates, enforced by every
   constructor and mutator. Test it with a property check.
 - `insert(id) -> bool`: binary search, then insert. A no-op when present.
-- `remove(&SecurityId) -> bool` and `remove_type(SecType) -> usize`.
-- `get(SecType) -> Option<&SecurityId>` (first of that type) and
-  `iter_type(SecType)`, both by binary search on the tag.
+- `remove(&SecurityId) -> bool` and `remove_key(&str) -> usize`.
+- `get(key: &str) -> Option<&SecurityId>` (first under that key) and
+  `iter_key(&str)`, both by binary search on the key after `SecType::read`, so
+  `get("4")` and `get("isin")` find the ISIN.
 - `merge(&mut self, other: &SecurityIds) -> bool`: a linear two-pointer union,
   O(n + m), with no re-sort. Returns whether anything was added. This replaces
   the per-code `CodeValue::merge_with` calls in `merge_market`.
@@ -247,8 +281,9 @@ Target:
 - Fold the ISIN-to-CUSIP rule from `instrument::embedded_cusip` into the slim
   `fill_market` as an `insert`. `InstrumentCodes::enrich` reads and writes
   `SecurityIds`.
-- Digest: feed the ids in sorted order as `tag byte + code`, so the digest
-  ignores insertion order.
+- Digest: feed the ids in sorted order as length-prefixed `key` then `code`,
+  so the digest ignores insertion order and `AB`+`C` never collides with
+  `A`+`BC`.
 
 ### `Side`: a `#[repr(u8)]` enum
 
@@ -284,6 +319,8 @@ Target:
   is the 17 slim facts plus the event clocks:
   - one `securityids` column replaces the five code columns;
   - `ticker` replaces `symbolticker`;
+  - `spotrate` and `forwardpoints` are new `decimal128(38, 18)` columns, and
+    each lane struct gains them too;
   - the `bid*`/`ask*` lane columns, `tif`, `tradable` and
     `marketoperationid` leave it;
   - decimal columns stay `decimal128(38, 18)`.
@@ -292,8 +329,9 @@ Target:
   and `bid`/`ask` as two nullable `struct<price, currency, quantity, unit>`
   columns.
 - Pick the `securityids` Arrow shape and state it in the schema docs.
-  Default: `list<struct<sectype: dictionary<uint8, utf8>, code: utf8>>`,
-  sorted.
+  Default: `map<utf8, utf8>` keyed by `sectype`, with entries sorted. If
+  decision 2 allows two codes under one key, use
+  `list<struct<sectype: dictionary<int32, utf8>, code: utf8>>` instead.
 - Identity changes: the digest inputs (`securityids`, `ticker`, the split between the slim and operation digests) change, so every market `curruuid`
   changes. Say so in the changelog and bump the minor version. Consumers
   rebuild from capture and never dual-write.
@@ -317,6 +355,9 @@ Target:
     shrink, and `Book` with it.
 
   Put the numbers in the PR body.
+- A test builds an FX forward execution from `LastSpotRate`/`LastForwardPoints`
+  with no `LastPx`, and checks that the price is their sum and both facts
+  survive into the `Book`'s executions.
 - A benchmark covers book building on the existing `rust/benchmarks/fix`
   capture, before and after.
 - CI is green, and a release is tagged for yggfin to pin.
@@ -331,7 +372,8 @@ Run after A is released as Yggdryl `X.Y.Z`.
 2. Regenerate `schemas/rekep/marketevent.json` and `schemas/rekep/book.json`
    from the native fields. Never hand-edit them.
    - `book.json` and the `bid`/`ask` book levels take the slim market row:
-     `securityids`, `execunix`, `cumqty`, `ticker`, no lanes, no `tif`/
+     `securityids`, `execunix`, `cumqty`, `ticker`, `spotrate`,
+     `forwardpoints`, no lanes, no `tif`/
      `tradable`/`marketoperationid`. The `executions` list keeps the full
      operation row.
    - `ticker` replaces `symbolticker` in both schemas.
@@ -368,7 +410,8 @@ Run after A is released as Yggdryl `X.Y.Z`.
 1. `metadata` sits beside `identifiers` and never holds an identifier. Is
    that right?
 2. `SecurityIds` uniqueness: `(sectype, code)` (default, which allows two
-   listings of one type) or one id per `SecType`?
+   codes under one key) or one code per key? One per key makes the stored
+   column a plain `map<utf8, utf8>`.
 3. `Side` on the wire: keep the string extension (default) or move to `uint8`?
 4. `Unit` max width.
 5. `Lane` storage: boxed (small operations) or inline (lane-heavy quotes)?
