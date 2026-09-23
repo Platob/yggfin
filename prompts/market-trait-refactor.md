@@ -98,8 +98,8 @@ pub trait MarketOperation: Market {
   An undated entry reports `None`.
 - `metadata` is `Option<Box<BTreeMap<..>>>` internally, holding the free-form
   facts. A struct that states none pays one pointer, and the getter returns a
-  shared static empty value when it is absent. It sits beside
-  `Element::identifiers` and never holds an identifier.
+  shared static empty value when it is absent. It never holds an
+  identifier: those are read off the message's own fields.
 - `Lane` is one struct shared by `bid` and `ask`. Store it as
   `Option<Box<Lane>>` or inline, whichever the size test favours.
 - `cumqty` is a slim fact: a book level and a fill both state how much is
@@ -207,39 +207,54 @@ Lift the six FX tags the same way:
   walk reads them per entry onto each level.
 - Python and Node expose the six on the `lifted` view beside `lastpx`.
 
-### `identifiers`: read-only, derived from the definitions
+### Delete the `identifiers` map field
 
-Today `Element` has `get_identifiers() -> &BTreeMap<String, String>` and
-`set_identifiers(..)`. The FIX layer writes the map once in
-`fix/enrich.rs::enrich_restated` from the message type's `FIX:identifiers`
-declaration (`FixMsgType::identifier_mapping`), and stores it as the
-`identifiers` column (tag `65_020`). The graph holders copy it and union it on
-merge and follow.
+Today there are three copies of the same facts:
+- `Element` has `get_identifiers() -> &BTreeMap<String, String>` and
+  `set_identifiers(..)`.
+- `fix/enrich.rs::enrich_restated` writes the map from the message type's
+  `FIX:identifiers` declaration (`FixMsgType::identifier_mapping`), and stores
+  it as the `identifiers` Map column (`IDENTIFIERS_TAG_NAME`, tag `65_020`,
+  group `config/fix/groups/identifiers.json`).
+- The graph holders copy the map, and `take_identifiers` unions it on merge
+  and follow.
 
-Target:
+The values it holds are already on the message: `ClOrdID(11)`, `OrderID(37)`,
+`ExecID(17)` and the other IDs are lifted typed in `FixLifted`, and the rest
+are row fields. Delete the map.
 
-- `Element` exposes a getter only: `fn get_identifiers(&self) ->
-  Cow<'_, Identifiers>`. Delete `set_identifiers` from the trait and from
-  every implementor, delegate macro, binding and doc example.
-- `Identifiers` is a sorted small vector of `(scheme, value)` pairs, both
-  `SmolStr`, unique by scheme. It shares the sorted-union merge helper with
-  `SecurityIds`. It replaces `BTreeMap<String, String>`.
-- **`FixMsg` stores no identifiers.** Its `get_identifiers` answers
-  `Cow::Owned` from `self.registry.get_msgtype(msgtype).identifier_values(self)`.
-  The message type's own `FIX:identifiers` declaration is the only thing that
-  decides which members count, and values are read off the message's own
-  fields. Delete the `set_unsettled(IDENTIFIERS_TAG_NAME…)` write in
-  `enrich_restated`.
-- The `identifiers` column of the `fixmsg` row is written at the Arrow boundary
-  from that accessor. There is no stored copy to drift from the fields it
-  names.
-- Graph holders (`MarketData`, `MarketEventData` and the operation holders)
-  still keep an `Identifiers`, because an order learns `ClOrdID` from one
-  message and `OrderID` from another. They fill it when built from a
-  `FixMsg`. Merge and follow union it through a crate-private
-  `identifiers_mut`, never a public setter. Python and Node expose a getter
-  only.
-- The definitions do the work, so fill them in. Only 64 of the 181
+- **Stored field.** Delete the `identifiers` Map column from the `fixmsg` row
+  and from every market row. That means deleting:
+  - `IDENTIFIERS_TAG_NAME` and its `Crated::event` entry in `fix/crated.rs`;
+  - `EventColumn::Identifiers` in `graph/column.rs`;
+  - `config/fix/groups/identifiers.json`;
+  - the `set_unsettled(IDENTIFIERS_TAG_NAME…)` write in `enrich_restated`.
+
+  Tag `65_020` is retired, not reused.
+- **Trait.** Delete `get_identifiers`, `set_identifiers` and
+  `take_identifiers` from `Element` and from every implementor, delegate
+  macro, binding and doc example. The holders
+  (`MarketData`, `MarketEventData` and both operation holders) lose the
+  `BTreeMap` field. Merge and follow stop folding it.
+- **Accessor only, on `FixMsg`.** `FixMsg::identifiers(&self) -> impl
+  Iterator<Item = (&str, Cow<'_, str>)>` answers from
+  `self.registry.get_msgtype(msgtype).identifier_values(self)`. The message
+  type's own `FIX:identifiers` declaration decides which members count, and
+  the values are read off the message's own fields. Nothing is stored or
+  settled. Rename `identifier_mapping` or delete it with its only caller.
+- **`msgsesseventid`.** It was the map's one non-FIX key
+  (`MSGSESSEVENTID_IDENTIFIER` in `fix/msg.rs`), joined from the message type,
+  capture session, capture context and `MsgSeqNum`. All four are already on
+  the message.
+  - Replace `sync_session_event_identifier` with a pure accessor,
+    `FixMsg::msgsesseventid() -> Option<String>`, spelled exactly as today.
+  - It stays out of the content digest, as it is today.
+  - If a stored column is still needed for dedup, write it as its own
+    nullable `utf8` column `msgsesseventid` at the Arrow boundary, from the
+    accessor. Never a map again.
+- **Cross code.** `crosscode` already comes from `identity::CROSS_TAGS` read
+  off the lifted IDs, not the map, so it does not change. Confirm with a test.
+- **Definitions do the work, so fill them in.** Only 64 of the 181
   `FIX:msgtype` components under `config/fix/components/` declare
   `FIX:identifiers`.
   - Declare it for every message type that reaches the market graph or names
@@ -255,8 +270,8 @@ Target:
     declares a non-empty `FIX:identifiers`, and that each declared member
     resolves to a direct scalar child. `identifier_positions` already refuses
     a bad one.
-- `identifiers` is not a digest input today. Keep it that way, so this change
-  moves no identity on its own.
+- **Digest.** The map was never a digest input, so deleting it moves no
+  identity. The Arrow schema change still renumbers field ids (see Contract).
 
 ### `SecType`: an open string key
 
@@ -443,10 +458,17 @@ Run after A is released as Yggdryl `X.Y.Z`.
      `security_id(securityids, 'ISIN')`.
 
    `side`, `tif` and `cumqty` keep the same spelling in SQL.
-6. `identifiers` keeps its column. It now reflects the message type's
-   `FIX:identifiers` declaration, so market data rows gain `MDReqID` and the
-   others newly declared. Check the dbt models and
-   `docs/products/fixmsg.md` that read `identifiers[...]` keys.
+6. The `identifiers` column is gone from `fix.refined` and every market
+   table.
+   - Replace every `identifiers["msgsesseventid"]` with the new
+     `msgsesseventid` column. That covers `docs/products/fixmsg.md`,
+     `docs/fix/quality.md`, `docs/pipeline/tasks/parse-fix-raw.md` and
+     `docs/pipeline/tasks/parse-fix-refined.md`, plus any task or dbt model
+     that reads it.
+   - Read business IDs from their own typed columns (`clordid`, `orderid`,
+     `execid`, …), never from a map.
+   - Remove "identifiers" from the column lists in `parse-orders.md`,
+     `parse-quotes.md`, `parse-books.md` and `docs/roadmap/orders.md`.
 7. Update `docs/contracts/types.md`, `docs/roadmap/order-book.md` and the
    pipeline task pages, then regenerate the samples.
 8. `uv run pytest` must be green, including `test_schemas` and `test_docs`.
@@ -456,8 +478,9 @@ Run after A is released as Yggdryl `X.Y.Z`.
 
 ## Open decisions to confirm before running A
 
-1. `metadata` sits beside `identifiers` and never holds an identifier. Is
-   that right?
+1. `msgsesseventid`: keep it as its own stored `utf8` column on `fixmsg`
+   (default, because yggfin dedup and docs use it), or accessor only?
+   And `metadata` never holds an identifier: is that right?
 2. `SecurityIds` uniqueness: `(sectype, code)` (default, which allows two
    codes under one key) or one code per key? One per key makes the stored
    column a plain `map<utf8, utf8>`.
