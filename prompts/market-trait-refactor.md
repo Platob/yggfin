@@ -73,6 +73,8 @@ pub trait MarketOperation: Market {
     fn get_marketoperationid(&self) -> Option<i32>;
     fn get_tif(&self) -> Option<&TimeInForce>;    // the crate's `TimeInForce`, not a String
     fn get_tradable(&self) -> Option<bool>;
+    fn get_accountid(&self) -> Option<&str>;      // the account the operation is booked to
+    fn get_userid(&self) -> Option<&str>;         // the user who acted on it
     fn get_bid(&self) -> Option<&Lane>;            // Lane { price, spotrate, forwardpoints, currency, quantity, unit }
     fn get_ask(&self) -> Option<&Lane>;
     // A matching `set_*` for each.
@@ -166,7 +168,7 @@ pub trait MarketOperation: Market {
   `MarketOperationValue` converts through `MarketOperationEventData`. Both keep
   their names and by-value moves.
 - Replace `delegate_market_element!` with two delegates, one over the 20
-  `Market` facts and one over the 5 `MarketOperation` facts. A wrapper that
+  `Market` facts and one over the 7 `MarketOperation` facts. A wrapper that
   only needs `Market` generates only the first.
 
 ### `FixMsg` lifts the FX tags
@@ -1161,6 +1163,74 @@ existing alias mechanism, not a new one:
   `ORDERID`, because their `orderid` and `crosscode` now fill. None
   in `ulbridge.log` do. Other captures are covered by the rebuild.
 
+### `MarketOperation::accountid` and `userid`
+
+Two operation facts: the **account** an order, quote or execution is booked
+to, and the **user** who acted on it. A book never carries them; a
+`Book`'s executions do. Both are `Option<SmolStr>` on the operation holders,
+with a getter and a setter each on `MarketOperation`.
+
+**Fill rules**, derived in `FixMsg::derive_market` under the `forced` rule.
+Each is a ladder: the first non-empty source wins, and a value stated on the
+row itself (a `ROW_STATED_*` bit, as for the other facts) wins over the
+ladder. The sources come from what `ulbridge.log` actually carries:
+
+| Step | `accountid` source | Log example |
+| --- | --- | --- |
+| 1 | `Account(1)` | `ACCOUNT=PBRK6_EDA` (24 named bodies), `1=PBRK6_EDA`, `client`, `ACCT1` |
+| 2 | `Parties` occurrence with `PartyRole` `24` (CustomerAccount) | `customeraccount` → `PBRK6_EDA` |
+| 3 | the bridge's dealer account, field `omsdealeraccount` | `#OMSDEALERACCOUNT=PBRK6` |
+
+| Step | `userid` source | Log example |
+| --- | --- | --- |
+| 1 | the bridge's OMS user, field `omsuserid` | `#OMSUSERID=trader1` |
+| 2 | `Parties` occurrence with `PartyRole` `36` (EnteringTrader) | `89680`, `TRADER2`, `0101` |
+| 3 | `Parties` occurrence with `PartyRole` `12` (ExecutingTrader) | `trader1`, `89680` |
+| 4 | `SenderSubID(50)` | `50=89680` |
+| 5 | `OnBehalfOfSubID(116)` | `116=trader3` |
+
+- **Not sources, on purpose.**
+  - `TECH.ACCOUNT` (`HIGH_TOUCH`) and `TECH.CLIENTID` (`OMSX1`) are routing
+    tags, not the booked account or a person.
+  - `USERDISPLAYNAME` is a display label (`trader1)` appears with a stray
+    parenthesis), not an ID.
+  - Party role `3` (ClientID) is the client firm, not a user.
+  - `ULLINK.CLIENTID` equals `#OMSUSERID` on all 7 lines that carry it,
+    but its name says client. Leave it out unless you say otherwise.
+  - The custom tags `9435` and `9513` (`trader1`) are one feed's
+    user-defined tags, and a tag cannot be a `FIX:names` alias. Map them
+    only if that feed's tag list confirms them.
+- **The bridge fields are declared in the dictionary**, like the
+  instrument-ID fields:
+  - `omsdealeraccount` and `omsuserid`, nullable `utf8`, in
+    `config/fix/fields/000000650.json`, with tags in the crate's range;
+  - not projected as `fixmsg` columns, so they stay in `fixentries`;
+  - the ladder reads them by name, and no string literal of a bridge's
+    spelling appears in `derive_market`.
+- **Party roles are read as codes** (`24`, `36`, `12`). The parser already
+  normalizes `PARTYROLE=customeraccount` / `enteringtrader` /
+  `executingtrader` to them; the probe shows `partyrole: 36` and `12` on
+  this capture. A party occurrence whose role stayed a name or empty (the
+  probe shows `orderoriginatorsystem` → empty) is not a source. Where
+  several occurrences carry the role, the first in group order wins.
+- **Merge, follow and digest.** They behave like `tif`:
+  - **Merge:** the leading statement's value stands, else the other's.
+  - **Follow:** carried forward where an event states none, because an
+    execution belongs to its order's account and user.
+  - **Digest:** fed where stated. That moves identities only for rows that
+    carry them, which the rebuild covers.
+- **Tests:**
+  - `1=A|#OMSDEALERACCOUNT=B` gives `A`;
+  - a party role `24` alone gives its `PartyID`;
+  - `#OMSUSERID=u|parties role 36=v` gives `u`;
+  - only `50=s` gives `s`;
+  - an execution with neither inherits its order's values by following;
+  - over `ulbridge.log`, the Holcim and Novartis order-out flows give
+    `accountid` `PBRK6_EDA` and `userid` `trader1`. Pin, per flow, the value
+    and the source step that answered, and report any flow where steps
+    disagree (for example, entering trader `TRADER2` against OMS user
+    `trader1` on the same message).
+
 ### Crated field `pluginoriginator`
 
 `msgpluginid` (crated `65_009`) is the plugin that **logged** a line, and
@@ -1281,6 +1351,7 @@ no deprecated re-export, no second spelling accepted.
   - decimal columns stay `decimal128(38, 18)`.
 - The operation row (orders, quotes, executions, trades, `fixmsg`) is the
   market row plus `marketoperationid`, `tif` (`yggdryl.timeinforce`), `tradable`,
+  `accountid` and `userid` (nullable `utf8`),
   and `bid`/`ask` as two nullable `struct<price, currency, quantity, unit>`
   columns.
 - Pick the `securityids` Arrow shape and state it in the schema docs.
@@ -1348,7 +1419,8 @@ Run after A is released as Yggdryl `X.Y.Z`.
      `bidforwardpoints`, `offerspotrate`, `offerforwardpoints`), so
      `fix.refined` is recreated with the market tables.
    - `marketevent.json` (orders, quotes, executions) takes the operation row,
-     with `bid`/`ask` lane structs in place of the eight lane columns.
+     with `bid`/`ask` lane structs in place of the eight lane columns, and
+     gains `accountid` and `userid`.
 3. Field ids renumber, so `fix.refined`, `market.books`, `market.orders`,
    `market.quotes` and `market.executions` are **recreated, not evolved**.
    `fix.refined` is rebuilt from `fix.raw` first, then the market tables are
