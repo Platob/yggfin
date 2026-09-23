@@ -124,7 +124,17 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   endpoint takes is spelled back from it. The ARN states its region; a
   locator states one or takes it from the configuration, as the Glue name
   does from `rest.signing-region` or the AWS environment, and nothing
-  guesses. Every other property stays as written. The service owns the files
+  guesses. The environment is the third way to state the endpoint, from the
+  AWS SDK's endpoint variables alone, never a profile's `endpoint_url`: the
+  `uri` is the one stated outright, else the locator's, else
+  `AWS_ENDPOINT_URL_S3TABLES` or `AWS_ENDPOINT_URL_GLUE` for the door the
+  warehouse names -- with `/iceberg` added once, judged on the URL's path --
+  else the partition's regional one. The generic `AWS_ENDPOINT_URL` never
+  moves the `uri`, because one value cannot be the right host for both doors;
+  the files are read through S3 alone, so `s3.endpoint`, where none is
+  stated, takes `AWS_ENDPOINT_URL_S3` and then `AWS_ENDPOINT_URL`, and
+  `AWS_IGNORE_CONFIGURED_ENDPOINT_URLS=true` in the environment turns all of
+  them off. Every other property stays as written. The service owns the files
   under a table bucket, so no sweep deletes one there and a drop purges.
 - Maintenance reports settled changes and never deletes a file whose ownership
   is ambiguous.

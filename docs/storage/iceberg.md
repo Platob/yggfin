@@ -346,6 +346,28 @@ pyiceberg signs those REST calls through boto3. Which door to take, and what
 Lake Formation asks for behind the Glue one, is in
 [AWS S3 Tables](../pipeline/operations/deploy.md#aws-s3-tables).
 
+The worker's environment is the third way to state a table bucket's endpoint,
+and a default for every S3 Tables catalog the worker runs rather than a
+setting of one: a `uri` stated outright wins, then the locator's endpoint,
+then the environment, then the partition's regional endpoint. It is read from
+the variables the AWS CLI reads -- the variables alone, not a profile's
+`endpoint_url` or `services` section:
+
+| variable | states |
+| --- | --- |
+| `AWS_ENDPOINT_URL_S3TABLES` | the `uri` for an ARN or a locator, with `/iceberg` added unless its path ends in it |
+| `AWS_ENDPOINT_URL_GLUE` | the `uri` for a `<account>:s3tablescatalog/<name>`, the same way |
+| `AWS_ENDPOINT_URL_S3` | `s3.endpoint`, where the table files are read and written |
+| `AWS_ENDPOINT_URL` | `s3.endpoint` only, where `AWS_ENDPOINT_URL_S3` is not set |
+| `AWS_IGNORE_CONFIGURED_ENDPOINT_URLS=true` | that none of the above is read |
+
+The generic `AWS_ENDPOINT_URL` names one endpoint for every service at once.
+That suits the files, which are read through S3 alone, but not the catalog: a
+table bucket has two doors, S3 Tables and Glue, and one value cannot be right
+for both, so it is never read for the `uri`. Any other catalog type takes
+`s3.endpoint` only as a property: pyiceberg builds Arrow's S3 filesystem
+itself, and that reads neither variable.
+
 ## Message schema replacement
 
 The `Message` contract is the native event layout: `currunix`, `curruuid`,

@@ -252,9 +252,10 @@ Params.
 ### Where the endpoint is
 
 An ARN names the bucket and says nothing about where the catalog answers, so
-the regional endpoint is what it resolves to. The bucket's locator -- the
-`s3tables:` URL the ARN redirects to, `yggdryl.Arn.locator()` -- is the same
-bucket spelled as a location, and a location can say where its endpoint is
+the regional endpoint is what it resolves to unless the worker's environment
+names another, below. The bucket's locator -- the `s3tables:` URL the ARN
+redirects to, `yggdryl.Arn.locator()` -- is the same bucket spelled as a
+location, and a location can say where its endpoint is
 the way every `s3:` URL here does: in its host, with a port and a `scheme`
 where an emulator of the service answers on one, or under `endpoint_override`
 in its query. The two fields a location does not carry, the region and the
@@ -295,6 +296,31 @@ another `rest.signing-region`, explicit `s3.*` credentials:
   }
 }
 ```
+
+The worker's environment is the third way to say where the endpoint is, and
+the one that states it for every S3 Tables catalog the worker runs rather
+than in one document. It is read from the endpoint variables the AWS CLI
+reads -- the variables alone, not a profile's `endpoint_url` or `services`
+section -- after a `uri` stated outright and the locator's endpoint, and
+before the regional one: `AWS_ENDPOINT_URL_S3TABLES` for an ARN or a locator,
+`AWS_ENDPOINT_URL_GLUE` for the Glue name, each with `/iceberg` added unless
+its path already ends in it. The table files follow `AWS_ENDPOINT_URL_S3`
+into `s3.endpoint` where the catalog states none:
+
+```bash
+export AWS_ENDPOINT_URL_S3TABLES=http://localhost:4566
+export AWS_ENDPOINT_URL_S3=http://localhost:4566
+```
+
+The generic `AWS_ENDPOINT_URL` stands in for `AWS_ENDPOINT_URL_S3` and
+nothing else. It names one endpoint for every service at once, which suits
+the files, read through S3 alone, but not the catalog: the two doors cannot
+both be at one value, so a stray export of it never moves the `uri`. It
+still moves the files: where an emulator is set up with `AWS_ENDPOINT_URL`
+alone, name its catalog too, with `AWS_ENDPOINT_URL_S3TABLES` or
+`AWS_ENDPOINT_URL_GLUE`, or the catalog and its files are on two different
+services. `AWS_IGNORE_CONFIGURED_ENDPOINT_URLS=true` in the environment turns
+every one of these off.
 
 A table bucket's namespaces are one level deep and spelled in lowercase
 letters, digits and underscores, which `logs`, `fix`, `orders` and

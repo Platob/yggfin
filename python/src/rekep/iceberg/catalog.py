@@ -8,6 +8,7 @@ import re
 from collections.abc import Iterator, Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NamedTuple
+from urllib.parse import urlsplit
 
 from yggdryl import Arn, Uri, Url
 
@@ -57,6 +58,18 @@ _CHINA_PARTITION = "aws-cn"
 #: The path every S3 Tables and Glue Iceberg REST endpoint serves under.
 _REST_PATH = "/iceberg"
 
+#: Where the AWS environment states an endpoint, in the variables the CLI and
+#: every SDK read: `AWS_ENDPOINT_URL_<SERVICE>` for one service -- the
+#: signing names here, `s3tables`, `glue` and `s3`, are also their SDK names
+#: -- `AWS_ENDPOINT_URL` for every service, and neither while
+#: `AWS_IGNORE_CONFIGURED_ENDPOINT_URLS` is true. The variables alone: a
+#: profile's `endpoint_url` or `services` section is not read here.
+_ENDPOINT_VARIABLE = "AWS_ENDPOINT_URL"
+_IGNORE_ENDPOINT_VARIABLE = "AWS_IGNORE_CONFIGURED_ENDPOINT_URLS"
+
+#: The service a table's files are read and written through.
+_S3 = "s3"
+
 #: What an `s3tables:` locator carries in its query, spelled the way every
 #: store URL yggdryl reads spells them: `endpoint_override` and `scheme` say
 #: where the endpoint is, `region` where the bucket is. `account` and
@@ -102,7 +115,8 @@ class TableBucket(NamedTuple):
     partition: str | None
 
     #: The REST endpoint the warehouse itself states -- the host and scheme
-    #: its locator carries -- or None for the partition's regional one.
+    #: its locator carries -- or None for the environment's, else the
+    #: partition's regional one.
     endpoint: str | None
 
 
@@ -189,9 +203,10 @@ def _located_bucket(
     a table's locator names a table, which is not a catalog. The endpoint is
     the location's own where it states one -- its host, or the
     `endpoint_override` every store URL here takes, under the `scheme` it
-    names or `https` -- and the partition's regional one otherwise. The
-    warehouse the endpoint is handed is the bucket's ARN, spelled back from
-    the region, account and partition the caller resolved.
+    names or `https` -- and none otherwise, which leaves it to the environment
+    and then to the partition's regional one. The warehouse the endpoint is
+    handed is the bucket's ARN, spelled back from the region, account and
+    partition the caller resolved.
     """
     bucket = located.bucket
     if not bucket:
@@ -221,6 +236,43 @@ def _regional_endpoint(service: str, region: str, partition: str) -> str:
     return str(Uri.from_parts("https", f"{service}.{region}.{domain}", _REST_PATH))
 
 
+def _environment_endpoint(service: str, *, generic_fallback: bool) -> str | None:
+    """The endpoint the AWS environment states for `service`, or None.
+
+    `AWS_ENDPOINT_URL_<SERVICE>` is read first, as the CLI reads it, and the
+    generic `AWS_ENDPOINT_URL` only where `generic_fallback` says one value
+    can be right for this service: it names an endpoint for every service at
+    once. A trailing slash is dropped, so a path added to it is not doubled.
+    The switch is read as botocore reads it: `true` in any case, and nothing
+    else, turns the variables off.
+    """
+    if os.environ.get(_IGNORE_ENDPOINT_VARIABLE, "").lower() == "true":
+        return None
+    names = [f"{_ENDPOINT_VARIABLE}_{service.upper()}"]
+    if generic_fallback:
+        names.append(_ENDPOINT_VARIABLE)
+    for name in names:
+        if stated := os.environ.get(name, "").strip().rstrip("/"):
+            return stated
+    return None
+
+
+def _environment_rest_endpoint(service: str) -> str | None:
+    """The Iceberg REST endpoint the AWS environment states, or None.
+
+    The variable names the service, as it does for the CLI, and the catalog
+    answers under `/iceberg` there; a value whose path already ends in it is
+    taken as it is. The path and not the text: `http://iceberg` is a host of
+    that name, with no path at all. `AWS_ENDPOINT_URL` is never read for
+    this: a table bucket has two doors, S3 Tables and Glue, and one generic
+    value cannot be the right host for both, so it is read as naming neither.
+    """
+    endpoint = _environment_endpoint(service, generic_fallback=False)
+    if endpoint is None or urlsplit(endpoint).path.endswith(_REST_PATH):
+        return endpoint
+    return endpoint + _REST_PATH
+
+
 def _partition_of(region: str) -> str:
     """The partition a region belongs to, for a name that states none."""
     return _CHINA_PARTITION if region.startswith("cn-") else _AWS_PARTITION
@@ -229,10 +281,13 @@ def _partition_of(region: str) -> str:
 def _s3_tables_properties(properties: Mapping[str, str]) -> dict[str, str]:
     """PyIceberg's REST configuration for the table bucket these name.
 
-    Only what the warehouse decides is filled, and each of it with
-    `setdefault`: a `uri` stated outright, another signing region, and
-    explicit credentials stay the operator's to state, under the standard
-    property names.
+    Only what the warehouse and the AWS environment decide is filled, and
+    each of it with `setdefault`: a `uri` or `s3.endpoint` stated outright,
+    another signing region, and explicit credentials stay the operator's to
+    state, under the standard property names. The endpoint is the first one
+    stated: a `uri`, then the warehouse's locator, then the AWS environment,
+    then the partition's regional one. The environment can also state where
+    the files are, which no warehouse does.
     """
     bucket = _table_bucket(properties)
     if bucket is None:
@@ -249,6 +304,7 @@ def _s3_tables_properties(properties: Mapping[str, str]) -> dict[str, str]:
     resolved.setdefault(
         "uri",
         bucket.endpoint
+        or _environment_rest_endpoint(bucket.service)
         or _regional_endpoint(bucket.service, region, bucket.partition or _partition_of(region)),
     )
     resolved.setdefault("rest.sigv4-enabled", "true")
@@ -257,6 +313,13 @@ def _s3_tables_properties(properties: Mapping[str, str]) -> dict[str, str]:
     # The bucket is in that region, and so are the files the endpoint vends
     # credentials for.
     resolved.setdefault("s3.region", region)
+    # Those files are read through S3 alone, so the generic AWS_ENDPOINT_URL
+    # names S3 here as it does for any one-service client. pyiceberg builds
+    # Arrow's S3FileSystem itself, and that constructor reads neither
+    # variable (only `FileSystem.from_uri` does), which leaves it to this
+    # property.
+    if files := _environment_endpoint(_S3, generic_fallback=True):
+        resolved.setdefault("s3.endpoint", files)
     return resolved
 
 

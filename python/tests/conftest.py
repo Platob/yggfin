@@ -17,7 +17,10 @@ def _keep_aws_discovery_off_the_network(monkeypatch: pytest.MonkeyPatch) -> None
         "S3_SESSION_TOKEN",
         "S3_REGION",
         "AWS_ENDPOINT_URL_S3",
+        "AWS_ENDPOINT_URL_S3TABLES",
+        "AWS_ENDPOINT_URL_GLUE",
         "AWS_ENDPOINT_URL",
+        "AWS_IGNORE_CONFIGURED_ENDPOINT_URLS",
     ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "rekep-test")
