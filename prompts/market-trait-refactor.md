@@ -525,8 +525,10 @@ from it naively.
 - **Pattern.** Take the text after the last `;`, if any, and match
   `{ISIN}_{MIC}_{CCY}`: 12, 4 and 3 alphanumerics joined by `_`. The first
   value that matches wins.
-- **Lift.** For each of ISIN, `miccode` and `currency` that is **currently
-  empty** after the other sources have run, set it from the match. A fact
+- **Lift.** For ISIN and `currency`, set each from the match if it is
+  **currently empty** after the other sources have run. The MIC part is not
+  lifted separately. It is step 3 of the `miccode` ladder, ahead of
+  `SecurityExchange(207)`. A fact
   that already has a value is left alone. There is no cross-check and no
   anomaly. A part that its type refuses (`IsinCode`, `MicCode::is_iso`,
   `Currency`) is skipped, and the other parts still lift.
@@ -625,7 +627,7 @@ file:
 | Novartis | `ISIN:CH0012005267`, `BLOOMBERG:NOVN SW`, derived `VALOR:1200526`; `cficode` `ESVTFR` where `DETAILEDCFICODE` is stated, else null (never `ESXXXX`) |
 | Holcim | `ISIN:CH0012214059`, `BLOOMBERG:HOLN SW`, derived `VALOR:1221405`; `miccode` `XSWX`, never `S`; `cficode` `ESVTFR` |
 | `TW0001605004` | `ISIN:TW0001605004`; `miccode` `RJEA`; `cficode` null |
-| MediaTek | `ISIN:TW0002454006`, `BLOOMBERG:2454 TT Equity`, `RIC:2454.TW` (from the marked `secaltids` with named sources); `miccode` `XTAI`, never `TW`; `tif` `0`, not `day`; `cficode` null (was `ESXXXX`) |
+| MediaTek | `ISIN:TW0002454006`, `BLOOMBERG:2454 TT Equity`, `RIC:2454.TW` (from the marked `secaltids` with named sources); `miccode` `XTAI` (from the instrument key, ahead of `207`), never `TW`; `tif` `0`, not `day`; `cficode` null (was `ESXXXX`) |
 
 Also check:
 - no line produces a `securityids` entry the message did not state, apart
@@ -634,7 +636,7 @@ Also check:
   never `#SYMBOL`;
 - every line still round-trips byte for byte on the wire.
 
-### `miccode`: `SecurityExchange`, then `LastMkt`, then `ExDestination`
+### `miccode`: `LastMkt`, `ExDestination`, the instrument key, then `SecurityExchange`
 
 Today `FixMsg` derives the MIC in `rust/src/fix/msg.rs` (the market-facts
 block, near `// The market it is listed on, routed to, or last traded on.`):
@@ -644,38 +646,46 @@ let miccode = word(207).or_else(|| word(100)).or_else(|| word(30))
     .and_then(|held| MicCode::new(&held).ok());
 ```
 
-Change the order, and validate each source before the next is tried:
+Replace it with a four-step ladder. Each step is validated before the next is
+tried, and the first valid MIC wins:
+
+1. `LastMkt(30)`: where the last fill traded.
+2. `ExDestination(100)`: where the order was routed.
+3. The MIC part of the instrument-key pattern `{ISIN}_{MIC}_{CCY}`, the
+   regex match described in "Instrument-key fields" below.
+4. `SecurityExchange(207)`: where the instrument is listed, the last
+   resolver.
 
 ```rust
-let miccode = [207, 30, 100].into_iter()
-    .find_map(|tag| word(tag).and_then(|held| MicCode::new(&held).ok()));
+let miccode = [30, 100].into_iter()
+    .find_map(|tag| word(tag).filter(|held| MicCode::is_iso(held)))
+    .or_else(|| instrument_key.and_then(|key| key.mic.clone()))
+    .or_else(|| word(207).filter(|held| MicCode::is_iso(held)))
+    .and_then(|held| MicCode::new(&held).ok());
 ```
 
-- `SecurityExchange(207)` names where the instrument is listed, and it comes
-  first. `LastMkt(30)` names where the last fill traded, and it comes second.
-  `ExDestination(100)` names where the order was routed, and it comes last.
-- `LastMkt` now outranks `ExDestination`, which reverses today's order: a
-  fill's actual venue says more than the route the order asked for.
-- `ExDestination` is often a broker code rather than a MIC. The per-source
-  validation lets it answer only when it is one.
-- Validate each candidate before falling through, with `MicCode::is_iso`
-  (exactly 4 of `[A-Z0-9]`), not `MicCode::new`, which accepts `S` and
-  `TW` (see "What `ulbridge.log` requires", item 3). A `207` that is not
-  a MIC no longer hides a valid `30`.
-- A row that states `miccode` itself (`ROW_STATED_MIC`) still wins over both.
-  The rule only answers where the row says nothing.
+- **Order.** A trade's actual venue comes first, then its route, then the
+  listing the bridge's instrument key names, and only then the listing the
+  message states. `SecurityExchange` moves from first today to last.
+- **Validation.** Each candidate needs `MicCode::is_iso` (exactly 4 of
+  `[A-Z0-9]`), not only `MicCode::new`, which accepts `S` and `TW` (see
+  "What `ulbridge.log` requires", item 3). A broker code in
+  `ExDestination` falls through instead of answering.
+- A row that states `miccode` itself (`ROW_STATED_MIC`) still wins over the
+  whole ladder. The ladder only answers where the row says nothing.
 - Update the comment above the rule and the `crated.rs` module doc to the
   new order.
-- Tests:
-  - `207` and `30` both valid MICs gives `207`'s;
-  - `207` invalid and `30` valid gives `30`'s;
-  - `30` and `100` both valid, no `207`, gives `30`'s;
-  - only a valid `100` gives `100`'s;
-  - only a non-MIC `100` (a broker code) gives no MIC;
-  - a row-stated `miccode` wins over both.
-- `miccode` is a digest input, so rows whose MIC changes get a new identity. That means rows
-  with both `30` and `100`, or an invalid `207` beside a valid later source. The
-  rebuild already covers that.
+- **Tests:**
+  - `30`, `100` and `207` all valid gives `30`'s;
+  - no `30`, with `100` and `207` valid, gives `100`'s;
+  - no `30`, `100=S`, a key `…_XSWX_CHF` and `207=XTAI` gives `XSWX` (the
+    key beats `207`);
+  - only `207` gives `207`'s;
+  - `100=S` or `100=TW` alone gives no MIC;
+  - a row-stated `miccode` wins over all four.
+- **Row IDs.** `miccode` is a digest input, so rows whose MIC changes get a
+  new identity: rows where `207` disagreed with `30`, `100` or the key. The
+  rebuild covers that.
 
 ### Delete the `identifiers` map field
 
@@ -1110,8 +1120,9 @@ Run after A is released as Yggdryl `X.Y.Z`.
      `security_id(securityids, 'ISIN')`.
 
    `side`, `tif` and `cumqty` keep the same spelling in SQL.
-6. `miccode` now comes from `SecurityExchange(207)`, then `LastMkt(30)`,
-   then `ExDestination(100)`. No yggfin page lists its sources today. When
+6. `miccode` now comes from `LastMkt(30)`, then `ExDestination(100)`, then
+   the instrument key's MIC, then `SecurityExchange(207)`. No yggfin page
+   lists its sources today. When
    the samples are regenerated, check that captures stating only `LASTMKT`
    still land a MIC.
 7. The `identifiers` column is gone from `fix.refined` and every market
