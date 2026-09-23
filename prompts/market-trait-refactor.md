@@ -1168,6 +1168,59 @@ existing alias mechanism, not a new one:
   `ORDERID`, because their `orderid` and `crosscode` now fill. None
   in `ulbridge.log` do. Other captures are covered by the rebuild.
 
+### Crated field `conversationid`
+
+The bridge names the conversation a message belongs to, the same across
+every hop that logs it. `ulbridge.log` states it two ways, and they always
+agree:
+- as a field, `CONVERSATIONID=7702fe4b-5884-417f-b7ea-1f8aa7b3ef20`: 60
+  times, 10 distinct values;
+- in ULBridge's own text, `… {conversationId: 7702fe4b-…}`: 7 times. On all
+  7 lines carrying both, the two are equal.
+
+All 67 values are well-formed UUIDs.
+
+- **Declaration.**
+  - `CONVERSATIONID_TAG_NAME: (i32, &str) = (<next>, "conversationid")` in
+    `fix/crated.rs`, with the next free crate tag after `pluginoriginator`,
+    never a retired one.
+  - Typed as the crate's `Uuid` (`fixed[16]` in Iceberg, like `curruuid`),
+    nullable.
+  - It has a `Crated::event` entry documented beside `msgpluginid` and
+    `pluginoriginator`, a field entry in `config/fix/fields/000000650.json`,
+    and a column on the `fixmsg` row.
+- **Sources**, first match wins:
+  1. the field itself. Because the crated field is named `conversationid`,
+     `CONVERSATIONID` and `#CONVERSATIONID` resolve to it by name, with no
+     alias needed;
+  2. ULBridge's text `{conversationId: <uuid>}`, read in `fix/ulbridge.rs`
+     by a named pattern beside the `pluginoriginator` ones.
+
+  When both are present and disagree, the field wins, and an anomaly records
+  the text's value.
+- **Not a UUID.** A value that does not parse as a UUID leaves the column
+  null and records an anomaly. The original stays where it arrived
+  (`fixentries` for the field, the line body for the text), so another
+  bridge's non-UUID conversation keys are not lost. If you want those
+  stored, make it `utf8` instead. That is the one type decision here.
+- **Lifecycle.** Every hop of one event carries the same conversation. The
+  walk keeps the value of the earliest `recdunix` statement that states
+  one. Differing values across hops of one event keep the earliest, with an
+  anomaly.
+- **Not identity.** It is provenance, like `msgpluginid`. It is not a digest
+  input, not part of `msgsesseventid`, and not in `altids`, and it moves no
+  `curruuid`.
+- **Bindings and yggfin.** A `FixMsg::conversationid()` getter in Rust,
+  Python and Node. `schemas/rekep/fixmsg.json` gains the column, and the
+  AGENTS.md sentence naming the bridge's native fields lists it.
+- **Tests** over `ulbridge.log`:
+  - every row whose line states either source gets that UUID;
+  - the 7 lines with both agree, with no anomaly;
+  - a refined row folded from several hops keeps the one conversation;
+  - a synthetic `CONVERSATIONID=not-a-uuid` gives null plus an anomaly,
+    with the original still in `fixentries`;
+  - pin the count of distinct conversations (10 from the field).
+
 ### `MarketOperation::accountids` and `userids`: sorted maps
 
 Two operation facts: the **accounts** an order, quote or execution is
