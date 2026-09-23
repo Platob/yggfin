@@ -513,62 +513,30 @@ four attributes `X`) is not accepted as a CFI. The `cficode` field holds a
 ### Instrument-key fields: `{ISIN}_{MIC}_{CCY}`
 
 Bridges name the listing in one field: `#OMSINSTRUMENTID=dbi;CH0012214059_XSWX_CHF`
-and `ULLINK.INSTRUMENTID=dbi;TW0002454006_XTAI_TWD` in `ulbridge.log`.
-When a message lacks any of its ISIN, its MIC or its currency, read them from
-such a field.
+and `ULLINK.INSTRUMENTID=dbi;TW0002454006_XTAI_TWD` in `ulbridge.log`. Lift
+from it naively.
 
-- **When it runs.** In `FixMsg::derive_market`, after every other source for
-  the three facts has answered, and only if one of them is still missing:
-  - no `ISIN` in `securityids`;
-  - no `miccode` after `207` → `30` → `100`;
-  - no `currency` after `15` → `120`.
-- **Which fields.** Top-level fields whose name, folded (case, `_`, `-` and
-  spaces ignored), has a last `.`-separated segment ending in
-  `INSTRUMENTID`: `OMSINSTRUMENTID`, `ULLINK.INSTRUMENTID`, `INSTRUMENTID`.
-  - Only unmapped names qualify. `SecurityID(48)` and any dictionary field
-    never do.
-  - Prefixes `LEG`, `UNDERLYING`, `CONTRA`, `RELATED` and `BENCHMARK` are
-    skipped.
-  - The name table lives in `securityid.rs` beside
-    `SecType::from_field_name`.
-- **Parsing.** Strip everything up to and including the last `;` (the
-  namespace, `dbi;`). The rest must split on `_` into exactly three parts:
-  - an ISIN, with `IsinCode::is_canonical` (check digit);
-  - a MIC, with `MicCode::is_iso` (exactly 4 of `[A-Z0-9]`);
-  - a currency, with `Currency::new` (ISO 4217).
-
-  A value that fails any part yields nothing at all. No part is taken on its
-  own.
-- **Coalescing.** Take the first field that parses, in the message's field
-  order. Coalesce into each fact only if it is still missing: a stated ISIN,
-  MIC or currency always wins.
-- **Consistency guard.** If the message states an ISIN and a parsed key names
-  a different one, the key describes another listing. Take none of its
-  parts, and record an anomaly. The same holds for a stated MIC or currency
-  that disagrees.
-- **What kind of entry.** The ISIN is a stated entry, because the message
-  said it, ranked after every other stated source. It feeds
-  `securityid::embedded` (a CH ISIN gives its Valor) and
-  `SecurityIdRegistry`. That is how a CFI can follow: the registry fills a
-  detailed CFI learned for that ISIN from another message of the lifecycle.
-  The MIC and currency fill `miccode` and `currency` as derived facts.
-  Nothing is written to `48`, `22`, `207`, `15` or `secaltids`, and the
-  field re-emits exactly as it arrived.
-- **Row IDs.** These are digest inputs where they fill, and the rebuild
-  covers that.
+- **Where to look.** The instrument-ID fields the unmapped-field pass already
+  grabbed: top-level unmapped fields whose folded name ends in
+  `INSTRUMENTID`. Nothing else is scanned.
+- **Pattern.** Take the text after the last `;`, if any, and match
+  `{ISIN}_{MIC}_{CCY}`: 12, 4 and 3 alphanumerics joined by `_`. The first
+  value that matches wins.
+- **Lift.** For each of ISIN, `miccode` and `currency` that is **currently
+  empty** after the other sources have run, set it from the match. A fact
+  that already has a value is left alone. There is no cross-check and no
+  anomaly. A part that its type refuses (`IsinCode`, `MicCode::is_iso`,
+  `Currency`) is skipped, and the other parts still lift.
+- The ISIN goes into `securityids`, so `securityid::embedded` and
+  `SecurityIdRegistry` see it. Nothing is written back to the FIX fields, and
+  the source field re-emits unchanged.
 - **Tests:**
-  - A synthetic line with only `ULLINK.INSTRUMENTID=dbi;CH0012214059_XSWX_CHF`
-    gives `ISIN:CH0012214059`, derived `VALOR:1221405`, `miccode` `XSWX` and
-    `currency` `CHF`.
-  - With `15=EUR` also stated, the currency stays `EUR` and the ISIN and MIC
-    still fill.
-  - `…_XSWX_CHF` beside a stated ISIN `CH0012005267` gives nothing from the
-    key, plus an anomaly.
-  - `dbi;CH0012214058_XSWX_CHF` (bad check digit) and `dbi;CH0012214059_S_CHF`
-    (not a MIC) give nothing.
-  - Over `ulbridge.log`, record for each message carrying the key which of
-    the three it fills and whether it agrees. Pin the counts. Any disagreement
-    is a finding to report, not to paper over.
+  - only `ULLINK.INSTRUMENTID=dbi;CH0012214059_XSWX_CHF` gives
+    `ISIN:CH0012214059`, `miccode` `XSWX` and `currency` `CHF`;
+  - with `15=EUR` stated, the currency stays `EUR`;
+  - a stated ISIN is never replaced;
+  - `ulbridge.log` is unchanged, because every message carrying the key
+    already has all three.
 
 ### What `ulbridge.log` requires
 
