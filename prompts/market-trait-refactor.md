@@ -52,15 +52,15 @@ pub trait Market {
     fn get_side(&self) -> Side;                    // Copy, one byte
     fn get_currency(&self) -> &Currency;
     fn get_unit(&self) -> &Unit;
-    fn get_price(&self) -> Decimal9;
-    fn get_prevpx(&self) -> Option<Decimal9>;
-    fn get_lastpx(&self) -> Option<Decimal9>;
-    fn get_avgpx(&self) -> Option<Decimal9>;
-    fn get_quantity(&self) -> Decimal9;
-    fn get_prevqty(&self) -> Option<Decimal9>;
-    fn get_lastqty(&self) -> Option<Decimal9>;
-    fn get_leavesqty(&self) -> Option<Decimal9>;
-    fn get_cumqty(&self) -> Option<Decimal9>;
+    fn get_price(&self) -> Decimal18;
+    fn get_prevpx(&self) -> Option<Decimal18>;
+    fn get_lastpx(&self) -> Option<Decimal18>;
+    fn get_avgpx(&self) -> Option<Decimal18>;
+    fn get_quantity(&self) -> Decimal18;
+    fn get_prevqty(&self) -> Option<Decimal18>;
+    fn get_lastqty(&self) -> Option<Decimal18>;
+    fn get_leavesqty(&self) -> Option<Decimal18>;
+    fn get_cumqty(&self) -> Option<Decimal18>;
     fn get_metadata(&self) -> &Metadata;
     // A matching `set_*` for each, plus
     // `securityids_mut(&mut self) -> &mut SecurityIds`.
@@ -126,38 +126,6 @@ pub trait MarketOperation: Market {
 - Replace `delegate_market_element!` with two delegates, one over the 17
   `Market` facts and one over the 6 `MarketOperation` facts. A wrapper that
   only needs `Market` generates only the first.
-
-### `Decimal9`: every market decimal fits in 64 bits
-
-- Add `Decimal9(i64)` in `rust/src/decimal.rs`, a sibling of `Decimal18`:
-  - scale 9, precision 18;
-  - Arrow `decimal64(18, 9)`, Iceberg `decimal(18, 9)`, which Parquet stores
-    as a plain `INT64`;
-  - `ZERO`, `ONE`, `MIN` and `MAX` equal to plus or minus
-    `999_999_999.999999999`;
-  - `from_units(i64)`, `units() -> i64`, `from_int`, `from_f64`, `to_f64`,
-    `FromStr`, `Display`, and checked plus operator arithmetic.
-  - Multiply and divide widen to `i128` for the one product and truncate
-    toward zero, mirroring how `Decimal18` widens to 256 bits.
-- Every market decimal becomes `Decimal9`. That covers `price`, `prevpx`,
-  `lastpx`, `avgpx`, `quantity`, `prevqty`, `lastqty`, `leavesqty`, `cumqty`,
-  and the lane price and quantity. Each `Option<Decimal9>` is 16 bytes, down
-  from 32.
-- Range is the cost: whole parts are capped just under one billion. A
-  quantity, notional or price at or past `1e9` (large share blocks, JPY or KRW
-  notionals, some commodity volumes) overflows. Overflow is a located error
-  naming the field and the text, never a silent clamp. Survey the
-  `rust/benchmarks/fix` captures and the test corpora for the largest stated
-  value before settling. If any real value overflows, stop and report rather
-  than widening quietly.
-- Parsing text with more than 9 fractional digits: trailing zeros are
-  accepted, and a non-zero digit past the ninth is a located error. See the
-  open decisions.
-- The digest feeds `units().to_le_bytes()`, now 8 bytes. That is another
-  identity change, covered below.
-- Delete `Decimal18` if nothing outside the market graph needs it after the
-  change. Otherwise it stays as the general-purpose scalar and the market
-  graph stops using it.
 
 ### `SecType`: a `#[repr(u8)]` enum
 
@@ -249,7 +217,7 @@ pub trait MarketOperation: Market {
   - one `securityids` column replaces the five code columns;
   - the `bid*`/`ask*` lane columns, `tif`, `tradable`, `marketoperationid`
     and `ticker` leave it;
-  - every decimal column is `decimal64(18, 9)`.
+  - decimal columns stay `decimal128(38, 18)`.
 - The operation row (orders, quotes, executions, trades, `fixmsg`) is the
   market row plus `marketoperationid`, `ticker`, `tif`, `tradable`,
   and `bid`/`ask` as two nullable `struct<price, currency, quantity, unit>`
@@ -257,8 +225,7 @@ pub trait MarketOperation: Market {
 - Pick the `securityids` Arrow shape and state it in the schema docs.
   Default: `list<struct<sectype: dictionary<uint8, utf8>, code: utf8>>`,
   sorted.
-- Identity changes: the digest inputs (`securityids`, `ticker`, 8-byte
-  decimal units, the split between the slim and operation digests) change, so every market `curruuid`
+- Identity changes: the digest inputs (`securityids`, `ticker`, the split between the slim and operation digests) change, so every market `curruuid`
   changes. Say so in the changelog and bump the minor version. Consumers
   rebuild from capture and never dual-write.
 - Update `.api-inventory.txt`, both bindings (Python `graph`/`fix` getters,
@@ -276,7 +243,6 @@ pub trait MarketOperation: Market {
   keeps no operation facts, and that its executions keep theirs.
 - A size and allocation test pins:
   - `size_of::<Side>() == 1`;
-  - `size_of::<Decimal9>() == 8` and `size_of::<Option<Decimal9>>() == 16`;
   - `SecurityId` zero-alloc for an ISIN;
   - `size_of` of all four holders, before and after. `MarketEventData` must
     shrink, and `Book` with it.
@@ -302,7 +268,6 @@ Run after A is released as Yggdryl `X.Y.Z`.
    - `marketevent.json` (orders, quotes, executions) takes the operation row,
      with `ticker` in place of `symbolticker` and `bid`/`ask` lane structs in
      place of the eight lane columns.
-   - Every `decimal(38, 18)` becomes `decimal(18, 9)`.
 3. Field ids renumber, so `market.books`, `market.orders`, `market.quotes` and
    `market.executions` are **recreated and rebuilt from `fix.refined`**, not
    evolved. Record this beside the existing 0.1.10 identity migration note in
@@ -316,10 +281,7 @@ Run after A is released as Yggdryl `X.Y.Z`.
    - read the ISIN out of `securityids` with one macro, for example
      `security_id(securityids, 'ISIN')`.
 
-   `side` and `cumqty` stay plain columns. Check every arithmetic
-   expression over prices and quantities (`coalesce(orderqty, ...)`, fill
-   notionals) against `decimal(18, 9)`. DuckDB widens a product, so an
-   explicit cast back into a `decimal(18, 9)` column can overflow.
+   `side` and `cumqty` stay plain columns.
 6. Update `docs/contracts/types.md`, `docs/roadmap/order-book.md` and the
    pipeline task pages, then regenerate the samples.
 7. `uv run pytest` must be green, including `test_schemas` and `test_docs`.
@@ -334,9 +296,5 @@ Run after A is released as Yggdryl `X.Y.Z`.
    listings of one type) or one id per `SecType`?
 3. `Side` on the wire: keep the string extension (default) or move to `uint8`?
 4. `Unit` max width.
-5. Precision past 9 fractional digits: refuse (default), round half-even,
-   or truncate?
-6. `Decimal9` range: is a whole part under one billion enough for every
-   quantity and notional you capture? If not, use `Decimal64` with scale 6.
-7. `Lane` storage: boxed (small operations) or inline (lane-heavy quotes)?
+5. `Lane` storage: boxed (small operations) or inline (lane-heavy quotes)?
    Decide it by the size test.
