@@ -339,6 +339,96 @@ and every write goes back into them with the correct code-set value.
   - A `456` value outside the code set survives a round trip.
   - The code-set agreement test above.
 
+### FIX parsing: unmapped instrument fields feed `securityids`
+
+Venues and bridges send instrument identifiers under names no dictionary
+maps. The shipped capture does this: `#CFICODE=ESVTFR|#ISINCODE=CH0012221716|
+#LASTMKT=XSWX`. The builder already keeps them rather than dropping them
+(`fix/build.rs`): an unknown tag stays nullable `utf8` under its decimal
+spelling, an unknown or `#`-marked name stays one flat child under its own
+name, and either records tag zero. Today `ISINCODE` resolves only because the
+crate declares its own `isincode` column.
+
+**Delete the crated code columns.** This refactor deletes them, because
+`securityids` owns the fact:
+
+| Constant | Tag |
+| --- | --- |
+| `ISINCODE_TAG_NAME` | 65_055 |
+| `CUSIPCODE_TAG_NAME` | 65_057 |
+| `SEDOLCODE_TAG_NAME` | 65_058 |
+| `BLOOMBERGCODE_TAG_NAME` | 65_059 |
+| `FIGICODE_TAG_NAME` | 65_061 |
+
+- Also delete their `Crated::own` entries, their `ROW_STATED_*` bits, and
+  their field entries in `config/fix/fields/000000650.json` and
+  `components/fixmsg.json`. The tags are retired, not reused.
+- `fixmsg` gains one `securityids` column instead.
+- After that, `#ISINCODE` is an unmapped name, and this rule is what keeps
+  its ISIN.
+
+**Rule.** After the builder has resolved every field, each **top-level,
+unmapped** field (tag zero: an unknown name, a `#`-marked name, or an unknown
+tag) whose name names an identifier scheme becomes a stated `securityids`
+entry:
+
+- **Name matching.** It lives in `securityid.rs`, as
+  `SecType::from_field_name(&str) -> Option<SecType>`, with one table and no
+  regular expression.
+  - Strip a leading `#`, then fold the way names fold: ASCII
+    case-insensitive, with `_`, `-` and spaces ignored.
+  - Accept `[SECURITY]` + *alias* + `[CODE | ID | NUMBER]`, where *alias* is
+    any `SecType` alias: `ISIN`, `CUSIP`, `SEDOL`, `FIGI`, `BLOOMBERG`,
+    `BBG`, `RIC`, `WKN`, `VALOR`, `VALOREN`, `QUIK`, `LEI`, and the rest of
+    the key table.
+  - So `ISINCODE`, `isin_code`, `SecurityISIN`, `FIGI`, `BloombergCode`,
+    `RICCode` and `ValorNumber` all match.
+  - `SecurityID`, `SecurityAltID` and every other dictionary name never
+    reach this rule, because they are mapped.
+- **Not identifiers.** `TICKER`, `SYMBOL` and `SYMBOLTICKER` are not
+  `securityids`; `ticker` owns them. Neither is anything with a
+  `LEG`/`UNDERLYING`/`CONTRA`/`RELATED`/`BENCHMARK` prefix: those describe
+  another instrument. A name for a key with no FIX code (a venue key) is not
+  matched by default; it stays a plain unmapped field (see open decision 6).
+- **Top level only.** A field inside a repeating group describes that
+  occurrence's instrument, not the message's, and is never read.
+- **Value.** The value is trimmed of padding and validated by the matched
+  key (`SecType::validate_code`: check digits, width, Bloomberg's case and
+  spaces kept).
+  - An invalid value adds nothing to `securityids`. The field stays in the
+    row as it arrived, and the refusal is recorded in the message's
+    anomalies, as the builder records any value that will not type.
+  - An empty value, or a null-like one (`null`, `none`, `[n/a]`), adds
+    nothing and records nothing.
+- **Precedence.** It is a stated source, not a derived one: the message said
+  it. It ranks after the primary `SecurityID`/`SecurityIDSource` and after
+  `secaltids`, and before anything derived. The same `(key, code)` stated in
+  two places is one entry. A different code under the same key is a second
+  entry under decision 2's `(key, code)` uniqueness, never a silent
+  overwrite.
+- **Writes.** `latest::sync_security_id(msg, code, value)` also removes an
+  unmapped field that states the same key, so after a set or a clear the
+  message states that key in exactly one place (`48`, or `secaltids`). The
+  unmapped field is never rewritten in place, and a write never creates one.
+- **Wire and digest.** The unmapped field re-emits exactly as it arrived,
+  like every unknown field today. Its `securityids` entry is a digest input
+  like any stated entry, and the rebuild covers the identity change.
+- **Registry and embedded rules.** These entries are stated, so
+  `SecurityIdRegistry` learns from them, and `securityid::embedded` derives
+  from an ISIN that came this way.
+- **Tests:**
+  - The shipped capture line `…#CFICODE=ESVTFR|#ISINCODE=CH0012221716|
+    #LASTMKT=XSWX…` gives `ISIN:CH0012221716` stated and `VALOR:1222171`
+    derived, with `cficode` `ESVTFR` and `miccode` `XSWX` as before.
+  - `isin_code=US0378331005` gives `ISIN` and derived `CUSIP:037833100`.
+  - `#ISINCODE=US0378331006` (bad check digit) gives nothing, records an
+    anomaly, and the field still re-emits.
+  - `LegISIN=…` and a `#ISINCODE` inside a group give nothing.
+  - `#TICKER=AAPL` gives nothing in `securityids`.
+  - `22=4|48=US0378331005|#ISINCODE=US0378331005` gives one entry.
+  - `set` ISIN on a message carrying only `#ISINCODE` writes `secaltids`,
+    removes `#ISINCODE`, and the wire shows the new value once.
+
 ### `miccode`: `SecurityExchange`, then `LastMkt`, then `ExDestination`
 
 Today `FixMsg` derives the MIC in `rust/src/fix/msg.rs` (the market-facts
@@ -760,6 +850,12 @@ Run after A is released as Yggdryl `X.Y.Z`.
      `tradable`/`marketoperationid`. The `executions` list keeps the full
      operation row.
    - `ticker` replaces `symbolticker` in both schemas.
+   - `fixmsg.json` loses `isincode`, `cusipcode`, `sedolcode`,
+     `bloombergcode` and `figicode`, and gains `securityids`. Update
+     `docs/pipeline/tasks/parse-fix-raw.md` (its "normalized code columns"
+     line) and any dbt model reading `isincode` to read
+     `securityids['ISIN']`. The sample captures' `#ISINCODE` must still land
+     an ISIN, through the unmapped-field rule.
    - Regenerate `schemas/rekep/fixmsg.json` too. It gains the six lifted FX
      columns (`lastspotrate`, `lastforwardpoints`, `bidspotrate`,
      `bidforwardpoints`, `offerspotrate`, `offerforwardpoints`), so
