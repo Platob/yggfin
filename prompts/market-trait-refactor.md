@@ -251,7 +251,8 @@ and every write goes back into them with the correct code-set value.
 
 **Target:**
 
-- **One key-to-code table.** `SecType`'s alias table (see below) maps each
+- **One key-to-code table**, in `rust/src/securityid.rs`. `SecType`'s alias
+  table maps each
   canonical key to its `SecurityIDSource` value. Both 22 and 456 declare
   `FIX:codeset: securityidsourcecodeset`, whose 33 values are `1`–`9` and
   `A`–`Y`. Key choices:
@@ -279,8 +280,8 @@ and every write goes back into them with the correct code-set value.
     every key one code, and every code-set name must read to its key. A new
     code in a registry update then fails loudly instead of silently mapping
     to nothing.
-  - `derive_market` and the setters use this table. No literal source code is
-    left anywhere else in `fix/`.
+  - `derive_market` and the setters call `SecType::fix_source` and
+    `SecType::from_fix_source`. No literal source code is left in `fix/`.
 - **Reading.** `FixMsg::get_securityids` is built once per settle from the
   stated FIX content: the primary `(22, 48)` plus every `secaltids`
   occurrence `(456, 455)`.
@@ -295,8 +296,8 @@ and every write goes back into them with the correct code-set value.
     CUSIP the message stated is a `CUSIP` entry like any other. That changes
     `securityids` and the digest for CUSIP/SEDOL rows, which the rebuild
     covers.
-- **Derived entries never reach the wire.** The embedded-CUSIP rule and the
-  per-ISIN `InstrumentCodes::enrich` fill are derived, not stated. They live
+- **Derived entries never reach the wire.** `securityid::embedded` and the
+  per-ISIN `SecurityIdRegistry::enrich` fill are derived, not stated. They live
   in a derived overlay on the event, merged into what `get_securityids`
   answers. They are never written to `48`/`22`/`secaltids`, never
   re-emitted, and never part of the arrival record. This is the rule the
@@ -445,6 +446,56 @@ are row fields. Delete the map.
 - **Digest.** The map was never a digest input, so deleting it moves no
   identity. The Arrow schema change still renumbers field ids (see Contract).
 
+### `rust/src/securityid.rs`: one module for every security-ID interop
+
+Everything that turns one security identifier into another, or into and out
+of FIX, lives in one new module. Nothing else in `graph/` or `fix/` keeps its
+own copy.
+
+| Moves in | From |
+| --- | --- |
+| `SecType`, `SecurityId`, `SecurityIds` (below) | new |
+| The key-to-`SecurityIDSource` table and its code-set agreement test | the `FixMsg` securityids section |
+| `embedded_cusip` (a US or Canadian ISIN carries its CUSIP in positions 3–11) | `graph/instrument.rs` |
+| The ISIN-keyed registry `InstrumentCodes`: its `Association` learning, budget (`MAX_REGISTRY_BYTES`, `ENTRY_CHARGE`, `MAX_INSTRUMENTS`) and `enrich` | `graph/instrument.rs` |
+| The `internals` test wrapper (`lib.rs` re-exports it as `graph_instrument`) | `graph/instrument.rs` |
+
+- **Delete `graph/instrument.rs`.** Rename the registry to
+  `SecurityIdRegistry`, still `pub(crate)`, still one per ordered lifecycle,
+  never per codec. `fix/enrich.rs` imports it from `crate::securityid`.
+  Re-export the internals wrapper as `security_id`, drop `graph_instrument`,
+  and move `rust/tests/graph/instrument.rs` to `rust/tests/securityid.rs`.
+- **Key by ISIN, learn every key.** The registry is keyed by
+  `SecurityIds::get("ISIN")`. Today it learns four fixed fields (`cusip`,
+  `sedol`, `bloomberg`, `figi`). Instead it learns an `Association` per
+  `SecurityId` key the event states, so a RIC, a WKN or a venue key is
+  learned and filled the same way. The CFI association stays beside it.
+  - The ambiguity rule is unchanged: two different codes under one key for
+    one ISIN makes that key ambiguous, and it never fills again. There is no
+    majority vote.
+  - Re-derive `ENTRY_CHARGE` for a variable key set. Keep the
+    compile-time asserts, and cap keys per instrument so the charge stays an
+    upper bound.
+- **One place for embedded identifiers.** `embedded_cusip` becomes
+  `securityid::embedded(isin: &IsinCode) -> impl Iterator<Item = SecurityId>`.
+  Today it yields only the US/CA CUSIP rule, byte for byte, including the
+  check-digit guard. The slim `fill_market` and `MarketEventData` (the two
+  callers in `graph/element.rs` and `graph/event.rs`) call it. Other national
+  numbers an ISIN carries, such as a GB/IE SEDOL or a DE WKN, are open
+  decision 7; do not add them silently.
+- **FIX interop lives here, not in `fix/`.** `SecType::fix_source(&self) ->
+  Option<&'static str>` and `SecType::from_fix_source(&str) -> SecType` are
+  the only code-to-key translation. `derive_market`, the setters and
+  `latest::sync_security_id` in `fix/` call them and hold no literals.
+  `fix/` keeps only what touches the message: reading `48`/`22`/`secaltids`
+  and writing them back.
+- **Derived stays derived.** What the registry and `embedded` fill goes to
+  the event's derived overlay. On a `FixMsg` it never reaches `48`, `22`,
+  `secaltids` or the wire.
+- **Bindings.** Python and Node expose `SecurityId`, `SecurityIds` and the
+  key table from one module each (`yggdryl.securityid` and its Node
+  equivalent), redirecting into this file. The registry stays internal.
+
 ### `SecType`: an open string key
 
 - `SecType` is a validated string, `code_leaf!`-style over `SmolStr`: ASCII,
@@ -461,8 +512,9 @@ are row fields. Delete the map.
 
   Names fold the way `Side::from_spelling` folds, and wire codes do not fold.
   An unknown key is kept as written, upper-cased. One table holds the aliases,
-  in `rust/src/`. It is the key-to-code table in the `FixMsg` securityids
-  section, and a test pins it to the shipped `securityidsourcecodeset`.
+  in `rust/src/securityid.rs`. It is the key-to-code table shown in the
+  `FixMsg` securityids section, and a test pins it to the shipped
+  `securityidsourcecodeset`.
 - `SecType::validate_code(&str)` dispatches the known keys to the existing
   validators (`IsinCode`, `CusipCode`, `SedolCode`, `FIGICode`,
   `BloombergCode`). Any other key checks only ASCII text up to the code's max
@@ -508,10 +560,10 @@ are row fields. Delete the map.
 - `Deref<Target = [SecurityId]>`, so the trait hands out `&[SecurityId]`.
 - `SecurityIds` replaces the five code fields (`isincode`, `cusipcode`,
   `sedolcode`, `bloombergcode`, `figicode`).
-- Fold the ISIN-to-CUSIP rule from `instrument::embedded_cusip` into the slim
-  `fill_market` as an `insert`. On `FixMsg`, that insert goes to the derived
-  overlay, never to the FIX fields (see the `FixMsg` securityids section). `InstrumentCodes::enrich` reads and writes
-  `SecurityIds`.
+- The slim `fill_market` inserts what `securityid::embedded` yields. On a
+  `FixMsg`, that insert goes to the derived overlay, never to the FIX fields.
+  `SecurityIdRegistry::enrich` reads and writes `SecurityIds`. Both live in
+  `securityid.rs`.
 - Digest: feed the ids in sorted order as length-prefixed `key` then `code`,
   so the digest ignores insertion order and `AB`+`C` never collides with
   `A`+`BC`.
@@ -669,3 +721,6 @@ Run after A is released as Yggdryl `X.Y.Z`.
 6. A key with no `SecurityIDSource` code (a venue's own key) set on a
    `FixMsg`: keep it in the event overlay only, not on the wire (default), or
    refuse it?
+7. `securityid::embedded`: keep only the US/CA CUSIP rule (default), or also
+   derive a GB/IE SEDOL (`GB00` + 7-character SEDOL + check digit), a DE WKN
+   and a CH Valor from the ISIN, each check-digit guarded?
