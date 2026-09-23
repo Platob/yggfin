@@ -73,8 +73,9 @@ pub trait MarketOperation: Market {
     fn get_marketoperationid(&self) -> Option<i32>;
     fn get_tif(&self) -> Option<&TimeInForce>;    // the crate's `TimeInForce`, not a String
     fn get_tradable(&self) -> Option<bool>;
-    fn get_accountid(&self) -> Option<&str>;      // the account the operation is booked to
-    fn get_userid(&self) -> Option<&str>;         // the user who acted on it
+    fn get_accountids(&self) -> &IdMap;           // source key → account, sorted by key
+    fn get_userids(&self) -> &IdMap;              // source key → user, sorted by key
+    // plus `accountids_mut` / `userids_mut`
     fn get_bid(&self) -> Option<&Lane>;            // Lane { price, spotrate, forwardpoints, currency, quantity, unit }
     fn get_ask(&self) -> Option<&Lane>;
     // A matching `set_*` for each.
@@ -1045,7 +1046,9 @@ own copy.
 
 ### `SecurityIds`: a sorted map from key to code
 
-`SecurityIds` is a map with **one code per key**, kept sorted by key. The
+`SecurityIds` is a map with **one code per key**, kept sorted by key. It is
+built on the shared `IdMap` container (see `MarketOperation::accountids`),
+with key and code validation added. The
 key is the `SecType` (`ISIN`, `BLOOMBERG`, `RIC`, a venue key), and the value
 is the code. Two codes under one key are two statements competing for one
 fact, and one of them wins by the rules below. They never sit side by side.
@@ -1163,73 +1166,116 @@ existing alias mechanism, not a new one:
   `ORDERID`, because their `orderid` and `crosscode` now fill. None
   in `ulbridge.log` do. Other captures are covered by the rebuild.
 
-### `MarketOperation::accountid` and `userid`
+### `MarketOperation::accountids` and `userids`: sorted maps
 
-Two operation facts: the **account** an order, quote or execution is booked
-to, and the **user** who acted on it. A book never carries them; a
-`Book`'s executions do. Both are `Option<SmolStr>` on the operation holders,
-with a getter and a setter each on `MarketOperation`.
+Two operation facts: the **accounts** an order, quote or execution is
+booked to, and the **users** who acted on it. A message often states
+several of each at once. The Holcim flow in `ulbridge.log` states:
+- accounts `ACCOUNT=PBRK6_EDA` and `#OMSDEALERACCOUNT=PBRK6`;
+- users `#OMSUSERID=trader1`, entering trader `TRADER2` and executing trader
+  `trader1`.
 
-**Fill rules**, derived in `FixMsg::derive_market` under the `forced` rule.
-Each is a ladder: the first non-empty source wins, and a value stated on the
-row itself (a `ROW_STATED_*` bit, as for the other facts) wins over the
-ladder. The sources come from what `ulbridge.log` actually carries:
+So each fact is a **map from the source that stated it to its value**,
+sorted by key, not one value picked by a ladder. A book never carries them;
+a `Book`'s executions do.
 
-| Step | `accountid` source | Log example |
+**One container: `IdMap`.**
+- Factor the sorted map out of `SecurityIds` into one type, `IdMap` in
+  `rust/src/idmap.rs`, and build all three on it, so there is one sorted-map
+  implementation, not three.
+- Each entry is one `SmolStr` buffer, `[key len][key][value]`, inline up to
+  23 bytes. Entries sit in a sorted `SmallVec`, keys unique and strictly
+  byte-ordered.
+- Methods:
+  - `get(key) -> Option<&str>`;
+  - `insert` (fill only if absent);
+  - `set` (replace);
+  - `remove(key)`;
+  - `iter()` in key order;
+  - `merge(&other) -> bool`: a linear two-pointer union, where this side
+    wins on a shared key.
+- **Digest:** entries in key order, as length-prefixed key then value.
+- **Arrow:** `map<utf8, utf8>`, `keys_sorted = true`. A stored map with
+  duplicate or unsorted keys is refused on read.
+- `SecurityIds` becomes `IdMap` plus its key and code validation. It keeps
+  every behavior in its own section.
+- Keys are validated like a `SecType` key (ASCII, upper-cased, up to 32
+  bytes). Values are non-empty ASCII up to 64 bytes, trimmed of padding.
+  The null-like spellings (`null`, `none`, `[n/a]`) add nothing.
+
+**Keys and sources.** `FixMsg::derive_market` inserts every source a message
+states, under the `forced` rule. A value stated on the row itself wins, and
+insertion order does not matter because the map is sorted.
+
+| `accountids` key | Source | Log example |
 | --- | --- | --- |
-| 1 | `Account(1)` | `ACCOUNT=PBRK6_EDA` (24 named bodies), `1=PBRK6_EDA`, `client`, `ACCT1` |
-| 2 | `Parties` occurrence with `PartyRole` `24` (CustomerAccount) | `customeraccount` → `PBRK6_EDA` |
-| 3 | the bridge's dealer account, field `omsdealeraccount` | `#OMSDEALERACCOUNT=PBRK6` |
+| `ACCOUNT` | `Account(1)` | `PBRK6_EDA` (24 named bodies), `client`, `ACCT1` |
+| `CUSTOMERACCOUNT` | `Parties` occurrence with `PartyRole` `24` | `PBRK6_EDA` |
+| `OMSDEALERACCOUNT` | the bridge field `omsdealeraccount` | `PBRK6` |
 
-| Step | `userid` source | Log example |
+| `userids` key | Source | Log example |
 | --- | --- | --- |
-| 1 | the bridge's OMS user, field `omsuserid` | `#OMSUSERID=trader1` |
-| 2 | `Parties` occurrence with `PartyRole` `36` (EnteringTrader) | `89680`, `TRADER2`, `0101` |
-| 3 | `Parties` occurrence with `PartyRole` `12` (ExecutingTrader) | `trader1`, `89680` |
-| 4 | `SenderSubID(50)` | `50=89680` |
-| 5 | `OnBehalfOfSubID(116)` | `116=trader3` |
+| `OMSUSERID` | the bridge field `omsuserid` | `trader1` |
+| `ENTERINGTRADER` | `Parties` occurrence with `PartyRole` `36` | `89680`, `TRADER2`, `0101` |
+| `EXECUTINGTRADER` | `Parties` occurrence with `PartyRole` `12` | `trader1`, `89680` |
+| `SENDERSUBID` | `SenderSubID(50)` | `89680` |
+| `ONBEHALFOFSUBID` | `OnBehalfOfSubID(116)` | `trader3` |
 
+- **Key spelling.** A FIX field's key is its dictionary name, upper-cased.
+  A party role's key is its code-set name, upper-cased (`24` →
+  `CUSTOMERACCOUNT`). A bridge field's key is its declared name.
+  - The mapping from source to map and key is **dictionary data**, not
+    code: a `FIX:idmap` property on each source field, such as
+    `{"map": "userids", "key": "OMSUSERID"}`, and on the `Parties` role
+    codes that count.
+  - Adding a source (for example `ULLINK.CLIENTID`, or one feed's tags
+    `9435`/`9513` once its tag list confirms them) is then a dictionary
+    edit.
 - **Not sources, on purpose.**
   - `TECH.ACCOUNT` (`HIGH_TOUCH`) and `TECH.CLIENTID` (`OMSX1`) are routing
-    tags, not the booked account or a person.
-  - `USERDISPLAYNAME` is a display label (`trader1)` appears with a stray
-    parenthesis), not an ID.
-  - Party role `3` (ClientID) is the client firm, not a user.
-  - `ULLINK.CLIENTID` equals `#OMSUSERID` on all 7 lines that carry it,
-    but its name says client. Leave it out unless you say otherwise.
-  - The custom tags `9435` and `9513` (`trader1`) are one feed's
-    user-defined tags, and a tag cannot be a `FIX:names` alias. Map them
-    only if that feed's tag list confirms them.
-- **The bridge fields are declared in the dictionary**, like the
-  instrument-ID fields:
-  - `omsdealeraccount` and `omsuserid`, nullable `utf8`, in
-    `config/fix/fields/000000650.json`, with tags in the crate's range;
-  - not projected as `fixmsg` columns, so they stay in `fixentries`;
-  - the ladder reads them by name, and no string literal of a bridge's
-    spelling appears in `derive_market`.
+    tags.
+  - `USERDISPLAYNAME` is a display label.
+  - Party role `3` (ClientID) is the client firm.
+  - `ULLINK.CLIENTID` and the custom tags stay out until you add them.
+- **Bridge fields.** `omsdealeraccount` and `omsuserid` are dictionary
+  fields (nullable `utf8`, in `config/fix/fields/000000650.json`, tags in
+  the crate's range). They are not projected as `fixmsg` columns, so they
+  stay in `fixentries`, like the instrument-ID fields.
 - **Party roles are read as codes** (`24`, `36`, `12`). The parser already
-  normalizes `PARTYROLE=customeraccount` / `enteringtrader` /
-  `executingtrader` to them; the probe shows `partyrole: 36` and `12` on
-  this capture. A party occurrence whose role stayed a name or empty (the
-  probe shows `orderoriginatorsystem` → empty) is not a source. Where
-  several occurrences carry the role, the first in group order wins.
-- **Merge, follow and digest.** They behave like `tif`:
-  - **Merge:** the leading statement's value stands, else the other's.
-  - **Follow:** carried forward where an event states none, because an
-    execution belongs to its order's account and user.
-  - **Digest:** fed where stated. That moves identities only for rows that
-    carry them, which the rebuild covers.
+  normalizes `customeraccount` / `enteringtrader` / `executingtrader`, and
+  the probe shows `partyrole: 36` and `12`. An occurrence whose role stayed
+  a name or empty (the probe shows `orderoriginatorsystem` → empty) is not
+  a source. Where several occurrences carry one role, the first in group
+  order fills its key, and a differing later one is recorded as an anomaly
+  and left out.
+- **Merge and follow.** Both are `IdMap::merge`:
+  - **Merge:** on a shared key, the leading statement's value stands, and
+    keys only the other states are added.
+  - **Follow:** an execution takes every key its order stated that it does
+    not state itself, since it belongs to its order's accounts and users.
+
+  Neither ever re-sorts.
+- **Digest.** Both maps are fed in key order where non-empty. That moves
+  identities only for rows carrying them, which the rebuild covers.
+- **One value when a consumer wants one.** It is a read, not storage:
+  `IdMap::first_of(&[keys])` returns the first key present in a caller's
+  order. Document the default orders as constants:
+  - `ACCOUNT_ORDER = [ACCOUNT, CUSTOMERACCOUNT, OMSDEALERACCOUNT]`;
+  - `USER_ORDER = [OMSUSERID, ENTERINGTRADER, EXECUTINGTRADER,
+    SENDERSUBID, ONBEHALFOFSUBID]`.
 - **Tests:**
-  - `1=A|#OMSDEALERACCOUNT=B` gives `A`;
-  - a party role `24` alone gives its `PartyID`;
-  - `#OMSUSERID=u|parties role 36=v` gives `u`;
-  - only `50=s` gives `s`;
-  - an execution with neither inherits its order's values by following;
+  - `1=A|#OMSDEALERACCOUNT=B` gives `{ACCOUNT: A, OMSDEALERACCOUNT: B}`,
+    sorted;
+  - two party occurrences with role `36` keep the first, with an anomaly;
+  - merging `{ACCOUNT: A}` with `{ACCOUNT: X, CUSTOMERACCOUNT: C}` gives
+    `{ACCOUNT: A, CUSTOMERACCOUNT: C}`;
+  - an execution with no ids inherits its order's maps by following;
+  - a property test checks sortedness and uniqueness after random
+    inserts, removes and merges;
   - over `ulbridge.log`, the Holcim and Novartis order-out flows give
-    `accountid` `PBRK6_EDA` and `userid` `trader1`. Pin, per flow, the value
-    and the source step that answered, and report any flow where steps
-    disagree (for example, entering trader `TRADER2` against OMS user
-    `trader1` on the same message).
+    `accountids` `{ACCOUNT: PBRK6_EDA, OMSDEALERACCOUNT: PBRK6}` and
+    `userids` holding `OMSUSERID: trader1`, `ENTERINGTRADER: TRADER2` and
+    `EXECUTINGTRADER: trader1`. Pin the full maps per flow.
 
 ### Crated field `pluginoriginator`
 
@@ -1351,7 +1397,7 @@ no deprecated re-export, no second spelling accepted.
   - decimal columns stay `decimal128(38, 18)`.
 - The operation row (orders, quotes, executions, trades, `fixmsg`) is the
   market row plus `marketoperationid`, `tif` (`yggdryl.timeinforce`), `tradable`,
-  `accountid` and `userid` (nullable `utf8`),
+  `accountids` and `userids` (each `map<utf8, utf8>`, `keys_sorted = true`),
   and `bid`/`ask` as two nullable `struct<price, currency, quantity, unit>`
   columns.
 - Pick the `securityids` Arrow shape and state it in the schema docs.
@@ -1420,7 +1466,7 @@ Run after A is released as Yggdryl `X.Y.Z`.
      `fix.refined` is recreated with the market tables.
    - `marketevent.json` (orders, quotes, executions) takes the operation row,
      with `bid`/`ask` lane structs in place of the eight lane columns, and
-     gains `accountid` and `userid`.
+     gains `accountids` and `userids`.
 3. Field ids renumber, so `fix.refined`, `market.books`, `market.orders`,
    `market.quotes` and `market.executions` are **recreated, not evolved**.
    `fix.refined` is rebuilt from `fix.raw` first, then the market tables are
