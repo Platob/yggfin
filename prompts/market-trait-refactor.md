@@ -630,6 +630,16 @@ file:
 | MediaTek | `ISIN:TW0002454006`, `BLOOMBERG:2454 TT Equity`, `RIC:2454.TW` (from the marked `secaltids` with named sources); `miccode` `XTAI` (from the instrument key, ahead of `207`), never `TW`; `tif` `0`, not `day`; `cficode` null (was `ESXXXX`) |
 
 Also check:
+- **The `ExecBroker(76)` redirect** (verified by a probe run of today's
+  codec, keep it green):
+  - all 40 messages stating it get a `parties` occurrence with
+    `partyrole` `1` for the value (`2003103.001` on 36, `CITP` on the AE,
+    `RJEA` on 3);
+  - where the line already states that party (the 3 lines carrying both
+    `SWXCCP` and `2003103.001` as executing firms), the redirect merges
+    into the stated occurrence instead of adding a duplicate;
+  - there is no `execbroker` column, and the original stays in `fixentries`
+    as `{tag: 76, name: execbroker, value: …}` on every one of the 40 rows.
 - no line produces a `securityids` entry the message did not state, apart
   from the derived `VALOR`s;
 - `ticker` is the `SYMBOL` (`ABBN.S`, `NOVN`, `HOLN`, `1605`, `2454`),
@@ -1090,6 +1100,68 @@ existing alias mechanism, not a new one:
 - **Row IDs.** They move only for messages that stated an alias without
   `ORDERID`, because their `orderid` and `crosscode` now fill. None
   in `ulbridge.log` do. Other captures are covered by the rebuild.
+
+### Crated field `pluginoriginator`
+
+`msgpluginid` (crated `65_009`) is the plugin that **logged** a line, and
+the row header's `[…]` capture fills it. One message is logged at every hop:
+- `ULBridge`;
+- the enrichment plugins (`TECH_AddFields_OMS_X1`,
+  `MIFID_BuySideROE_Add_Fields`, …);
+- `ULFilter`;
+- the outbound session.
+
+So `msgpluginid` says where a statement was written, not where the message
+came from. Add a crated field naming the plugin the message **entered the
+bridge through**.
+
+- **Declaration.**
+  - `PLUGINORIGINATOR_TAG_NAME: (i32, &str) = (<next>, "pluginoriginator")`
+    in `fix/crated.rs`: nullable `utf8`, with a `Crated::event` entry
+    documented beside `msgpluginid`, and a field entry in
+    `config/fix/fields/000000650.json` and `components/fixmsg.json`.
+  - `<next>` is the next free tag after the highest crated tag declared
+    anywhere. The `*_TAG_NAME` constants top out at `65_064`
+    (`refrecdunix`), so check the others (`msgseqnum`, `msgdirection`, …)
+    before choosing.
+  - Retired tags (`65_020`, `65_057`, `65_058`) are never reused.
+- **Where it is read.** In `fix/ulbridge.rs`, from what the bridge states
+  about a message, first match wins:
+  1. `Message received: … from (<X> as <alias>) forwarded to (…)` gives `X`
+     (`OMS_X1_OrderOut`, `Autex_FIX42_BuySide`);
+  2. `Execution report from <X> type …` gives `X`;
+  3. a `Receiving :` line gives that line's own `msgpluginid`
+     (`OMS_X1_TradeCapture`, `OMS_X1_FIXML_In`,
+     `Virtu_TritonBlack_TradeCapture`), because the plugin receiving a frame
+     is where it entered;
+  4. otherwise null at parse. An enrichment, `RouteMessage`,
+     `PushMessage`, post-enrichment or `Sending` line does not know where
+     the message came from, and says nothing.
+
+  The patterns sit beside `ULBRIDGE_ROWHEADER`, as named constants a
+  different bridge layout replaces, not as a second header.
+- **Lifecycle.** The walk folds every hop of one event into one row. Its
+  `pluginoriginator` is the value of the statement with the **earliest**
+  `recdunix` that states one, folded the way `creaunix` folds to its
+  earliest. A later hop never overwrites it. Duplicate statements agreeing
+  on it keep it, and two different originators for one event keep the
+  earliest, with an anomaly.
+- **Not identity.** Like `msgpluginid` and the other capture facts, it is
+  provenance. It is not a digest input, not part of `msgsesseventid`, and
+  moves no `curruuid`.
+- **Bindings and docs.** A `FixMsg::pluginoriginator()` getter in Rust,
+  Python and Node. The yggfin `fixmsg.json` gains the column, and the
+  AGENTS.md sentence listing the bridge's native fields names it beside
+  `msgpluginid`.
+- **Tests** over `ulbridge.log`:
+  - the execution report received `from (OMS_X1_OrderOut as OD9EOEDJ400)`
+    has `pluginoriginator` `OMS_X1_OrderOut` on `fix.raw`, and on its
+    refined row after folding its enrichment, filter and sending hops;
+  - the `OMS_X1_TradeCapture` `Receiving :` flow gives
+    `OMS_X1_TradeCapture`;
+  - the MediaTek flow gives `Autex_FIX42_BuySide`;
+  - a `PushMessage` or `After Enrichment` line on its own gives null;
+  - pin the count of refined rows with a null originator, and report it.
 
 ### Rename the `Currency` type to `Ccy`
 
