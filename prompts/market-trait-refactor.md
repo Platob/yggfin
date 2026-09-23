@@ -69,7 +69,7 @@ pub trait Market {
 
 pub trait MarketOperation: Market {
     fn get_marketoperationid(&self) -> Option<i32>;
-    fn get_tif(&self) -> Option<&str>;
+    fn get_tif(&self) -> Option<&TimeInForce>;    // the crate's `TimeInForce`, not a String
     fn get_tradable(&self) -> Option<bool>;
     fn get_bid(&self) -> Option<&Lane>;            // Lane { price, currency, quantity, unit }
     fn get_ask(&self) -> Option<&Lane>;
@@ -102,6 +102,21 @@ pub trait MarketOperation: Market {
   `Option<Box<Lane>>` or inline, whichever the size test favours.
 - `cumqty` is a slim fact: a book level and a fill both state how much is
   done, and `leavesqty` is already slim beside it.
+- `tif` uses the crate's existing `TimeInForce` from `rust/src/timeinforce.rs`,
+  replacing `Option<String>`:
+  - Holders store `Option<TimeInForce>`, so short codes stay inline with no
+    allocation.
+  - The `tif` column in `graph/market_column.rs` becomes the
+    `yggdryl.timeinforce` extension type instead of `utf8`.
+  - `merge_operation` folds it with `CodeValue::merge_with`, like the other
+    codes.
+  - The digest keeps feeding `as_str()` bytes, so identities do not move for
+    `tif`.
+  - Do not add a second time-in-force type or a string path beside it.
+  - Its width is 8 bytes. Before settling, survey the `rust/benchmarks/fix`
+    captures and test corpora for any stated `TimeInForce(59)` wider than
+    that. A value wider than 8 must be a located error naming the field,
+    never a truncation.
 - `ticker` is a slim fact: a book is about one instrument, and a screen
   names it by its ticker.
 - Rename `symbolticker` to `ticker` everywhere: trait, holders, digest label,
@@ -273,7 +288,7 @@ Target:
     `marketoperationid` leave it;
   - decimal columns stay `decimal128(38, 18)`.
 - The operation row (orders, quotes, executions, trades, `fixmsg`) is the
-  market row plus `marketoperationid`, `tif`, `tradable`,
+  market row plus `marketoperationid`, `tif` (`yggdryl.timeinforce`), `tradable`,
   and `bid`/`ask` as two nullable `struct<price, currency, quantity, unit>`
   columns.
 - Pick the `securityids` Arrow shape and state it in the schema docs.
@@ -336,7 +351,7 @@ Run after A is released as Yggdryl `X.Y.Z`.
    - read the ISIN out of `securityids` with one macro, for example
      `security_id(securityids, 'ISIN')`.
 
-   `side` and `cumqty` stay plain columns.
+   `side`, `tif` and `cumqty` keep the same spelling in SQL.
 6. `identifiers` keeps its column. It now reflects the message type's
    `FIX:identifiers` declaration, so market data rows gain `MDReqID` and the
    others newly declared. Check the dbt models and
