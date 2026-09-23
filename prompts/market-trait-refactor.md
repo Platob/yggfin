@@ -1015,23 +1015,30 @@ fact, and one of them wins by the rules below. They never sit side by side.
 - Remove `Side` from the `family_value!` `Code` family if it no longer fits
   the `SmolStr` leaf shape. Keep it a `Scalar` variant.
 
-### `MARKETORDERID` is an alias of `OrderID(37)`
+### `MARKETORDERID` and `OMSDEALERORDERID` are aliases of `OrderID(37)`
 
-Bridges send the order's ID under their own name: `ulbridge.log` states
-`#MARKETORDERID=L9EOEDIz-00` on 12 lines. Declare it with the dictionary's
+Bridges send the order's ID under their own names. `ulbridge.log` states
+`#MARKETORDERID=L9EOEDIz-00` on 12 lines and `#OMSDEALERORDERID` on 9 of
+them. On those 9 lines the two carry the same value, and `ORDERID` is also
+stated, with a different value. Declare it with the dictionary's
 existing alias mechanism, not a new one:
 
 - In `config/fix/fields/000000000.json`, give `orderid` (tag `37`)
-  `"FIX:names": ["marketorderid"]`, as 43 fields already declare alternate
-  names (`tradetype` for `418`, `cardissno` for `491`). The name folds like
-  every other name, so `MARKETORDERID`, `MarketOrderID`, `market_order_id`
-  and `#MARKETORDERID` all resolve to `37`.
+  `"FIX:names": ["marketorderid", "omsdealerorderid"]`, as 43 fields
+  already declare alternate names (`tradetype` for `418`, `cardissno` for
+  `491`). The names fold like every other name, so `MARKETORDERID`,
+  `market_order_id`, `#OMSDEALERORDERID` and `OmsDealerOrderId` all resolve
+  to `37`.
 - **The alias is a fallback, never a rival.** In all 12 lines the message
   *also* states `ORDERID` with a different value (`00026877712XOEA0` beside
   `L9EOEDIz-00`). `OrderID` leads `crosscode`, so a naive alias would move
   every chain. The builder therefore:
-  - uses the alias value for `37` only when no value arrives under the
+  - uses an alias value for `37` only when no value arrives under the
     canonical name or tag `37` itself;
+  - when several aliases arrive and the canonical does not, takes the first
+    in `FIX:names` order (`marketorderid`, then `omsdealerorderid`), not in
+    message order. The others stay as their own fields, whether or not they
+    agree;
   - keeps the alias value as an unmapped child under its own name when both
     arrive. It re-emits unchanged, is not an anomaly, never overwrites `37`,
     and never becomes a second `37`.
@@ -1048,12 +1055,16 @@ existing alias mechanism, not a new one:
   because anything special-cases it.
 - **Tests:**
   - `MARKETORDERID=X` alone gives `orderid` `X` and `crosscode` `X`;
-  - `ORDERID=A|MARKETORDERID=B` gives `orderid` `A`, `crosscode` `A`, and a
-    `marketorderid` child `B`;
+  - `OMSDEALERORDERID=Y` alone gives `orderid` `Y`;
+  - `OMSDEALERORDERID=Y|MARKETORDERID=X` (no `ORDERID`) gives `orderid` `X`,
+    with an `omsdealerorderid` child `Y`;
+  - `ORDERID=A|MARKETORDERID=B|OMSDEALERORDERID=B` gives `orderid` `A`,
+    `crosscode` `A`, and both alias children `B`;
   - over `ulbridge.log`, every `orderid` and `crosscode` is unchanged from
-    today, and the 12 `#MARKETORDERID` values survive as their own field.
-- **Row IDs.** They move only for messages that stated `MARKETORDERID`
-  without `ORDERID`, because their `orderid` and `crosscode` now fill. None
+    today, and the 12 `#MARKETORDERID` and 9 `#OMSDEALERORDERID` values
+    survive as their own fields.
+- **Row IDs.** They move only for messages that stated an alias without
+  `ORDERID`, because their `orderid` and `crosscode` now fill. None
   in `ulbridge.log` do. Other captures are covered by the rebuild.
 
 ### Rename the `Currency` type to `Ccy`
