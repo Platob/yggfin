@@ -207,6 +207,137 @@ Lift the six FX tags the same way:
   walk reads them per entry onto each level.
 - Python and Node expose the six on the `lifted` view beside `lastpx`.
 
+### `FixMsg` securityids: backed by `SecurityID` and `SecurityAltID`
+
+`FixMsg` already stores instrument identifiers in FIX's own fields. Do not
+add a second store. `Market::get_securityids` on `FixMsg` reads those fields,
+and every write goes back into them with the correct code-set value.
+
+**What exists today** (`rust/src/fix/msg.rs`, `rust/src/fix/latest.rs`):
+
+- `FixMsg::identifier(sources, read)` reads the primary `SecurityID(48)` where
+  `SecurityIDSource(22)` names one of `sources`, then each `secaltids`
+  occurrence (`SecurityAltID(455)` / `SecurityAltIDSource(456)`). Each
+  candidate is validated on its own, so a bad primary falls through to an
+  alternate.
+- `derive_market` fills `isincode` (`"4"`), `bloombergcode` (`"A"`) and
+  `figicode` (`"S"`) through it. `FixMsg::fill_market` then clears CUSIP and
+  SEDOL unless the row stated them (`ROW_STATED_CUSIP`/`ROW_STATED_SEDOL`).
+- The setters (`set_isincode`, …) call
+  `set_secaltid(code, value)` → `latest::sync_group_occurrence(self,
+  "secaltids", 456, code, 455, value)`. That keeps one occurrence per
+  source, rewrites `NoSecurityAltID(454)`, and spells both values through
+  `typed_spelling` against the registry.
+- Shipped derivations also touch these tags (`fix/constants.rs`):
+  - `22`: guesses the source by casting `48` as ISIN, then CUSIP, then SEDOL;
+  - `48`: taken from the `secaltids` ISIN;
+  - `55`: `SecurityID` where the source is `8` or `A`.
+
+**Defects to fix while replacing it:**
+
+1. **A stale primary shadows the write.** A setter writes only `secaltids`.
+   If `22` already names that source, `48` keeps the old code, and the reader
+   checks the primary first, so the next settle answers the old value. The
+   wire also emits both.
+2. **Clearing leaves the primary.** `set_*(None)` removes the alternate
+   occurrence, but the primary `48`/`22` still states the code.
+3. **The counter may outlive its group.** Reading `sync_group_occurrence`,
+   removing the last occurrence rewrites the counter from
+   `occurrences.len()`, which is `454=0`, beside an empty group. Confirm this
+   with a test first. FIX wants the counter and the group both absent.
+4. **Codes are hard-coded twice.** `"4"`, `"1"`, `"2"`, `"A"` and `"S"`
+   appear in the setters and in `derive_market`, separately from the
+   registry's `securityidsourcecodeset`.
+
+**Target:**
+
+- **One key-to-code table.** `SecType`'s alias table (see below) maps each
+  canonical key to its `SecurityIDSource` value. Both 22 and 456 declare
+  `FIX:codeset: securityidsourcecodeset`, whose 33 values are `1`–`9` and
+  `A`–`Y`. Key choices:
+
+  | Code | Key | Code | Key | Code | Key |
+  | --- | --- | --- | --- | --- | --- |
+  | `1` | `CUSIP` | `C` | `DUTCH` | `P` | `REDPAIR` |
+  | `2` | `SEDOL` | `D` | `VALOR` | `Q` | `CFTC` |
+  | `3` | `QUIK` | `E` | `SICOVAM` | `R` | `ISDACOMMODITY` |
+  | `4` | `ISIN` | `F` | `BELGIAN` | `S` | `FIGI` |
+  | `5` | `RIC` | `G` | `COMMON` | `T` | `LEI` |
+  | `6` | `ISOCCY` | `H` | `CLEARINGHOUSE` | `U` | `SYNTHETIC` |
+  | `7` | `ISOCTRY` | `I` | `FPMLSPEC` | `V` | `FIM` |
+  | `8` | `EXCHSYMB` | `J` | `OPRA` | `W` | `INDEX` |
+  | `9` | `CTA` | `K` | `FPMLURL` | `X` | `UMTF` |
+  | `A` | `BBGSYMB` | `L` | `LOC` | `Y` | `DTI` |
+  | `B` | `WKN` | `M` | `MKTASSIGNED` | | |
+  | | | `N` | `REDENTITY` | | |
+
+  - The code set's own names (`ISINNumber`, `RICCode`,
+    `FinancialInstrumentGlobalIdentifier`, …) are aliases that
+    `SecType::read` accepts.
+  - A test loads the shipped registry and checks that the table and
+    `securityidsourcecodeset` agree exactly. Every code must have one key,
+    every key one code, and every code-set name must read to its key. A new
+    code in a registry update then fails loudly instead of silently mapping
+    to nothing.
+  - `derive_market` and the setters use this table. No literal source code is
+    left anywhere else in `fix/`.
+- **Reading.** `FixMsg::get_securityids` is built once per settle from the
+  stated FIX content: the primary `(22, 48)` plus every `secaltids`
+  occurrence `(456, 455)`.
+  - Each source code is read through the table, and each code validated by
+    `SecType::validate_code`. An invalid code is skipped; it is not refused
+    and not guessed.
+  - An occurrence with a source outside the code set keeps its raw source
+    text as its key, upper-cased, so nothing the message stated is dropped.
+  - Duplicates collapse under the `SecurityIds` invariant. The primary and an
+    alternate stating the same `(key, code)` is one entry.
+  - The CUSIP and SEDOL special case in `FixMsg::fill_market` goes away: a
+    CUSIP the message stated is a `CUSIP` entry like any other. That changes
+    `securityids` and the digest for CUSIP/SEDOL rows, which the rebuild
+    covers.
+- **Derived entries never reach the wire.** The embedded-CUSIP rule and the
+  per-ISIN `InstrumentCodes::enrich` fill are derived, not stated. They live
+  in a derived overlay on the event, merged into what `get_securityids`
+  answers. They are never written to `48`/`22`/`secaltids`, never
+  re-emitted, and never part of the arrival record. This is the rule the
+  `derive_market` docs already state for every derived fact.
+- **Writing.** `insert`, `remove`, `remove_key` and `set_securityids` on a
+  `FixMsg` go through one function,
+  `latest::sync_security_id(msg, code, value: Option<&str>)`:
+  - **Where the code lives:** if the primary `22` names `code`, write `48` in
+    place. Otherwise, write the `secaltids` occurrence for `code` through the
+    existing `sync_group_occurrence`. A value is never written in both
+    places.
+  - **Clearing:** `None` removes the primary `48` and `22` when they name
+    `code`, and the matching alternate occurrence. When the group ends up
+    empty, drop the group and `NoSecurityAltID(454)` together.
+  - **New codes:** a first write for a code the message does not state goes
+    to `secaltids`, never to the primary, so a message's primary identifier
+    is never replaced by a setter.
+  - **Spelling:** each value goes through `typed_spelling` against the
+    registry, so a code-set-typed column holds its declared type.
+  - **Keys without a code:** a key with no `SecurityIDSource` value (a
+    venue's own key) has nowhere to go in FIX. It is kept in the event's
+    overlay, and a debug assertion plus a test cover it. It never takes a
+    private tag or an invented code. See open decision 6.
+  - **Flags:** every write sets `forced` and the matching row-stated bit, as
+    the setters do today, and invalidates the cached view.
+- **Derivations.** Keep derivations `22`, `48` and `55` as they are. They
+  run before the view is built, so a `22` guessed from a bare `48` gives a
+  keyed entry. Add a test for that case.
+- **Tests:**
+  - A message with `22=4|48=US0378331005`, then `set` ISIN
+    `US5949181045`: `48` changes in place, no alternate occurrence is added,
+    and the wire, the digest and `get_securityids` all agree.
+  - The same message with ISIN removed: both `48` and `22` are gone.
+  - `454=2` with `ISIN` and `FIGI`, then removing both: no group and no
+    `454`.
+  - Inserting `RIC` with no primary: `454=1|455=…|456=5`.
+  - The embedded CUSIP of a US ISIN appears in `get_securityids` but never
+    on the wire.
+  - A `456` value outside the code set survives a round trip.
+  - The code-set agreement test above.
+
 ### `miccode`: `SecurityExchange`, then `LastMkt`, then `ExDestination`
 
 Today `FixMsg` derives the MIC in `rust/src/fix/msg.rs` (the market-facts
@@ -330,7 +461,8 @@ are row fields. Delete the map.
 
   Names fold the way `Side::from_spelling` folds, and wire codes do not fold.
   An unknown key is kept as written, upper-cased. One table holds the aliases,
-  in `rust/src/`, beside the code set it mirrors.
+  in `rust/src/`. It is the key-to-code table in the `FixMsg` securityids
+  section, and a test pins it to the shipped `securityidsourcecodeset`.
 - `SecType::validate_code(&str)` dispatches the known keys to the existing
   validators (`IsinCode`, `CusipCode`, `SedolCode`, `FIGICode`,
   `BloombergCode`). Any other key checks only ASCII text up to the code's max
@@ -377,7 +509,8 @@ are row fields. Delete the map.
 - `SecurityIds` replaces the five code fields (`isincode`, `cusipcode`,
   `sedolcode`, `bloombergcode`, `figicode`).
 - Fold the ISIN-to-CUSIP rule from `instrument::embedded_cusip` into the slim
-  `fill_market` as an `insert`. `InstrumentCodes::enrich` reads and writes
+  `fill_market` as an `insert`. On `FixMsg`, that insert goes to the derived
+  overlay, never to the FIX fields (see the `FixMsg` securityids section). `InstrumentCodes::enrich` reads and writes
   `SecurityIds`.
 - Digest: feed the ids in sorted order as length-prefixed `key` then `code`,
   so the digest ignores insertion order and `AB`+`C` never collides with
@@ -533,3 +666,6 @@ Run after A is released as Yggdryl `X.Y.Z`.
 4. `Unit` max width.
 5. `Lane` storage: boxed (small operations) or inline (lane-heavy quotes)?
    Decide it by the size test.
+6. A key with no `SecurityIDSource` code (a venue's own key) set on a
+   `FixMsg`: keep it in the event overlay only, not on the wire (default), or
+   refuse it?
