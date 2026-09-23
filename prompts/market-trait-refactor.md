@@ -528,7 +528,8 @@ own copy.
     - a DE ISIN not starting `DE000`, or whose WKN part contains `I` or
       `O`, yields nothing;
     - any ISIN whose own check digit fails yields nothing;
-    - an element stating `SEDOL:B000000` keeps it over the embedded one.
+    - `GB0002634946` on an element stating `SEDOL:B000009` keeps
+      `B000009`, not the embedded `0263494`.
 - **FIX interop lives here, not in `fix/`.** `SecType::fix_source(&self) ->
   Option<&'static str>` and `SecType::from_fix_source(&str) -> SecType` are
   the only code-to-key translation. `derive_market`, the setters and
