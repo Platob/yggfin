@@ -535,8 +535,8 @@ from it naively.
     `ISIN:CH0012214059`, `miccode` `XSWX` and `currency` `CHF`;
   - with `15=EUR` stated, the currency stays `EUR`;
   - a stated ISIN is never replaced;
-  - `ulbridge.log` is unchanged, because every message carrying the key
-    already has all three.
+  - over `ulbridge.log`, count the messages where the key fills anything,
+    and pin that count.
 
 ### What `ulbridge.log` requires
 
