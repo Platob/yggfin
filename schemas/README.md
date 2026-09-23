@@ -7,10 +7,28 @@ the published tables. Runtime constructors remain the source of truth.
 | --- | --- | --- | ---: |
 | `rekep/message.json` | `Message.into_field()` | `logs.messages` | 12 |
 | `rekep/fixmsg.json` | `fix_message_field()` | `fix.raw`, `fix.refined` | 128 |
+| `rekep/book.json` | `book_field()` | `market.books` | 53 |
+| `rekep/marketevent.json` | `market_event_field()` | `market.orders`, `market.quotes`, `market.executions` | 50 |
 
 `fixmsg.json` is named **FixMsg**. It is generated from the live FIX registry,
 then narrowed exactly as the Iceberg boundary narrows it. It is reviewed
 output and is never edited as an alternate schema.
+
+## Market shapes
+
+`rekep.market.book_field()` derives Book from the native empty book reader's
+schema. Its required `bid` and `ask` structs retain `live` depth and `deltas`;
+its required `executions` list contains already decomposed execution events.
+`market_event_field()` derives the shared event shape from that execution
+child. Order and quote deltas project onto the same shape after selection by
+native `operationkind`; FIX `marketoperationid` is not the child-kind selector.
+
+All market fields declare native `curruuid` as key, hour(`currunix`) as
+partition, and `currunix, seqnum, curruuid` as sort order. The storage boundary
+recursively narrows nanosecond timestamps to microseconds, UUIDs to fixed
+bytes and semantic extensions to storage types. Unsigned codes are signed
+views of the same bits. Exact decimal prices and quantities remain decimals.
+The storage row therefore does not promise a nanosecond-exact native round trip.
 
 ## Where the FIX row comes from
 
@@ -48,7 +66,7 @@ These files are not alternate implementations. Runtime code builds the field,
 `iceberg_contract` records its storage contract, and a review compares the
 result with the checked-in snapshot.
 
-## Regenerate either contract
+## Regenerate the contracts
 
 ```bash
 uv run --project python rekep fields dump \
@@ -58,11 +76,21 @@ uv run --project python rekep fields dump \
 uv run --project python rekep fields dump \
   --pyclass rekep.fix:fix_message_field \
   --target schemas/rekep/fixmsg.json
+
+uv run --project python rekep fields dump \
+  --pyclass rekep.market:book_field \
+  --target schemas/rekep/book.json
+
+uv run --project python rekep fields dump \
+  --pyclass rekep.market:market_event_field \
+  --target schemas/rekep/marketevent.json
 ```
 
-## Validate either document
+## Validate the documents
 
 ```bash
 uv run --project python rekep fields load --target schemas/rekep/message.json
 uv run --project python rekep fields load --target schemas/rekep/fixmsg.json
+uv run --project python rekep fields load --target schemas/rekep/book.json
+uv run --project python rekep fields load --target schemas/rekep/marketevent.json
 ```

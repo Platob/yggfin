@@ -3,23 +3,35 @@
 `tasks/airflow/pipeline.py` declares the ready-to-run `rekep_ingestion` DAG:
 
 ```text
-parse_messages -> parse_fix_raw -> parse_fix_refined
-     |                  |                   |
-     v                  v                   v
-logs.messages       fix.raw          fix.refined
+parse_messages -> parse_fix_raw -> parse_fix_refined -> parse_books
+                                                           |
+                                                           v
+                                                      market.books
+                                                           |
+                              +----------------------------+---------------------+
+                              v                            v                     v
+                         parse_orders                 parse_quotes        parse_executions
+                              |                            |                     |
+                              v                            v                     v
+                         market.orders                market.quotes        market.executions
 ```
 
-It runs daily, and each run covers its own data interval: the operator hands
-the interval to all three tasks as their `start` and `end`, so a day's run
-reads the day's lines under `filesystem` and replaces them in all three
-tables. The DAG exposes the union of the three adjacent task documents as
-Params. A manual run can therefore replace `filesystem`, `rowheader`, `start`,
-`end`, `catalog`, `messages`, `registry`, `codec_options` or `raw` without
-creating another DAG, and a bound the run's conf names wins over the interval. `messages` and
-`raw` are named for the table each FIX stage reads, so one Params mapping
-over three documents cannot hand one stage the other's source. There is no
-`version` Param: what a message was read at is what its own `beginstring`
-said.
+The daily DAG runs seven tasks over its data interval. Adjacent task JSON
+owns defaults; shared Params include the catalog, source tables, registry,
+codec options and `snapshot_millis`. Explicit `start`/`end` in run conf win
+over the interval for book creation and its predecessors.
+
+The three event tasks wait for `parse_books`, then run independently. Their
+`upstream_task_id="parse_books"` handoff validates the parent Stage result
+and sets `books`, `start`, `end` and `snapshot_id` from its actual target,
+window and committed snapshot after generic parameter merging. This prevents
+one child from following a later head or a conflicting window. `snapshot_id`
+is not a DAG Param. Missing or malformed handoff data fails before the child
+process starts; zero is the explicit empty-source snapshot sentinel.
+
+`rekep_products` remains the optional `build_dbt` DAG triggered by the
+`fix.refined` Asset. Its SQL products are separate from `market.*`, and it can
+start independently of native book processing.
 
 ## How a task runs
 
@@ -51,8 +63,10 @@ resolves there and not in the scheduler's own directory.
 | `environment` | no | variables for the child, over the worker's own |
 | `cache_dir` | no | sets `UV_CACHE_DIR`, to point `uv` at a shared worker cache |
 | `outlets` | no | the Assets this task publishes |
+| `upstream_task_id` | no | validated parent result that pins a child's window, snapshot and source table |
 
-`document`, `repository`, `parameters` and `environment` are template fields.
+`document`, `repository`, `parameters`, `environment` and `upstream_task_id`
+are template fields.
 `environment` is the supported way to give one task a credential-bearing
 variable without putting it in Params or in task JSON.
 
@@ -105,9 +119,10 @@ The DAG sets no `retries`, so every task is `retries=0` and one transient S3
 or catalog error fails the run. Raising it is safe and is the recommended
 configuration: each attempt writes into its own private directory keyed on the
 try number, that directory is removed whether the attempt lands or raises, and
-all three writers replace on their one field-declared key, `curruuid`, so a
-retry re-reads the same window and lands the same rows over whatever the
-failed attempt left.
+the three original ingestion writers merge on their declared `curruuid`
+keys. Market writers atomically replace the exact window, leaving the prior
+snapshot visible on failure. Every event-task retry retains its parent book
+snapshot and window rather than following a newer head.
 
 ## Install a worker checkout
 
@@ -172,78 +187,21 @@ and name the same catalog in `--conf`, as the S3 example below does.
 The default SQLite catalog is suitable only when scheduler and task execution
 share one durable host filesystem.
 
-## A run on this checkout
+## Verify the graph
 
-The run the integration suite makes of `rekep_ingestion`, with the products
-DAG beside it, by hand: a private `AIRFLOW_HOME`, the test fixture as
-`filesystem`, and the catalog of your choice as `CATALOG`.
+`airflow dags test rekep_ingestion --conf ...` executes the seven-stage graph
+in one run. Use a capture whose admitted market messages satisfy the native
+contract, including explicit sides for AE trade occurrences. Compare the
+book task's `snapshot_id` with each event task's `source_snapshot_id`, and
+require the same window on all four results. The three source IDs must agree
+even if the book table head changes after the parent finishes.
 
-```bash
-cd "$REKEP_ROOT"
-export AIRFLOW_HOME="$(mktemp -d)"
-export AIRFLOW__CORE__DAGS_FOLDER="$REKEP_ROOT/tasks/airflow"
-export AIRFLOW__CORE__LOAD_EXAMPLES=False
-CATALOG='{"name":"rekep","properties":{"type":"sql","uri":"sqlite:////var/lib/rekep/catalog.db","warehouse":"/var/lib/rekep/warehouse"}}'
-uv run --project "$REKEP_ROOT/python" --group airflow airflow db migrate
-uv run --project "$REKEP_ROOT/python" --group airflow airflow dags test \
-  rekep_ingestion \
-  --conf '{"filesystem":"file://'"$REKEP_ROOT"'/python/tests/data/ulbridge.log",
-           "start":"2026-08-14","end":"2026-08-14","catalog":'"$CATALOG"'}'
-uv run --project "$REKEP_ROOT/python" --group airflow airflow dags test \
-  rekep_products --conf '{"catalog":'"$CATALOG"'}'
-```
-
-The fixture run has this result shape; durations are omitted because they are
-environment measurements rather than contract values:
-
-```text
-INFO rekep.logs parse_messages finished: 144 read, 144 written, 0 skipped → messages=logs.messages
-INFO rekep.logs parse_fix_raw finished: 144 read, 49 written, 30 skipped → raw=fix.raw
-INFO rekep.logs parse_fix_refined finished: 49 read, 19 written, 0 skipped → refined=fix.refined
-DagRun Finished: dag_id=rekep_ingestion, ... state=success
-INFO rekep.logs build_dbt 29 nodes ran: 4 models, 25 tests, 0 warned
-INFO rekep.logs build_dbt finished: 29 read, 31 written, 0 skipped → executions_fills=executions.fills, orders_events=orders.events, orders_current=orders.current
-DagRun Finished: dag_id=rekep_products, ... state=success
-```
-
-`dags test` proves that the DAG parses under Airflow's own loading, that the
-run's `--conf` reaches every node as its Params, and that each node ran the
-locked runner into the catalog the conf named. It runs one DAG directly and
-fires no Asset-triggered run, which is why the products DAG has its own
-command above. `airflow assets list`
-then names the six Assets: `logs.messages`, `fix.raw`, `fix.refined`,
-`orders.events`, `orders.current` and `executions.fills`. The integration test
-`test_a_real_dag_run_publishes_both_tables_from_its_conf` in
-`python/tests/test_marimo_operator.py` runs the ingestion DAG this way.
-
-### Under a scheduler
-
-What `dags test` cannot show, a scheduler does: `airflow standalone` in a
-private home of the same shape, both DAGs unpaused, and the local-files
-trigger above issued over the test fixture and with no `catalog` in its conf.
-The scheduler recorded a
-manual run of `rekep_ingestion` that took 22 seconds and, before that run was
-marked finished, a run of `rekep_products` it created itself off the event
-`parse_fix_refined` had just published:
-
-```text
-Created asset-triggered DagRun for 'rekep_products': ... consumed 1 asset events
-```
-
-Its `run_id` begins `asset_triggered__`, and its `build_dbt` logged the same
-contract fields as above. Durations vary by runner. Both DAGs wrote
-the checkout's default catalog, `data/catalog.db`, because the conf named
-none. That is the rule the run shows: an asset-triggered run carries no conf
-at all, so `rekep_products` reads the catalog
-[its own document](tasks/build-dbt.md#task-document) names -- `null` here,
-which leaves the one `data/dbt/profiles.yml` declares -- and the two DAGs
-reach one catalog through their documents or not at all. A first attempt that
-had pointed the ingestion trigger at a catalog of its own failed in
-`build_dbt` with `Table does not exist: fix.refined` for exactly that reason.
-The warehouse then held the three ingestion counts above, and `orders.events`
-16, `orders.current` 8 and `executions.fills` 7 rows, which is what every
-other route lands; `tools/pipeline_samples.py --catalog … --check` against it
-answered `4 samples match`.
+`airflow assets list` names the seven ingestion/market Assets and, when the
+optional products DAG is loaded, its three SQL product Assets. A scheduler
+can trigger `rekep_products` from the refined Asset; `dags test` does not
+simulate that separate scheduler-triggered run. Configure its catalog in
+its own task document to match ingestion, since an Asset-triggered run has
+no ingestion run conf to inherit.
 
 ## S3 capture with SQL catalog
 
@@ -273,7 +231,7 @@ Use a shared SQL service instead of SQLite for distributed workers.
 
 ## AWS Glue and S3
 
-Give scheduler/workers an IAM role and set their region. Deploy the three
+Give scheduler/workers an IAM role and set their region. Deploy the seven
 tables once with the same role and settings:
 
 ```bash
@@ -345,13 +303,13 @@ document, so both DAGs name one table bucket or neither does.
 
 1. Pin and deploy one repository revision to every worker.
 2. Run `uv sync --locked` while network access is allowed.
-3. Deploy the three tables and rerun deploy to see `present`.
+3. Deploy the seven tables and rerun deploy to see `present`.
 4. Confirm the worker can list/read capture objects and read/write the
    warehouse prefix.
 5. Trigger one immutable capture manually, naming its day, and compare stage
    counts.
-6. Replay it and require the same counts and unchanged table row counts: a
-   replay lands the same rows once.
+6. Replay the window and compare rows. Market tables replace exactly the
+   window, including empty output; ingestion retains its keyed replay rules.
 7. Inspect `fixentries` for entries of tag 0 before enabling a recurring
    schedule: those are the pairs no dictionary explained, and `nofixentries`
    is how many the message carried.

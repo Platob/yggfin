@@ -1,148 +1,123 @@
 # Pipeline
 
-The supported graph has three streaming tasks and three Iceberg products, and
-one build that derives business products from the last of them:
+Seven streaming tasks publish the ingestion and native market tables. The
+three event tasks run in parallel after the book task commits; each reads its
+exact snapshot and window. The optional dbt products remain independent.
 
 ```mermaid
 flowchart LR
-    U["local file, directory, or S3 prefix"] --> T["parse_messages"]
-    T --> M[("logs.messages<br/>12 columns")]
-    M --> F["parse_fix_raw<br/>parse"]
-    R[["bundled dictionary<br/>7,781 definitions"]] -.types.-> F
-    F --> X[("fix.raw<br/>128 columns")]
-    X --> L["parse_fix_refined<br/>lifecycle"]
-    R -.types.-> L
-    L --> S[("fix.refined<br/>128 columns")]
-    S --> B["build_dbt"]
-    B --> O[("orders.events<br/>orders.current")]
-    B --> C[("executions.fills")]
+    U["capture objects"] --> T["parse_messages"] --> M[("logs.messages")]
+    M --> F["parse_fix_raw"] --> X[("fix.raw")]
+    X --> L["parse_fix_refined"] --> S[("fix.refined")]
+    S --> B["parse_books"] --> K[("market.books")]
+    K --> O["parse_orders"] --> OT[("market.orders")]
+    K --> Q["parse_quotes"] --> QT[("market.quotes")]
+    K --> E["parse_executions"] --> ET[("market.executions")]
+    S -.optional.-> D["build_dbt"]
+    D --> DT[("orders.events / orders.current / executions.fills")]
 ```
 
-The two FIX tasks are two native stages over one codec, in this order and no
-other: parse reads every frame a line carried and settles what it implied,
-and lifecycle reads those rows back as the messages that wrote them and as
-the chains they belong to. Each lands in a table of its own, under one field.
+| task | reads | writes | reading |
+| --- | --- | --- | --- |
+| [`parse_messages`](tasks/parse-messages.md) | capture URI | `logs.messages` | physical lines and provenance |
+| [`parse_fix_raw`](tasks/parse-fix-raw.md) | `logs.messages` | `fix.raw` | native parse, without lifecycle |
+| [`parse_fix_refined`](tasks/parse-fix-refined.md) | `fix.raw` | `fix.refined` | native lifecycle, preceding-hour context |
+| [`parse_books`](tasks/parse-books.md) | `fix.refined` | `market.books` | native book fold over the requested window |
+| [`parse_orders`](tasks/parse-orders.md) | pinned `market.books` | `market.orders` | order deltas from both book sides |
+| [`parse_quotes`](tasks/parse-quotes.md) | pinned `market.books` | `market.quotes` | quote deltas from both book sides |
+| [`parse_executions`](tasks/parse-executions.md) | pinned `market.books` | `market.executions` | native execution leaves |
+| [`build_dbt`](tasks/build-dbt.md), optional | `fix.refined` | `orders.events`, `orders.current`, `executions.fills` | existing SQL products |
 
-| task | reads | writes | key | default behavior |
-| --- | --- | --- | --- | --- |
-| [`parse_messages`](tasks/parse-messages.md) | the window's lines under `filesystem` | `logs.messages` | `curruuid` | header capture, exact line retention, the last day |
-| [`parse_fix_raw`](tasks/parse-fix-raw.md) | the window's rows of `logs.messages` | `fix.raw` | `curruuid` | bundled dictionary, one row per event, no chain, the last day |
-| [`parse_fix_refined`](tasks/parse-fix-refined.md) | the window's rows of `fix.raw`, off the event clock | `fix.refined` | `curruuid` | the chains walked, the last day |
-| [`build_dbt`](tasks/build-dbt.md) | every row of `fix.refined` | `orders.events`, `orders.current`, `executions.fills` | one key per product | the dbt project under `data/dbt`, committed through the same datasets |
+The adjacent JSON documents own defaults and the Marimo applications own task
+execution. CLI and Airflow run those same applications. The market stages
+require native revision `1d4a4b9f2794cde0b993a21664eacac966bd0b05`, declared as
+a direct Git dependency in `python/pyproject.toml` and locked in `python/uv.lock`;
+published Yggdryl 0.1.10 alone is insufficient.
 
-Each task is a Marimo application beside a JSON document that owns its
-defaults. The CLI and Airflow execute that same document; there is no separate
-scheduler implementation.
+## Run a window
 
-## Local quick start
+From the repository root, install the locked dependencies and deploy all
+seven table declarations:
 
 ```bash
 uv sync --project python --all-extras --dev
-uv run --project python rekep iceberg deploy \
-  tasks/parse_messages/parse_messages.json
-uv run --project python rekep task run \
-  tasks/parse_messages/parse_messages.json \
+uv run --project python rekep iceberg deploy tasks/parse_messages/parse_messages.json
+uv run --project python rekep task run tasks/parse_messages/parse_messages.json \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep task run \
-  tasks/parse_fix_raw/parse_fix_raw.json \
+uv run --project python rekep task run tasks/parse_fix_raw/parse_fix_raw.json \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep task run \
-  tasks/parse_fix_refined/parse_fix_refined.json \
+uv run --project python rekep task run tasks/parse_fix_refined/parse_fix_refined.json \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep task run \
-  tasks/build_dbt/build_dbt.json
 ```
 
-The three ingestion tasks cover one window, the last day unless `start` and
-`end` say otherwise -- all three off `currunix`, the event clock, which the
-text read settles over a line and the codec settles over a message; the sample
-under `data/capture` is dated, so the quick start names its day. Default
-locations are:
+The bundled August capture demonstrates ingestion and intentionally includes
+an AE report that cannot form a valid sided trade. For market processing, use
+your deployed `fix.refined` table containing valid admitted market records.
+This separate example selects a ten-second window on 21 September:
 
-```text
-input       file:data/capture
-catalog     sqlite:///data/catalog.db
-warehouse   data/warehouse
-registry    bundled in rekep
-dbt         data/dbt
+```bash
+uv run --project python rekep task run tasks/parse_books/parse_books.json \
+  --parameter 'start="2026-09-21T10:00:00Z"' --parameter 'end="2026-09-21T10:00:10Z"' \
+  --result-file /tmp/rekep-books.json
 ```
 
-Put one or more capture files under `data/capture`, or override the source on
-the command line.
+Pass the returned `snapshot_id` to each event task with the same bounds;
+[the run guide](operations/run.md#market-events-from-one-book-snapshot) shows
+the complete fan-out. Airflow performs this handoff from the validated parent
+result automatically. The optional dbt build continues to read `fix.refined`.
 
-## Complete parameter matrix
+Default capture, catalog, warehouse and dictionary remain `file:data/capture`,
+`sqlite:///data/catalog.db`, `data/warehouse` and the bundled registry.
+Each task page includes its actual JSON defaults rather than a second copy.
 
-| parameter | task | default | contract |
-| --- | --- | --- | --- |
-| `filesystem` | messages | `file:data/capture` | local object/file tree or object-store prefix |
-| `rowheader` | messages | `null` | the row header each line is framed with; `null` is the bridge's own |
-| `messages` | raw | `logs.messages` | the stored lines the parse reads |
-| `raw` | refined | `fix.raw` | the parsed table the walk reads |
-| `start` | messages, raw, refined | `null` | the window's inclusive start; `null` is one day before `end` |
-| `end` | messages, raw, refined | `null` | the window's exclusive end; `null` is the instant the run starts, and a whole day is the end of that day |
-| `catalog.name` | every | `rekep` | PyIceberg catalog name |
-| `catalog.properties.type` | every | `sql` | `sql`, `glue`, `s3tables`, or another installed PyIceberg catalog |
-| `catalog.properties.uri` | every | local SQLite | SQL catalog URI; not used by Glue, and derived from the warehouse by `s3tables` |
-| `catalog.properties.warehouse` | every | `data/warehouse` | local path, `s3://` Iceberg root, or an S3 Tables bucket: its ARN, its `s3tables://<name>?region=…&account=…` locator, or `<account>:s3tablescatalog/<name>` |
-| `registry` | raw, refined | `null` | bundled dictionary; an explicit URI overrides it |
-| `codec_options` | raw, refined | `null` | native defaults; an object is forwarded unchanged to `FixCodec` |
-| `project` | dbt | `data/dbt` | the dbt project directory |
-| `profiles` | dbt | `null` | where `profiles.yml` is; `null` is the project itself |
-| `target` | dbt | `null` | the profile target; `null` is the profile's own |
-| `select` | dbt | `null` | dbt selection; `null` builds everything |
-| `catalog` | dbt | `null` | the profile's own catalog; a mapping overrides it |
-| `log_level` | dbt | `INFO` | the level this package's records are written at |
+## Time, state and replay
 
-## Run semantics
+Bounds resolve through `window_of`: no bounds means the last day up to now;
+a date as `end` covers the end of that day. Market predicates then use exact
+`start <= currunix < end`, with no epoch or null exception. Both source rows
+and native output books are filtered, since scheduled expiration can extend
+beyond the last source event.
 
-Every ingestion task covers one window, `[start, end)`: the last day when its
-document names neither bound, and exactly the scheduler's data interval under
-Airflow. `parse_messages` and `parse_fix_raw` read it off `currunix`: the
-text read takes the window as its `where` and answers only the lines it
-covers -- the two bounds and nothing else -- and the parse prunes
-`logs.messages` by the same bounds. A line the header did not match is dated
-by the modification time of the object it was read from, so the window of
-that instant covers it; the epoch dates a line only where its handle has no
-clock at all, and a `fix.raw` message that stated no `SendingTime` until the
-walk dates it, which is why the FIX scans still read the epoch partition.
-`parse_fix_refined` reads the previous hour plus the job window in
-`currunix, seqnum, curruuid` order, including unresolved epoch rows. The prior
-hour is context only; output is filtered to the job window plus still-undated
-rows, and future expiry rows are excluded. Each writer replaces what its
-window carries on its field-declared primary key: the first run lands the
-window's rows, and a replay of the same window reads the same rows, writes
-them again, and leaves the table holding each once.
-`parse_fix_raw` always reads the stored lines, so dictionary and
-parsing changes are replayed by running the window again without touching
-capture storage; `parse_fix_refined` reads `fix.raw` in turn, so a change
-to the walk is replayed from the parsed rows. `build_dbt` reads `fix.refined`:
-every model is committed on its own key, so a rebuild carries every row it
-built and each table holds one row per key.
+Refinement still reads the preceding hour plus its requested window,
+including unresolved epoch rows, and writes current-window and still-undated
+events. Native lifecycle collects and sorts that finite context. Book creation
+reads refined events in `currunix, seqnum, curruuid` order without repeating
+lifecycle. Native conversion rejects decreasing effective operation times;
+entry timestamps in incremental market-data messages can differ from the
+parent FIX time.
 
-Every successful task returns the same small result contract. This is
-`parse_messages` over the fixture `python/tests/data/ulbridge.log` for its
-day:
+A book starts with no resting depth from before `start`. Window-local output
+is therefore not a complete reconstruction of an earlier order book. A partial
+update whose missing facts require an absent predecessor can be refused.
+The native iterator retains live depth while streaming bounded Arrow batches;
+its memory bound is not merely the batch size.
 
-```json
-{
-  "task": "parse_messages",
-  "read": 144,
-  "written": 144,
-  "skipped": 0,
-  "sources": {"capture": "file:///srv/rekep/python/tests/data/ulbridge.log"},
-  "targets": {"messages": "logs.messages"},
-  "window": {"start": 1786665600000000000, "end": 1786752000000000000},
-  "elapsed_ms": 92
-}
-```
+Order and quote tables contain deltas, including terminal events, rather than
+repeated `live` snapshots. Full-snapshot replacement can remove members without
+manufacturing a cancellation event for each disappearance. Executions are
+already decomposed by native code, including the sided leaves of AE trades.
+Each event keeps its own identity, clock, side and exact decimal facts.
 
-`window` is the interval the run covered, in epoch nanoseconds. `read` is
-the lines the window covers, because the window is pushed into the read; a
-window the capture falls outside reads 0.
+All four market tasks replace exactly the requested window atomically.
+Files are staged in bounded chunks and published with the removal of prior
+window rows in one Iceberg snapshot. An empty rerun clears that window;
+source or commit failure leaves the preceding snapshot visible. Rows outside
+the window survive, including those in the same hour partition. This differs
+from keyed ingestion replay: changed identities and disappeared events inside
+a market window cannot remain as stale rows.
 
-## Sample rows
+## Results
 
-Each task page shows business chain `00026877711XOEA0` from the test capture as
+Every task uses `rekep.logs.Stage`: `task`, `read`, `written`, `skipped`,
+`sources`, `targets`, `window` and `elapsed_ms`. Windows in results are epoch
+nanoseconds. `parse_books` additionally publishes the committed `snapshot_id`;
+the event tasks report `source_snapshot_id`, the source snapshot they read. A snapshot ID of zero
+means an empty source with no head and never follows a later table head.
+See [logs and results](operations/logs.md) for counter meanings.
+
+## Existing ingestion and dbt samples
+
+The original ingestion and dbt pages show business chain `00026877711XOEA0` from the test capture as
 that task lands it. The generated example contains 27 source lines and four walked events,
 one current order, and three fills. `tools/pipeline_samples.py` runs the
 four tasks over the fixture and renders the tables into

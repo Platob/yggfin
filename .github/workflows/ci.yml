@@ -22,6 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+      - uses: dtolnay/rust-toolchain@stable
       - name: Sync
         run: uv sync --python ${{ matrix.python }}
       - name: Lint
@@ -30,12 +31,18 @@ jobs:
         run: uv run ruff format --check .
       - name: Test
         run: uv run pytest -q -m "not integration"
+      - name: Market pipeline transactions
+        run: uv run pytest -q -m integration tests/test_market_pipeline.py tests/test_market_projection.py tests/iceberg/test_window_overwrite.py
+      - name: Scheduled market pipeline
+        if: runner.os == 'Linux' && matrix.python == '3.13'
+        run: uv run pytest -q -m integration tests/test_marimo_operator.py -k real_dag_run
 
   docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+      - uses: dtolnay/rust-toolchain@stable
       - name: Sync
         run: uv sync --group docs
       # --strict: a broken link or a page nobody navigates to fails the build

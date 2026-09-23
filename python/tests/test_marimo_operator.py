@@ -151,28 +151,51 @@ def commands() -> list[list[str]]:
 # -- the DAG -----------------------------------------------------------------
 
 
-def test_the_ingestion_dag_is_exactly_the_three_streamed_stages() -> None:
+def test_the_ingestion_dag_fans_out_from_one_committed_book_stage() -> None:
     dag = PIPELINE.ingestion
 
     assert dag.dag_id == "rekep_ingestion"
     assert dag.schedule == "@daily", "one run a day, covering its own interval"
-    assert set(dag.task_dict) == {"parse_messages", "parse_fix_raw", "parse_fix_refined"}
+    assert set(dag.task_dict) == {
+        "parse_messages",
+        "parse_fix_raw",
+        "parse_fix_refined",
+        "parse_books",
+        "parse_orders",
+        "parse_quotes",
+        "parse_executions",
+    }
     messages = dag.get_task("parse_messages")
     raw = dag.get_task("parse_fix_raw")
     refined = dag.get_task("parse_fix_refined")
+    books = dag.get_task("parse_books")
     assert messages.downstream_task_ids == {"parse_fix_raw"}
     assert raw.upstream_task_ids == {"parse_messages"}
     assert raw.downstream_task_ids == {"parse_fix_refined"}
     assert refined.upstream_task_ids == {"parse_fix_raw"}
+    assert refined.downstream_task_ids == {"parse_books"}
+    assert books.upstream_task_ids == {"parse_fix_refined"}
+    assert books.downstream_task_ids == {"parse_orders", "parse_quotes", "parse_executions"}
+    assert books.upstream_task_id is None
+    for kind in ("orders", "quotes", "executions"):
+        child = dag.get_task(f"parse_{kind}")
+        assert child.upstream_task_ids == {"parse_books"}
+        assert child.downstream_task_ids == set()
+        assert child.upstream_task_id == "parse_books"
+        assert [asset.name for asset in child.outlets] == [f"market.{kind}"]
     assert [asset.name for asset in messages.outlets] == ["logs.messages"]
     assert [asset.name for asset in raw.outlets] == ["fix.raw"]
     assert [asset.name for asset in refined.outlets] == ["fix.refined"]
+    assert [asset.name for asset in books.outlets] == ["market.books"]
     assert dag.params["filesystem"] == "file:data/capture"
     assert dag.params["registry"] is None
     # Each FIX stage names the table it reads under a name of its own, so one
-    # Params mapping over three documents hands neither the other's source.
+    # Params mapping over the documents hands neither the other's source.
     assert dag.params["messages"] == "logs.messages"
     assert dag.params["raw"] == "fix.raw"
+    assert dag.params["refined"] == "fix.refined"
+    assert dag.params["books"] == "market.books"
+    assert "snapshot_id" not in dag.params
     assert dag.params["start"] is None and dag.params["end"] is None, "the interval fills them"
 
 
@@ -368,6 +391,92 @@ def test_an_explicit_parameter_is_overridden_by_the_param_of_the_same_name(
 
     parameters = written()
     assert parameters["filesystem"] == "file:data/params"
+
+
+@pytest.mark.parametrize("snapshot_id", [0, 42])
+def test_fanout_pins_the_actual_parent_window_snapshot_and_table(
+    kept: Held,
+    snapshot_id: int,
+) -> None:
+    from rekep.times import unix_of, window_of
+
+    conf = {"start": "2026-08-14", "end": "2026-08-14"}
+    interval = {
+        "data_interval_start": datetime.datetime(2026, 8, 21, tzinfo=UTC),
+        "data_interval_end": datetime.datetime(2026, 8, 22, tzinfo=UTC),
+    }
+    parent = operator(task_id="parse_books", document="tasks/parse_books/parse_books.json")
+    parent.execute(context(params=conf, dag_run=SimpleNamespace(conf=conf), **interval))
+    actual = written()
+    assert {name: actual[name] for name in conf} == conf
+    bounds = window_of(actual["start"], actual["end"])
+    upstream = {
+        **RESULT,
+        "task": "parse_books",
+        "targets": {"books": "market.books"},
+        "window": dict(zip(("start", "end"), map(unix_of, bounds), strict=True)),
+        "snapshot_id": snapshot_id,
+    }
+    pulled = []
+
+    def pull(*, task_ids: str) -> dict[str, Any]:
+        pulled.append(task_ids)
+        return upstream
+
+    child = operator(
+        task_id="parse_orders",
+        document="tasks/parse_orders/parse_orders.json",
+        upstream_task_id="parse_books",
+    )
+    child.execute(
+        context(
+            params={
+                "start": "2025-01-01",
+                "end": "2025-01-02",
+                "snapshot_id": 99,
+                "books": "another.books",
+            },
+            task_instance=SimpleNamespace(xcom_pull=pull),
+            **interval,
+        )
+    )
+    pinned = written()
+    assert pulled == ["parse_books"]
+    assert {name: pinned[name] for name in ("start", "end")} == upstream["window"]
+    assert window_of(pinned["start"], pinned["end"]) == bounds
+    assert pinned["snapshot_id"] == snapshot_id
+    assert pinned["books"] == "market.books"
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        {"snapshot_id": None},
+        {"snapshot_id": -1},
+        {"snapshot_id": True},
+        {"window": {"start": None, "end": None}},
+        {"window": {"start": 2, "end": 1}},
+        {"targets": {"unrelated": "market.books"}},
+    ],
+)
+def test_an_unusable_upstream_snapshot_is_refused_before_launch(changed: dict[str, Any]) -> None:
+    from airflow.sdk.exceptions import AirflowException
+
+    upstream = {
+        **RESULT,
+        "targets": {"books": "market.books"},
+        "window": {"start": 1_000, "end": 2_000},
+        "snapshot_id": 42,
+        **changed,
+    }
+    child = operator(
+        task_id="parse_orders",
+        document="tasks/parse_orders/parse_orders.json",
+        upstream_task_id="parse_books",
+    )
+    with pytest.raises(AirflowException, match="parse_books published no usable snapshot"):
+        child.execute(context(task_instance=SimpleNamespace(xcom_pull=lambda **_: upstream)))
+    assert not Ran.calls
 
 
 def test_an_explicit_parameter_the_document_does_not_declare_is_refused() -> None:
@@ -566,21 +675,35 @@ def test_a_document_that_is_not_there_is_refused() -> None:
 
 # -- against a real child ----------------------------------------------------
 
-#: The bridge fixture the CLI route is pinned against in `test_workflow.py`,
-#: so scheduling it changes the counts nowhere.
-FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
+#: Valid market capture: administration, quotes, a partial update and trade,
+#: an order and a two-sided trade report. The historical bridge fixture stays
+#: covered by `test_workflow.py`; its incomplete trade sides are refused by books.
+FRAMES = (
+    "8=FIX.4.4|35=0|34=1|52=20260814-10:00:00|10=0|",
+    "8=FIX.4.4|35=W|34=2|52=20260814-10:00:01|55=AAPL|268=2|"
+    "269=0|278=B1|270=100|271=10|269=1|278=A1|270=102|271=12|10=0|",
+    "8=FIX.4.4|35=X|34=3|52=20260814-10:00:02|55=AAPL|268=2|"
+    "279=1|269=0|278=B1|270=101|271=11|279=0|269=2|278=T1|270=101|271=2|10=0|",
+    "8=FIX.4.4|35=D|34=4|52=20260814-10:00:03|11=O1|55=AAPL|54=1|38=5|44=99|59=1|10=0|",
+    "8=FIX.4.4|35=AE|34=5|52=20260814-10:00:04|571=T2|150=F|55=AAPL|"
+    "32=10|31=101.25|60=20260814-10:00:04|552=2|"
+    "54=1|1427=BUY-EXEC|1009=4|37=BUY-ORDER|54=2|1427=SELL-EXEC|1009=6|37=SELL-ORDER|10=0|",
+)
 
 #: The day the fixture was captured on, named because a task covers the last
 #: day when nothing says otherwise. `end: 2026-08-14` is the exclusive end of it.
 WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
 
-#: The full registry folds 79 parsed frames to 49 native events; the walk
-#: folds the observations of one event and adds one expiry. A replay replaces
-#: those same rows.
+#: The raw stage omits the heartbeat; all four market frames survive the walk
+#: and publish events in the three projected tables. A replay replaces them.
 LANDED = {
-    "parse_messages": {"read": 144, "written": 144, "skipped": 0},
-    "parse_fix_raw": {"read": 144, "written": 49, "skipped": 30},
-    "parse_fix_refined": {"read": 49, "written": 19, "skipped": 0},
+    "parse_messages": {"read": 5, "written": 5, "skipped": 0},
+    "parse_fix_raw": {"read": 5, "written": 4, "skipped": 0},
+    "parse_fix_refined": {"read": 4, "written": 4, "skipped": 0},
+    "parse_books": {"read": 4, "written": 4, "skipped": 0},
+    "parse_orders": {"read": 4, "written": 1, "skipped": 0},
+    "parse_quotes": {"read": 4, "written": 3, "skipped": 0},
+    "parse_executions": {"read": 4, "written": 3, "skipped": 0},
 }
 REPLAYED = LANDED
 
@@ -590,9 +713,29 @@ PUBLISHED = {
     "parse_messages": "logs.messages",
     "parse_fix_raw": "fix.raw",
     "parse_fix_refined": "fix.refined",
+    "parse_books": "market.books",
+    "parse_orders": "market.orders",
+    "parse_quotes": "market.quotes",
+    "parse_executions": "market.executions",
 }
-TARGETS = {"parse_messages": "messages", "parse_fix_raw": "raw", "parse_fix_refined": "refined"}
-STORED = {"logs.messages": 144, "fix.raw": 49, "fix.refined": 19}
+TARGETS = {
+    "parse_messages": "messages",
+    "parse_fix_raw": "raw",
+    "parse_fix_refined": "refined",
+    "parse_books": "books",
+    "parse_orders": "orders",
+    "parse_quotes": "quotes",
+    "parse_executions": "executions",
+}
+STORED = {
+    "logs.messages": 5,
+    "fix.raw": 4,
+    "fix.refined": 4,
+    "market.books": 4,
+    "market.orders": 1,
+    "market.quotes": 3,
+    "market.executions": 3,
+}
 
 
 def counted(result: dict[str, Any]) -> dict[str, int]:
@@ -612,7 +755,21 @@ def _scheduled(tmp_path: Path) -> dict[str, Any]:
     }
 
 
-def _pass(catalog: dict[str, Any]) -> dict[str, dict[str, Any]]:
+def _capture(tmp_path: Path) -> Path:
+    """One dated native FIX capture, admitted by every stage of the DAG."""
+    capture = tmp_path / "market.log"
+    capture.write_text(
+        "".join(
+            f"2026-08-14 10:00:0{index}.000 [250-e7256476:9effef3e6a:72504] "
+            f"[ULBridge] (INFO) Sending : {frame}\n"
+            for index, frame in enumerate(FRAMES)
+        ),
+        encoding="utf-8",
+    )
+    return capture
+
+
+def _pass(catalog: dict[str, Any], capture: Path) -> dict[str, dict[str, Any]]:
     """Every DAG node, in its declared order, run through its own operator.
 
     The outlets come off the shipped DAG rather than being spelled again here,
@@ -623,16 +780,18 @@ def _pass(catalog: dict[str, Any]) -> dict[str, dict[str, Any]]:
         node = PIPELINE.ingestion.get_task(task_id)
         held: dict[str, Any] = {"catalog": catalog, **WINDOW}
         if task_id == "parse_messages":
-            held["filesystem"] = FIXTURE.as_uri()
+            held["filesystem"] = capture.as_uri()
         built = MarimoOperator(
             task_id=task_id,
             repository=str(ROOT),
             document=f"tasks/{task_id}/{task_id}.json",
             parameters=held,
             outlets=list(node.outlets),
+            upstream_task_id=node.upstream_task_id,
         )
         events = {asset: SimpleNamespace(extra={}) for asset in node.outlets}
-        result = built.execute(context(outlet_events=events))
+        instance = SimpleNamespace(xcom_pull=lambda *, task_ids: landed[task_ids]["result"])
+        result = built.execute(context(outlet_events=events, task_instance=instance))
         assert built.hook is None, "a landed attempt keeps no child"
         landed[result["task"]] = {
             "result": result,
@@ -668,23 +827,29 @@ def _snapshots(catalog: dict[str, Any]) -> dict[str, int]:
 
 
 @pytest.mark.integration
-def test_the_scheduled_graph_publishes_the_bridge_fixture_and_replays_it(
+def test_the_scheduled_graph_publishes_the_market_capture_and_replays_it(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """The whole scheduled route: uv, runner, three applications, three tables.
+    """The whole scheduled route: uv, runner, seven applications, seven tables.
 
-    `test_workflow.py` pins these same counts for `rekep task run`. Pinning
-    them here as well is what says the two routes are one pipeline: a
-    scheduled run reads the same capture into the same three tables, and its
-    replay replaces the same rows in one new snapshot, exactly as the
-    command-line run does.
+    A scheduled run reads each book once per child from the same immutable
+    snapshot. Replaying the window replaces every output in one new snapshot.
     """
     monkeypatch.undo()
     catalog = _scheduled(tmp_path)
+    capture = _capture(tmp_path)
 
-    landed = _pass(catalog)
+    landed = _pass(catalog, capture)
 
     assert {name: counted(held["result"]) for name, held in landed.items()} == LANDED
+    for kind in ("orders", "quotes", "executions"):
+        assert (
+            landed[f"parse_{kind}"]["result"]["source_snapshot_id"]
+            == landed["parse_books"]["result"]["snapshot_id"]
+        )
+        assert (
+            landed[f"parse_{kind}"]["result"]["window"] == landed["parse_books"]["result"]["window"]
+        )
     for name, table in PUBLISHED.items():
         assert landed[name]["result"]["targets"] == {TARGETS[name]: table}
         # The counts ride on the Asset event, which is what a downstream DAG
@@ -694,7 +859,7 @@ def test_the_scheduled_graph_publishes_the_bridge_fixture_and_replays_it(
         }
     assert _rows(catalog) == STORED
 
-    replayed = _pass(catalog)
+    replayed = _pass(catalog, capture)
 
     assert {name: counted(held["result"]) for name, held in replayed.items()} == REPLAYED
     assert _rows(catalog) == STORED
@@ -712,7 +877,7 @@ def test_a_scheduled_result_is_the_shape_a_route_reads(
 
     monkeypatch.undo()
 
-    landed = _pass(_scheduled(tmp_path))
+    landed = _pass(_scheduled(tmp_path), _capture(tmp_path))
 
     for name, held in landed.items():
         result = held["result"]
@@ -799,7 +964,7 @@ def test_terminating_the_task_stops_the_runner_process_group(
 
 
 @pytest.mark.integration
-def test_a_real_dag_run_publishes_its_three_tables_from_its_conf(
+def test_a_real_dag_run_publishes_its_seven_tables_from_its_conf(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """The scheduler itself, not just the operator: `airflow dags test`.
@@ -808,7 +973,7 @@ def test_a_real_dag_run_publishes_its_three_tables_from_its_conf(
     parses under Airflow's own bundle loading, serializes, or that a run's
     `--conf` reaches every node as declared Params. This runs the shipped DAG
     the way `docs/pipeline/airflow.md` says to trigger it, in a private
-    `AIRFLOW_HOME`, and reads the three tables back.
+    `AIRFLOW_HOME`, and reads the seven tables back.
     """
     from rekep.iceberg import IcebergCatalog
 
@@ -816,6 +981,7 @@ def test_a_real_dag_run_publishes_its_three_tables_from_its_conf(
     home = tmp_path / "airflow"
     home.mkdir()
     catalog = _scheduled(tmp_path)
+    capture = _capture(tmp_path)
     environment = {
         **os.environ,
         "AIRFLOW_HOME": str(home),
@@ -841,7 +1007,7 @@ def test_a_real_dag_run_publishes_its_three_tables_from_its_conf(
             "test",
             "rekep_ingestion",
             "--conf",
-            json.dumps({"filesystem": FIXTURE.as_uri(), "catalog": catalog, **WINDOW}),
+            json.dumps({"filesystem": capture.as_uri(), "catalog": catalog, **WINDOW}),
         ],
         env=environment,
         cwd=str(ROOT),

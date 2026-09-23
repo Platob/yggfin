@@ -14,8 +14,10 @@ behavior.
 
 ## Ownership
 
-- The published native dependency is pinned to `yggdryl==0.1.10`; public
-  applications and documentation import only `rekep`.
+- The native dependency is the exact unreleased Yggdryl Git revision declared
+  in `python/pyproject.toml` and locked in `python/uv.lock`. Published 0.1.10
+  lacks the required book admission behavior. Public applications and
+  documentation import only `rekep`.
 
 - Yggdryl owns `Field`, scalar compilation, resource binding, filesystems,
   streams, codecs, decompression, text media, FIX registries, FIX batch
@@ -136,7 +138,11 @@ The supported graph is:
 filesystem URI -> parse_messages     -> logs.messages
 logs.messages  -> parse_fix_raw      -> fix.raw
 fix.raw        -> parse_fix_refined  -> fix.refined
-fix.refined    -> build_dbt          -> orders.events, orders.current, executions.fills
+fix.refined    -> parse_books        -> market.books
+market.books   -> parse_orders       -> market.orders
+               -> parse_quotes       -> market.quotes
+               -> parse_executions   -> market.executions
+fix.refined    -> build_dbt (optional)-> orders.events, orders.current, executions.fills
 ```
 
 `raw` and `refined` are the two FIX tables and nothing else here is called
@@ -171,21 +177,13 @@ every other line its event was logged on; each joins to a text row's
 `curruuid`, is provenance, never lineage, and no walk changes what the
 identity means.
 
-Every `curruuid` and `currhashcode` a table holds is the one the installed
-yggdryl states, and 0.1.10 states a different one for every row: `Uuid::from_v7`
-packs the whole `(unix_micros, digest)` pair where 0.1.9 fingerprinted
-`(seqnum, payload)` under a seed and kept 50 bits, and a text line's code now
-digests the cross code and its row number beside its body. Both FIX tables and
-`logs.messages` are keyed on that identity alone and `srcuuids` joins to it, so
-a replay of a window under 0.1.10 lands new keys beside the old ones, never
-over them. A warehouse written under an earlier yggdryl is therefore rebuilt
-from capture, and nothing else: drop `logs.messages`, both FIX tables and the
-three products, run `rekep iceberg deploy`, and replay every window -- the
-capture is what every row was read from, and it is still there. There is no
-dual-write window and no translation of an old identity into a new one: a
-second identity beside the native one would be a second implementation of
-what yggdryl owns, and a table holding both would answer two rows for one
-line. The same rule covers a contract change: `logs.messages` lost `sourceurl`
+Every `curruuid` and `currhashcode` is the installed native revision's value.
+Yggfin never reimplements identity derivation or translates old identities.
+An identity contract change requires rebuilding affected products from their
+source under one native revision; mixing old and new keys leaves duplicate
+logical events. Market window replacement removes superseded keys inside its
+exact predicate, but it cannot repair earlier input tables or obsolete schemas.
+The same rule covers a contract change: `logs.messages` lost `sourceurl`
 and `rownum` for `crosscode` and `seqnum`, which renumbers every Iceberg field
 id, so it is recreated rather than evolved in place.
 
@@ -265,9 +263,36 @@ their stage: `fix_parse_*` and `fix_lifecycle_*`, a line door and a batch door e
 
 The refined Iceberg scan prunes with `fix_window_filter`, requests
 `SORT_COLUMNS`, and merges at most 16 overlapping file streams at once. It
-does not form a Python `read_all` union. Native 0.1.10 lifecycle processing
+does not form a Python `read_all` union. Native lifecycle processing
 still collects and stable-sorts its finite scan result. Undated rows read from
 the epoch partition may accumulate, so this path is not batch-memory-bounded.
+
+`parse_books` reads only refined rows in strict `[start, end)`, ordered by
+`SORT_COLUMNS`, restores them through `fix_row_messages`, and delegates to
+native `FixCodec.book_arrow_reader`. Lifecycle is not repeated. Native code
+owns admission, operation kinds, continuation, matching, expiration and book
+identity; invalid admitted messages remain errors. Books start with no depth
+before `start`; this is a window-local fold, not checkpoint reconstruction.
+Filter generated book times to the same strict window, including expirations.
+
+`parse_orders`, `parse_quotes` and `parse_executions` run in parallel after
+books commit, all against the same pinned book snapshot. Arrow kernels flatten
+bid/ask deltas by `operationkind` or the root execution list. Never flatten
+`live` into event history, derive child identities, decompose AE trades again,
+or perform a Python loop over rows. Preserve each child's own facts.
+
+`book_field()` derives from the native empty book reader's schema;
+`market_event_field()` derives from its execution child. Their Iceberg
+narrowing is recursive: timestamp ns to us, UUID to fixed bytes, semantic
+extensions to storage, uint64 to signed bit views. The four reviewed contract
+snapshots are Message, FixMsg, Book and MarketEvent; the latter serves all
+three event tables.
+
+Market tasks atomically replace exactly their strict window using bounded
+staging and one Iceberg snapshot commit. An empty rerun removes old rows in
+the window; a failure leaves the prior snapshot visible; rows outside it are
+preserved. Partition-scoped keyed merge and whole-hour replacement do not
+implement this contract for partial-hour windows.
 
 `build_dbt` runs the dbt project under `data/dbt`. dbt owns the SQL a product
 is written in and nothing else: `rekep.dbt` is the one seam, a source is one
@@ -282,9 +307,10 @@ products' reading of it off those fields.
 
 Airflow launches the adjacent standalone runner through the locked `uv`
 `runner` group; the operator never calls the Rekep CLI. `rekep_ingestion` is
-the three streaming stages, daily, each run over its own data interval unless
-the run's conf names `start` or `end`; `rekep_products` is `build_dbt`,
-scheduled on the `fix.refined` Asset the first one publishes last.
+the seven streaming stages, daily, each run over its data interval unless
+the run's conf names `start` or `end`. The three event stages share the book
+writer's committed snapshot. `rekep_products` remains the optional `build_dbt`
+DAG, scheduled on the `fix.refined` Asset.
 
 Every task result and its closing INFO record use `rekep.logs.Stage` and agree
 on `task`, `read`, `written`, `skipped`, `sources`, `targets`, `window`, and
@@ -316,9 +342,15 @@ tasks/
   parse_messages/
   parse_fix_raw/
   parse_fix_refined/
+  parse_books/
+  parse_orders/
+  parse_quotes/
+  parse_executions/
   optimize_iceberg/
   build_dbt/
 data/dbt/       the dbt project: models, schemas, macros and its one profile
 schemas/rekep/message.json
 schemas/rekep/fixmsg.json
+schemas/rekep/book.json
+schemas/rekep/marketevent.json
 ```

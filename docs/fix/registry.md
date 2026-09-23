@@ -30,7 +30,9 @@ assert len(fix_crate_fields()) == 32
 Scalar fields are one shape of definition among four. Components and repeating
 groups are declarations the same dictionary holds; a message type is what a
 `MsgType(35)` value names. `MsgCat` is the central message-category vocabulary
-derived beside it:
+derived beside it as the native `int32` code from `msgcatcodeset`. Market
+operations retain this category in `marketoperationid`; it is distinct from
+the order/quote discriminator in a book delta:
 
 | shape | count | read by |
 | --- | ---: | --- |

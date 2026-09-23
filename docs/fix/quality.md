@@ -17,17 +17,16 @@ A line's `currhashcode` digests the object it was read from, the header's
 captures except the clock, its row number and then its body, so two lines of
 identical bytes answer two codes: the 144-line fixture answers 144 distinct
 codes and 144 identities. It is content metadata and not what `logs.messages`
-is keyed on; `curruuid`, derived from the line's instant and that code, is.
+is keyed on; the line's native `curruuid` is.
 
 `currhashcode` is the event's content code -- XXH3-64 over its facts, its text,
 its metadata, the stated header cells and the entry tree, and never the row's
 storage, so a message read back out of a row is the same message. Two lines
 carrying the same frame under the same clock answer one code while their bytes
 differ, which is exactly what makes a message logged at three hops one event.
-`curruuid` is the UUIDv7 packing the microsecond of the settled instant and
-the whole of that code, and it is what both FIX tables are keyed on: the
-parse settles a `fix.raw` row's, and the walk settles it again where it dates
-the message by its `TransactTime`.
+`curruuid` is the event identity the pinned native revision supplies. Store
+it unchanged: neither rounded storage timestamps nor a Python hash restate
+the native identity contract.
 
 `crosshashcode` digests `crosscode` alone. The first non-empty business
 identifier wins in this order: `OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`,

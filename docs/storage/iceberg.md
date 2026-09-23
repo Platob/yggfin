@@ -34,14 +34,14 @@ written = messages.overwrite_arrow_reader(
 event. A parse answers one row per message; the object a line was read from
 stays on `logs.messages` and identifies no event row. A missing table is
 created.
-`commit_batch_num` and the optional `commit_row_size` bound each storage
-commit independently from input batch size, however many partitions the
+Without `row_filter`, `commit_batch_num` and the optional `commit_row_size`
+bound each storage commit independently from input batch size, however many partitions the
 bounded chunk spans: its parts are staged one at a time and committed together.
 
 Two verbs, and each returns the rows it wrote:
 
 - `append_arrow_reader` is blind: every row lands, whatever the table holds.
-- `overwrite_arrow_reader` replaces. Each bounded chunk is written to the
+- `overwrite_arrow_reader` replaces. Without `row_filter`, each bounded chunk is written to the
   store one partition at a time, the stored rows it replaces are taken out,
   and the written files are appended in the same commit. Under `merge_by`
   those rows are the ones carrying the chunk's keys in the same transformed
@@ -53,14 +53,14 @@ Two verbs, and each returns the rows it wrote:
 Both APIs require a schema-bearing `RecordBatchReader` and consume one batch
 at a time. The batch and table helpers build that reader.
 
-A replay of a window is therefore a commit that lands the same rows: the table
+A keyed replay lands the same rows: the table
 holds each key once however often the window runs, and `written` reports what
 the run carried rather than what it changed. A key that recurs within a chunk
 keeps its first row; one that recurs in a later chunk replaces the row the
 earlier chunk landed. A null or NaN key is refused, because no join finds the
 row it would replace.
 
-The replace path is also the optimized append path. It prunes manifests and
+The keyed replace path is also the optimized append path. It prunes manifests and
 files with the incoming partition and `curruuid` bounds. If none contains a
 matching key, the commit is an Iceberg append; only an actual match becomes an
 overwrite that rewrites the affected file. This keeps first-seen windows on
@@ -68,12 +68,47 @@ the cheap append operation without making retries blind. Iceberg identifier
 fields describe identity but do not enforce uniqueness, so calling blind
 `append_arrow_reader` for an idempotent pipeline would duplicate a replay.
 
+### Atomic predicate replacement
+
+Pass a SQL or PyIceberg `row_filter` to replace exactly its matching rows in
+one atomic snapshot. The four market tasks use this mode with strict
+`start <= currunix < end`, without an epoch or null exception:
+
+```python
+from rekep.market import book_field, market_window_filter
+from rekep.times import window_of
+
+window = window_of("2026-09-21T10:00:00Z", "2026-09-21T10:00:10Z")
+books = catalog.dataset("market.books", field=book_field())
+written = books.overwrite_arrow_reader(
+    book_reader,
+    book_field(),
+    row_filter=market_window_filter(window),
+)
+```
+
+Here `book_reader` carries the native books selected for that window. Every
+incoming row must satisfy the predicate; an outside row or source failure
+publishes nothing. An empty source still removes existing matching rows.
+Rows outside the predicate survive, including those in the same hour
+partition. Concurrent changes inside the selected predicate cause a commit
+conflict rather than a partial replacement.
+
+This mode ignores `merge_by` and retains source duplicates. It replaces the
+selected row set, not individual incoming keys. `commit_batch_num` and
+`commit_row_size` bound staging chunks rather than the number of commits:
+completed chunks reside in the table's `FileIO`, and only file metadata is
+retained until the single removal-and-addition commit. Whole-hour keyless
+replacement and ordinary keyed replay do not provide these partial-window
+semantics.
+
 ### What a commit holds
 
-Every verb writes the same way: a bounded chunk is split into its transformed
+Every verb stages a bounded chunk by splitting it into its transformed
 partitions, and each partition is taken out of the chunk, streamed through
-PyIceberg's Parquet writer into the table's configured `FileIO`, and committed
-by path. What the write holds past the chunk it was handed is one partition
+PyIceberg's Parquet writer into the table's configured `FileIO`, then published
+by path. Ordinary writes commit each chunk; predicate replacement commits
+the complete staged selection atomically. What the write holds past the chunk it was handed is one partition
 rather than every partition's rows, and nothing touches local disk on the
 way: the writer opens the store's own output stream, and the statistics the
 commit records are what it answers on closing the file rather than what a
@@ -169,18 +204,22 @@ first write creates a missing table directly from its Field. Schema updates
 are table-wide even when rows are written to a branch. A write with no new
 column makes no schema commit.
 
-The current FIX contract creates a new table with its 128 native columns.
-`merge_schema=True` cannot retire or rename a column, and no table written
-under yggdryl 0.1.9 or earlier is evolved into the 0.1.10 shape: every
-`curruuid` and `currhashcode` differ under 0.1.10, the 0.1.10 dictionary
-renamed three group columns, and the field ids of `logs.messages` were
-renumbered. Such a warehouse is dropped and replayed from capture --
-`logs.messages`, both FIX tables and the three products, then
-`rekep iceberg deploy`, then every window -- with no dual-write window; the
-path is on the [deploy page](../pipeline/operations/deploy.md).
+Seven pipeline tables share four runtime-derived schemas: Message for
+`logs.messages`; FixMsg for `fix.raw` and `fix.refined`; Book for
+`market.books`; and MarketEvent for `market.orders`, `market.quotes` and
+`market.executions`. Book derives from the native empty book reader, while
+MarketEvent derives from its execution child. Their reviewed
+[contracts](../contracts/index.md) are generated output, not alternate schemas.
+
+`merge_schema=True` cannot retire or rename columns or translate native
+identities. An obsolete schema or identity contract requires rebuilding
+affected source tables and dependent products under the pinned revision;
+see [deployment](../pipeline/operations/deploy.md). Exact market-window
+replacement removes stale rows inside its predicate but does not repair an
+incompatible table schema.
 
 Before either write, the native `Field` applies its declarations in dependency
-order: **cast → derived partition columns → digest holders**. All three tables
+order: **cast → derived partition columns → digest holders**. All seven ingestion tables
 lay out on `currunix` alone, the hour transform over the event's own instant --
 what the message stated on a FIX row, what the read settled over the line on a
 text row -- and none materializes a second layout column beside it. The
@@ -317,7 +356,7 @@ nothing, is keyed only by `curruuid`, and is laid out by the hour of
 holds other identities under other field ids and is not evolved into this
 shape: the table is dropped, recreated from `Message.into_field()` by
 `rekep iceberg deploy`, and its captures replayed -- together with both FIX
-tables and the three products, whose `srcuuids` and keys join to it. rekep
+tables and dependent market or optional SQL products, whose provenance and keys join to it. rekep
 carries no legacy name, timestamp-type, digest-name, or partition-layout
 compatibility path.
 

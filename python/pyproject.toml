@@ -18,7 +18,8 @@ classifiers = [
 ]
 dependencies = [
     "pyarrow>=17.0",
-    "yggdryl==0.1.10",
+    # Native book continuations are not in the published 0.1.10 wheel.
+    "yggdryl @ git+https://github.com/Platob/yggdryl@1d4a4b9f2794cde0b993a21664eacac966bd0b05#subdirectory=python",
     # `Self` is 3.11's, and the return annotation of every builder here names
     # it. The dependency is the typing back-port rather than a second spelling
     # of every one of those signatures.
@@ -135,6 +136,9 @@ constraint-dependencies = ["pygtrie<2.6; python_version < '3.11'"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rekep"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

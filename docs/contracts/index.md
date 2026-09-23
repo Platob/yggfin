@@ -7,10 +7,28 @@ without creating a second schema owner.
 | --- | ---: | --- |
 | [`message.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/message.json) | 12 | `Message.into_field()` |
 | [`fixmsg.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/fixmsg.json) | 128 | `fix_message_field()` |
+| [`book.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/book.json) | 53 | `book_field()` |
+| [`marketevent.json`](https://github.com/Platob/yggfin/blob/main/schemas/rekep/marketevent.json) | 50 | `market_event_field()` |
 
 The second document is named **FixMsg** and declares both `fix.raw` and
 `fix.refined`: one schema, one `curruuid` key, one hourly `currunix` partition,
 and one `currunix, seqnum, curruuid` sort order.
+
+## Market shapes
+
+`rekep.market.book_field()` derives Book from the native empty book reader's
+schema. Its required `bid` and `ask` structs retain `live` depth and `deltas`;
+its required `executions` list contains already decomposed execution events.
+`market_event_field()` derives the shared event shape from that execution
+child. Order and quote deltas project onto the same shape after selection by
+native `operationkind`; FIX `marketoperationid` is not the child-kind selector.
+
+All market fields declare native `curruuid` as key, hour(`currunix`) as
+partition, and `currunix, seqnum, curruuid` as sort order. The storage boundary
+recursively narrows nanosecond timestamps to microseconds, UUIDs to fixed
+bytes and semantic extensions to storage types. Unsigned codes are signed
+views of the same bits. Exact decimal prices and quantities remain decimals.
+The storage row therefore does not promise a nanosecond-exact native round trip.
 
 ## FIX row composition
 
@@ -39,6 +57,8 @@ groups and unknown fields, without claiming original wire order.
 ```bash
 uv run --project python rekep fields load --target schemas/rekep/message.json
 uv run --project python rekep fields load --target schemas/rekep/fixmsg.json
+uv run --project python rekep fields load --target schemas/rekep/book.json
+uv run --project python rekep fields load --target schemas/rekep/marketevent.json
 ```
 
 ## Regenerate
@@ -51,6 +71,14 @@ uv run --project python rekep fields dump \
 uv run --project python rekep fields dump \
   --pyclass rekep.fix:fix_message_field \
   --target schemas/rekep/fixmsg.json
+
+uv run --project python rekep fields dump \
+  --pyclass rekep.market:book_field \
+  --target schemas/rekep/book.json
+
+uv run --project python rekep fields dump \
+  --pyclass rekep.market:market_event_field \
+  --target schemas/rekep/marketevent.json
 ```
 
 The dump asks the runtime constructors for their fields and then records the

@@ -21,6 +21,10 @@
 pip install "rekep[iceberg]"
 ```
 
+Market tasks require the native Git revision locked by this checkout; the
+published Yggdryl 0.1.10 wheel is insufficient. See the
+[pipeline guide](pipeline/index.md) for installing and running the pinned environment.
+
 ## Run
 
 ```bash
@@ -29,7 +33,7 @@ rekep task run tasks/parse_fix_raw/parse_fix_raw.json
 rekep task run tasks/parse_fix_refined/parse_fix_refined.json
 ```
 
-The checked ULBridge fixture demonstrates the complete contract:
+The checked ULBridge fixture demonstrates the three source stages:
 
 ```text
 parse_messages     144 read, 144 written,  0 skipped  → logs.messages
@@ -45,7 +49,24 @@ flowchart LR
     F --> B[("fix.raw<br/>128 columns")]
     B --> L["native FIX codec<br/>lifecycle"]
     L --> O[("fix.refined<br/>128 columns")]
+    O --> K["parse_books"] --> BK[("market.books")]
+    BK --> PO["parse_orders"] --> OT[("market.orders")]
+    BK --> PQ["parse_quotes"] --> QT[("market.quotes")]
+    BK --> PE["parse_executions"] --> ET[("market.executions")]
 ```
+
+The seven tables use four [runtime-derived contracts](contracts/index.md):
+Message, FixMsg, Book and MarketEvent. Books derive from the native empty
+reader schema; all three flat market tables share its execution-event shape.
+The event tasks run independently against the same committed book snapshot,
+flattening order/quote deltas and already decomposed execution leaves.
+
+Market stages read strict `[start, end)` windows and atomically replace the
+same interval, including empty reruns. Books start without earlier resting
+depth. Use valid deployed refined records for the
+[market run example](pipeline/operations/run.md#market-events-from-one-book-snapshot);
+the bundled source fixture contains an incomplete AE side that book projection
+correctly refuses. Existing [dbt products](pipeline/tasks/build-dbt.md) remain optional.
 
 The text reader emits the exact `Message` schema: header captures are typed,
 `body` is the line past its header, and the line's own `currunix`, `curruuid`
@@ -71,11 +92,12 @@ print(Message.into_field().into_arrow_schema())
 
 | you want | read |
 | --- | --- |
-| what the three tables hold | [Data products](products/index.md) |
+| what the seven tables hold | [Data products](products/index.md) |
 | how the parts fit | [Architecture](overview/architecture.md) |
 | the exact task contracts | [Pipeline](pipeline/index.md) |
 | the two FIX tasks | [Parse FIX raw](pipeline/tasks/parse-fix-raw.md) · [Parse FIX refined](pipeline/tasks/parse-fix-refined.md) |
-| the order and execution products | [Build dbt](pipeline/tasks/build-dbt.md) |
+| native books and market events | [Parse books](pipeline/tasks/parse-books.md), [Orders](pipeline/tasks/parse-orders.md), [Quotes](pipeline/tasks/parse-quotes.md), [Executions](pipeline/tasks/parse-executions.md) |
+| optional SQL products | [Build dbt](pipeline/tasks/build-dbt.md) |
 | the runtime FIX dictionary | [Registry](fix/registry.md) |
 | to decode or encode a frame | [Decode](fix/decode.md) · [Encode](fix/encode.md) |
 | to schedule it | [Airflow](pipeline/airflow.md) |

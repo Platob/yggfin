@@ -3,30 +3,43 @@
 `pipeline.py` declares the daily `rekep_ingestion` DAG:
 
 ```text
-parse_messages -> parse_fix_raw -> parse_fix_refined
-      |                 |                  |
-      v                 v                  v
-logs.messages        fix.raw          fix.refined
+parse_messages -> parse_fix_raw -> parse_fix_refined -> parse_books
+                                                           |
+                                                           v
+                                                      market.books
+                                                           |
+                              +----------------------------+---------------------+
+                              v                            v                     v
+                         parse_orders                 parse_quotes        parse_executions
+                              |                            |                     |
+                              v                            v                     v
+                         market.orders                market.quotes        market.executions
 ```
 
-One Params mapping covers the three task documents, so a name two of them
-share -- `start`, `end`, `catalog`, `registry` -- means one thing on every
-node, and the table each stage reads is named for what it reads, `messages`
-and `raw`, so a run's conf cannot hand one stage the other's source.
+Seven adjacent task documents own defaults. A shared Params mapping names
+sources by role (`messages`, `raw`, `refined`, `books`) and supplies the
+catalog, window and codec settings. The book task's target is `market.books`.
 
-`products.py` declares `rekep_products`, which is one node, `build_dbt`:
+The three event tasks run independently after books commit. Each declares
+`upstream_task_id="parse_books"`. The operator validates that parent's Stage
+result from XCom, then pins the actual `start`, `end`, `snapshot_id` and
+matching source-table names after ordinary parameter resolution. Generic
+Params cannot redirect a child to another book snapshot or window. A missing
+or malformed result fails before launching a subprocess. Zero means an empty
+source without a committed head and never follows a later head.
+
+`products.py` retains the optional `rekep_products` DAG:
 
 ```text
 fix.refined -> build_dbt -> orders.events, orders.current, executions.fills
 ```
 
-Its schedule is the `fix.refined` Asset the first DAG publishes last, so a build
-starts when `parse_fix_refined` writes and neither DAG names the other's tasks.
-dbt is in the `runner` group, so the same locked environment runs it.
+Its schedule is the `fix.refined` Asset; it can start independently of market
+processing. Configure its own catalog to match ingestion because an Asset
+trigger does not inherit the ingestion run's conf.
 
-Each node is a `MarimoOperator`. The operator enters the repository's locked
-`runner` environment offline and starts `marimo_runner.py` directly; it never
-calls `rekep task run`:
+Each node is a `MarimoOperator`. It starts the standalone runner in the
+repository's locked environment, without calling the CLI:
 
 ```text
 uv run --project <repository>/python --group runner --no-sync --offline \
@@ -35,44 +48,31 @@ uv run --project <repository>/python --group runner --no-sync --offline \
   --parameters-file <attempt>/parameters.json --result-file <attempt>/result.json
 ```
 
-Install that locked environment and Airflow on the worker before enabling the
-DAG. `--no-sync --offline` prevents a scheduled run from resolving or changing
-dependencies.
+Install the locked environment, including the required unreleased native Git
+revision, before enabling the DAG. `--no-sync --offline` prevents dependency
+resolution during a scheduled run. The child works from the repository root.
 
-The operator takes:
-
-| argument | required | what it does |
+| argument | required | meaning |
 | --- | :---: | --- |
-| `document` | yes | task JSON, relative to `repository`; one outside it is refused |
-| `repository` | yes | checkout root holding `python/` and `tasks/`, and the child's working directory |
-| `parameters` | no | per-task overrides; a name the document does not declare fails the task |
-| `environment` | no | variables for the child, over the worker's own |
-| `cache_dir` | no | sets `UV_CACHE_DIR`, pointing uv at the worker's shared cache |
-| `outlets` | no | the Assets this task publishes |
+| `document` | yes | task JSON beneath `repository` |
+| `repository` | yes | checkout containing `python/` and `tasks/` |
+| `parameters` | no | overrides for declared task parameters |
+| `environment` | no | child environment, including credential-bearing variables |
+| `cache_dir` | no | worker's shared `UV_CACHE_DIR` |
+| `outlets` | no | Assets published after success |
+| `upstream_task_id` | no | Stage result that pins the child's window, snapshot and source |
 
-`environment` is how one task gets a credential-bearing variable without it
-passing through Params or task JSON. The counts of a finished run are attached
-to each outlet's asset event, and the whole result is returned into XCom.
+Parameters resolve from document defaults, operator overrides, DAG Params,
+then the run interval, except explicit conf bounds win. A configured upstream
+handoff applies last. Daily runs use their data interval; a manual trigger
+covers the last complete day unless conf supplies its bounds.
 
-The runner loads the adjacent JSON task document, replaces the Marimo
-`parameters` cell, runs the application, validates its small result mapping,
-and publishes that JSON atomically. Parameters and results live in a private
-directory unique to one Airflow attempt and are removed on success or failure.
-`on_kill` terminates the runner's process group.
+Results contain counts, locations, window and snapshot IDs, never data rows.
+The runner publishes validated JSON atomically; the operator attaches the
+result to outlet events and XCom. Attempt files live in a private directory
+and are removed on success or failure. `on_kill` terminates the process group.
 
-The ingestion DAG runs daily, and each run covers its data interval: the
-operator hands it to all three tasks as `start` and `end`, so a day's run reads
-the day's lines under `filesystem` and replaces them in all three tables. A
-manual trigger covers the last complete day unless its conf names `start` and
-`end`, which win over the interval. Configure
-`tasks/parse_messages/parse_messages.json`,
-`tasks/parse_fix_raw/parse_fix_raw.json` and
-`tasks/parse_fix_refined/parse_fix_refined.json`, then let it run or trigger
-it. The local SQLite catalog is for one-host smoke
-tests; production catalog and S3 settings belong in those task documents.
-
-`build_dbt` takes its catalog from `tasks/build_dbt/build_dbt.json`, where
-`null` means the dbt profile's own. dbt writes `target/` and `logs/` under
-`data/dbt` unless `DBT_TARGET_PATH` and `DBT_LOG_PATH` say otherwise -- and a
-model is staged under the target path, so setting those two through
-`environment` is what a worker with a read-only checkout needs.
+Use the [Airflow guide](../../docs/pipeline/airflow.md) for worker setup and
+catalog deployment. SQLite is appropriate for one-host smoke runs; production
+settings belong in task documents or worker configuration. Optional dbt writes
+under `data/dbt` unless `DBT_TARGET_PATH` and `DBT_LOG_PATH` override it.

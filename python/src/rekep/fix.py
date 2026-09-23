@@ -57,10 +57,9 @@ _REGISTRY_PATH = Path(__file__).with_name("_data") / "fix"
 FIXMSG = "fixmsg"
 
 #: The column a message's own identity is published as, and the table's whole
-#: key. A UUIDv7 packing the microsecond the event settled on and the whole
-#: 64-bit code of its content -- no seed, no sequence bits -- so one message
-#: logged at three hops settles on one of them: an arrival under an identity
-#: already held is a restatement, not a second row.
+#: key. The native UUIDv7 orders the event's millisecond and sequence with a
+#: deterministic content payload seeded by its cross hash. Yggdryl owns its
+#: derivation; a repeated delivery is a restatement, not a second row.
 MESSAGE_KEY = "curruuid"
 
 #: The instant every table here is laid out by, and the core's own name for
@@ -497,7 +496,7 @@ def iceberg_fix_field(
     keyed, ordered and merged on an identity needs the bytes it can lower a
     predicate to. The value is the same value either way.
     """
-    members = [_declared(_plain(member.with_type(_stored(member.type)))) for member in schema]
+    members = [_declared(_plain(member)) for member in schema]
     sorted_by = json.dumps([[column, "asc"] for column in SORT_COLUMNS], separators=(",", ":"))
     return Field.from_arrow_schema(
         pyarrow.schema(members, metadata={SORT_ORDER: sorted_by}),
@@ -521,7 +520,8 @@ def _declared(member: pyarrow.Field) -> pyarrow.Field:
 
 
 def _plain(member: pyarrow.Field) -> pyarrow.Field:
-    """`member` without the extension name its semantic datatype crossed on."""
+    """A storage field without semantic extension metadata, including children."""
+    member = member.with_type(_stored(member.type))
     held = member.metadata or {}
     if not any(key in held for key in _EXTENSION_KEYS):
         return member
@@ -539,15 +539,15 @@ def _stored(dtype: pyarrow.DataType) -> pyarrow.DataType:
     if pyarrow.types.is_unsigned_integer(dtype):
         return pyarrow.int64()
     if pyarrow.types.is_list(dtype):
-        item = dtype.field(0)
-        return pyarrow.list_(item.with_type(_stored(item.type)))
+        return pyarrow.list_(_plain(dtype.value_field))
     if pyarrow.types.is_large_list(dtype):
-        item = dtype.field(0)
-        return pyarrow.large_list(item.with_type(_stored(item.type)))
+        return pyarrow.large_list(_plain(dtype.value_field))
     if pyarrow.types.is_map(dtype):
-        return pyarrow.map_(_stored(dtype.key_type), _stored(dtype.item_type))
+        return pyarrow.map_(
+            _plain(dtype.key_field), _plain(dtype.item_field), keys_sorted=dtype.keys_sorted
+        )
     if pyarrow.types.is_struct(dtype):
-        return pyarrow.struct([member.with_type(_stored(member.type)) for member in dtype])
+        return pyarrow.struct([_plain(member) for member in dtype])
     return dtype
 
 

@@ -22,6 +22,7 @@ from typing import Any
 from rekep.fields import Field, field_of
 from rekep.fix import fix_message_field
 from rekep.iceberg import IcebergCatalog
+from rekep.market import book_field, market_event_field
 from rekep.text import Message
 
 
@@ -50,6 +51,10 @@ TABLES: tuple[Deployed, ...] = (
     Deployed("logs.messages", Message.into_field),
     Deployed("fix.raw", fix_message_field),
     Deployed("fix.refined", fix_message_field),
+    Deployed("market.books", book_field),
+    Deployed("market.orders", market_event_field),
+    Deployed("market.quotes", market_event_field),
+    Deployed("market.executions", market_event_field),
 )
 
 

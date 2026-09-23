@@ -145,7 +145,7 @@ def test_the_project_pulls_no_dbt_package() -> None:
 def test_every_source_is_a_table_this_repository_publishes(manifest: Any) -> None:
     named = {source.meta["table"] for source in manifest.sources.values()}
 
-    assert named == set(INGESTED), "a source reads an ingested table, never another store"
+    assert named <= set(INGESTED), "a source reads an ingested table, never another store"
     for source in manifest.sources.values():
         assert source.meta["plugin"] == "rekep"
 

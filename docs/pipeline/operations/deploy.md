@@ -1,16 +1,14 @@
 # Deploy Iceberg tables
 
-`rekep iceberg deploy` creates the three tables ingestion writes --
-`logs.messages`, `fix.raw` and `fix.refined` -- with the same runtime fields
-their tasks use: `Message` for `logs.messages` and `fix_message_field` for
-both FIX tables, which answers all 128 native columns from the dictionary alone
-without consuming a capture row. Deployment is idempotent: an
-existing table is reported as `present` and is not rewritten.
+`rekep iceberg deploy` creates seven tables from four runtime field factories:
+Message for `logs.messages`, FixMsg for `fix.raw` and `fix.refined`, Book for
+`market.books`, and MarketEvent for `market.orders`, `market.quotes` and
+`market.executions`. Shapes derive without consuming input rows. Deployment
+is idempotent: existing tables are reported as `present` and left unchanged.
 
-The products the dbt project derives are not deployed here: a model declares
-its own shape, and the dataset creates the table on the model's first commit.
-`rekep iceberg deploy` is for a catalog the runner may not write to, which is
-where ingestion lands.
+The optional dbt models declare their own shapes and create their tables on
+first commit. Install the pinned unreleased native dependency before deploy;
+published 0.1.10 cannot provide the required book boundary.
 
 ## Local SQLite and files
 
@@ -36,7 +34,11 @@ Expected result shape:
   "tables": {
     "logs.messages": "created",
     "fix.raw": "created",
-    "fix.refined": "created"
+    "fix.refined": "created",
+    "market.books": "created",
+    "market.orders": "created",
+    "market.quotes": "created",
+    "market.executions": "created"
   }
 }
 ```
@@ -95,7 +97,7 @@ export AWS_REGION=eu-west-1
 aws sts get-caller-identity
 ```
 
-Create the three tables:
+Create the seven tables:
 
 ```bash
 uv run --project python rekep iceberg deploy \
@@ -111,7 +113,7 @@ permissions for the warehouse prefix. The capture bucket additionally needs
 list/read permissions. Prefer an IAM role; do not place access keys in task
 JSON, CLI arguments, or Airflow Params.
 
-Use this parameters file for the three ingestion tasks:
+Use this parameters file for the ingestion and market tasks:
 
 ```json
 {
@@ -338,43 +340,29 @@ replayed from capture, as the next section says.
 
 ## Migrating a warehouse written under an earlier yggdryl
 
-A warehouse written under yggdryl 0.1.9 or earlier is dropped and replayed
-from capture. There is no dual-write window and no evolution of an existing
-table into the new shape. Every `curruuid` and `currhashcode` differ under
-0.1.10: `curruuid` packs the microsecond of `currunix` and the whole 64-bit
-digest, and a line's `currhashcode` digests the object it was read from, the
-header's captures except the clock, its row number and then its body. Every
-table is keyed on that identity alone and `srcuuids` joins to it, so a replay
-under 0.1.10 over an older table would land new keys beside the old ones,
-never over them. The contract change follows the same rule: `logs.messages`
-names the object a line was read from and its row number as `crosscode` and
-`seqnum`, and every one of its Iceberg field ids was renumbered, which no
-schema merge does to a table in place.
+An existing table with an obsolete native schema or identity contract must
+be rebuilt from its source under the pinned revision. Deployment reports an
+existing table as `present`; it does not validate or rewrite its schema.
+There is no second identity spelling or translation layer in Yggfin.
 
-Drop `logs.messages`, `fix.raw`, `fix.refined`, `orders.events`,
-`orders.current` and `executions.fills`. Run `rekep iceberg deploy` once: it
-creates the three ingestion tables, and it reports one it still finds as
-`present` -- deployment reads the catalog and not a table's shape. Then
-replay each window through `parse_messages`, `parse_fix_raw` and
-`parse_fix_refined`, in that order, and run
-[`build_dbt`](../tasks/build-dbt.md) afterwards. The capture is what every
-row was read from, and it is still there: the read states the instant, the
-identity and the content code over every line again, the parse reads that
-stored identity back rather than recomputing one, and the walk merges them
--- which is why `srcuuids` joins the line that landed, and why the replay is
-the migration. Replay from where each capture was read, never from a copy
-written at another time: a line the header did not match is dated by its
-object's modification time, and its identity derives from that instant, so a
-copy states another identity for every such line.
+Recreate affected source tables and dependent products together, deploy their
+current declarations, and replay capture through `parse_messages`,
+`parse_fix_raw` and `parse_fix_refined` in order. Then run `parse_books` and
+its three event projections from the newly committed snapshot. Rebuild the
+optional dbt products when they are deployed too. The seven native table
+shapes come from four runtime contracts; the SQL products retain their own
+model declarations.
 
-A FIX table an earlier core wrote cannot be walked in place: the 0.1.10
-dictionary renamed three of its group columns -- `regulatorytradeids`,
-`partysubids` and `secaltids` -- so its rows are not the pinned core's
-128-column row, and `parse_fix_refined` reads a table named as its `raw` only
-in that shape. The products are dropped with the rest because their keys are
-those identities -- `eventkey` is `curruuid`, `orderkey` is `crossuuid` -- so
-a build over an older product would land new keys beside the old ones the
-same way.
+Replay captures from their original locations. A line without its own clock
+uses the source object's modification time; copying the object can therefore
+change the native identity. Preserve the explicit `srcuuids` provenance join
+rather than recomputing it from stored timestamps or content codes.
+
+For market tables already using the current shape, exact window replacement
+removes changed or disappeared keys within its predicate, including an empty
+rerun. It does not repair incompatible schemas or older source tables. Keyed
+FIX ingestion likewise cannot remove an old key merely because a new native
+revision produces a different one.
 
 ## Python API
 
