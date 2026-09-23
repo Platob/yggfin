@@ -294,8 +294,11 @@ and every write goes back into them with the correct code-set value.
     and not guessed.
   - An occurrence with a source outside the code set keeps its raw source
     text as its key, upper-cased, so nothing the message stated is dropped.
-  - Duplicates collapse under the `SecurityIds` invariant. The primary and an
-    alternate stating the same `(key, code)` is one entry.
+  - One code per key. The primary `48`/`22` fills first, then each
+    `secaltids` occurrence in order, with `insert`. The same code twice is one
+    entry. A later occurrence stating a different code under a filled key is
+    dropped from the map, and an anomaly records it. It still stays in the
+    FIX content and on the wire.
   - The CUSIP and SEDOL special case in `FixMsg::fill_market` goes away with
     their crated tags: a CUSIP the message stated is a `CUSIP` entry like any
     other. That changes
@@ -325,7 +328,7 @@ and every write goes back into them with the correct code-set value.
   - **Keys without a code:** a key with no `SecurityIDSource` value (a
     venue's own key) has nowhere to go in FIX. It is kept in the event's
     overlay, and a debug assertion plus a test cover it. It never takes a
-    private tag or an invented code. See open decision 6.
+    private tag or an invented code. See open decision 5.
   - **Flags:** every write sets `forced` and the matching row-stated bit, as
     the setters do today, and invalidates the cached view.
 - **Derivations.** Keep derivations `22`, `48` and `55` as they are. They
@@ -379,8 +382,8 @@ FIGI.**
     is a stated `securityids` entry. It keeps its `ROW_STATED_*` bit and
     ranks after `48`/`22` and `secaltids`.
   - **Out:** at the Arrow boundary the column is written from
-    `securityids.get("ISIN" | "BLOOMBERG" | "FIGI")`, the first code under
-    that key, including derived ones, as today's derived `isincode` is.
+    `securityids.get("ISIN" | "BLOOMBERG" | "FIGI")`, the one code under
+    that key, derived ones included, as today's derived `isincode` is.
   - **Writes:** `latest::sync_security_id` removes a stated crated child
     for the key it writes, so the next boundary re-derives the column from
     `securityids`, and the message states that key in one place.
@@ -411,7 +414,7 @@ entry:
   `securityids`; `ticker` owns them. Neither is anything with a
   `LEG`/`UNDERLYING`/`CONTRA`/`RELATED`/`BENCHMARK` prefix: those describe
   another instrument. A name for a key with no FIX code (a venue key) is not
-  matched by default; it stays a plain unmapped field (see open decision 6).
+  matched by default; it stays a plain unmapped field (see open decision 5).
 - **Top level only.** A field inside a repeating group describes that
   occurrence's instrument, not the message's, and is never read.
 - **Value.** The value is trimmed of padding and validated by the matched
@@ -424,10 +427,10 @@ entry:
     nothing and records nothing.
 - **Precedence.** It is a stated source, not a derived one: the message said
   it. It ranks after the primary `SecurityID`/`SecurityIDSource` and after
-  `secaltids`, and before anything derived. The same `(key, code)` stated in
-  two places is one entry. A different code under the same key is a second
-  entry under decision 2's `(key, code)` uniqueness, never a silent
-  overwrite.
+  `secaltids`, and before anything derived, and it fills with `insert`. The
+  same code stated in two places is one entry. A different code under a
+  key a higher-ranked source already filled is dropped, and an anomaly
+  records the dropped value, so a disagreement stays visible.
 - **Writes.** `latest::sync_security_id(msg, code, value)` also removes an
   unmapped field that states the same key, so after a set or a clear the
   message states that key in exactly one place (`48`, or `secaltids`). The
@@ -934,30 +937,54 @@ own copy.
     column and a `FixMsg` `secaltids` write (`456=A`) is byte-identical;
   - `null`, `NONE` and `[N/A]` under `BLOOMBERG` are refused.
 
-### `SecurityIds`: a sorted set with merge, add and remove
+### `SecurityIds`: a sorted map from key to code
 
-- Storage: `SmallVec<[SecurityId; 2]>` or `Box<[SecurityId]>`. Measure both in
+`SecurityIds` is a map with **one code per key**, kept sorted by key. The
+key is the `SecType` (`ISIN`, `BLOOMBERG`, `RIC`, a venue key), and the value
+is the code. Two codes under one key are two statements competing for one
+fact, and one of them wins by the rules below. They never sit side by side.
+
+- **Storage.** A sorted `SmallVec<[SecurityId; 2]>`, each `SecurityId`
+  already holding its key and its code in one buffer, so the map adds no
+  second allocation. Measure it against `Box<[SecurityId]>` in
   `rust/benchmarks/` and keep the faster one for book-sized workloads.
-- Invariant: sorted by `(sectype, code)` with no duplicates, enforced by every
-  constructor and mutator. Test it with a property check.
-- `insert(id) -> bool`: binary search, then insert. A no-op when present.
-- `remove(&SecurityId) -> bool` and `remove_key(&str) -> usize`.
-- `get(key: &str) -> Option<&SecurityId>` (first under that key) and
-  `iter_key(&str)`, both by binary search on the key after `SecType::read`, so
-  `get("4")` and `get("isin")` find the ISIN.
-- `merge(&mut self, other: &SecurityIds) -> bool`: a linear two-pointer union,
-  O(n + m), with no re-sort. Returns whether anything was added. This replaces
-  the per-code `CodeValue::merge_with` calls in `merge_market`.
-- `Deref<Target = [SecurityId]>`, so the trait hands out `&[SecurityId]`.
+  Deduplicate on key, so there is no separate key vector or hash map.
+- **Invariant.** Strictly sorted by key (byte order of `sectype()`), with
+  unique keys, enforced by every constructor and mutator. Test it with a
+  property check.
+- **Lookup.** Binary search on the key after `SecType::read`, so `get("4")`,
+  `get("isin")` and `get("ISIN")` find the same entry.
+  - `get(key: &str) -> Option<&str>` returns the code;
+  - `get_id(key) -> Option<&SecurityId>` returns the whole entry;
+  - `contains_key(key)`.
+- **Writes:**
+  - `insert(id) -> bool` fills: it adds when the key is absent, and is a
+    no-op returning `false` when present. Every lower-ranked source uses it:
+    derived, embedded, registry, unmapped fields and the instrument key.
+  - `set(id) -> Option<SecurityId>` replaces and returns the old entry. Only
+    an explicit setter or a higher-ranked stated source uses it.
+  - `remove(key) -> Option<SecurityId>`.
+- **Merge.** `merge(&mut self, other: &SecurityIds) -> bool` is a linear
+  two-pointer union by key, O(n + m), with no re-sort. On a shared key the
+  leading statement's code stands, as every other market fact merges. It
+  returns whether anything was added. This replaces the per-code
+  `CodeValue::merge_with` calls in `merge_market`.
+- **Iteration.** `iter() -> impl Iterator<Item = (&str, &str)>` yields
+  `(key, code)` in key order. `Deref<Target = [SecurityId]>` stays for
+  zero-copy slices.
 - `SecurityIds` replaces the five code fields (`isincode`, `cusipcode`,
   `sedolcode`, `bloombergcode`, `figicode`).
-- The slim `fill_market` inserts what `securityid::embedded` yields. On a
-  `FixMsg`, that insert goes to the derived overlay, never to the FIX fields.
-  `SecurityIdRegistry::enrich` reads and writes `SecurityIds`. Both live in
-  `securityid.rs`.
-- Digest: feed the ids in sorted order as length-prefixed `key` then `code`,
-  so the digest ignores insertion order and `AB`+`C` never collides with
-  `A`+`BC`.
+- The slim `fill_market` calls `insert` with what `securityid::embedded`
+  yields. On a `FixMsg`, that goes to the derived overlay, never to the FIX
+  fields. `SecurityIdRegistry::enrich` reads and fills `SecurityIds`. Both
+  live in `securityid.rs`.
+- **Digest.** Feed the entries in key order as length-prefixed `key` then
+  `code`, so the digest ignores insertion order, and `AB`+`C` never collides
+  with `A`+`BC`.
+- **Arrow.** `map<utf8, utf8>` with `keys_sorted = true`, a non-null key,
+  and one entry per key. Readers use `securityids['ISIN']`. A stored map
+  with a duplicate key, or unsorted keys, is refused on read with a located
+  error, because the writer never produces one.
 
 ### `Side`: a `#[repr(u8)]` enum
 
@@ -1003,16 +1030,16 @@ own copy.
   and `bid`/`ask` as two nullable `struct<price, currency, quantity, unit>`
   columns.
 - Pick the `securityids` Arrow shape and state it in the schema docs.
-  Default: `map<utf8, utf8>` keyed by `sectype`, with entries sorted. If
-  decision 2 allows two codes under one key, use
-  `list<struct<sectype: dictionary<int32, utf8>, code: utf8>>` instead.
+  It is `map<utf8, utf8>` keyed by `sectype`, `keys_sorted = true`, with
+  one code per key (see `SecurityIds`).
 - Identity changes: the digest inputs (`securityids`, `ticker`, the split between the slim and operation digests) change, so every market `curruuid`
   changes. Say so in the changelog and bump the minor version. Consumers
   rebuild from capture and never dual-write.
 - Update `.api-inventory.txt`, both bindings (Python `graph`/`fix` getters,
   Node `fix.rs`) and the docs pages for the market graph. Python and Node
   expose:
-  - `securityids` as a list of `(sectype, code)`;
+  - `securityids` as a sorted mapping of key to code (a `dict` in Python
+    and an object in Node, key order preserved);
   - `side` as its stored spelling;
   - `ticker` in place of `symbolticker`;
   - `bid`/`ask` as lane objects.
@@ -1110,13 +1137,10 @@ Run after A is released as Yggdryl `X.Y.Z`.
 1. `msgsesseventid`: keep it as its own stored `utf8` column on `fixmsg`
    (default, because yggfin dedup and docs use it), or accessor only?
    And `metadata` never holds an identifier: is that right?
-2. `SecurityIds` uniqueness: `(sectype, code)` (default, which allows two
-   codes under one key) or one code per key? One per key makes the stored
-   column a plain `map<utf8, utf8>`.
-3. `Side` on the wire: keep the string extension (default) or move to `uint8`?
-4. `Unit` max width.
-5. `Lane` storage: boxed (small operations) or inline (lane-heavy quotes)?
+2. `Side` on the wire: keep the string extension (default) or move to `uint8`?
+3. `Unit` max width.
+4. `Lane` storage: boxed (small operations) or inline (lane-heavy quotes)?
    Decide it by the size test.
-6. A key with no `SecurityIDSource` code (a venue's own key) set on a
+5. A key with no `SecurityIDSource` code (a venue's own key) set on a
    `FixMsg`: keep it in the event overlay only, not on the wire (default), or
    refuse it?
