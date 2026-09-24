@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import json
 import re
 import shlex
@@ -70,6 +71,15 @@ def test_json_examples_parse() -> None:
             json.loads(source)
         except json.JSONDecodeError as error:
             raise AssertionError(f"invalid JSON in {page.relative_to(DOCS)}: {error}") from error
+
+
+def test_the_capture_is_the_bytes_its_page_pins() -> None:
+    """`data/capture/ulbridge.log` is the core's own capture at the pinned
+    release, and the digest its page states is what says so."""
+    page = (ROOT / "data" / "README.md").read_text(encoding="utf-8")
+    (digest,) = re.findall(r"^```text\n([0-9a-f]{64})\n```", page, re.MULTILINE)
+    capture = (ROOT / "data" / "capture" / "ulbridge.log").read_bytes()
+    assert hashlib.sha256(capture).hexdigest() == digest
 
 
 def test_navigation_names_existing_pages() -> None:

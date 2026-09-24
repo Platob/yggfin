@@ -37,11 +37,11 @@ what; read it before changing code. This skill is the operating manual.
 | `airflow/dispatch.py` | where each node runs: the worker, or EKS under `REKEP_EKS_CONFIG` |
 | `airflow/rekep_operator.py`, `airflow/eks_rekep_operator.py` | `RekepOperator` (worker), `EksRekepOperator` (pod) |
 | `Dockerfile` | the task image a pod runs |
-| `data/` | local defaults: `capture/` sample, `catalog.db` + `warehouse/` (untracked), `dbt/` project |
+| `data/` | local defaults: `capture/`, `catalog.db` + `warehouse/` (untracked), `dbt/` project |
 | `config/` | where an operator's own FIX dictionary goes (`config/README.md`) |
 | `schemas/rekep/*.json` | reviewed Iceberg contracts (Message, FixMsg, Book, MarketEvent) |
 | `docs/` | the mkdocs site; `docs/pipeline/` is the operations guide |
-| `python/tests/data/ulbridge.log` | the 144-line fixture every documented count comes from |
+| `data/capture/ulbridge.log` | the 144-line capture the default reads and every documented count comes from |
 
 ## Setup
 
@@ -138,7 +138,7 @@ day, so `start=end=2026-08-14` is that whole day.
 
 ```bash
 uv run --project python rekep tasks parse_messages run --parameter start=2026-08-14 \
-  --parameter end=2026-08-14 --parameter filesystem=file:python/tests/data/ulbridge.log
+  --parameter end=2026-08-14 --parameter filesystem=file:data/capture/ulbridge.log
 uv run --project python rekep tasks parse_fix_raw run --parameter start=2026-08-14 --parameter end=2026-08-14
 uv run --project python rekep tasks parse_fix_refined run --parameter start=2026-08-14 --parameter end=2026-08-14
 uv run --project python rekep tasks build_dbt run

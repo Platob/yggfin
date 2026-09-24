@@ -512,7 +512,7 @@ class Image:
         self._chmod()
 
     def _chmod(self) -> None:
-        subprocess.run(  # noqa: S603
+        ran = subprocess.run(  # noqa: S603
             [
                 "docker",
                 "run",
@@ -529,8 +529,10 @@ class Image:
                 str(self.root),
             ],
             capture_output=True,
-            check=True,
+            text=True,
+            check=False,
         )
+        assert ran.returncode == 0, ran.stderr[-2000:]
 
 
 @pytest.mark.integration

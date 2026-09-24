@@ -112,10 +112,10 @@ first run. A run creates a missing table too; deploying first is for a catalog
 the runner may not create tables in.
 
 A streaming task parses one window, `[start, end)`, and given neither bound
-takes the last day up to now; the sample capture under `data/capture` is dated
-2026-08-14, which is why the three runs above name that day. A run over a
-window lands its rows over what an earlier run of the same window landed, so a
-replay leaves each table holding each row once.
+takes the last day up to now; the [capture](data/README.md#the-capture) under
+`data/capture` is dated 2026-08-14, which is why the three runs above name that
+day. A run over a window lands its rows over what an earlier run of the same
+window landed, so a replay leaves each table holding each row once.
 
 `logs.messages` stores one physical line as the read decoded it -- the
 header's captures typed, the `body` past the header -- and where it was read

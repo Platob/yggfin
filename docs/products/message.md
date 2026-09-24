@@ -92,7 +92,7 @@ all, an in-memory buffer.
 ```python
 from rekep import IOBase, Message
 
-source = IOBase.from_uri("file:python/tests/data/ulbridge.log")
+source = IOBase.from_uri("file:data/capture/ulbridge.log")
 reader = source.read_arrow_reader(options=Message.text_options())
 first = next(iter(reader)).slice(0, 1)
 

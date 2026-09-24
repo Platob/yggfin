@@ -50,7 +50,7 @@ header that renames one.
 ```python
 from rekep import IOBase, Message
 
-source = IOBase.from_uri("file:python/tests/data/ulbridge.log")
+source = IOBase.from_uri("file:data/capture/ulbridge.log")
 reader = source.read_arrow_reader(options=Message.text_options())
 first_batch = next(iter(reader))
 
@@ -119,9 +119,9 @@ message = next(
 assert message.field.name == "D"
 assert message.by_tag(11).as_py() == "ORD-1"
 assert message.by_name("orderqty").as_py() == 12.0
-# Tag 38 is read through the crate's own `qty`, exactly, and the message
+# Tag 38 is read through the crate's own `quantity`, exactly, and the message
 # re-emits the header and the event's own tags in front of what arrived.
-assert float(message.qty.as_py()) == 12.0
+assert float(message.quantity.as_py()) == 12.0
 assert message.into_bytes(ord("|")).startswith(b"8=FIX.4.4|35=D|")
 assert b"11=ORD-1" in message.into_bytes(ord("|"))
 ```
@@ -189,8 +189,8 @@ MSGTYPE=executionreport|SYMBOL=HOLN|SIDE=buy|LASTSHARES=235|LASTPX=72.28|
 | `MSGTYPE=executionreport` | canonical `msgtype`, tag 35; code name to `8` | `msgtype = "8"` |
 | `SYMBOL=HOLN` | canonical `symbol`, tag 55 | `symbol = "HOLN"` |
 | `SIDE=buy` | canonical `side`, tag 54; the event's own spelling | `side = "BUY"` |
-| `LASTSHARES=235` | another spelling of `lastqty`, tag 32 | `lastqty = 235.0`, and the trait `qty` answers 235 exactly |
-| `LASTPX=72.28` | canonical `lastpx`, tag 31 | `lastpx = 72.28`, and the trait `px` answers 72.28 exactly |
+| `LASTSHARES=235` | another spelling of `lastqty`, tag 32 | `lastqty = 235.0`, and the trait `quantity` answers 235 exactly |
+| `LASTPX=72.28` | canonical `lastpx`, tag 31 | `lastpx = 72.28`, and the trait `price` answers 72.28 exactly |
 
 ```python
 from rekep.fix import fix_codec, fix_registry
@@ -202,7 +202,7 @@ assert message.by_tag(35).as_py() == "8"
 assert message.by_name("lastqty").as_py() == 235.0
 assert message.by_name("side").as_py() == "BUY"
 # The price the message is about is what it last traded, exactly.
-assert float(message.px.as_py()) == 72.28
+assert float(message.price.as_py()) == 72.28
 # An entry is `(tag, name, value, entries)`, each pair under the tag and name
 # the dictionary made of its key: `SIDE=buy` is the entry `(54, "side", "1")`.
 assert [(tag, name) for tag, name, _, _ in message.entries()] == [
@@ -386,7 +386,7 @@ from rekep.fix import fix_codec, fix_parse_lines, fix_registry, fix_text_options
 
 options = fix_text_options()
 codec = fix_codec(fix_registry(), options=options)
-source = IOBase.from_uri("file:python/tests/data/ulbridge.log")
+source = IOBase.from_uri("file:data/capture/ulbridge.log")
 lines = source.read_text_lines(options=options)
 messages = list(fix_parse_lines(codec, lines))
 

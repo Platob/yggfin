@@ -75,11 +75,11 @@ quotes flatten deltas; executions flatten native execution leaves. See the
 The three original ingestion tasks cover one window, `[start, end)`. Each bound is an
 instant or a date -- a date as `end` is the end of that day -- and a task
 given neither takes the last day up to now, which is the window a nightly run
-means. The sample capture is dated 2026-08-14, so the runs above name that
-day; a run without the two parameters covers the last day, which the lines
-the header dates fall outside, so it reads none of them -- only a line the
-header did not match, which the file's own modification time dates, could
-fall in it. `parse_messages` and `parse_fix_raw` read the window off
+means. The capture under `data/capture` is dated 2026-08-14 and the header
+dates every line of it, so the runs above name that day; a run without the
+two parameters covers the last day, which the capture falls outside, so it
+reads none of it -- only a line a header did not match, which its object's
+modification time dates, could fall in it. `parse_messages` and `parse_fix_raw` read the window off
 `currunix`, the event clock, so the two are run over the same one: the text
 read settles it over a line, off the header's `mtime` capture or off the
 modification time of the object a line the header did not match was read

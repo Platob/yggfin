@@ -54,8 +54,8 @@ assert message.by_tag(35).as_py() == "8"
 assert message.by_name("side").as_py() == "BUY"
 assert message.by_name("lastqty").as_py() == 235.0
 # The event's own ladder, exact: what it last traded is what it is about.
-assert float(message.px.as_py()) == 72.28
-assert float(message.qty.as_py()) == 235.0
+assert float(message.price.as_py()) == 72.28
+assert float(message.quantity.as_py()) == 235.0
 ```
 
 `parse_line` answers a message per frame the line carried -- one here. The

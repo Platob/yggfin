@@ -84,14 +84,14 @@ class Stamp:
     fraction_at: int
 
     #: Which characters may separate the fraction from the seconds, empty
-    #: where a shape runs the digits straight on. A class, not a spelling:
-    #: one capture writes `01.147` and `01,147` in the same file. Whichever
-    #: it is, it is one character.
+    #: where a shape runs the digits straight on. A class, not a spelling: a
+    #: bridge under a comma locale writes `39,769` where another writes
+    #: `39.769`. Whichever it is, it is one character.
     fraction_separator: str = ""
 
-    #: Whether a separator may also sit *inside* the fraction. One capture
-    #: writes `01.147_250`, because one capture is written by several loggers
-    #: and they do not agree.
+    #: Whether a separator may also sit *inside* the fraction. The shipped
+    #: capture writes `46.524_315` beside `39.769`, because one capture is
+    #: written by several loggers and they do not agree.
     split_fraction: bool = False
 
     #: Where this shape already writes `YYYY-MM-DD`, and where it already

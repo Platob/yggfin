@@ -31,7 +31,7 @@ for installing and running the pinned environment.
 
 ```bash
 rekep tasks list
-rekep tasks parse_messages run --parameter filesystem=file:python/tests/data/ulbridge.log \
+rekep tasks parse_messages run --parameter filesystem=file:data/capture/ulbridge.log \
   --parameter start=2026-08-14 --parameter end=2026-08-14
 rekep tasks parse_fix_raw run --parameter start=2026-08-14 --parameter end=2026-08-14
 rekep tasks parse_fix_refined run --parameter start=2026-08-14 --parameter end=2026-08-14

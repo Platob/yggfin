@@ -29,7 +29,9 @@ def pytest_runtest_makereport(
     printed: a task's command reports a failed table and exits nonzero.
 
     Only what the failure said is read -- each exception's message down its
-    chain, and the output the test captured -- never a traceback's source.
+    chain, and the output the test captured -- never a traceback's source. A
+    failed assertion's message quotes its operands, so a test asserting on a
+    refusal's own text strips it first, as `test_conftest.py` does.
     """
     report = yield
     if report.failed and report.when != "teardown":

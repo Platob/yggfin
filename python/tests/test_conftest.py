@@ -46,11 +46,13 @@ def test_a_refused_credential_skips_and_any_other_failure_fails(tmp_path: Path) 
         check=False,
     )
 
-    # Said without the refusal, or this test's own failure would read as one.
-    said = REFUSED.sub("<refusal>", ran.stdout)
-    assert ran.returncode == 1, said
-    assert "1 failed, 2 skipped" in ran.stdout, said
-    assert "FAILED test_probes.py::test_failed" in ran.stdout, said
-    skipped = [line for line in ran.stdout.splitlines() if line.startswith("SKIPPED")]
+    # Every assertion reads the run with its refusals masked, because a
+    # failed assertion quotes its operands and one quoting a refusal would
+    # skip this test rather than fail it.
+    returncode, said = ran.returncode, REFUSED.sub("<refusal>", ran.stdout)
+    assert returncode == 1, said
+    assert "1 failed, 2 skipped" in said, said
+    assert "FAILED test_probes.py::test_failed" in said, said
+    skipped = [line for line in said.splitlines() if line.startswith("SKIPPED")]
     assert len(skipped) == 2, said
-    assert all(line.endswith("refused the credentials: ForbiddenError") for line in skipped), said
+    assert all(line.endswith("refused the credentials: <refusal>") for line in skipped), said
