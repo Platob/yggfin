@@ -80,9 +80,10 @@ chains, spread evenly over ten hourly partitions.
 Each later refined job read its previous hour plus its own and published only
 its own 22,000 rows. Final counts were 220,000 in `logs.messages`, `fix.raw`,
 `fix.refined` and `orders.events`, and 110,000 in both `orders.current` and
-`executions.fills`; all 25 dbt checks passed. `stage` is the stage's reported
-work time. `job` includes running the stage, and `full command` also includes
-interpreter and launcher startup.
+`executions.fills`; all 25 dbt checks passed. These figures were measured
+through the task runner this package no longer ships: `stage` is the work time
+it reported for the stage, `job` includes running the stage, and `full
+command` also includes interpreter and launcher startup.
 
 A streaming audit checked all 220,000 refined rows rather than a sample: every
 UUIDv7 was unique and its timestamp matched `currunix` to the millisecond,

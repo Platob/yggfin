@@ -369,8 +369,8 @@ FIXTURE = Path(__file__).resolve().parents[2] / "data" / "capture" / "ulbridge.l
 def test_the_window_is_the_reads_own_where_and_not_a_mask_over_its_answer() -> None:
     """The pushdown, shown to have happened rather than assumed: over one
     window, the read handed the clause answers fewer rows than the read
-    handed none, and exactly the rows between the two bounds -- so a task
-    reads the window's lines and never the rest. The decode itself still
+    handed none, and exactly the rows between the two bounds -- so
+    `parse_messages` reads the window's lines and never the rest. The decode itself still
     cuts every line: the clause is the record surface's."""
     window = window_of("2026-08-14", "2026-08-14T14:46:40")
     clause = where_within("currunix", window)

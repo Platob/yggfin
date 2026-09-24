@@ -27,6 +27,7 @@ import uuid
 import pyarrow
 from yggdryl import IOBase
 
+from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.fields import stored_arrow_reader
 from rekep.fix import (
     EVENT_CLOCK,
@@ -91,12 +92,16 @@ class Landed:
     skipped: int = 0
 
     #: The `market.books` snapshot the stage committed (`parse_books`) or read
-    #: (`parse_events`), zero for none; None for every other stage.
+    #: (`parse_events`, zero for none); None for every other stage.
     snapshot_id: int | None = None
 
 
 class _Count:
-    """The rows of every reader passed through it, counted as they are read."""
+    """The rows of every reader passed through it, counted as they are read.
+
+    The counted reader owns the one it counts, so closing it -- or a stage
+    unwinding on an error -- closes both.
+    """
 
     def __init__(self) -> None:
         self.rows = 0
@@ -107,7 +112,7 @@ class _Count:
                 self.rows += batch.num_rows
                 yield batch
 
-        return pyarrow.RecordBatchReader.from_batches(source.schema, batches())
+        return OwnedRecordBatchReader(source.schema, batches(), source.close)
 
 
 def parse_messages(
@@ -172,6 +177,9 @@ def parse_fix_raw(
     folds: `skipped` counts them.
     """
     codec = fix_codec() if codec is None else codec
+    # Declared from the dictionary alone rather than the first batch, so an
+    # empty window creates the same table a full one does.
+    field = fix_message_field(codec)
     with contextlib.ExitStack() as opened:
         carrier = Message.into_field()
         lines = catalog.dataset(source, field=carrier)
@@ -185,9 +193,6 @@ def parse_fix_raw(
             )
         )
         opened.callback(scanned.close)
-        # Declared from the dictionary alone rather than the first batch, so
-        # an empty window creates the same table a full one does.
-        field = fix_message_field(codec)
         answered = _Count()
         parsed = answered(fix_parse_arrow_reader(codec, scanned))
         opened.callback(parsed.close)
@@ -266,8 +271,9 @@ def parse_books(
 
     The book folds the `fix.refined` rows of the strict window from no depth
     before `start`, and every book it answers in the window replaces the
-    window's rows in one commit. `snapshot_id` is that commit, zero where the
-    table has none, and is what `parse_events` pins its kinds to.
+    window's rows in one commit -- an empty window too, which removes the
+    window's earlier rows. `snapshot_id` is that commit, and is what
+    `parse_events` pins its kinds to.
     `snapshot_millis` above zero emits owned snapshots on that grid.
     """
     codec = fix_codec() if codec is None else codec
@@ -300,13 +306,9 @@ def parse_books(
             for snapshot in snapshots
             if snapshot.summary is not None and snapshot.summary.get(BOOKS_RUN) == run
         ]
-        if len(committed) == 1:
-            snapshot_id = committed[0]
-        elif not snapshots and written == 0:
-            snapshot_id = 0
-        else:
+        if len(committed) != 1:
             raise ValueError(f"{target} has no unique committed snapshot for run {run}")
-        return Landed(read=read.rows, written=written, snapshot_id=snapshot_id)
+        return Landed(read=read.rows, written=written, snapshot_id=committed[0])
 
 
 def parse_events(

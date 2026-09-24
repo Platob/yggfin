@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 import uuid
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -204,16 +204,20 @@ def test_an_empty_capture_is_read_and_produces_nothing(
     assert warehouse.rows() == {"logs.messages": 0}
 
 
+@pytest.mark.parametrize("stage", [parse_fix_raw, parse_fix_refined], ids=["raw", "refined"])
 def test_an_empty_registry_is_refused_before_a_fix_stage_creates_a_table(
-    warehouse: Warehouse, tmp_path: Path
+    warehouse: Warehouse, tmp_path: Path, stage: Callable[..., Landed]
 ) -> None:
-    """The dictionary is refused where the codec is built, so no FIX stage
-    opens a table under it: a missing dictionary cannot leave a narrow table."""
+    """A dictionary that defines nothing is refused where it is loaded, and a
+    codec over one where a FIX table's shape is built, so no FIX stage opens
+    a table under it: a missing dictionary cannot leave a narrow table."""
     registry = tmp_path / "empty-fix-registry"
     registry.mkdir()
+    with pytest.raises(ValueError, match="no specification fields"):
+        fix_registry(registry.as_uri())
 
     with pytest.raises(ValueError, match="no specification fields"):
-        warehouse.run(parse_fix_raw, codec=fix_codec(fix_registry(registry.as_uri())))
+        warehouse.run(stage, codec=fix_codec(FixRegistry()))
     assert warehouse.rows() == {}
 
 
@@ -814,6 +818,15 @@ def test_a_chain_read_back_in_order_states_what_each_step_follows(warehouse: War
         before = held[step["prevuuid"]]
         assert before[EVENT_CLOCK] <= step[EVENT_CLOCK], "a step never precedes what it follows"
         assert before["seqnum"] is None or before["seqnum"] < step["seqnum"]
+    # What the walk folded, exactly: the two partial fills and the fill that
+    # closed the order, each created with the order and expiring with its day.
+    opened = datetime.datetime(2026, 8, 14, 12, 46, 39, tzinfo=UTC)
+    expires = datetime.datetime(2026, 8, 14, 16, 25, tzinfo=UTC)
+    partial = ("40PARTFILL", opened + datetime.timedelta(milliseconds=743), expires, None)
+    assert sorted(
+        (step["state"], step["creaunix"], step["exprtime"], step["seqnum"])
+        for step in chain.select(("state", "creaunix", "exprtime", "seqnum")).to_pylist()
+    ) == [partial, partial, ("80FILLED", opened, expires, 1), ("80FILLED", opened, expires, 1)]
 
 
 def test_the_refined_window_walks_what_the_parse_left_at_the_pin(warehouse: Warehouse) -> None:
@@ -834,3 +847,31 @@ def test_the_refined_window_walks_what_the_parse_left_at_the_pin(warehouse: Ware
     # nor the pinned ones belong to it.
     elsewhere = warehouse.run(parse_fix_refined, window=window_of("2026-08-15", "2026-08-15"))
     assert elsewhere == Landed(read=0, written=0)
+
+
+def test_maintenance_compacts_every_stage_table_and_keeps_its_rows(warehouse: Warehouse) -> None:
+    """`optimize` over what the stages landed: the capture spans several
+    hours, so each table holds one small file per hour and the first pass
+    settles them without losing a row; the second finds nothing to do."""
+    workflow(warehouse)
+
+    def optimized() -> dict[str, dict[str, Any]]:
+        with warehouse.opened() as store:
+            reports = {}
+            for dataset in store.datasets(None):
+                try:
+                    reports[dataset.identifier] = dataset.optimize()
+                finally:
+                    dataset.close()
+            return reports
+
+    first = optimized()
+
+    assert set(first) == set(STORED)
+    assert all(report["rewritten"] > 0 for report in first.values()), first
+    assert warehouse.rows() == STORED, "compaction rewrites rows, it never drops them"
+
+    second = optimized()
+
+    assert all(report["rewritten"] == 0 for report in second.values()), second
+    assert warehouse.rows() == STORED, "a settled catalog is left as it was"

@@ -98,7 +98,7 @@ def _capture(tmp_path: Path) -> IOBase:
 
 
 def _codec():
-    """The codec the two tasks pin: the dictionary and the undated floor, and
+    """The codec the two FIX stages pin: the dictionary and the undated floor, and
     no capture order, because the batch door fills a field from the column
     named after it."""
     return fix_codec(fix_registry())
@@ -190,7 +190,7 @@ def lines() -> pyarrow.Table:
 
 @pytest.fixture(scope="module")
 def raw() -> pyarrow.Table:
-    """The whole bridge corpus, through the first stage the task runs."""
+    """The whole bridge corpus, through `parse_fix_raw`'s parse."""
     handle = IOBase.from_uri(FIXTURE.as_uri())
     try:
         return _raw(handle)

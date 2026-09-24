@@ -76,8 +76,9 @@ try:
     assert parse_fix_raw(catalog, day) == Landed(read=144, written=49, skipped=30)
     assert parse_fix_refined(catalog, day) == Landed(read=49, written=19)
 
-    # The market stages fold the hour the capture's orders trade in, and
-    # every event kind reads the one book snapshot that fold committed.
+    # The market stages fold the midday hour, where most of the capture's
+    # orders trade, and every event kind reads the one book snapshot that
+    # fold committed.
     midday = window_of("2026-08-14T12:00:00Z", "2026-08-14T13:00:00Z")
     books = parse_books(catalog, midday)
     assert (books.read, books.written) == (12, 5)

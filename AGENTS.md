@@ -162,9 +162,9 @@ fix.refined    -> dbt build (optional)       -> orders.events, orders.current, e
 `raw` and `refined` are the two FIX tables and nothing else here is called
 either: a `logs.messages` row is a line, or a text row.
 
-A stage reads its `source` table and writes its `target`, both defaulted to
-the module's constants (`MESSAGES`, `RAW`, `REFINED`, `BOOKS`,
-`EVENTS[kind]`), creates a missing target, never closes the catalog it is
+A stage writes its `target`, and every stage after `parse_messages` reads a
+`source` table, both defaulted to the module's constants (`MESSAGES`, `RAW`,
+`REFINED`, `BOOKS`, `EVENTS[kind]`); it creates a missing target, never closes the catalog it is
 handed, and answers `Landed`. `rekep.deploy.deploy(catalog)` creates the
 tables the graph writes ahead of a first run, for a catalog the caller may
 not create tables in; `TABLES` is that layout.

@@ -23,9 +23,10 @@ from pyiceberg.schema import Schema
 from pyiceberg.types import NestedField, TimestamptzType
 
 from rekep import Convertible, IOBase, scalar
+from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.fields import partition_key
 from rekep.iceberg import IcebergCatalog, window_filter
-from rekep.pipeline import EVENTS, FLATTENED, Landed, parse_events, parse_messages
+from rekep.pipeline import EVENTS, FLATTENED, Landed, _Count, parse_events, parse_messages
 from rekep.times import EPOCH, window_of, within
 
 from .conftest import catalog_properties
@@ -139,6 +140,20 @@ def test_landed_counts_only_what_a_stage_states() -> None:
     assert landed == Landed(read=3, written=2, skipped=0, snapshot_id=None)
     with pytest.raises(dataclasses.FrozenInstanceError):
         landed.written = 3  # type: ignore[misc]
+
+
+def test_a_counted_reader_closes_the_reader_it_counts() -> None:
+    """A stage registers only the counted reader, so unwinding it -- on an
+    error too -- must release the scan underneath."""
+    released: list[str] = []
+    batch = pyarrow.record_batch({"n": [1, 2, 3]})
+    source = OwnedRecordBatchReader(batch.schema, iter([batch]), lambda: released.append("scan"))
+    count = _Count()
+    counted = count(source)
+
+    assert counted.read_all().num_rows == count.rows == 3
+    counted.close()
+    assert released == ["scan"]
 
 
 @pytest.mark.parametrize("kind", ["books", "Orders", ""])

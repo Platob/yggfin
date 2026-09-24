@@ -291,7 +291,9 @@ finally:
 Deployment is idempotent in one direction only: an existing table is reported
 `present` and left exactly as it is, properties included. `table_properties`
 apply only to a table deploy creates; retrofitting properties onto a table
-that already holds rows is `optimize`'s, or a reviewed migration's. A table
+that already holds rows is `IcebergDataset.set_properties`'s (one commit), or
+a reviewed migration's -- `optimize` only supplies its own maintenance
+properties. A table
 is created on `main`, the branch every stage commits to. `codec` types the two
 FIX tables the way the run parsing into them does, the bundled dictionary's
 when None.

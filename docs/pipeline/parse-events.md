@@ -66,10 +66,10 @@ finally:
 
 `snapshot_id=None` pins the head this call finds, once, at its start. A
 positive ID reads that snapshot, and a positive ID of a table that does not
-exist is refused before anything is written. Zero is the snapshot a book write
-with no head answers: it is a pinned absence and reads nothing, never
-permission to follow a newer head, so a replay under it empties the window
-again. For a coordinated fan-out, pass the `snapshot_id` returned by
+exist is refused before anything is written. Zero is what `snapshot_id=None`
+pins when `market.books` does not exist yet, or what a caller passes to read
+no books: a pinned absence that reads nothing, never permission to follow a
+newer head, so a replay under it empties the window again. For a coordinated fan-out, pass the `snapshot_id` returned by
 [`parse_books`](parse-books.md#the-committed-snapshot) and the same window to
 all three kinds: they then read one book state even when another writer
 advances `market.books`, and they are independent of one another, so they may

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import importlib
+import json
 import pathlib
+import subprocess
 import sys
 
 if sys.version_info >= (3, 11):
@@ -51,6 +53,27 @@ def test_the_package_installs_no_command() -> None:
     """The package is processing called from Python: the wheel carries no script."""
     project = tomllib.loads(PYPROJECT.read_text())["project"]
     assert not {"scripts", "gui-scripts", "entry-points"} & set(project)
+
+
+def test_the_processing_package_never_imports_dbt() -> None:
+    """dbt loads `rekep.dbt` by name from a profile; nothing else reaches it,
+    so an install without the `dbt` group imports every other module. In a
+    subprocess, because this is a claim about a fresh interpreter."""
+    checked = subprocess.run(  # noqa: S603
+        [
+            sys.executable,
+            "-c",
+            "import json, sys, rekep, rekep.deploy, rekep.fix, rekep.iceberg, rekep.market,"
+            " rekep.pipeline, rekep.text; print(json.dumps(sorted(sys.modules)))",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    loaded = json.loads(checked.stdout)
+    assert "rekep.pipeline" in loaded
+    assert not [name for name in loaded if name == "dbt" or name.startswith(("dbt.", "rekep.dbt"))]
 
 
 @pytest.mark.parametrize("package", PACKAGES)

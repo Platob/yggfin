@@ -108,7 +108,8 @@ a failed source or commit leaves the prior snapshot visible.
 `snapshot_id` is the snapshot this call committed, found by the
 `rekep.books-run-id` summary property (`BOOKS_RUN`) the write records with a
 run identifier of its own -- never by the table's head, which a recovered
-commit acknowledgement may refresh past. It is zero where the table has no
-snapshot and the call wrote nothing. Hand it and the same window to every
+commit acknowledgement may refresh past. An empty window still commits a
+snapshot, which removes the window's earlier rows, and `snapshot_id` names it.
+Hand it and the same window to every
 [`parse_events`](parse-events.md) kind, so all three read one book state even
 when another writer advances `market.books` in between.

@@ -12,6 +12,7 @@ import collections
 import json
 import logging
 import re
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -53,6 +54,9 @@ PRODUCTS = {
 
 #: The day the fixture was captured on: the window every ingestion stage lands.
 WINDOW = window_of("2026-08-14", "2026-08-14")
+
+#: The business identifier whose order the products are read to the cent for.
+CHAIN = "00026877711XOEA0"
 
 #: What the codec answers for one `OrdStatus(39)` code. The normalized
 #: spellings the macros fold on are the codec's and this repository holds no
@@ -488,6 +492,15 @@ def test_the_products_are_built_from_the_fixture_and_a_replay_adds_no_row(
         assert sum(current.column("eventcount").to_pylist()) == PRODUCTS["orders.events"]
         fills = store.dataset("executions.fills").read_arrow_table()
         assert min(fills.column("lastqty").to_pylist()) > 0, "a fill states what it executed"
+        # One order read to the cent: two partial fills and the one that
+        # closed it, folded into its current state and its three fills.
+        order = pyarrow.compute.equal(current.column("orderid"), CHAIN)
+        assert [
+            (row["cumqty"], row["leavesqty"], row["avgpx"], row["state"], row["eventcount"])
+            for row in current.filter(order).to_pylist()
+        ] == [(Decimal(600), Decimal(0), Decimal("83.08"), "80FILLED", 4)]
+        chain = fills.filter(pyarrow.compute.equal(fills.column("orderid"), CHAIN))
+        assert sorted(chain.column("lastqty").to_pylist()) == [Decimal(q) for q in (21, 57, 75)]
         refined = store.dataset("fix.refined").read_arrow_table()
         expired = refined.filter(pyarrow.compute.equal(refined.column("state"), "95EXPIRED"))
         assert expired.num_rows == 1

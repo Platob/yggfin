@@ -59,9 +59,10 @@ def test_deployed_message_table_has_no_implicit_sort_order(tmp_path: Path) -> No
     properties = catalog_properties(tmp_path)
     store = IcebergCatalog(name="rekep", properties=properties)
     try:
-        deploy(store, tables=["logs.messages"])
-        assert store.namespace_exists("logs")
-        assert not store.load_table("logs.messages").sort_order().fields
+        assert deploy(store, tables=[MESSAGES]) == {MESSAGES: "created"}
+        assert store.tables() == [MESSAGES], "a deploy creates only the tables it names"
+        assert not store.load_table(MESSAGES).sort_order().fields
+        assert deploy(store, tables=[MESSAGES]) == {MESSAGES: "present"}
     finally:
         store.close()
 
@@ -103,19 +104,23 @@ def test_a_fix_table_is_deployed_in_the_shape_its_codec_types(tmp_path: Path) ->
             columns = [column.name for column in store.load_table(table).schema().fields]
             assert "symbol" in columns and "msgtype" not in columns, table
             assert len(columns) == 35, table
+        assert sorted(store.tables()) == [RAW, REFINED]
     finally:
         store.close()
 
 
 def test_a_registry_that_types_nothing_is_refused_before_any_table(tmp_path: Path) -> None:
-    """The codec is built before a deploy is called, so a dictionary it
-    refuses never reaches the catalog."""
+    """A dictionary that defines nothing is refused where it is loaded, and a
+    codec over one where the FIX tables' shape is built, so neither reaches
+    the catalog."""
     empty = tmp_path / "empty-fix-registry"
     empty.mkdir()
+    with pytest.raises(ValueError, match="no specification fields"):
+        fix_registry(empty.as_uri())
     store = IcebergCatalog(name="rekep", properties=catalog_properties(tmp_path))
     try:
         with pytest.raises(ValueError, match="no specification fields"):
-            deploy(store, tables=[RAW], codec=fix_codec(fix_registry(empty.as_uri())))
+            deploy(store, tables=[RAW, REFINED], codec=fix_codec(FixRegistry()))
         assert store.tables() == []
     finally:
         store.close()

@@ -222,8 +222,8 @@ where needed). `s3tables` endpoints also honour `AWS_ENDPOINT_URL_S3TABLES` /
 - `parse_books`: `snapshot_millis` (0 = off) emits book snapshots on that grid.
 - `parse_events(kind, catalog, window, *, snapshot_id=None, ...)`: `kind` is
   `orders`, `quotes` or `executions`.
-- Every stage takes `source` and `target` table names, defaulted to the
-  constants above.
+- Every stage takes a `target` table name, and every stage after
+  `parse_messages` a `source` table name, defaulted to the constants above.
 
 ## Deploying tables ahead of a run
 

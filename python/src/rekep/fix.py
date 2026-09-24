@@ -149,12 +149,19 @@ def _load_registry(location: Any) -> FixRegistry:
     finally:
         if owned is not None:
             owned.close()
-    # A store that defined nothing loads as a bare registry: the crate's own
-    # columns and the two standard clocks it seeds beside them, which every
-    # registry holds from construction.
-    if len(dictionary) == len(FixRegistry()):
-        raise ValueError(f"FIX registry contains no specification fields: {location}")
+    _refuse_bare(dictionary, location)
     return dictionary
+
+
+def _refuse_bare(registry: FixRegistry, location: Any) -> None:
+    """Refuse a registry that defines nothing, which would type a narrow table.
+
+    A store that defined nothing loads as a bare registry: the crate's own
+    columns and the two standard clocks it seeds beside them, which every
+    registry holds from construction.
+    """
+    if len(registry) == len(FixRegistry()):
+        raise ValueError(f"FIX registry contains no specification fields: {location}")
 
 
 _DEFAULT_REGISTRY = _load_registry(registry_path())
@@ -437,9 +444,12 @@ def fix_parse_field(
     """The native message row, without columns belonging to a captured line.
 
     The registry owns every column. The field is resolved without reading
-    input, so empty and populated streams publish the same contract.
+    input, so empty and populated streams publish the same contract. A codec
+    over a registry that defines nothing is refused here, where every FIX
+    table's shape is built, before any table is.
     """
     registry = codec.registry if codec is not None else fix_registry()
+    _refuse_bare(registry, "the codec's registry")
     field = fix_schema(registry, FIXMSG)
     field.set_name(name)
     return field

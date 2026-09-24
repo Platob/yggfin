@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import inspect
 import json
 import re
 from collections.abc import Iterator
@@ -11,7 +12,8 @@ from pathlib import Path
 
 import yaml
 
-from rekep import Field, Message
+from rekep import Field, Message, pipeline
+from rekep.deploy import deploy
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
@@ -34,13 +36,8 @@ PAGES = [
 
 
 def code_fences(page: Path, pattern: re.Pattern[str]) -> Iterator[str]:
-    """Read fenced examples, including an exact repository snippet."""
-    for source in pattern.findall(page.read_text(encoding="utf-8")):
-        if match := re.fullmatch(r'\s*--8<-- "([^"]+)"\s*', source):
-            snippet = (ROOT / match.group(1)).resolve()
-            assert snippet.is_relative_to(ROOT), f"{page} includes a file outside the repository"
-            source = snippet.read_text(encoding="utf-8")
-        yield source
+    """Read one page's fenced examples."""
+    yield from pattern.findall(page.read_text(encoding="utf-8"))
 
 
 def test_python_examples_compile() -> None:
@@ -208,3 +205,39 @@ def test_no_page_spells_a_rekep_command() -> None:
     ]
 
     assert not spelled, "\n".join(spelled)
+
+
+#: What a page calls into the processing surface, bound to what each one takes.
+CALLED = {
+    **{name: getattr(pipeline, name) for name in pipeline.__all__ if name.startswith("parse_")},
+    "deploy": deploy,
+}
+
+
+def test_every_documented_stage_call_binds_to_its_signature() -> None:
+    """A page that hands a stage a keyword it does not take compiles, so each
+    call is bound to the function it names instead."""
+    bound = 0
+    for page in PAGES:
+        for index, source in enumerate(code_fences(page, FENCE)):
+            for node in ast.walk(ast.parse(source)):
+                if not isinstance(node, ast.Call):
+                    continue
+                called = node.func.attr if isinstance(node.func, ast.Attribute) else None
+                called = node.func.id if isinstance(node.func, ast.Name) else called
+                if called not in CALLED:
+                    continue
+                if any(isinstance(argument, ast.Starred) for argument in node.args) or any(
+                    keyword.arg is None for keyword in node.keywords
+                ):
+                    continue
+                try:
+                    inspect.signature(CALLED[called]).bind(
+                        *[None] * len(node.args), **{keyword.arg: None for keyword in node.keywords}
+                    )
+                except TypeError as error:
+                    raise AssertionError(
+                        f"{page.relative_to(ROOT)}#{index}: {called}: {error}"
+                    ) from error
+                bound += 1
+    assert bound, "the pages call the stages"
