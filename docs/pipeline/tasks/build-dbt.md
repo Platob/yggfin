@@ -245,7 +245,7 @@ read is pinned against the codec itself in `python/tests/test_dbt.py`.
 ## Sample rows
 
 The sample is business chain `00026877711XOEA0` from
-`python/tests/data/ulbridge.log`: 4 events, one current order, and three fills as `build_dbt`
+`data/capture/ulbridge.log`: 4 events, one current order, and three fills as `build_dbt`
 lands them in `orders.events`, `orders.current` and `executions.fills`. An
 identity is shown by its last eight hex digits behind a leading `…`, and the
 stored value is sixteen bytes; a null is an empty cell.

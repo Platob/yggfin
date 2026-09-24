@@ -122,8 +122,9 @@ See [logs and results](operations/logs.md) for counter meanings.
 
 ## Existing ingestion and dbt samples
 
-The original ingestion and dbt pages show business chain `00026877711XOEA0` from the test capture as
-that task lands it. The generated example contains 27 source lines and four walked events,
+The original ingestion and dbt pages show business chain `00026877711XOEA0`
+from `data/capture/ulbridge.log`, the one file the default `file:data/capture`
+reads, as that task lands it. The generated example contains 27 source lines and four walked events,
 one current order, and three fills. `tools/pipeline_samples.py` runs the
 four tasks over the fixture and renders the tables into
 `docs/pipeline/tasks/samples/`, one file per page, and each page includes its

@@ -72,7 +72,7 @@ no column of its own: it is the record clock, consumed into `currunix` at
 nanoseconds UTC whatever the width of its fraction, so the line's instant is
 stated once rather than read twice. `parse_mtime` is the native default, on,
 and is never turned off. The fraction reads every width this bridge writes:
-three digits under a point (`.147`) or a comma (`,148`), none at all, and
+three digits under a point (`.769`) or a comma (`,769`), none at all, and
 grouped micros (`.524_315`). Its width types no column; what it decides is
 which lines the header matches.
 
@@ -109,25 +109,27 @@ carries no column of the line beside the FIX row.
 ## A bridge that writes the header its own way
 
 `rowheader` reads one. A capture is written by several loggers and they do not
-always agree on the clock: the shipped 14-line sample spells its fraction
-`.147`, `,148` and `.147_250` in one file, and the shipped header reads all
-three. Its 10 lines under the bridge's bracket are dated by the header; its 4
-lines under no bracket -- three Java stack lines and one line with no level
--- are dated by the file's own modification time, with every capture null. A
-bridge writing six digits straight on, `.147250`, is read by a header of its
-own through `Message.text_options(rowheader)`; the width is a parameter, not
-an edit of the constant, and it types no column either way.
+always agree on the clock: the shipped capture spells its fraction `.769` on
+129 lines and `.524_315` on 15, and the shipped header dates all 144. A line a
+header misses is still a row -- dated by the modification time of the object
+it was read from, with every capture null -- so the fraction a header admits
+decides which lines it dates. A bridge writing six digits straight on,
+`.524315`, is read by a header of its own through
+`Message.text_options(rowheader)`; the width is a parameter, not an edit of
+the constant, and it types no column either way.
 
 ```python
 from rekep import IOBase, Message
 from rekep.times import ULBRIDGE_ROWHEADER
 
-widened = ULBRIDGE_ROWHEADER.replace(
-    r"(?:[.,]\d{3}(?:_\d{3})?)?", r"(?:[.,]\d{3}(?:_?\d{3})?)?"
-)
+fraction = r"(?:[.,]\d{3}(?:_\d{3})?)?"
+widened = ULBRIDGE_ROWHEADER.replace(fraction, r"(?:[.,]\d{3}(?:_?\d{3})?)?")
+narrowed = ULBRIDGE_ROWHEADER.replace(fraction, r"(?:[.,]\d{3})?")
 source = IOBase.from_uri("file:data/capture")
-plain = source.read_arrow_reader(options=Message.text_options()).read_all()
-read = source.read_arrow_reader(options=Message.text_options(widened)).read_all()
+
+
+def read(rowheader=None):
+    return source.read_arrow_reader(options=Message.text_options(rowheader)).read_all()
 
 
 def dated(table):
@@ -136,10 +138,14 @@ def dated(table):
     return table.num_rows - table.column("msgpluginid").null_count
 
 
-# Every line is a row either way. The sample spells no six-digit fraction, so
-# the wider header dates the same lines the shipped one does.
-assert plain.num_rows == read.num_rows == 14
-assert dated(plain) == dated(read) == 10
+plain, wide, narrow = read(), read(widened), read(narrowed)
+
+# Every line is a row whatever the header. The capture spells no six-digit
+# fraction, so the wider header dates the same lines the shipped one does; a
+# header without the grouped micros misses the 15 lines that spell them.
+assert plain.num_rows == wide.num_rows == narrow.num_rows == 144
+assert dated(plain) == dated(wide) == 144
+assert dated(narrow) == 129
 ```
 
 What a header may change is the layout. What it may not change is the names:
@@ -228,7 +234,7 @@ and two identities.
 
 ## Sample rows
 
-The sample is 27 capture lines from `python/tests/data/ulbridge.log` that the
+The sample is 27 capture lines from `data/capture/ulbridge.log` that the
 FIX walk later joins under business chain `00026877711XOEA0`, as
 `parse_messages` lands them in `logs.messages`. An
 identity is shown by its last eight hex digits behind a leading `…`, and the
