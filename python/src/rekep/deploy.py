@@ -1,12 +1,12 @@
-"""The tables ingestion writes, created before it runs.
+"""The tables the pipeline writes, created before it runs.
 
-A task creates its own target on the first write, so a run against an
-empty catalog already lands every table it needs. That is not enough where the
-catalog is not the runner's to write to: a Glue catalog over an S3 warehouse
-is deployed once, by whoever owns the account, ahead of the jobs that fill it.
-So the layout is declared here rather than discovered from a run -- and both
-paths still create the same table, because `create_with_field` is the one
-place a table is made.
+A `rekep.pipeline` stage creates its own target on the first write, so a run
+against an empty catalog already lands every table it needs. That is not
+enough where the catalog is not the runner's to write to: a Glue catalog over
+an S3 warehouse is deployed once, by whoever owns the account, ahead of the
+jobs that fill it. So the layout is declared here rather than discovered from
+a run -- and both paths still create the same table, because
+`create_with_field` is the one place a table is made.
 
 Declaring it here also gives the layout a single reader: the tables, the shape
 each one carries and the columns each is laid out by, in the order a run
@@ -23,6 +23,7 @@ from rekep.fields import Field, field_of
 from rekep.fix import FixCodec, fix_message_field
 from rekep.iceberg import IcebergCatalog
 from rekep.market import book_field, market_event_field
+from rekep.pipeline import BOOKS, EVENTS, MESSAGES, RAW, REFINED
 from rekep.text import Message
 
 
@@ -33,7 +34,7 @@ class Deployed:
     #: Catalog table identifier, `namespace.table`.
     table: str
 
-    #: The field factory used by the task that writes this table.
+    #: The field factory the stage that writes this table declares it with.
     shape: Callable[..., Field]
 
     #: Physical order is opt-in; pipeline reads request their logical order.
@@ -52,13 +53,11 @@ class Deployed:
 #: two FIX tables are one shape: what the parse answered and what the walk
 #: restated are the same row, and only what the walk filled tells them apart.
 TABLES: tuple[Deployed, ...] = (
-    Deployed("logs.messages", Message.into_field),
-    Deployed("fix.raw", fix_message_field, typed=True),
-    Deployed("fix.refined", fix_message_field, typed=True),
-    Deployed("market.books", book_field),
-    Deployed("market.orders", market_event_field),
-    Deployed("market.quotes", market_event_field),
-    Deployed("market.executions", market_event_field),
+    Deployed(MESSAGES, Message.into_field),
+    Deployed(RAW, fix_message_field, typed=True),
+    Deployed(REFINED, fix_message_field, typed=True),
+    Deployed(BOOKS, book_field),
+    *(Deployed(table, market_event_field) for table in EVENTS.values()),
 )
 
 

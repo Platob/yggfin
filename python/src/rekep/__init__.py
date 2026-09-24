@@ -8,7 +8,6 @@ from rekep.convert import Convertible
 from rekep.dataset import Dataset
 from rekep.fields import Field, scalar
 from rekep.fix import FixCodec, FixMsg, FixRegistry, fix_registry
-from rekep.tasks import Task
 from rekep.text import Message
 from rekep.times import datetime_of, unix_of
 
@@ -25,7 +24,6 @@ __all__ = [
     "IOBase",
     "Message",
     "Scalar",
-    "Task",
     "TextOptions",
     "Uri",
     "Url",

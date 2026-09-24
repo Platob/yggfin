@@ -3,8 +3,8 @@
 dbt-duckdb reaches anything that is not DuckDB through a plugin module it
 imports by name, and this is that module: a source is one Iceberg read, a model
 is one Iceberg commit, and DuckDB owns only the SQL in between. dbt imports
-it, and `rekep.tasks.build_dbt` only when it runs, under the `runner` group a
-task executes in -- so the package itself declares no dbt dependency.
+it by the name a profile gives (`data/dbt/profiles.yml`), under the `dbt`
+dependency group -- so the package itself declares no dbt dependency.
 
 A model's own configuration is the declaration: `table` names the Iceberg table,
 `primary_key`, `partition_by`, `sort_by` and `arrow_types` say what its rows
@@ -32,10 +32,8 @@ from rekep.iceberg import IcebergCatalog
 
 LOGGER = logging.getLogger(__name__)
 
-#: The catalog an operator names without editing the profile. It holds the same
-#: mapping every task's `catalog` parameter spells, as JSON, and wins over the
-#: profile's own so one deployment configures dbt the way it configures every
-#: other task.
+#: The catalog a deployment names without editing the profile: the mapping
+#: `IcebergCatalog.from_dict` reads, as JSON. It wins over the profile's own.
 CATALOG = "REKEP_DBT_CATALOG"
 
 #: What a source or a model takes for a table it does not name itself.
@@ -45,16 +43,10 @@ TABLE = "{schema}.{identifier}"
 #: this much of a model at a time, not the whole of it.
 BATCH_ROW_SIZE = 65_536
 
-#: Rows each model committed, by the table it committed them to. A dbt build and
-#: this module share one process, so what a run wrote is read back here rather
-#: than guessed from a run result; `rekep.dbt.committed()` clears it for the
-#: next build.
-COMMITTED: dict[str, int] = {}
-
 #: Every plugin in this process holding a catalog open. dbt builds a plugin per
 #: run, keeps it for the life of the process and hands it no teardown, so the
-#: catalog a build read and committed through outlives the build unless a task
-#: closes it; `rekep.dbt.released()` is what closes them.
+#: catalog a build read and committed through outlives a build run in its
+#: caller's process unless the caller closes it; `rekep.dbt.released()` does.
 OPENED: list[Plugin] = []
 
 #: What `mode` may say, and what the dataset verb each one names did. An append
@@ -76,20 +68,14 @@ def catalog_settings(declared: Any) -> dict[str, Any]:
     return dict(declared)
 
 
-def committed() -> dict[str, int]:
-    """What has been committed since the last call, and clear the record."""
-    written = dict(COMMITTED)
-    COMMITTED.clear()
-    return written
-
-
 def released() -> int:
     """Close the catalog every plugin opened, and say how many were holding one.
 
     An Iceberg catalog is a live SQLite or REST connection, and dbt hands a
     plugin nothing that says the build is over -- so a run that ends leaves one
-    open, and on Windows an open file is one its caller cannot delete. A task
-    calls this once its build is done, the way it calls `committed()`.
+    open, and on Windows an open file is one its caller cannot delete. A
+    caller running `dbtRunner` in its own process calls this once a build is
+    done; a `dbt build` process closes them by exiting.
     """
     held = list(OPENED)
     OPENED.clear()
@@ -260,20 +246,17 @@ class Plugin(BasePlugin):
                 written = dataset.append_arrow_reader(applied, field)
             else:
                 written = dataset.overwrite_arrow_reader(applied, field, merge_by=merge_by)
-        COMMITTED[table] = COMMITTED.get(table, 0) + written
         LOGGER.info("%s %s %d rows into %s", relation.identifier, MODES[mode], written, table)
 
 
 __all__ = [
     "BATCH_ROW_SIZE",
     "CATALOG",
-    "COMMITTED",
     "MODES",
     "OPENED",
     "TABLE",
     "Plugin",
     "catalog_settings",
-    "committed",
     "declared_field",
     "released",
 ]

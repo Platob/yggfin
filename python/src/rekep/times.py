@@ -32,9 +32,9 @@ EPOCH = datetime.datetime(1970, 1, 1, tzinfo=UTC)
 EPOCH_DATE = EPOCH.date()
 EPOCH_ORDINAL = EPOCH_DATE.toordinal()
 
-#: How far back a run reaches when its parameters name no `start`: one day
-#: before the instant it ends at. A task that names neither bound covers the
-#: last day, and a schedule that names both covers exactly its interval.
+#: How far back `window_of` reaches when it is given no `start`: one day
+#: before the instant it ends at. A window naming neither bound covers the
+#: last day, and one naming both covers exactly that interval.
 WINDOW = datetime.timedelta(days=1)
 
 #: Instants a configuration may name instead of spelling. Read when the value
