@@ -3,46 +3,41 @@
 from __future__ import annotations
 
 import ast
+import hashlib
+import inspect
 import json
 import re
-import shlex
 from collections.abc import Iterator
 from pathlib import Path
 
 import yaml
 
-from rekep import Field, Message
-from rekep.cli import _overrides, _parser, _settings
-from rekep.tasks import Task
+from rekep import Field, Message, pipeline
+from rekep.deploy import deploy
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
 FENCE = re.compile(r"^```python\n(.*?)^```", re.MULTILINE | re.DOTALL)
 JSON_FENCE = re.compile(r"^```json\n(.*?)^```", re.MULTILINE | re.DOTALL)
-SHELL_FENCE = re.compile(r"^```bash\n(.*?)^```", re.MULTILINE | re.DOTALL)
-INVOKED = re.compile(r"(?:^|\s)rekep\s")
-LOOP = re.compile(r"^\s*for (\w+) in ([^;]+); do\s*$")
+
+#: A command of the `rekep` console script, which the package does not install.
+COMMAND = re.compile(r"\brekep\s+(?:tasks|fields)\b")
 
 #: Every page a reader copies a command from.
 PAGES = [
     ROOT / "README.md",
     ROOT / ".claude" / "skills" / "rekep" / "SKILL.md",
-    ROOT / "airflow" / "README.md",
     ROOT / "config" / "README.md",
     ROOT / "data" / "README.md",
     ROOT / "data" / "dbt" / "README.md",
+    ROOT / "schemas" / "README.md",
     *sorted(DOCS.rglob("*.md")),
 ]
 
 
 def code_fences(page: Path, pattern: re.Pattern[str]) -> Iterator[str]:
-    """Read fenced examples, including an exact repository snippet."""
-    for source in pattern.findall(page.read_text(encoding="utf-8")):
-        if match := re.fullmatch(r'\s*--8<-- "([^"]+)"\s*', source):
-            snippet = (ROOT / match.group(1)).resolve()
-            assert snippet.is_relative_to(ROOT), f"{page} includes a file outside the repository"
-            source = snippet.read_text(encoding="utf-8")
-        yield source
+    """Read one page's fenced examples."""
+    yield from pattern.findall(page.read_text(encoding="utf-8"))
 
 
 def test_python_examples_compile() -> None:
@@ -72,6 +67,15 @@ def test_json_examples_parse() -> None:
             raise AssertionError(f"invalid JSON in {page.relative_to(DOCS)}: {error}") from error
 
 
+def test_the_capture_is_the_bytes_its_page_pins() -> None:
+    """`data/capture/ulbridge.log` is the core's own capture at the pinned
+    release, and the digest its page states is what says so."""
+    page = (ROOT / "data" / "README.md").read_text(encoding="utf-8")
+    (digest,) = re.findall(r"^```text\n([0-9a-f]{64})\n```", page, re.MULTILINE)
+    capture = (ROOT / "data" / "capture" / "ulbridge.log").read_bytes()
+    assert hashlib.sha256(capture).hexdigest() == digest
+
+
 def test_navigation_names_existing_pages() -> None:
     config = yaml.load((ROOT / "mkdocs.yml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
 
@@ -91,7 +95,6 @@ def test_navigation_names_existing_pages() -> None:
 
 
 def test_docs_publish_the_native_message_and_market_contracts() -> None:
-    config = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
     message_schema = (ROOT / "schemas" / "rekep" / "message.json").read_text(encoding="utf-8")
     fix_schema = (ROOT / "schemas" / "rekep" / "fixmsg.json").read_text(encoding="utf-8")
 
@@ -110,13 +113,6 @@ def test_docs_publish_the_native_message_and_market_contracts() -> None:
         "msgpluginid",
         "loglevel",
     ]
-    assert "pipeline/tasks/parse-fix-raw.md" in config
-    assert "pipeline/tasks/parse-fix-refined.md" in config
-    for kind in ("books", "orders", "quotes", "executions"):
-        assert f"pipeline/tasks/parse-{kind}.md" in config
-    assert "pipeline/tasks/parse-fix.md" not in config
-    assert "pipeline/tasks/build-dbt.md" in config
-    assert "market/" not in config
     assert sorted(path.name for path in (ROOT / "schemas" / "rekep").glob("*.json")) == [
         "book.json",
         "fixmsg.json",
@@ -142,7 +138,7 @@ def test_docs_publish_the_native_message_and_market_contracts() -> None:
 
 def test_docs_record_the_measured_message_rates() -> None:
     benchmark = (DOCS / "storage" / "benchmarks.md").read_text(encoding="utf-8")
-    task = (DOCS / "pipeline" / "tasks" / "parse-messages.md").read_text(encoding="utf-8")
+    task = (DOCS / "pipeline" / "parse-messages.md").read_text(encoding="utf-8")
 
     assert "70,000" in benchmark
     assert "timestamp[us, UTC]" in benchmark
@@ -156,8 +152,8 @@ def test_docs_record_the_measured_message_rates() -> None:
 
 
 def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
-    raw = (DOCS / "pipeline" / "tasks" / "parse-fix-raw.md").read_text(encoding="utf-8")
-    refined = (DOCS / "pipeline" / "tasks" / "parse-fix-refined.md").read_text(encoding="utf-8")
+    raw = (DOCS / "pipeline" / "parse-fix-raw.md").read_text(encoding="utf-8")
+    refined = (DOCS / "pipeline" / "parse-fix-refined.md").read_text(encoding="utf-8")
     schemas = (ROOT / "schemas" / "README.md").read_text(encoding="utf-8")
 
     assert "parse_text_arrow_reader" in raw
@@ -172,8 +168,8 @@ def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
 
 
 def test_public_python_uses_the_rekep_surface() -> None:
-    """Examples, DAGs and tools import their product, not its runtime."""
-    roots = [ROOT / "README.md", ROOT / "schemas", DOCS, ROOT / "airflow", ROOT / "tools"]
+    """Examples and tools import their product, not its runtime."""
+    roots = [ROOT / "README.md", ROOT / "schemas", DOCS, ROOT / "tools"]
     sources = []
     for root in roots:
         for path in [root] if root.is_file() else root.rglob("*"):
@@ -196,80 +192,52 @@ def test_public_python_uses_the_rekep_surface() -> None:
         ), path
 
 
-def test_each_task_page_publishes_its_defaults_verbatim() -> None:
-    """Pasted defaults and repository snippets state what a run takes."""
-    pages = {
-        "pipeline/tasks/parse-messages.md": "parse_messages",
-        "pipeline/tasks/parse-fix-raw.md": "parse_fix_raw",
-        "pipeline/tasks/parse-fix-refined.md": "parse_fix_refined",
-        "pipeline/tasks/parse-books.md": "parse_books",
-        "pipeline/tasks/parse-orders.md": "parse_orders",
-        "pipeline/tasks/parse-quotes.md": "parse_quotes",
-        "pipeline/tasks/parse-executions.md": "parse_executions",
-        "pipeline/tasks/build-dbt.md": "build_dbt",
-    }
+def test_no_page_spells_a_rekep_command() -> None:
+    """The package is called from Python and installs no console script, so a
+    `rekep tasks` or `rekep fields` line hands its reader a command that is not
+    there: a stage is a `rekep.pipeline` call and a contract an
+    `iceberg_contract` one."""
+    spelled = [
+        f"{page.relative_to(ROOT)}:{number}: {line.strip()}"
+        for page in PAGES
+        for number, line in enumerate(page.read_text(encoding="utf-8").splitlines(), 1)
+        if COMMAND.search(line)
+    ]
 
-    for page, name in pages.items():
-        shown = [json.loads(source) for source in code_fences(DOCS / page, JSON_FENCE)]
-        assert Task(name).parameters in shown, f"{page} no longer shows {name}.json as it is"
+    assert not spelled, "\n".join(spelled)
 
 
-def shell_commands() -> Iterator[tuple[Path, list[str]]]:
-    """Every `rekep` invocation in a shell fence, as the arguments after `rekep`.
+#: What a page calls into the processing surface, bound to what each one takes.
+CALLED = {
+    **{name: getattr(pipeline, name) for name in pipeline.__all__ if name.startswith("parse_")},
+    "deploy": deploy,
+}
 
-    A command inside a `for` loop is read once per value the loop names. A
-    command spelled with a placeholder, `<name>`, states a form rather than a
-    command and is left out.
-    """
+
+def test_every_documented_stage_call_binds_to_its_signature() -> None:
+    """A page that hands a stage a keyword it does not take compiles, so each
+    call is bound to the function it names instead."""
+    bound = 0
     for page in PAGES:
-        for fence in SHELL_FENCE.findall(page.read_text(encoding="utf-8")):
-            loops: dict[str, list[str]] = {}
-            for line in fence.replace("\\\n", " ").splitlines():
-                if looped := LOOP.match(line):
-                    loops[looped.group(1)] = looped.group(2).split()
+        for index, source in enumerate(code_fences(page, FENCE)):
+            for node in ast.walk(ast.parse(source)):
+                if not isinstance(node, ast.Call):
                     continue
-                if "<" in line or not INVOKED.search(line):
+                called = node.func.attr if isinstance(node.func, ast.Attribute) else None
+                called = node.func.id if isinstance(node.func, ast.Name) else called
+                if called not in CALLED:
                     continue
-                spellings = [line]
-                for variable, values in loops.items():
-                    spellings = [
-                        re.sub(rf"\$\{{{variable}\}}|\${variable}\b", value, spelled)
-                        for spelled in spellings
-                        for value in values
-                    ]
-                for spelled in dict.fromkeys(spellings):
-                    words = shlex.split(spelled, comments=True)
-                    if "rekep" not in words:
-                        continue
-                    words = words[words.index("rekep") + 1 :]
-                    for end, word in enumerate(words):
-                        if word in {"&", "&&", ";", "|", "||"}:
-                            words = words[:end]
-                            break
-                    yield page, words
-
-
-def test_documented_commands_parse() -> None:
-    """A documented command is one the CLI takes, naming what its task declares."""
-    commands = list(shell_commands())
-
-    assert commands
-    for page, words in commands:
-        where = f"{page.relative_to(ROOT)}: rekep {shlex.join(words)}"
-        try:
-            arguments = _parser().parse_args(words)
-        except SystemExit as ended:
-            # `--help` and `--version` answer and exit cleanly; a refusal does not.
-            assert ended.code == 0, where
-            continue
-        if getattr(arguments, "command", None) != "tasks" or arguments.task == "list":
-            continue
-        # What `main` does after parsing, but for reading a parameters file,
-        # which a page names without shipping: every `--parameter` is a pair
-        # the task declares, and every `--table-property` a pair.
-        arguments.parameters_file = None
-        try:
-            Task(arguments.task).resolved(_overrides(arguments))
-            _settings(getattr(arguments, "table_property", None))
-        except (TypeError, ValueError) as refused:
-            raise AssertionError(f"{where}: {refused}") from refused
+                if any(isinstance(argument, ast.Starred) for argument in node.args) or any(
+                    keyword.arg is None for keyword in node.keywords
+                ):
+                    continue
+                try:
+                    inspect.signature(CALLED[called]).bind(
+                        *[None] * len(node.args), **{keyword.arg: None for keyword in node.keywords}
+                    )
+                except TypeError as error:
+                    raise AssertionError(
+                        f"{page.relative_to(ROOT)}#{index}: {called}: {error}"
+                    ) from error
+                bound += 1
+    assert bound, "the pages call the stages"

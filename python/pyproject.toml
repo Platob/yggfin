@@ -53,11 +53,6 @@ s3tables = ["pyiceberg[rest-sigv4]>=0.12"]
 polars = ["polars>=1.36"]
 all = ["rekep[glue,iceberg,polars,s3tables]"]
 
-[project.scripts]
-# Publishing a declaration and checking one loads are things CI and a
-# pre-commit hook need without writing Python.
-rekep = "rekep.cli:main"
-
 [project.urls]
 Homepage = "https://github.com/Platob/yggfin"
 Repository = "https://github.com/Platob/yggfin"
@@ -75,48 +70,14 @@ dev = [
     "tomli>=2.0; python_version < '3.11'",
     "rekep[iceberg,polars,s3tables]",
 ]
-# What running a task needs beyond the package: Glue is the catalog a
-# production warehouse is behind, and nothing here is imported by `src/` at
-# import time -- a task is a job, not a feature of the package -- so it is a
-# group rather than an extra. `rekep tasks <name> run` executes under it.
-#
-# dbt is here for the same reason and no other: `build_dbt` is a task, it runs
-# a build in its own process, and the plugin dbt loads to reach this package is
-# `rekep.dbt`, which `rekep.tasks.build_dbt` imports only when it runs. A
-# runner that can execute one task can execute every one of them, so the group
-# that runs a task is the group that carries it.
-#
-# It narrows three pins the rest of the lock shares, because dbt states upper
-# bounds where Airflow states none: `protobuf<7` (dbt-adapters and dbt-common),
-# `pathspec<1.1` (dbt-core and dbt-common), and `more-itertools<11` through
-# metricflow. Each resolves to a release every other consumer already accepts,
-# and the whole suite -- Airflow's own tests included -- runs against them.
-runner = [
+# What building the dbt products under `data/dbt` needs. dbt loads
+# `rekep.dbt` by the name the profile gives, and nothing in `src/` imports dbt
+# otherwise, so it is a group rather than an extra; a production build reads a
+# Glue or S3 Tables catalog, which is why it carries those extras too.
+dbt = [
     "dbt-core>=1.10,<2",
     "dbt-duckdb>=1.9,<2",
     "rekep[glue,iceberg,polars,s3tables]",
-]
-# What the Airflow DAG and its operator are tested against. Airflow is an
-# orchestrator this repository is deployed into, never a runtime dependency of
-# `rekep`, so it stays out of every extra and out of `runner`: the operator
-# launches `rekep tasks <name> run` under that group. Airflow runs on POSIX
-# only, so the marker keeps CI's Windows leg syncable and the tests skip
-# themselves there through `pytest.importorskip`.
-#
-# 3.1 is the floor the operator's own imports set, not a preference: it reads
-# `AirflowException` out of `airflow.sdk.exceptions`, which the task SDK grew
-# in 1.1.0. Airflow 3.0.x pins `apache-airflow-task-sdk<1.1.0`, so resolving to
-# it makes the operator -- and with it the whole DAG -- fail to import.
-#
-# The Amazon provider carries `EksPodOperator`, which `EksRekepOperator`
-# dispatches a task through onto an EKS cluster; its `cncf-kubernetes` extra is
-# the `KubernetesPodOperator` that one is built on. 9.36 is the release this
-# lock resolved and the operator is tested against.
-airflow = [
-    "apache-airflow>=3.1,<4; sys_platform != 'win32'",
-    "apache-airflow-providers-amazon[cncf-kubernetes]>=9.36,<10; sys_platform != 'win32'",
-    "apache-airflow-providers-standard>=1.0,<2; sys_platform != 'win32'",
-    "rekep",
 ]
 # What the benchmarks race the shipped implementations against. `polars` is
 # shipped as an extra and `bench_iceberg` races the export this package selects
@@ -126,17 +87,8 @@ bench = [
 ]
 
 [tool.uv]
-# `uv run pytest` syncs these, so a test that imports dbt or airflow finds
-# them: the runner group is what a task executes under, and the airflow group
-# is what the DAG and its operator are tested against.
-default-groups = ["dev", "runner", "airflow"]
-# `pygtrie` reaches this project only through Airflow's logging, and 2.6.0 was
-# yanked for the reason that bites here: it declares no `requires-python` while
-# annotating `typing.Self`, so a resolver installs it on 3.10 and every Airflow
-# import then fails with `module 'typing' has no attribute 'Self'`. 2.6.1 is
-# the release that states `>=3.11`, so pinning below it on an older interpreter
-# is what makes the resolution honest. Nothing constrains a newer one.
-constraint-dependencies = ["pygtrie<2.6; python_version < '3.11'"]
+# `uv run pytest` syncs these, so the dbt plugin's tests find dbt.
+default-groups = ["dev", "dbt"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rekep"]

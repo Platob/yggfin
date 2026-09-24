@@ -49,8 +49,8 @@ All three ingestion tables replace on their sole `curruuid` key. On
 `logs.messages` it identifies one line; on the FIX tables it identifies one
 settled event, because a bridge may log that event again at every hop it
 passes.
-A run parses one window, `[start, end)` -- the last day up to now when a task
-is given neither bound -- and reprocessing the same window reads the same rows
+A run parses one window, `[start, end)` -- the last day up to now when
+`window_of` is given neither bound -- and reprocessing the same window reads the same rows
 and lands them over the ones it landed before: the table holds each key once,
 and the run reports what it carried. The walk re-settles the identity of a
 message it dates, so a `fix.refined` key is not always its `fix.raw` twin's:
@@ -60,4 +60,4 @@ message it dates, so a `fix.refined` key is not always its `fix.raw` twin's:
 
 Schema JSON derives from the runtime field. Product pages describe its
 meaning and link to the reviewed snapshot. Examples use the same public calls
-as tasks, tests, and operators.
+as the pipeline stages and the tests.

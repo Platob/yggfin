@@ -1,8 +1,8 @@
 # Architecture
 
-rekep presents one public API over a native, Arrow-first data path. Tasks,
-tools, and documentation use `rekep` names; implementation dependencies do not
-leak into an application.
+rekep presents one public API over a native, Arrow-first data path. The
+pipeline stages, tools, and documentation use `rekep` names; implementation
+dependencies do not leak into an application.
 
 ```mermaid
 flowchart LR
@@ -29,7 +29,7 @@ flowchart LR
 | market core | admission, continuation, book state, expirations, native event identities and AE decomposition |
 | Arrow | columnar delta selection and list flattening |
 | Iceberg | table conversion, identifiers, snapshots, scan planning, atomic window commits |
-| tasks | task parameters, stage boundaries, counts, and orchestration |
+| pipeline | one function per table: its window, its source scan, its write mode, and what it answers |
 
 There is one `Field`, one resource handle, one text reader, one codec, and one
 FIX registry. rekep re-exports those types rather than wrapping them in
@@ -55,9 +55,9 @@ Iceberg. `parse_fix_raw` reads that table as another reader, projected to the
 seven columns the parse consumes, passes it through the codec's parse, and
 writes the native FixMsg row directly. `parse_fix_refined` reads `fix.raw` in
 turn, walks those native rows, and writes the same shape. `parse_books` reads
-strictly its refined window into the native book reader, then the three flat
-event tasks select deltas or execution leaves with Arrow kernels from one
-pinned book snapshot. The book fold starts without pre-window depth. No production stage
+strictly its refined window into the native book reader, then `parse_events`
+selects deltas or execution leaves with Arrow kernels from one pinned book
+snapshot, one event kind per call. The book fold starts without pre-window depth. No production stage
 converts rows through Python dictionaries or stages an S3 object on local
 disk.
 
@@ -93,35 +93,28 @@ provenance links across storage.
 ## Repository layout
 
 ```text
-python/src/rekep/         public package and bundled registry
-python/src/rekep/tasks/   one module per task, beside the JSON of its defaults:
-  parse_messages          text lines
-  parse_fix_raw           FIX parse
-  parse_fix_refined       FIX lifecycle
-  parse_books             native book fold
-  parse_orders            order-delta projection
-  parse_quotes            quote-delta projection
-  parse_executions        execution projection
-  events                  the body the three projections share, not a task
-  build_dbt               the dbt build
-  optimize_iceberg        maintenance
-airflow/                  DAGs and the operator that runs `rekep tasks <name> run`
-schemas/rekep/            reviewed table contracts
-docs/                     contracts, operations, products, and roadmap
-tools/                    registry asset dump and documentation projection
-data/                     default capture, catalog and warehouse locations
-data/dbt/                 the dbt project: models, schemas, macros, one profile
-config/                   an operator's own FIX dictionary, when one is used
+python/src/rekep/             public package and bundled registry
+python/src/rekep/pipeline.py  one function per table the graph writes:
+  parse_messages              text lines
+  parse_fix_raw               FIX parse
+  parse_fix_refined           FIX lifecycle
+  parse_books                 native book fold
+  parse_events                order, quote or execution projection
+python/src/rekep/deploy.py    the seven tables, created ahead of a run
+python/src/rekep/dbt.py       the dbt-duckdb plugin
+schemas/rekep/                reviewed table contracts
+docs/                         contracts, pipeline, products, storage, and roadmap
+tools/                        the FIX registry asset dump
+data/capture/                 the checked ULBridge capture
+data/dbt/                     the dbt project: models, schemas, macros, one profile
+config/                       an operator's own FIX dictionary, when one is used
 ```
 
-`rekep tasks list` names each task with the tables it writes, and
-`rekep tasks <name> show` prints its defaults.
+Maintenance is not a stage: it rewrites the tables the stages wrote and
+declares none of its own, and it is documented with the storage it settles,
+under [Iceberg maintenance](../storage/iceberg.md#maintenance).
 
-`optimize_iceberg` is maintenance rather than ingestion: it is not in the
-scheduled graph, and it is documented with the storage it settles, under
-[Iceberg maintenance](../storage/iceberg.md#maintenance).
-
-`build_dbt` is derivation rather than ingestion: dbt owns the SQL its products
+The dbt products are derivation rather than ingestion: dbt owns the SQL they
 are written in, and `rekep.dbt` is the one seam that makes a source an Iceberg
-read and a model an Iceberg commit through the dataset above. It is documented
-with the task that runs it, under [Build dbt](../pipeline/tasks/build-dbt.md).
+read and a model an Iceberg commit through the dataset above. `dbt build` runs
+them, under [dbt products](../pipeline/dbt.md).

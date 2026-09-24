@@ -3,40 +3,38 @@
 from __future__ import annotations
 
 import datetime
-import json
 from contextlib import ExitStack
 from pathlib import Path
 
+import pyarrow
 import pytest
 
-from rekep import IOBase, Message, cli
+from rekep import IOBase, Message
 from rekep.fields import stored_arrow_reader
 from rekep.fix import fix_codec, fix_message_field, fix_parse_arrow_reader
-from rekep.iceberg import IcebergCatalog
+from rekep.pipeline import parse_fix_refined
+from rekep.times import window_of
+
+from .test_pipeline import Warehouse
 
 UTC = datetime.timezone.utc
 pytestmark = pytest.mark.integration
+
+#: The hour the refined run covers; the walk reads the one before it too.
+HOUR = window_of("2026-08-14T10:00:00Z", "2026-08-14T11:00:00Z")
 
 
 @pytest.mark.parametrize("expires", ["10:40:00", "11:40:00"])
 @pytest.mark.parametrize("previous_clock", ["09:59:00", "08:59:00"])
 def test_refined_uses_previous_hour_and_filters_history_and_future_expiry(
     tmp_path: Path,
-    capsys: pytest.CaptureFixture,
     monkeypatch: pytest.MonkeyPatch,
     expires: str,
     previous_clock: str,
 ) -> None:
     from pyiceberg.io.pyarrow import PyArrowFile
 
-    catalog = {
-        "name": "window",
-        "properties": {
-            "type": "sql",
-            "uri": f"sqlite:///{tmp_path / 'catalog.db'}",
-            "warehouse": (tmp_path / "warehouse").as_uri(),
-        },
-    }
+    warehouse = Warehouse(tmp_path, HOUR)
     capture = tmp_path / "hours.log"
     # Out-of-order hours ensure physical arrival order cannot stand in for
     # event order. Distinct older/newer chains must be pruned before reading.
@@ -60,8 +58,7 @@ def test_refined_uses_previous_hour_and_filters_history_and_future_expiry(
         encoding="utf-8",
     )
     with ExitStack() as opened:
-        store = IcebergCatalog.from_dict(catalog)
-        opened.callback(store.close)
+        store = opened.enter_context(warehouse.opened())
         codec = fix_codec(threads=1)
         field = fix_message_field(codec)
         source = IOBase.from_uri(capture.as_uri())
@@ -85,22 +82,10 @@ def test_refined_uses_previous_hour_and_filters_history_and_future_expiry(
         return original(self, *args, **kwargs)
 
     monkeypatch.setattr(PyArrowFile, "open", tracked)
-    argv = [
-        "tasks",
-        "parse_fix_refined",
-        "run",
-        "--parameter",
-        f"catalog={json.dumps(catalog)}",
-        "--parameter",
-        'start="2026-08-14T10:00:00Z"',
-        "--parameter",
-        'end="2026-08-14T11:00:00Z"',
-    ]
-    assert cli.main(argv) == 0
-    result = json.loads(capsys.readouterr().out)
+    landed = warehouse.run(parse_fix_refined)
     has_history = previous_clock == "09:59:00"
-    assert result["read"] == (2 if has_history else 1)
-    assert result["written"] == (2 if expires == "10:40:00" else 1)
+    assert landed.read == (2 if has_history else 1)
+    assert landed.written == (2 if expires == "10:40:00" else 1)
     assert paths and all(
         "currunix_hour=2026-08-14-09" in path or "currunix_hour=2026-08-14-10" in path
         for path in paths
@@ -108,10 +93,9 @@ def test_refined_uses_previous_hour_and_filters_history_and_future_expiry(
     first_hour = "09" if has_history else "10"
     assert f"currunix_hour=2026-08-14-{first_hour}" in paths[0]
 
-    def refined_rows():
+    def refined_rows() -> pyarrow.Table:
         with ExitStack() as opened:
-            store = IcebergCatalog.from_dict(catalog)
-            opened.callback(store.close)
+            store = opened.enter_context(warehouse.opened())
             refined = store.dataset("fix.refined")
             opened.callback(refined.close)
             reader = refined.read_arrow_reader(order_by="currunix")
@@ -134,6 +118,5 @@ def test_refined_uses_previous_hour_and_filters_history_and_future_expiry(
     if expires == "10:40:00":
         assert rows[1]["currunix"] == datetime.datetime(2026, 8, 14, 10, 40, tzinfo=UTC)
         assert rows[1]["state"] == "95EXPIRED"
-    assert cli.main(argv) == 0
-    capsys.readouterr()
+    assert warehouse.run(parse_fix_refined) == landed
     assert refined_rows().equals(held)

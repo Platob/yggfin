@@ -1,8 +1,0 @@
-{
-  "project": "data/dbt",
-  "profiles": null,
-  "target": null,
-  "select": null,
-  "catalog": null,
-  "log_level": "INFO"
-}

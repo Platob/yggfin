@@ -8,9 +8,11 @@ commits and what a replay of the same build does not write twice.
 
 from __future__ import annotations
 
-import ast
+import collections
 import json
+import logging
 import re
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -18,25 +20,23 @@ import pyarrow
 import pytest
 from dbt.cli.main import dbtRunner
 
-from rekep import cli
 from rekep.dbt import (
     CATALOG,
-    COMMITTED,
     OPENED,
     Plugin,
     catalog_settings,
-    committed,
     declared_field,
     released,
 )
 from rekep.deploy import TABLES
 from rekep.fix import FixCodec, fix_registry
 from rekep.iceberg import IcebergCatalog, partition_keys, primary_keys, sort_keys
-from rekep.tasks import Task
+from rekep.pipeline import parse_fix_raw, parse_fix_refined, parse_messages
+from rekep.times import window_of
 
 ROOT = Path(__file__).resolve().parents[2]
 PROJECT = ROOT / "data" / "dbt"
-FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
+FIXTURE = ROOT / "data" / "capture" / "ulbridge.log"
 
 #: The tables ingestion publishes, by name: what a source may read and what no
 #: model may write.
@@ -52,13 +52,11 @@ PRODUCTS = {
     "executions.fills": 7,
 }
 
-#: The whole route, in order: capture to text rows, text rows to parsed FIX,
-#: parsed FIX to walked FIX, walked FIX to products.
-WORKFLOW = ("parse_messages", "parse_fix_raw", "parse_fix_refined", "build_dbt")
+#: The day the fixture was captured on: the window every ingestion stage lands.
+WINDOW = window_of("2026-08-14", "2026-08-14")
 
-#: The day the fixture was captured on, which the two ingestion tasks are
-#: told because each covers the last day when nothing says otherwise.
-WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
+#: The business identifier whose order the products are read to the cent for.
+CHAIN = "00026877711XOEA0"
 
 #: What the codec answers for one `OrdStatus(39)` code. The normalized
 #: spellings the macros fold on are the codec's and this repository holds no
@@ -166,7 +164,7 @@ def test_every_projected_column_is_one_the_published_shape_carries(manifest: Any
 
 
 def test_no_model_writes_a_table_ingestion_owns(manifest: Any) -> None:
-    """A product is derived; the three ingested tables are written by their tasks."""
+    """A product is derived; an ingested table is written by its `rekep.pipeline` stage."""
     assert not set(published(manifest)) & set(INGESTED)
 
 
@@ -237,21 +235,6 @@ def test_a_check_that_spans_two_products_warns_rather_than_fails(manifest: Any) 
 
     assert [node.name for node in singular] == ["every_fill_belongs_to_a_known_order"]
     assert all(str(node.config.severity).casefold() == "warn" for node in singular)
-
-
-def test_the_products_dag_announces_the_tables_the_models_commit(manifest: Any) -> None:
-    """The DAG's Assets are read from its source rather than from Airflow, so
-    this holds on every platform; the task's targets are the same tables."""
-    declared = ast.parse((ROOT / "airflow" / "products.py").read_text(encoding="utf-8"))
-    announced = next(
-        ast.literal_eval(statement.value)
-        for statement in declared.body
-        if isinstance(statement, ast.Assign)
-        and getattr(statement.targets[0], "id", "") == "PUBLISHED"
-    )
-
-    assert set(announced) == set(published(manifest))
-    assert set(Task("build_dbt").targets) == set(announced)
 
 
 def spelled(macro: str) -> set[str]:
@@ -369,25 +352,16 @@ def test_a_catalog_is_a_mapping_or_the_json_an_environment_carries() -> None:
         catalog_settings(["rekep"])
 
 
-def test_what_a_build_committed_is_reported_once() -> None:
-    """The runner reads the rows off the plugin, so a second read is a second
-    build's, not this one's again."""
-    COMMITTED.clear()
-    COMMITTED["orders.events"] = 62
-
-    assert committed() == {"orders.events": 62}
-    assert committed() == {}
-
-
 def test_the_catalog_a_build_read_through_is_closed_when_it_is_released(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """dbt says nothing to a plugin when a build ends, so a task closes it.
+    """dbt says nothing to a plugin when a build ends, so the caller running
+    `dbtRunner` in its own process closes it.
 
     An Iceberg catalog is a live connection, and over SQLite it is an open
-    file: Windows will not delete one, so a run into a temporary warehouse
-    failed on its way out rather than in any task -- which is why POSIX, where
-    an open file unlinks, never showed it.
+    file: Windows will not delete one, so a build into a temporary warehouse
+    fails on its way out rather than in any model -- which POSIX, where an
+    open file unlinks, never shows.
     """
     import pyiceberg.catalog
 
@@ -422,17 +396,68 @@ def test_the_catalog_a_build_read_through_is_closed_when_it_is_released(
 # -- the products, over the checked-in fixture -------------------------------
 
 
+#: What dbt calls a node that did not settle. A test the project declares as
+#: a warning is a quality signal about the capture, not a failed build.
+FAILURES = ("error", "fail", "runtime error")
+
+
+def built(target: Path, caplog: pytest.LogCaptureFixture) -> dict[str, int]:
+    """`dbt build` over the project in this process: the rows each table took.
+
+    The rows are read off the plugin's one INFO record per commit, because
+    dbt's own results count nodes and not rows. `target` holds the build's
+    target path, which the staged Parquet goes with.
+    """
+    caplog.clear()
+    with caplog.at_level(logging.INFO, logger="rekep.dbt"):
+        invoked = dbtRunner().invoke(
+            [
+                "build",
+                "--project-dir",
+                str(PROJECT),
+                "--profiles-dir",
+                str(PROJECT),
+                "--target-path",
+                str(target / "target"),
+                "--log-path",
+                str(target / "logs"),
+                "--log-level",
+                "none",
+            ]
+        )
+    # The catalog the build read and committed through is this process's to
+    # close, and one plugin held it.
+    assert released() == 1
+    assert invoked.exception is None, invoked.exception
+    nodes = list(invoked.result.results)
+    failed = [node.node.name for node in nodes if str(node.status) in FAILURES]
+    assert invoked.success and not failed, failed
+    assert not [node.node.name for node in nodes if str(node.status) == "skipped"], (
+        "no node was skipped, so every test ran"
+    )
+    kinds = collections.Counter(str(node.node.resource_type) for node in nodes)
+    assert kinds["model"] == 4 and kinds["test"] > 0, kinds
+    committed: collections.Counter[str] = collections.Counter()
+    for record in caplog.records:
+        if record.name == "rekep.dbt" and (
+            matched := re.fullmatch(r"\w+ overwrote (\d+) rows into (\S+)", record.getMessage())
+        ):
+            committed[matched.group(2)] += int(matched.group(1))
+    return dict(committed)
+
+
 @pytest.mark.integration
-def test_the_products_are_built_from_the_fixture_and_a_replay_writes_nothing(
+def test_the_products_are_built_from_the_fixture_and_a_replay_adds_no_row(
     tmp_path: Path,
-    capsys: pytest.CaptureFixture,
+    caplog: pytest.LogCaptureFixture,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The whole route, and the same route again.
+    """The whole route, and the build again.
 
-    Every relative location -- the project, its staging directory -- is
-    spelled from the repository root, which is where a run starts, so that is
-    where this one starts too.
+    The three ingestion stages land the fixture's day through `rekep.pipeline`,
+    and dbt builds the project from the repository root, which is where every
+    relative location the profile spells starts; `REKEP_DBT_CATALOG` points it
+    at this test's catalog.
     """
     monkeypatch.chdir(ROOT)
     catalog = {
@@ -443,36 +468,16 @@ def test_the_products_are_built_from_the_fixture_and_a_replay_writes_nothing(
             "warehouse": (tmp_path / "warehouse").as_uri(),
         },
     }
+    store = IcebergCatalog.from_dict(catalog)
+    try:
+        parse_messages(FIXTURE.as_uri(), store, WINDOW)
+        parse_fix_raw(store, WINDOW)
+        parse_fix_refined(store, WINDOW)
+    finally:
+        store.close()
+    monkeypatch.setenv(CATALOG, json.dumps(catalog))
 
-    def ran(name: str) -> dict[str, Any]:
-        argv = [
-            "tasks",
-            name,
-            "run",
-            "--parameter",
-            f"catalog={json.dumps(catalog)}",
-        ]
-        if name == "parse_messages":
-            argv += ["--parameter", f"filesystem={json.dumps(FIXTURE.as_uri())}"]
-        if name != "build_dbt":
-            for bound, value in WINDOW.items():
-                argv += ["--parameter", f"{bound}={json.dumps(value)}"]
-        assert cli.main(argv) == 0, name
-        return json.loads(capsys.readouterr().out)
-
-    landed = {name: ran(name) for name in WORKFLOW}
-    built = landed["build_dbt"]
-
-    assert built["targets"] == {
-        "orders_events": "orders.events",
-        "orders_current": "orders.current",
-        "executions_fills": "executions.fills",
-    }
-    assert built["rows"] == PRODUCTS
-    assert built["written"] == sum(PRODUCTS.values())
-    assert built["skipped"] == 0, "no node was skipped, so every test ran"
-    assert built["models"] == 4 and built["tests"] > 0
-    assert len(json.dumps(built)) < 4096, "XCom carries a summary, never a payload"
+    assert built(tmp_path, caplog) == PRODUCTS
 
     store = IcebergCatalog.from_dict(catalog)
     try:
@@ -487,6 +492,15 @@ def test_the_products_are_built_from_the_fixture_and_a_replay_writes_nothing(
         assert sum(current.column("eventcount").to_pylist()) == PRODUCTS["orders.events"]
         fills = store.dataset("executions.fills").read_arrow_table()
         assert min(fills.column("lastqty").to_pylist()) > 0, "a fill states what it executed"
+        # One order read to the cent: two partial fills and the one that
+        # closed it, folded into its current state and its three fills.
+        order = pyarrow.compute.equal(current.column("orderid"), CHAIN)
+        assert [
+            (row["cumqty"], row["leavesqty"], row["avgpx"], row["state"], row["eventcount"])
+            for row in current.filter(order).to_pylist()
+        ] == [(Decimal(600), Decimal(0), Decimal("83.08"), "80FILLED", 4)]
+        chain = fills.filter(pyarrow.compute.equal(fills.column("orderid"), CHAIN))
+        assert sorted(chain.column("lastqty").to_pylist()) == [Decimal(q) for q in (21, 57, 75)]
         refined = store.dataset("fix.refined").read_arrow_table()
         expired = refined.filter(pyarrow.compute.equal(refined.column("state"), "95EXPIRED"))
         assert expired.num_rows == 1
@@ -507,11 +521,9 @@ def test_the_products_are_built_from_the_fixture_and_a_replay_writes_nothing(
     finally:
         store.close()
 
-    replayed = ran("build_dbt")
-
     # Every model is committed on its key, so a rebuild carries every row it
     # built and the tables hold each one once.
-    assert replayed["rows"] == PRODUCTS
+    assert built(tmp_path, caplog) == PRODUCTS
     store = IcebergCatalog.from_dict(catalog)
     try:
         assert {

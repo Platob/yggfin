@@ -9,8 +9,9 @@ Refined uses the native finite lifecycle: date by transaction time where
 needed, stably order events, suppress repeated deliveries, learn validated
 instrument associations, link predecessors, and emit expirations. It folds
 `creaunix`, `exprtime` and `state`; Python projects the native message row and
-narrows the resulting Arrow batches for Iceberg. The task supplies
-only the preceding hour plus its job window and publishes its window's rows.
+narrows the resulting Arrow batches for Iceberg.
+`rekep.pipeline.parse_fix_refined` supplies the preceding hour plus its window
+and publishes its window's rows.
 """
 
 from __future__ import annotations
@@ -148,12 +149,19 @@ def _load_registry(location: Any) -> FixRegistry:
     finally:
         if owned is not None:
             owned.close()
-    # A store that defined nothing loads as a bare registry: the crate's own
-    # columns and the two standard clocks it seeds beside them, which every
-    # registry holds from construction.
-    if len(dictionary) == len(FixRegistry()):
-        raise ValueError(f"FIX registry contains no specification fields: {location}")
+    _refuse_bare(dictionary, location)
     return dictionary
+
+
+def _refuse_bare(registry: FixRegistry, location: Any) -> None:
+    """Refuse a registry that defines nothing, which would type a narrow table.
+
+    A store that defined nothing loads as a bare registry: the crate's own
+    columns and the two standard clocks it seeds beside them, which every
+    registry holds from construction.
+    """
+    if len(registry) == len(FixRegistry()):
+        raise ValueError(f"FIX registry contains no specification fields: {location}")
 
 
 _DEFAULT_REGISTRY = _load_registry(registry_path())
@@ -162,7 +170,7 @@ try:
 except ValueError:
     # A host may deliberately install its process registry before importing
     # rekep. Keep that explicit choice; rekep's own default remains available
-    # through ``fix_registry()`` and is passed by every bundled task.
+    # through ``fix_registry()``, which ``fix_codec()`` takes by default.
     pass
 
 
@@ -206,7 +214,7 @@ def fix_codec(
 ) -> FixCodec:
     """One codec over a dictionary, pinned for the whole run it reads.
 
-    The codec is the whole parse surface, so every reader a task composes is
+    The codec is the whole parse surface, so every reader a stage composes is
     built here rather than configured per call. A dialect is not among the
     pins and neither is a version: the registry is one namespace, and what a
     message was read at is what its own `beginstring` said.
@@ -436,9 +444,12 @@ def fix_parse_field(
     """The native message row, without columns belonging to a captured line.
 
     The registry owns every column. The field is resolved without reading
-    input, so empty and populated streams publish the same contract.
+    input, so empty and populated streams publish the same contract. A codec
+    over a registry that defines nothing is refused here, where every FIX
+    table's shape is built, before any table is.
     """
     registry = codec.registry if codec is not None else fix_registry()
+    _refuse_bare(registry, "the codec's registry")
     field = fix_schema(registry, FIXMSG)
     field.set_name(name)
     return field

@@ -66,31 +66,11 @@ These files are not alternate implementations. Runtime code builds the field,
 `iceberg_contract` records its storage contract, and a review compares the
 result with the checked-in snapshot.
 
-## Regenerate the contracts
+## Regenerate and validate the contracts
 
-```bash
-uv run --project python rekep fields dump \
-  --pyclass rekep.text:Message \
-  --target schemas/rekep/message.json
-
-uv run --project python rekep fields dump \
-  --pyclass rekep.fix:fix_message_field \
-  --target schemas/rekep/fixmsg.json
-
-uv run --project python rekep fields dump \
-  --pyclass rekep.market:book_field \
-  --target schemas/rekep/book.json
-
-uv run --project python rekep fields dump \
-  --pyclass rekep.market:market_event_field \
-  --target schemas/rekep/marketevent.json
-```
-
-## Validate the documents
-
-```bash
-uv run --project python rekep fields load --target schemas/rekep/message.json
-uv run --project python rekep fields load --target schemas/rekep/fixmsg.json
-uv run --project python rekep fields load --target schemas/rekep/book.json
-uv run --project python rekep fields load --target schemas/rekep/marketevent.json
-```
+Each file is `iceberg_contract(<constructor>())` for the constructor the table
+above names, written with a trailing newline, and reads back through
+`iceberg_contract_field(<text>, <stem>)`.
+[Portable contracts](../docs/contracts/index.md#verify-a-snapshot) holds both
+as Python run from the repository root, and `python/tests/test_schemas.py`
+fails on any drift between a file and its constructor.

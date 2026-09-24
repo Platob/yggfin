@@ -346,9 +346,9 @@ WIDENED = ULBRIDGE_ROWHEADER.replace(
     r"(?:[.,]\d{3}(?:_?\d{3})?)?",
 )
 
-#: Every line of the shipped sample: fourteen lines, ten of them under the
-#: bridge's bracket, spelling their clock `.147`, `,148` and `.147_250` in one
-#: file -- every one of which the shipped header reads.
+#: The shipped capture, the core's own: 144 lines under the bridge's bracket,
+#: fifteen of them spelling the grouped micros after their millis, as
+#: `.524_315` -- every one of which the shipped header reads.
 SAMPLE = Path(__file__).resolve().parents[2] / "data" / "capture"
 
 
@@ -360,8 +360,8 @@ def test_the_row_header_defaults_to_the_bridge_s_own() -> None:
 
 
 def test_the_shipped_header_dates_every_fraction_this_bridge_writes() -> None:
-    """One capture, several loggers, three spellings of one clock -- and one
-    header that reads them all, because a line the header misses is a line
+    """One capture, several loggers, two spellings of one clock -- and one
+    header that reads them both, because a line the header misses is a line
     the walk cannot fold, not merely a line without a clock."""
     handle = IOBase.from_uri(SAMPLE.as_uri())
     try:
@@ -369,19 +369,10 @@ def test_the_shipped_header_dates_every_fraction_this_bridge_writes() -> None:
     finally:
         handle.close()
 
-    assert sample.num_rows == 14
-    dated = sample.filter(pyarrow.compute.is_valid(sample.column("msgpluginid")))
-    assert dated.num_rows == 10, "four lines are under no bracket at all"
-    spelled = {instant.microsecond for instant in dated.column("currunix").to_pylist()}
-    assert {147_000, 148_000, 147_250} <= spelled, "millis, a comma, and grouped micros"
-    # The four lines the bracket does not frame take the sample file's own
-    # modification time -- one instant, at whatever precision the filesystem
-    # keeps -- which is not one of the clocks the bridge wrote.
-    unframed = sample.filter(pyarrow.compute.is_null(sample.column("msgpluginid")))
-    assert unframed.num_rows == 4
-    written = set(unframed.column("currunix").cast(pyarrow.int64()).to_pylist())
-    assert len(written) == 1
-    assert written.isdisjoint(dated.column("currunix").cast(pyarrow.int64()).to_pylist())
+    assert sample.num_rows == 144
+    assert sample.column("msgpluginid").null_count == 0, "the header matched every line"
+    micros = [instant.microsecond % 1000 for instant in sample.column("currunix").to_pylist()]
+    assert sum(1 for micro in micros if micro) == 15, "the grouped micros, read to the micro"
 
 
 def test_a_header_of_its_own_reads_a_bridge_that_writes_the_clock_differently(tmp_path) -> None:

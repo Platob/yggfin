@@ -40,7 +40,7 @@ from rekep.iceberg import partition_keys, primary_keys, sort_keys
 from rekep.text import Message
 
 ROOT = Path(__file__).resolve().parents[2]
-FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
+FIXTURE = ROOT / "data" / "capture" / "ulbridge.log"
 
 #: What the bundled capture states, read through the pins this package sets.
 #: The same numbers `cargo run --example fix_capture` prints in a core
@@ -98,7 +98,7 @@ def _capture(tmp_path: Path) -> IOBase:
 
 
 def _codec():
-    """The codec the two tasks pin: the dictionary and the undated floor, and
+    """The codec the two FIX stages pin: the dictionary and the undated floor, and
     no capture order, because the batch door fills a field from the column
     named after it."""
     return fix_codec(fix_registry())
@@ -190,7 +190,7 @@ def lines() -> pyarrow.Table:
 
 @pytest.fixture(scope="module")
 def raw() -> pyarrow.Table:
-    """The whole bridge corpus, through the first stage the task runs."""
+    """The whole bridge corpus, through `parse_fix_raw`'s parse."""
     handle = IOBase.from_uri(FIXTURE.as_uri())
     try:
         return _raw(handle)

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import importlib
+import json
 import pathlib
+import subprocess
 import sys
 
 if sys.version_info >= (3, 11):
@@ -36,7 +38,7 @@ PACKAGES = (
     "rekep.fix",
     "rekep.iceberg",
     "rekep.market",
-    "rekep.tasks",
+    "rekep.pipeline",
     "rekep.text",
 )
 
@@ -45,6 +47,33 @@ def test_the_package_version_is_the_one_the_build_publishes() -> None:
     """Two spellings of one number, which is exactly how they drift apart."""
     declared = tomllib.loads(PYPROJECT.read_text())["project"]["version"]
     assert rekep.__version__ == declared
+
+
+def test_the_package_installs_no_command() -> None:
+    """The package is processing called from Python: the wheel carries no script."""
+    project = tomllib.loads(PYPROJECT.read_text())["project"]
+    assert not {"scripts", "gui-scripts", "entry-points"} & set(project)
+
+
+def test_the_processing_package_never_imports_dbt() -> None:
+    """dbt loads `rekep.dbt` by name from a profile; nothing else reaches it,
+    so an install without the `dbt` group imports every other module. In a
+    subprocess, because this is a claim about a fresh interpreter."""
+    checked = subprocess.run(  # noqa: S603
+        [
+            sys.executable,
+            "-c",
+            "import json, sys, rekep, rekep.deploy, rekep.fix, rekep.iceberg, rekep.market,"
+            " rekep.pipeline, rekep.text; print(json.dumps(sorted(sys.modules)))",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    loaded = json.loads(checked.stdout)
+    assert "rekep.pipeline" in loaded
+    assert not [name for name in loaded if name == "dbt" or name.startswith(("dbt.", "rekep.dbt"))]
 
 
 @pytest.mark.parametrize("package", PACKAGES)
@@ -147,31 +176,3 @@ def test_the_bundled_dictionary_is_the_crates_own_where_it_restates_the_crate() 
     # And the registry is the same one with them or without: the core seeds
     # what they restate, so nothing is added and nothing is lost.
     assert len(fix_registry()) == 7781
-
-
-def test_the_scheduling_dependencies_are_installed_wherever_they_can_be() -> None:
-    """A skipped Airflow suite must not be able to read as a green one.
-
-    `tests/test_rekep_operator.py` opens with `importorskip("airflow")`, so
-    dropping the `airflow` group would delete the operator and DAG tests from
-    the run without failing anything. This is the one assertion that notices,
-    on every platform Airflow supports -- and that the `runner` group the
-    operator launches every task under can run `build_dbt`.
-    """
-    import importlib.util
-    import sys
-
-    if sys.platform == "win32":  # pragma: no cover - Airflow is POSIX-only
-        pytest.skip("Airflow does not run on Windows")
-
-    for name in (
-        "airflow",
-        "airflow.providers.standard.hooks.subprocess",
-        "airflow.providers.amazon.aws.operators.eks",
-        "airflow.providers.cncf.kubernetes.operators.pod",
-        "dbt.cli.main",
-    ):
-        assert importlib.util.find_spec(name) is not None, (
-            f"{name} is missing: the operator and DAG tests would silently skip. "
-            "Sync the default groups (dev, runner, airflow)."
-        )

@@ -1,40 +1,122 @@
-# build_dbt
+# dbt products
 
-`build_dbt` runs the dbt project under [`data/dbt`](#the-project) and commits
-each of its products back into Iceberg. dbt owns the SQL; every read, schema
-and commit stays on the same `IcebergDataset` the three ingestion tasks write
-through.
+The dbt project under [`data/dbt`](#the-project) builds three SQL products from
+`fix.refined` and commits each back into Iceberg. dbt owns the SQL; every
+read, schema and commit stays on the same `IcebergDataset` the pipeline
+stages write through, and `rekep.dbt` is the one seam between them.
 
-## Parameters
+## Build it
 
-`python/src/rekep/tasks/build_dbt.py` runs the task, and `build_dbt.json`
-beside it holds its defaults, which `rekep tasks build_dbt show` prints under
-any override:
+From the repository root, because every relative location the project names
+-- the staging directory, the local catalog and warehouse -- is spelled from
+there:
 
-```json
-{
-  "project": "data/dbt",
-  "profiles": null,
-  "target": null,
-  "select": null,
-  "catalog": null,
-  "log_level": "INFO"
-}
+```bash
+uv run --project python dbt build --project-dir data/dbt --profiles-dir data/dbt
 ```
 
-| parameter | default | meaning |
-| --- | --- | --- |
-| `project` | `data/dbt` | the dbt project directory, relative to the working directory |
-| `profiles` | `null` | where `profiles.yml` is; `null` is the project itself |
-| `target` | `null` | the profile target to build; `null` is the profile's own |
-| `select` | `null` | dbt selection, one string or a list; `null` builds everything |
-| `catalog` | `null` | the catalog to read and commit through; `null` is the profile's own |
-| `log_level` | `INFO` | the level this package's records are written at |
+The `dbt` dependency group carries dbt-core and dbt-duckdb, and `uv` syncs it
+by default. A build needs `fix.refined` to exist, which is what
+[`parse_fix_refined`](parse-fix-refined.md) writes; nothing needs `dbt deps`.
 
-`catalog` is the same mapping every other task's `catalog` spells. The task
-hands it to dbt as `REKEP_DBT_CATALOG`, which the plugin reads ahead of the
-profile, so a deployment configures dbt the way it configures every other task
-and the checked-in project keeps its local default.
+`profiles.yml` names the local SQLite catalog and file warehouse,
+`sqlite:///data/catalog.db` and `data/warehouse`. `REKEP_DBT_CATALOG` replaces
+that mapping with JSON of the shape `IcebergCatalog.from_dict` reads, which
+the plugin reads ahead of the profile, so a deployment names its catalog
+without editing the checked-in project:
+
+```bash
+REKEP_DBT_CATALOG='{"name": "rekep", "properties": {"type": "glue", "warehouse": "s3://market-warehouse/rekep", "glue.region": "eu-west-1", "s3.region": "eu-west-1"}}' \
+  uv run --project python dbt build --project-dir data/dbt --profiles-dir data/dbt
+```
+
+Every catalog on [Catalogs](../storage/catalogs.md) is spelled the same way,
+S3 Tables included.
+
+`--select` narrows what the in-memory database holds as well as what is
+built: `stg_fix_messages`, which every product reads, is not in
+`orders_events+`, and a test that reads two products --
+`every_fill_belongs_to_a_known_order`, or the relationship `orders.current`
+states to `orders.events` -- fails when a selection builds only one of them.
+The shipped products read one another, so the shipped project builds whole.
+
+## Build it in-process
+
+A caller that runs `dbtRunner` in its own process hands the catalog the same
+way and closes it after: dbt hands a plugin nothing that says a build is over,
+so `rekep.dbt.released()` closes every catalog a plugin opened, where a
+`dbt build` process closes them by exiting.
+
+```python
+import json
+import os
+import tempfile
+from pathlib import Path
+
+from dbt.cli.main import dbtRunner
+
+from rekep.dbt import CATALOG, released
+from rekep.iceberg import IcebergCatalog
+from rekep.pipeline import parse_fix_raw, parse_fix_refined, parse_messages
+from rekep.times import window_of
+
+root = Path(tempfile.mkdtemp())
+settings = {
+    "name": "rekep",
+    "properties": {
+        "type": "sql",
+        "uri": f"sqlite:///{root}/catalog.db",
+        "warehouse": str(root / "warehouse"),
+    },
+}
+catalog = IcebergCatalog.from_dict(settings)
+day = window_of("2026-08-14", "2026-08-14")
+try:
+    parse_messages("file:data/capture", catalog, day)
+    parse_fix_raw(catalog, day)
+    parse_fix_refined(catalog, day)
+finally:
+    catalog.close()
+
+os.environ[CATALOG] = json.dumps(settings)
+built = dbtRunner().invoke(
+    [
+        "build",
+        "--project-dir",
+        "data/dbt",
+        "--profiles-dir",
+        "data/dbt",
+        "--target-path",
+        str(root / "target"),
+        "--log-path",
+        str(root / "logs"),
+    ]
+)
+released()
+assert built.success, built.exception
+
+catalog = IcebergCatalog.from_dict(settings)
+try:
+    counts = {
+        table: catalog.dataset(table).read_arrow_table().num_rows
+        for table in ("orders.events", "orders.current", "executions.fills")
+    }
+    assert counts == {"orders.events": 16, "orders.current": 8, "executions.fills": 7}
+
+    # The chain `parse_fix_refined` walked into four events: one order, three fills.
+    chain = "orderid == '00026877711XOEA0'"
+    assert catalog.dataset("orders.events").read_arrow_table(row_filter=chain).num_rows == 4
+    current = catalog.dataset("orders.current").read_arrow_table(row_filter=chain)
+    assert current.column("state").to_pylist() == ["80FILLED"]
+    assert catalog.dataset("executions.fills").read_arrow_table(row_filter=chain).num_rows == 3
+finally:
+    catalog.close()
+```
+
+A build writes `target/` -- its compiled project, its run artifacts and the
+Parquet each model was staged as -- and `logs/`; `--target-path` and
+`--log-path`, or `DBT_TARGET_PATH` and `DBT_LOG_PATH`, move them out of the
+checkout, and the staging follows the target path.
 
 ## How a model reaches Iceberg
 
@@ -98,6 +180,23 @@ is what DuckDB spells.
   scoped by its chain and the earliest `eventtime` wins, then the earliest
   lifecycle `seqnum` and deterministic `eventkey` among the copies that share
   one.
+
+Every shipped model is an overwrite, so a replay of the same capture builds
+the same rows and lands them over the ones it landed before.
+
+## What a build checks
+
+A failing node fails the build. Every model's own tests run in the same
+build: `dbt build` runs a model and then the tests attached to it, so a
+product that broke its key is reported by the build that built it. A test the
+project declares as a warning is a quality signal rather than a failure. Two
+are declared that way: `every_fill_belongs_to_a_known_order`, because a
+capture that starts mid-stream holds executions whose order was accepted
+before its first line, and the accepted values of `state`, because the
+normalized vocabulary is the codec's and this repository cannot enumerate it
+-- a state the products have no reading for is worth reporting and is not a
+reason to stop. What the folds do read is pinned against the codec itself in
+`python/tests/test_dbt.py`.
 
 ## What a model declares
 
@@ -169,96 +268,6 @@ of it off those fields: `px` is `coalesce(price, lastpx, avgpx)`, `qty` is
 `eventtime` is lifecycle `currunix`; applying `TransactTime` again would move a
 synthetic expiry away from its deadline.
 
-## Run it
-
-```bash
-uv run --project python rekep tasks build_dbt run
-```
-
-Relative locations -- the project, the staging directory, the local catalog and
-warehouse -- are spelled from the repository root, which is where a run starts.
-The task prints one result and nothing else: dbt's own console is silent and
-its events are relayed into this package's records, so `stdout` carries the
-result a route reads.
-
-dbt on its own reads the same project and the same profile:
-
-```bash
-uv run --project python dbt build --project-dir data/dbt --profiles-dir data/dbt
-```
-
-`select` is handed to dbt as `--select`, and it narrows what the in-memory
-database holds as well as what is built: `stg_fix_messages`, which every
-product reads, is not in `orders_events+`, and a test that reads two products
--- `every_fill_belongs_to_a_known_order`, or the relationship `orders.current`
-states to `orders.events` -- fails when a selection builds only one of them.
-The shipped products read one another, so the shipped project builds whole;
-`select` is for a project whose models stand apart.
-
-Airflow runs the same task. The [`rekep_products`](../airflow.md#the-products-dag)
-DAG is scheduled on the `fix.refined` Asset the ingestion DAG publishes, so a
-build starts when `parse_fix_refined` writes.
-
-## What the result says
-
-```json
-{
-  "task": "build_dbt",
-  "read": 29,
-  "written": 31,
-  "skipped": 0,
-  "sources": {"project": "data/dbt"},
-  "targets": {
-    "orders_events": "orders.events",
-    "orders_current": "orders.current",
-    "executions_fills": "executions.fills"
-  },
-  "window": {"start": null, "end": null},
-  "elapsed_ms": 2417,
-  "models": 4,
-  "tests": 25,
-  "warned": [],
-  "rows": {"orders.events": 16, "orders.current": 8, "executions.fills": 7}
-}
-```
-
-A build's unit of work is a node, so `read` is the nodes dbt ran -- models,
-tests and all -- and `skipped` is the nodes it skipped. `written` is rows: what
-the plugin committed, and `rows` says which table each went to. Every shipped
-model is an overwrite, and an overwrite states the rows it carried: a replay of
-the same capture builds the same rows and lands them over the ones it landed
-before, so the count is what the build produced and not what changed in the
-table. An append would state the rows it added, which is the same number.
-
-A failing node fails the task, and the record names it. Every model's own
-tests run in the same build: `dbt build` runs a model and then the tests
-attached to it, so a product that broke its key is reported by the run that
-built it. A test the project declares as a warning is a quality signal rather
-than a failure, and `warned` names the ones that fired. Two are declared that
-way: `every_fill_belongs_to_a_known_order`, because a capture that starts
-mid-stream holds executions whose order was accepted before its first line, and
-the accepted values of `state`, because the normalized vocabulary is the
-codec's and this repository cannot enumerate it -- a state the products have no
-reading for is worth reporting and is not a reason to stop. What the folds do
-read is pinned against the codec itself in `python/tests/test_dbt.py`.
-
-## Sample rows
-
-The sample is business chain `00026877711XOEA0` from
-`python/tests/data/ulbridge.log`: 4 events, one current order, and three fills as `build_dbt`
-lands them in `orders.events`, `orders.current` and `executions.fills`. An
-identity is shown by its last eight hex digits behind a leading `…`, and the
-stored value is sixteen bytes; a null is an empty cell.
-
---8<-- "docs/pipeline/tasks/samples/build-dbt.md"
-
-The generated tables are the authoritative example values and counts. Events
-are ordered by lifecycle `currunix`, `seqnum`, and deterministic `eventkey`;
-current orders and fills fold from those rows under their declared keys.
-`tools/pipeline_samples.py`
-regenerates the include from a fixture run, and the integration suite checks it
-with `--check`.
-
 ## The project
 
 ```text
@@ -277,16 +286,12 @@ data/dbt/
 ```
 
 Nothing here needs `dbt deps`: there is no package file, and every macro a
-model reads is in the checkout. A build writes `data/dbt/target/` -- its
-compiled project, its run artifacts and the Parquet each model was staged as --
-and `data/dbt/logs/`; neither is tracked. `DBT_TARGET_PATH` and `DBT_LOG_PATH`
-move them, and the staging follows the target path, so a worker whose checkout
-is read-only writes nothing into it. That is what the Airflow operator's
-`environment` argument is for.
+model reads is in the checkout. Neither `data/dbt/target/` nor
+`data/dbt/logs/` is tracked.
 
 ## What these products are not yet
 
-The [roadmap](../../roadmap/index.md) specifies these three products as native
+The [roadmap](../roadmap/index.md) specifies these three products as native
 `Field` declarations with a replay test and a source-coverage report. These are
 the SQL projection of that specification and state where they differ:
 

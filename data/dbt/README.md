@@ -1,10 +1,10 @@
 # The dbt project
 
-This is the SQL half of the pipeline: `fix.refined` in, three business
-products out. DuckDB runs the SQL and holds nothing -- the database is
-`:memory:` -- and every read and every commit goes through `rekep.dbt`, the
-plugin that binds dbt to the same `IcebergDataset` the ingestion tasks write
-through. There is no second catalog, no second warehouse and no extract.
+This is the SQL half of the pipeline: `fix.refined` in, three business products
+out. DuckDB runs the SQL and holds nothing -- the database is `:memory:` -- and
+every read and every commit goes through `rekep.dbt`, the plugin that binds dbt
+to the same `IcebergDataset` the `rekep.pipeline` stages write through. There
+is no second catalog, no second warehouse and no extract.
 
 ```text
 fix.refined -> stg_fix_messages -> orders.events   -> orders.current
@@ -33,37 +33,37 @@ The states they do read are pinned against the codec in
 
 ## Run it
 
-From the repository root, because every relative location here is spelled from
-there:
-
-```bash
-uv run --project python rekep tasks build_dbt run
-```
-
-That is the repository's own route: it runs this project, reports what each
-model committed, and fails on a failing model or a failing test. dbt on its own
-reads the same project and the same profile:
+With dbt's own CLI, from the repository root, because every relative location
+here is spelled from there:
 
 ```bash
 uv run --project python dbt build --project-dir data/dbt --profiles-dir data/dbt
 ```
 
+The build reports every model and test it ran and fails on a failing model or
+a failing test. dbt-core and dbt-duckdb are the `dbt` dependency group, which
+`uv sync --project python` installs by default. A caller running `dbtRunner`
+in its own process calls `rekep.dbt.released()` once the build is done, to
+close the catalogs the plugin opened.
+
 The project builds whole. DuckDB holds only what a build selected, so a
 selection such as `orders_events+` leaves out `stg_fix_messages`, which every
 product reads, and a test spanning two products fails when only one is built.
 
-A build needs `fix.refined` to exist, which is what `parse_fix_refined` writes
-at the end of the ingestion graph; `fix.raw` holds the same events before
-the walk and no model reads it, because a product needs the chain. Nothing
-needs `dbt deps`: there is no
-package file, and every macro a model reads is here.
+A build needs `fix.refined` to exist, which is what
+`rekep.pipeline.parse_fix_refined` writes; `fix.raw` holds the same events
+before the walk and no model reads it, because a product needs the chain.
+Nothing needs `dbt deps`: there is no package file, and every macro a model
+reads is here.
 
 ## Configure it
 
-`profiles.yml` names the local SQLite catalog and file warehouse a clone
-already has. `REKEP_DBT_CATALOG` replaces it with the JSON mapping every
-task's `catalog` parameter spells, which is how `build_dbt` passes a deployed
-catalog through:
+`profiles.yml` names the local SQLite catalog and file warehouse under
+[`data/`](../README.md), `sqlite:///data/catalog.db` and `data/warehouse`.
+`REKEP_DBT_CATALOG` replaces that mapping with the JSON
+`IcebergCatalog.from_dict` reads -- the catalog the stages landed into -- and
+the plugin reads it ahead of the profile, so a deployment names its catalog
+without editing this project:
 
 ```bash
 REKEP_DBT_CATALOG='{"name": "rekep", "properties": {"type": "glue", "warehouse": "s3://bucket/warehouse"}}' \
@@ -80,8 +80,8 @@ A model's `config()` block is its Iceberg declaration -- `table`, `mode`,
 `primary_key`, `not_null`, `partition_by`, `sort_by` and `arrow_types` -- and a
 source's `meta` block is its Iceberg read: `table`, and the `columns`,
 `row_filter`, `snapshot_id`, `branch` and `limit` pushed into scan planning.
-Both are documented on the [Build dbt](../../docs/pipeline/tasks/build-dbt.md)
-page, beside what these products do not carry yet.
+Both are documented on the [dbt products](../../docs/pipeline/dbt.md) page,
+beside what these products do not carry yet.
 
 ## What a build leaves
 

@@ -88,8 +88,9 @@ needs_dictionary_work = [
 ```
 
 Investigate those keys, add definitions to an explicit registry, replay
-`parse_fix_raw` and then `parse_fix_refined` under it, and review the schema
-diff before publishing it as the next bundle.
+`parse_fix_raw` and then `parse_fix_refined` with one codec over it,
+`fix_codec(fix_registry(location))`, and review the schema diff before
+publishing it as the next bundle.
 
 ## Replay guarantees
 

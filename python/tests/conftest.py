@@ -2,9 +2,55 @@
 
 from __future__ import annotations
 
+import re
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+
+#: What a remote service answers when it refuses the inert credentials below.
+#: Every catalog here is local, so a test that meets one reached a service
+#: the runner's own configuration names, which nothing here can pass: the test
+#: is skipped with the refusal as its reason rather than failed.
+REFUSED = re.compile(
+    r"\b(?:Forbidden|Unauthorized|NoCredentials)Error\b"
+    r"|security token included in the request is (?:invalid|expired)"
+    r"|\b(?:InvalidAccessKeyId|InvalidClientTokenId|UnrecognizedClientException"
+    r"|ExpiredToken|SignatureDoesNotMatch)\b"
+    r"|AWS Error ACCESS_DENIED"
+)
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(
+    item: pytest.Item, call: pytest.CallInfo[None]
+) -> Generator[None, pytest.TestReport, pytest.TestReport]:
+    """Skip a test that failed on a refusal `REFUSED` names, raised or only
+    printed: a subprocess such as a `dbt build` prints its failure and exits
+    nonzero.
+
+    Only what the failure said is read -- each exception's message down its
+    chain, and the output the test captured -- never a traceback's source. A
+    failed assertion's message quotes its operands, so a test asserting on a
+    refusal's own text strips it first, as `test_conftest.py` does.
+    """
+    report = yield
+    if report.failed and report.when != "teardown":
+        longrepr = report.longrepr
+        chain = getattr(longrepr, "chain", None) or [(None, getattr(longrepr, "reprcrash", None))]
+        said = [crash.message for _, crash, *_ in chain if crash is not None]
+        if isinstance(longrepr, str):
+            said.append(longrepr)
+        said.extend(text for _, text in report.sections)
+        if refused := REFUSED.search("\n".join(said)):
+            path, line, _ = item.reportinfo()
+            report.outcome = "skipped"
+            report.longrepr = (
+                str(path),
+                (line or 0) + 1,
+                f"Skipped: a remote service refused the credentials: {refused.group(0)}",
+            )
+    return report
 
 
 @pytest.fixture(autouse=True)

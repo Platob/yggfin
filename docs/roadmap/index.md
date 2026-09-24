@@ -21,8 +21,8 @@ flowchart LR
 | 4 | [`book.updates`](order-book.md) | one normalized depth mutation | market-data replay | planned |
 | 5 | [`book.snapshots`](order-book.md#booksnapshots) | one ordered book image at a checkpoint | research and monitoring | planned |
 
-The first three are published today by the dbt project
-[`build_dbt`](../pipeline/tasks/build-dbt.md) runs: the grains, keys, identity
+The first three are published today by the
+[dbt project](../pipeline/dbt.md) under `data/dbt`: the grains, keys, identity
 precedence and state rules below are what its models implement, and the page
 lists where the SQL projection of them differs from the schemas here. They are
 a first cut and not the gate: a product passes the gates below when its shape

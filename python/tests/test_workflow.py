@@ -1,11 +1,10 @@
-"""Text and FIX ingestion over the checked-in fixture and a replay, in three steps."""
+"""Text and FIX ingestion over the checked-in fixture and a replay, in three stages."""
 
 from __future__ import annotations
 
 import datetime
-import json
 import uuid
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +12,7 @@ import pyarrow
 import pytest
 from pyiceberg.expressions import EqualTo
 
-from rekep import Field, Message, cli
+from rekep import Field, Message
 from rekep.fix import (
     EVENT_CLOCK,
     MESSAGE_KEY,
@@ -21,10 +20,16 @@ from rekep.fix import (
     TRANSACTION_CLOCK,
     UNDATED,
     FixRegistry,
+    fix_codec,
     fix_message_field,
+    fix_registry,
     iceberg_fix_field,
 )
-from rekep.iceberg import IcebergCatalog, IcebergDataset, iceberg_contract_field, partition_keys
+from rekep.iceberg import IcebergDataset, iceberg_contract_field, partition_keys
+from rekep.pipeline import Landed, parse_fix_raw, parse_fix_refined, parse_messages
+from rekep.times import window_of
+
+from .test_pipeline import Warehouse
 
 #: The zone every instant here is spelled in.
 UTC = datetime.timezone.utc
@@ -32,15 +37,13 @@ UTC = datetime.timezone.utc
 pytestmark = pytest.mark.integration
 
 ROOT = Path(__file__).resolve().parents[2]
-FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
+FIXTURE = ROOT / "data" / "capture" / "ulbridge.log"
 FIX_CONTRACT = ROOT / "schemas" / "rekep" / "fixmsg.json"
-WORKFLOW = (("parse_messages", {}), ("parse_fix_raw", {}), ("parse_fix_refined", {}))
 EPOCH = datetime.datetime(1970, 1, 1, tzinfo=UTC)
 
-#: The day the bridge fixture was captured on. A task covers the last day
-#: unless its parameters name a window, and the fixture is dated, so every
-#: run here names its day -- `end: 2026-08-14` is the exclusive end of it.
-WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
+#: The day the bridge fixture was captured on, which every run here covers
+#: unless it names another: `end: 2026-08-14` is the exclusive end of it.
+DAY = window_of("2026-08-14", "2026-08-14")
 
 #: What the bridge fixture's 144 physical rows produce, first run.
 #:
@@ -54,14 +57,12 @@ WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
 #: carry settle on 49 events the capture describes. The walk merges the
 #: observations of one event and adds one expiry, so `fix.refined` reads 49
 #: and writes 19: every line carries the session, context and sequence the
-#: fold merges on, so it folds more than it did when fifteen lines were left
-#: unmatched. The gaps
-#: are the point of the keys: one line identity is one line and the same
-#: message logged at every hop is one event.
+#: fold merges on. The gaps are the point of the keys: one line identity is
+#: one line and the same message logged at every hop is one event.
 FIRST = {
-    "parse_messages": {"read": 144, "written": 144, "skipped": 0},
-    "parse_fix_raw": {"read": 144, "written": 49, "skipped": 30},
-    "parse_fix_refined": {"read": 49, "written": 19, "skipped": 0},
+    "parse_messages": Landed(read=144, written=144),
+    "parse_fix_raw": Landed(read=144, written=49, skipped=30),
+    "parse_fix_refined": Landed(read=49, written=19),
 }
 
 #: What a replay of the same window produces: the same reads and the same
@@ -88,120 +89,18 @@ CHAIN_LAST_STEP = 1
 PINNED = 33
 
 
-class Ran:
-    """One catalog, and the tasks run against it."""
-
-    def __init__(self, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
-        self.root = tmp_path
-        self.warehouse = tmp_path / "warehouse"
-        self.catalog = {
-            "name": "rekep",
-            "properties": {
-                "type": "sql",
-                "uri": f"sqlite:///{tmp_path / 'catalog.db'}",
-                "warehouse": (tmp_path / "warehouse").as_uri(),
-            },
-        }
-        self._capsys = capsys
-
-    def task(self, name: str, **overrides: Any) -> dict[str, Any]:
-        """One task, with its result read back off `stdout`."""
-        argv = [
-            "tasks",
-            name,
-            "run",
-            "--parameter",
-            f"catalog={json.dumps(self.catalog)}",
-        ]
-        for parameter, value in overrides.items():
-            argv += ["--parameter", f"{parameter}={json.dumps(value)}"]
-        assert cli.main(argv) == 0, name
-        return json.loads(self._capsys.readouterr().out)
-
-    def workflow(self, **overrides: Any) -> dict[str, dict[str, Any]]:
-        """Every publishing task instance, in dependency order, by stage name."""
-        results = {}
-        for name, held in WORKFLOW:
-            if name == "parse_messages":
-                first = {"filesystem": FIXTURE.as_uri(), **WINDOW}
-            else:
-                first = dict(WINDOW)
-            result = self.task(name, **first, **held, **overrides)
-            results[result["task"]] = result
-        return results
-
-    def rows(self) -> dict[str, int]:
-        store = IcebergCatalog.from_dict(self.catalog)
-        try:
-            return {
-                dataset.identifier: dataset.read_arrow_table().num_rows
-                for dataset in store.datasets(None)
-            }
-        finally:
-            store.close()
-
-    def table(self, name: str) -> pyarrow.Table:
-        """Read one stored table and release its catalog owners."""
-        store = IcebergCatalog.from_dict(self.catalog)
-        dataset = store.dataset(name)
-        try:
-            return dataset.read_arrow_table()
-        finally:
-            dataset.close()
-            store.close()
-
-    def partitions(self, name: str) -> dict[str, str]:
-        """One stored table's partition spec, by the column it reads."""
-        store = IcebergCatalog.from_dict(self.catalog)
-        try:
-            table = store.catalog.load_table(name)
-            return {
-                table.schema().find_column_name(field.source_id) or "": str(field.transform)
-                for field in table.spec().fields
-            }
-        finally:
-            store.close()
-
-    def layout(self, name: str) -> dict[str, Any]:
-        """What Iceberg itself records about one table: key, spec and order."""
-        store = IcebergCatalog.from_dict(self.catalog)
-        try:
-            table = store.catalog.load_table(name)
-            schema = table.schema()
-            return {
-                "key": {schema.find_column_name(held) for held in schema.identifier_field_ids},
-                "spec": [
-                    (schema.find_column_name(field.source_id), str(field.transform))
-                    for field in table.spec().fields
-                ],
-                "sort": [
-                    (schema.find_column_name(field.source_id), str(field.transform))
-                    for field in table.sort_order().fields
-                ],
-            }
-        finally:
-            store.close()
-
-    def snapshots(self) -> dict[str, int]:
-        store = IcebergCatalog.from_dict(self.catalog)
-        try:
-            return {
-                dataset.identifier: len(
-                    store.catalog.load_table(dataset.identifier).metadata.snapshots
-                )
-                for dataset in store.datasets(None)
-            }
-        finally:
-            store.close()
-
-
 @pytest.fixture()
-def ran(tmp_path: Path, capsys: pytest.CaptureFixture) -> Iterator[Ran]:
-    yield Ran(tmp_path, capsys)
+def warehouse(tmp_path: Path) -> Iterator[Warehouse]:
+    yield Warehouse(tmp_path, DAY)
 
 
-def counted(result: dict[str, Any]) -> dict[str, int]:
-    return {name: result[name] for name in ("read", "written", "skipped")}
+def workflow(warehouse: Warehouse) -> dict[str, Landed]:
+    """The three stages over the fixture, in production order, by name."""
+    return {
+        "parse_messages": warehouse.run(parse_messages, FIXTURE.as_uri()),
+        "parse_fix_raw": warehouse.run(parse_fix_raw),
+        "parse_fix_refined": warehouse.run(parse_fix_refined),
+    }
 
 
 def sources(rows: pyarrow.Table) -> list[bytes]:
@@ -209,12 +108,15 @@ def sources(rows: pyarrow.Table) -> list[bytes]:
     return [held[0] for held in rows.column(SOURCES).to_pylist()]
 
 
-def test_the_workflow_publishes_ulbridge_and_a_replay_writes_nothing(ran: Ran) -> None:
-    first = ran.workflow()
-    assert {name: counted(result) for name, result in first.items()} == FIRST
-    assert first["parse_fix_raw"]["messages"] == 79
-    assert ran.rows() == STORED
-    messages = ran.table("logs.messages")
+def test_the_workflow_publishes_ulbridge_and_a_replay_writes_nothing(
+    warehouse: Warehouse,
+) -> None:
+    first = workflow(warehouse)
+    assert first == FIRST
+    raw = first["parse_fix_raw"]
+    assert raw.written + raw.skipped == 79, "the messages the parse answered"
+    assert warehouse.rows() == STORED
+    messages = warehouse.table("logs.messages")
     assert messages.schema.equals(Message.into_field().into_arrow_schema(), check_metadata=False)
     assert messages.schema.field(EVENT_CLOCK).type == pyarrow.timestamp("us", tz="UTC")
     instants = {
@@ -234,135 +136,111 @@ def test_the_workflow_publishes_ulbridge_and_a_replay_writes_nothing(ran: Ran) -
     assert len(set(identities)) == messages.num_rows
     assert bytes(16) not in identities
 
-    replay = ran.workflow()
-    assert {name: counted(result) for name, result in replay.items()} == REPLAY
-    assert ran.rows() == STORED, "an idempotent replay adds no row"
-    assert ran.snapshots() == {name: 2 for name in STORED}, "and each replay is one commit"
+    replay = workflow(warehouse)
+    assert replay == REPLAY
+    assert warehouse.rows() == STORED, "an idempotent replay adds no row"
+    assert warehouse.snapshots() == {name: 2 for name in STORED}, "and each replay is one commit"
 
 
-def test_every_result_is_the_shape_a_route_reads(ran: Ran) -> None:
-    from rekep.logs import Stage
-    from rekep.times import unix_of
+def test_a_window_the_capture_falls_outside_reads_nothing_and_writes_none(
+    warehouse: Warehouse, tmp_path: Path
+) -> None:
+    """The last day up to now does not cover the fixture. The window is the
+    read's own `where`, so the read answers no line at all -- every one of the
+    fixture's lines is dated by its header, on a day the window does not
+    cover -- and each stage creates its table empty."""
+    recent = window_of()
+    nothing = Landed(read=0, written=0)
 
-    for name, result in ran.workflow().items():
-        assert Stage.validated(result) == result
-        assert result["task"] == name
-        assert result["window"] == {
-            "start": unix_of("2026-08-14"),
-            "end": unix_of("2026-08-15"),
-        }, "the window a run covered is what its result reports"
-        assert len(json.dumps(result)) < 4096, "XCom carries a summary, never a payload"
-    assert result["targets"] == {"refined": "fix.refined"}
-    assert result["sources"] == {"raw": "fix.raw"}
-
-
-def test_a_window_the_capture_falls_outside_reads_nothing_and_writes_none(ran: Ran) -> None:
-    """The default window is the last day, and the fixture is not in it. The
-    window is the read's own `where`, so the read answers no line at all --
-    every one of the fixture's lines is dated by its header, on a day the
-    window does not cover -- and the table is created empty."""
-    result = ran.task("parse_messages", filesystem=FIXTURE.as_uri())
-
-    assert counted(result) == {"read": 0, "written": 0, "skipped": 0}
-    assert ran.rows() == {"logs.messages": 0}
-
-    raw = ran.task("parse_fix_raw")
-    assert counted(raw) == {"read": 0, "written": 0, "skipped": 0}
-    assert counted(ran.task("parse_fix_refined")) == {"read": 0, "written": 0, "skipped": 0}
+    assert warehouse.run(parse_messages, FIXTURE.as_uri(), window=recent) == nothing
+    assert warehouse.rows() == {"logs.messages": 0}
+    assert warehouse.run(parse_fix_raw, window=recent) == nothing
+    assert warehouse.run(parse_fix_refined, window=recent) == nothing
+    assert warehouse.rows() == {"logs.messages": 0, "fix.raw": 0, "fix.refined": 0}
     # And a line the header could not date is dated by its object's own
     # modification time, so it is in the window that covers that instant.
-    unframed = ran.root / "unframed.log"
+    unframed = tmp_path / "unframed.log"
     unframed.write_bytes(b"one physical line\n")
-    written = ran.task("parse_messages", filesystem=unframed.as_uri())
-    assert counted(written) == {"read": 1, "written": 1, "skipped": 0}
-    assert ran.table("logs.messages").column("msgpluginid").to_pylist() == [None]
-    assert ran.table("logs.messages").column(EVENT_CLOCK).to_pylist() != [EPOCH]
+    written = warehouse.run(parse_messages, unframed.as_uri(), window=window_of())
+    assert written == Landed(read=1, written=1)
+    assert warehouse.table("logs.messages").column("msgpluginid").to_pylist() == [None]
+    assert warehouse.table("logs.messages").column(EVENT_CLOCK).to_pylist() != [EPOCH]
 
 
-def test_a_window_replaces_only_the_lines_it_covers(ran: Ran) -> None:
+def test_a_window_replaces_only_the_lines_it_covers(warehouse: Warehouse) -> None:
     """A run over the whole day and then one over its first part leave every
     line once: the second run replaces the lines its window covers and no
     other. The fixture's lines straddle one second, which is where it cuts."""
-    ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
-    stored = ran.table("logs.messages")
+    warehouse.run(parse_messages, FIXTURE.as_uri())
+    stored = warehouse.table("logs.messages")
     cut = datetime.datetime(2026, 8, 14, 14, 46, 40, tzinfo=UTC)
     clock = stored.column(EVENT_CLOCK)
     later = stored.filter(pyarrow.compute.greater_equal(clock, cut)).num_rows
     assert 0 < later < STORED["logs.messages"], "the fixture straddles this cut"
 
-    first = ran.task(
-        "parse_messages",
-        filesystem=FIXTURE.as_uri(),
-        start="2026-08-14",
-        end="2026-08-14T14:46:40",
+    first = warehouse.run(
+        parse_messages, FIXTURE.as_uri(), window=window_of("2026-08-14", "2026-08-14T14:46:40")
     )
 
     # The window is the read's own `where`, so what the run read is what the
     # window covers: the dated lines before the cut, and nothing it did not
     # write.
-    assert first["read"] == first["written"] == STORED["logs.messages"] - later
-    assert first["skipped"] == 0
-    assert ran.rows() == {"logs.messages": STORED["logs.messages"]}, (
+    earlier = STORED["logs.messages"] - later
+    assert first == Landed(read=earlier, written=earlier)
+    assert warehouse.rows() == {"logs.messages": STORED["logs.messages"]}, (
         "the later lines were not the run's to touch"
     )
 
 
-def test_an_empty_capture_is_read_and_produces_nothing(ran: Ran, tmp_path: Path) -> None:
-    """Zero rows is a run, not a failure: the route skips what has no input."""
+def test_an_empty_capture_is_read_and_produces_nothing(
+    warehouse: Warehouse, tmp_path: Path
+) -> None:
+    """Zero rows is a run, not a failure: the table is created and holds none."""
     empty = tmp_path / "empty"
     empty.mkdir()
     (empty / "quiet.log").write_text("", encoding="utf-8")
 
-    result = ran.task("parse_messages", filesystem=empty.as_uri(), **WINDOW)
-
-    assert counted(result) == {"read": 0, "written": 0, "skipped": 0}
-    assert result["targets"] == {"messages": "logs.messages"}
+    assert warehouse.run(parse_messages, empty.as_uri()) == Landed(read=0, written=0)
+    assert warehouse.rows() == {"logs.messages": 0}
 
 
-@pytest.mark.parametrize("name", ["parse_fix_raw", "parse_fix_refined"])
-def test_a_fix_stage_refuses_an_empty_registry_before_creating_a_table(
-    ran: Ran, tmp_path: Path, name: str
+@pytest.mark.parametrize("stage", [parse_fix_raw, parse_fix_refined], ids=["raw", "refined"])
+def test_an_empty_registry_is_refused_before_a_fix_stage_creates_a_table(
+    warehouse: Warehouse, tmp_path: Path, stage: Callable[..., Landed]
 ) -> None:
+    """A dictionary that defines nothing is refused where it is loaded, and a
+    codec over one where a FIX table's shape is built, so no FIX stage opens
+    a table under it: a missing dictionary cannot leave a narrow table."""
     registry = tmp_path / "empty-fix-registry"
     registry.mkdir()
-    argv = [
-        "tasks",
-        name,
-        "run",
-        "--parameter",
-        f"catalog={json.dumps(ran.catalog)}",
-        "--parameter",
-        f"registry={json.dumps(registry.as_uri())}",
-    ]
+    with pytest.raises(ValueError, match="no specification fields"):
+        fix_registry(registry.as_uri())
 
-    assert cli.main(argv) == 1
-    assert ran.rows() == {}, "a missing dictionary cannot leave a narrow FIX table"
+    with pytest.raises(ValueError, match="no specification fields"):
+        warehouse.run(stage, codec=fix_codec(FixRegistry()))
+    assert warehouse.rows() == {}
 
 
-def test_a_raw_task_forwards_codec_options_without_rewriting_text(ran: Ran, tmp_path: Path) -> None:
-    """FIX codec options cross the task boundary unchanged; the text is not rewritten."""
+def test_a_raw_stage_parses_under_the_codec_it_is_handed_without_rewriting_text(
+    warehouse: Warehouse, tmp_path: Path
+) -> None:
+    """Threads and batch bounds are codec pins; the text is not rewritten."""
     capture = tmp_path / "prefixed.log"
     capture.write_bytes(
         b"2026-08-14 12:46:39.769 [1] [ULBridge] (INFO) "
         b"  --> 8=FIX.4.4|35=D|11=OPTION-1|55=HOLN|10=000|\n"
     )
 
-    ran.task("parse_messages", filesystem=capture.as_uri(), **WINDOW)
-    result = ran.task(
-        "parse_fix_raw",
-        codec_options={"threads": 2, "batch_row_size": 2},
-        **WINDOW,
-    )
+    warehouse.run(parse_messages, capture.as_uri())
+    landed = warehouse.run(parse_fix_raw, codec=fix_codec(threads=2, batch_row_size=2))
 
-    assert result["messages"] == result["written"] == 1
-    raw = ran.table("fix.raw")
+    assert landed == Landed(read=1, written=1)
+    raw = warehouse.table("fix.raw")
     assert raw.column("msgtype").to_pylist() == ["D"]
     assert raw.column("clordid").to_pylist() == ["OPTION-1"]
 
 
-def test_the_official_clock_delay_is_a_pin_the_task_forwards(
-    tmp_path: Path, capsys: pytest.CaptureFixture
-) -> None:
+def test_the_official_clock_delay_is_a_codec_pin(tmp_path: Path) -> None:
     """What dates a message is the venue's clock, within a stated distance.
 
     `SendingTime(52)` is when a session put the message on the wire, which is
@@ -371,7 +249,7 @@ def test_the_official_clock_delay_is_a_pin_the_task_forwards(
     that sending clock, and falls back to the sending clock where none stands
     that near -- so the pin is what decides, per run, how far a venue's clock
     may sit from the wire and still be read as the same event. It is a codec
-    option and nothing else, so the task forwards it like every other one.
+    option and nothing else.
 
     Each pin gets its own warehouse, because the instant a message settles on
     is what its identity is derived from: a table written under one delay and
@@ -379,11 +257,9 @@ def test_the_official_clock_delay_is_a_pin_the_task_forwards(
     """
 
     def dated_by(name: str, **pinned: Any) -> tuple[int, int]:
-        root = tmp_path / name
-        root.mkdir()
-        held = Ran(root, capsys)
-        held.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
-        held.task("parse_fix_raw", **pinned, **WINDOW)
+        held = Warehouse(tmp_path / name, DAY)
+        held.run(parse_messages, FIXTURE.as_uri())
+        held.run(parse_fix_raw, codec=fix_codec(**pinned))
         rows = (
             held.table("fix.raw")
             .select((EVENT_CLOCK, "sendingtime", TRANSACTION_CLOCK))
@@ -394,18 +270,20 @@ def test_the_official_clock_delay_is_a_pin_the_task_forwards(
             sum(1 for row in rows if row[TRANSACTION_CLOCK] == row[EVENT_CLOCK]),
         )
 
-    # The core's own second, which is what a run takes when it pins nothing.
+    # The core's own second, which is what a codec takes when it pins nothing.
     assert dated_by("default") == (6, 13)
     # A nonpositive delay admits only a clock equal to the sending one, so
     # every event a venue stamped a little apart falls back to the wire.
-    assert dated_by("nought", codec_options={"official_time_delay_ms": 0}) == (16, 3)
+    assert dated_by("nought", official_time_delay_ms=0) == (16, 3)
     # And a wide one admits the clocks the default already did and no more:
     # no transaction clock in this capture stands between a second and ten
     # minutes from its wire.
-    assert dated_by("wide", codec_options={"official_time_delay_ms": 600_000}) == (6, 13)
+    assert dated_by("wide", official_time_delay_ms=600_000) == (6, 13)
 
 
-def test_a_narrow_dictionary_still_answers_every_event(ran: Ran, tmp_path: Path) -> None:
+def test_a_narrow_dictionary_still_answers_every_event(
+    warehouse: Warehouse, tmp_path: Path
+) -> None:
     """A venue stamps nanoseconds; Iceberg v2 holds microseconds. And a
     dictionary narrow enough to type no message type at all still answers a
     row per message: the identity, the instant and the chain are the crate's
@@ -413,28 +291,29 @@ def test_a_narrow_dictionary_still_answers_every_event(ran: Ran, tmp_path: Path)
     its type. The table takes the dictionary's shape -- no `msgtype` column,
     because nothing defined it -- and every event lands in it.
     """
-    ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
+    warehouse.run(parse_messages, FIXTURE.as_uri())
     registry = tmp_path / "nanosecond-fix-registry"
     registry.mkdir()
     sending_time = Field("sendingtime", pyarrow.timestamp("ns", tz="UTC"), nullable=True)
     sending_time.fix.tag = 52
     # A bare registry already seeds the standard clocks, so a store holding
-    # nothing else reads as the empty one the task refuses. One specification
+    # nothing else reads as the empty one the codec refuses. One specification
     # field beside the clock is what makes it a dictionary.
     symbol = Field("symbol", "utf8", nullable=True)
     symbol.fix.tag = 55
     FixRegistry.from_fields([sending_time, symbol]).write_into(registry)
+    codec = fix_codec(fix_registry(registry.as_uri()))
 
-    result = ran.task("parse_fix_raw", registry=registry.as_uri(), **WINDOW)
+    landed = warehouse.run(parse_fix_raw, codec=codec)
 
-    assert result["read"] == STORED["logs.messages"]
-    assert result["messages"] == 79
+    assert landed.read == STORED["logs.messages"]
+    assert landed.written + landed.skipped == 79
     # The 79 arrivals reduce to 51, not the full registry's 49: its Account
     # projection derives `PBRK6_EDA` for both arrivals in two duplicate pairs,
     # while this narrow registry retains `/account:0=PBRK6_EDA` as one extra
     # residual entry (63 rather than 62), so the canonical hashes differ.
-    assert counted(result)["written"] == 51
-    raw = ran.table("fix.raw")
+    assert landed.written == 51
+    raw = warehouse.table("fix.raw")
     assert raw.num_rows == 51
     assert "msgtype" not in raw.column_names
     assert raw.num_columns == 35
@@ -448,18 +327,18 @@ def test_a_narrow_dictionary_still_answers_every_event(ran: Ran, tmp_path: Path)
     # a dictionary that cannot name a message's type places none of them. The
     # refined run reads every `fix.raw` row of the window and lands no row, under
     # the same shape, rather than guessing at a chain.
-    walked = ran.task("parse_fix_refined", registry=registry.as_uri(), **WINDOW)
+    walked = warehouse.run(parse_fix_refined, codec=codec)
     # No narrow row has a typed message category to enter lifecycle, so the
-    # task reports no emitted or deduplicated candidate.
-    assert counted(walked) == {"read": 51, "written": 0, "skipped": 0}
-    assert ran.table("fix.refined").num_rows == 0
-    assert ran.table("fix.refined").schema.equals(raw.schema)
+    # stage reports no emitted or deduplicated candidate.
+    assert walked == Landed(read=51, written=0)
+    assert warehouse.table("fix.refined").num_rows == 0
+    assert warehouse.table("fix.refined").schema.equals(raw.schema)
 
 
-def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> None:
+def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(warehouse: Warehouse) -> None:
     field = iceberg_contract_field(FIX_CONTRACT.read_text(encoding="utf-8"), "FixMsg")
     # The published contract carries the partition spec, so a table built from
-    # the document alone is laid out the way both FIX tasks lay theirs out.
+    # the document alone is laid out the way both FIX stages lay theirs out.
     assert partition_keys(field) == {EVENT_CLOCK: "hour"}
     schema = field.into_arrow_schema()
     batch = pyarrow.RecordBatch.from_pylist(
@@ -479,25 +358,23 @@ def test_dumped_fix_schema_can_stream_a_mock_row_through_iceberg(ran: Ran) -> No
         schema=schema,
     )
     source = pyarrow.RecordBatchReader.from_batches(schema, [batch])
-    store = IcebergCatalog.from_dict(ran.catalog)
-    fixes = store.dataset("fix.raw", field=field)
-    try:
-        assert fixes.overwrite_arrow_reader(source, field, merge_by=True) == 1
-        stored = fixes.read_arrow_table(field)
-        assert stored.num_rows == 1
-        assert stored.num_columns == 128
-        # The native row has event facts only. `srcuuids`, where present,
-        # joins it to stored lines without copying captures into this table.
-        assert "body" not in stored.column_names
-        assert "currhashcode" in stored.column_names
-        assert "srcuuids" in stored.column_names
-        assert not {"body", "loglevel", "msgthreadid"} & set(stored.column_names)
-    finally:
-        fixes.close()
-        store.close()
+    with warehouse.opened() as store:
+        fixes = store.dataset("fix.raw", field=field)
+        try:
+            assert fixes.overwrite_arrow_reader(source, field, merge_by=True) == 1
+            stored = fixes.read_arrow_table(field)
+        finally:
+            fixes.close()
+    assert stored.num_rows == 1
+    assert stored.num_columns == 128
+    # The native row has event facts only. `srcuuids`, where present,
+    # joins it to stored lines without copying captures into this table.
+    assert "currhashcode" in stored.column_names
+    assert "srcuuids" in stored.column_names
+    assert not {"body", "loglevel", "msgthreadid"} & set(stored.column_names)
 
 
-def test_a_text_table_of_the_previous_shape_is_a_table_of_its_own(ran: Ran) -> None:
+def test_a_text_table_of_the_previous_shape_is_a_table_of_its_own(warehouse: Warehouse) -> None:
     """The event the read settles is stated on every row, so a table that
     never held it is not this one: Iceberg adds no required column to rows
     that never had it, and the dataset refuses rather than landing a table
@@ -510,8 +387,7 @@ def test_a_text_table_of_the_previous_shape_is_a_table_of_its_own(ran: Ran) -> N
         ),
         name="logs.messages",
     )
-    store = IcebergCatalog.from_dict(ran.catalog)
-    try:
+    with warehouse.opened() as store:
         lines = store.dataset("logs.messages", field=previous)
         lines.create_with_field(previous)
         lines.close()
@@ -522,24 +398,15 @@ def test_a_text_table_of_the_previous_shape_is_a_table_of_its_own(ran: Ran) -> N
             lines.add_fields(Message.into_field())
         lines.close()
         store.drop_table("logs.messages", purge=True)
-    finally:
-        store.close()
 
 
-def test_a_capture_missing_altogether_is_reported(ran: Ran, tmp_path: Path) -> None:
-    argv = [
-        "tasks",
-        "parse_messages",
-        "run",
-        "--parameter",
-        f"catalog={json.dumps(ran.catalog)}",
-        "--parameter",
-        f"filesystem={json.dumps((tmp_path / 'absent').as_uri())}",
-    ]
-    assert cli.main(argv) == 1
+def test_a_capture_missing_altogether_is_refused(warehouse: Warehouse, tmp_path: Path) -> None:
+    with pytest.raises(FileNotFoundError):
+        warehouse.run(parse_messages, (tmp_path / "absent").as_uri())
+    assert warehouse.rows() == {}
 
 
-def test_several_files_are_one_capture(ran: Ran, tmp_path: Path) -> None:
+def test_several_files_are_one_capture(warehouse: Warehouse, tmp_path: Path) -> None:
     """A capture is a directory, opened one naturally sorted path at a time."""
     capture = tmp_path / "capture"
     capture.mkdir()
@@ -548,18 +415,16 @@ def test_several_files_are_one_capture(ran: Ran, tmp_path: Path) -> None:
     (capture / "a.log").write_bytes(b"\n".join(lines[:middle]) + b"\n")
     (capture / "b.log").write_bytes(b"\n".join(lines[middle:]))
 
-    result = ran.task("parse_messages", filesystem=capture.as_uri(), **WINDOW)
-
-    assert counted(result) == FIRST["parse_messages"]
-    assert ran.rows() == {"logs.messages": STORED["logs.messages"]}
+    assert warehouse.run(parse_messages, capture.as_uri()) == FIRST["parse_messages"]
+    assert warehouse.rows() == {"logs.messages": STORED["logs.messages"]}
 
 
 def test_messages_stream_through_hour_partitions(
-    ran: Ran,
+    warehouse: Warehouse,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The application hands Iceberg a reader; partitioned reads stay readers."""
+    """The stage hands Iceberg a reader; partitioned reads stay readers."""
     capture = tmp_path / "hourly"
     capture.mkdir()
     line = FIXTURE.read_bytes().split(b"\n", 1)[0] + b"\n"
@@ -580,39 +445,39 @@ def test_messages_stream_through_hour_partitions(
         return replace(dataset, source, *args, **kwargs)
 
     monkeypatch.setattr(IcebergDataset, "overwrite_arrow_reader", observed_replace)
-    result = ran.task("parse_messages", filesystem=capture.as_uri(), **WINDOW)
 
-    assert counted(result) == {"read": 2, "written": 2, "skipped": 0}
+    assert warehouse.run(parse_messages, capture.as_uri()) == Landed(read=2, written=2)
     assert handed_to_iceberg == [Message.into_field().into_arrow_schema()]
 
     first = datetime.datetime(2026, 8, 14, 14, 46, 39, 769000, tzinfo=UTC)
     second = datetime.datetime(2026, 8, 14, 15, 46, 39, 769000, tzinfo=UTC)
-    store = IcebergCatalog.from_dict(ran.catalog)
-    messages = store.dataset("logs.messages", field=Message.into_field())
-    try:
-        spec = messages.iceberg_table.spec()
-        assert [(field.name, str(field.transform)) for field in spec.fields] == [
-            ("currunix_hour", "hour")
-        ]
-        assert {row["partition"]["currunix_hour"] for row in messages.data_files().to_pylist()} == {
-            int(first.timestamp() // 3600),
-            int(second.timestamp() // 3600),
-        }
+    with warehouse.opened() as store:
+        messages = store.dataset("logs.messages", field=Message.into_field())
+        try:
+            spec = messages.iceberg_table.spec()
+            assert [(field.name, str(field.transform)) for field in spec.fields] == [
+                ("currunix_hour", "hour")
+            ]
+            assert {
+                row["partition"]["currunix_hour"] for row in messages.data_files().to_pylist()
+            } == {
+                int(first.timestamp() // 3600),
+                int(second.timestamp() // 3600),
+            }
 
-        rows = []
-        for instant in (first, second):
-            assert messages.scan_plan(EqualTo(EVENT_CLOCK, instant))["skipped"] == 1
-            reader = messages.read_arrow_reader(
-                Message.into_field(), row_filter=EqualTo(EVENT_CLOCK, instant)
-            )
-            try:
-                assert isinstance(reader, pyarrow.RecordBatchReader)
-                rows.extend(row for batch in reader for row in batch.to_pylist())
-            finally:
-                reader.close()
-    finally:
-        messages.close()
-        store.close()
+            rows = []
+            for instant in (first, second):
+                assert messages.scan_plan(EqualTo(EVENT_CLOCK, instant))["skipped"] == 1
+                reader = messages.read_arrow_reader(
+                    Message.into_field(), row_filter=EqualTo(EVENT_CLOCK, instant)
+                )
+                try:
+                    assert isinstance(reader, pyarrow.RecordBatchReader)
+                    rows.extend(row for batch in reader for row in batch.to_pylist())
+                finally:
+                    reader.close()
+        finally:
+            messages.close()
 
     assert {row[EVENT_CLOCK] for row in rows} == {first, second}
     assert {row["msgpluginid"] for row in rows} == {"ULBridge"}
@@ -621,7 +486,7 @@ def test_messages_stream_through_hour_partitions(
 
 
 def test_ulbridge_messages_flow_directly_through_the_fix_codec(
-    ran: Ran,
+    warehouse: Warehouse,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     handed_to_iceberg: dict[str, pyarrow.Schema] = {}
@@ -640,11 +505,13 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
         return replace(dataset, source, *args, **kwargs)
 
     monkeypatch.setattr(IcebergDataset, "overwrite_arrow_reader", observed_replace)
-    ran.workflow()
+    workflow(warehouse)
 
     assert schema_modes == {"logs.messages": False, "fix.raw": True, "fix.refined": True}
+    lines = warehouse.table("logs.messages")
+    line_ids = set(lines.column("curruuid").to_pylist())
     for name in ("fix.raw", "fix.refined"):
-        fixes = ran.table(name)
+        fixes = warehouse.table(name)
         assert handed_to_iceberg[name].names == fixes.column_names
         assert fixes.num_rows == STORED[name]
         assert fixes.num_columns == 128
@@ -652,8 +519,6 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
         # columns stay in logs.messages and provenance crosses only as srcuuids.
         assert fixes.column_names[0] == "currunix"
         assert not {"msgthreadid", "loglevel", "body"} & set(fixes.column_names)
-        lines = ran.table("logs.messages")
-        line_ids = set(lines.column("curruuid").to_pylist())
         # A `fix.raw` row is one frame read off one line, so it names exactly
         # that line. A `fix.refined` row is one event, and the walk folds every
         # observation of it into one row -- so it names every line the event
@@ -689,7 +554,7 @@ def test_ulbridge_messages_flow_directly_through_the_fix_codec(
 
 
 def test_a_table_written_before_the_row_grew_gains_the_columns_and_keeps_its_rows(
-    ran: Ran,
+    warehouse: Warehouse,
 ) -> None:
     """A FIX write merges schema, and the rows a table already held stay.
 
@@ -722,24 +587,19 @@ def test_a_table_written_before_the_row_grew_gains_the_columns_and_keeps_its_row
     landed = pyarrow.RecordBatch.from_pylist(
         [{**{member.name: None for member in held}, **settled}], schema=held
     )
-    store = IcebergCatalog.from_dict(ran.catalog)
-    dataset = store.dataset("fix.raw", field=before)
-    try:
-        assert (
-            dataset.append_arrow_reader(
-                pyarrow.RecordBatchReader.from_batches(held, [landed]), before
-            )
-            == 1
-        )
-    finally:
-        dataset.close()
-        store.close()
+    with warehouse.opened() as store:
+        dataset = store.dataset("fix.raw", field=before)
+        try:
+            source = pyarrow.RecordBatchReader.from_batches(held, [landed])
+            assert dataset.append_arrow_reader(source, before) == 1
+        finally:
+            dataset.close()
 
-    ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
-    result = ran.task("parse_fix_raw", **WINDOW)
+    warehouse.run(parse_messages, FIXTURE.as_uri())
+    result = warehouse.run(parse_fix_raw)
 
-    raw = ran.table("fix.raw")
-    assert counted(result) == FIRST["parse_fix_raw"]
+    raw = warehouse.table("fix.raw")
+    assert result == FIRST["parse_fix_raw"]
     assert raw.num_columns == len(full)
     assert raw.num_rows == STORED["fix.raw"] + 1, "the row it already held is still there"
     assert settled[MESSAGE_KEY] in raw.column(MESSAGE_KEY).to_pylist()
@@ -747,12 +607,14 @@ def test_a_table_written_before_the_row_grew_gains_the_columns_and_keeps_its_row
     for column in grew:
         assert kept.column(column).to_pylist() in ([None], [[]]), column
     # And the walk reads the widened table back without noticing the seam.
-    walked = ran.task("parse_fix_refined", **WINDOW)
-    assert walked["read"] == STORED["fix.raw"] + 1
-    assert ran.table("fix.refined").num_columns == len(full)
+    walked = warehouse.run(parse_fix_refined)
+    assert walked.read == STORED["fix.raw"] + 1
+    assert warehouse.table("fix.refined").num_columns == len(full)
 
 
-def test_the_clocks_and_the_group_the_row_grew_reach_the_stored_table(ran: Ran) -> None:
+def test_the_clocks_and_the_group_the_row_grew_reach_the_stored_table(
+    warehouse: Warehouse,
+) -> None:
     """The three clocks and the regulatory group are the table's, not just the schema's.
 
     A column a capture never fills is a column nobody would notice going
@@ -765,10 +627,10 @@ def test_the_clocks_and_the_group_the_row_grew_reach_the_stored_table(ran: Ran) 
     which is the one shape a scalar column cannot hold and the one Iceberg
     has to round-trip as written.
     """
-    ran.workflow()
+    workflow(warehouse)
 
     for name in ("fix.raw", "fix.refined"):
-        fixes = ran.table(name)
+        fixes = warehouse.table(name)
         for column in ("execunix", "recdunix", "refrecdunix"):
             assert fixes.schema.field(column).type == pyarrow.timestamp("us", tz="UTC"), column
         assert fixes.column("execunix").null_count < fixes.num_rows, "the bridge states these"
@@ -800,27 +662,26 @@ def test_the_clocks_and_the_group_the_row_grew_reach_the_stored_table(ran: Ran) 
             assert counted is None or len(held or ()) == counted
 
 
-def test_both_fix_tables_are_laid_out_exactly_alike_by_the_event(ran: Ran) -> None:
+def test_both_fix_tables_are_laid_out_exactly_alike_by_the_event(warehouse: Warehouse) -> None:
     """Read back off Iceberg's own metadata and not off Arrow field metadata:
     the identifier fields are exactly `curruuid`, the partition spec is
     exactly one hour on `currunix`, and the sort order is the three columns
     the field declares, on both tables."""
-    ran.workflow()
+    workflow(warehouse)
 
     for name in ("fix.raw", "fix.refined"):
-        assert ran.layout(name) == {
+        assert warehouse.layout(name) == {
             "key": {"curruuid"},
             "spec": [("currunix", "hour")],
             "sort": [("currunix", "identity"), ("seqnum", "identity"), ("curruuid", "identity")],
         }, name
-        assert ran.partitions(name) == {"currunix": "hour"}
     # A stored line is laid out by the same clock under the same transform and
     # keyed by its own identity, at a different grain from the FIX identity.
-    assert ran.layout("logs.messages")["key"] == {"curruuid"}
-    assert ran.layout("logs.messages")["spec"] == [(EVENT_CLOCK, "hour")]
+    assert warehouse.layout("logs.messages")["key"] == {"curruuid"}
+    assert warehouse.layout("logs.messages")["spec"] == [(EVENT_CLOCK, "hour")]
 
 
-def test_the_lineage_holds_across_the_three_steps(ran: Ran) -> None:
+def test_the_lineage_holds_across_the_three_steps(warehouse: Warehouse) -> None:
     """The point of the split, over the committed capture.
 
     A message's `srcuuids` is the `curruuid` of the stored line it was parsed
@@ -829,10 +690,10 @@ def test_the_lineage_holds_across_the_three_steps(ran: Ran) -> None:
     before it in its chain. And `fix.raw` carries no chain at all: nothing has
     walked yet.
     """
-    ran.workflow()
-    lines = ran.table("logs.messages")
-    raw = ran.table("fix.raw")
-    refined = ran.table("fix.refined")
+    workflow(warehouse)
+    lines = warehouse.table("logs.messages")
+    raw = warehouse.table("fix.raw")
+    refined = warehouse.table("fix.refined")
     named = set(lines.column("curruuid").to_pylist())
     assert len(named) == lines.num_rows, "a stored line has one identity"
 
@@ -880,7 +741,7 @@ def test_the_lineage_holds_across_the_three_steps(ran: Ran) -> None:
         assert refined.column(column).null_count == 0, column
 
 
-def test_a_message_logged_at_every_hop_lands_once(ran: Ran) -> None:
+def test_a_message_logged_at_every_hop_lands_once(warehouse: Warehouse) -> None:
     """The whole deduplication story, as a count.
 
     The capture states 79 messages; storage keeps 49 parsed events, and the
@@ -889,34 +750,34 @@ def test_a_message_logged_at_every_hop_lands_once(ran: Ran) -> None:
     events -- and a second write of the same capture replaces them rather than
     adding a second copy of each.
     """
-    ran.workflow()
-    refined = ran.table("fix.refined")
+    workflow(warehouse)
+    refined = warehouse.table("fix.refined")
     chain = refined.filter(pyarrow.compute.equal(refined.column("crosscode"), CHAIN))
 
     assert chain.num_rows == CHAIN_EVENTS
     assert len(set(chain.column(MESSAGE_KEY).to_pylist())) == CHAIN_EVENTS
     assert max(step or 0 for step in chain.column("seqnum").to_pylist()) == CHAIN_LAST_STEP
-    lines = ran.table("logs.messages")
+    lines = warehouse.table("logs.messages")
     assert lines.num_rows == STORED["logs.messages"]
-    raw = ran.table("fix.raw")
+    raw = warehouse.table("fix.raw")
 
-    ran.workflow()
+    workflow(warehouse)
 
-    assert ran.rows() == STORED, "a second write of the same capture adds no row"
+    assert warehouse.rows() == STORED, "a second write of the same capture adds no row"
     for name, before in (("fix.raw", raw), ("fix.refined", refined)):
-        assert sorted(ran.table(name).column(MESSAGE_KEY).to_pylist()) == sorted(
+        assert sorted(warehouse.table(name).column(MESSAGE_KEY).to_pylist()) == sorted(
             before.column(MESSAGE_KEY).to_pylist()
         ), f"the second write of {name} replaced its rows with the same identities"
 
 
-def test_the_native_identity_tells_exact_repeats_apart(ran: Ran) -> None:
+def test_the_native_identity_tells_exact_repeats_apart(warehouse: Warehouse) -> None:
     """A line is an event and the table is keyed on its identity alone, so a
     capture that prints the same bytes three times has to land three rows.
     The native code digests the line's object and row number beside its body,
     so the code is the line's and not its bytes', and the identity derived
     from it tells the repeats apart."""
-    ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
-    lines = ran.table("logs.messages")
+    warehouse.run(parse_messages, FIXTURE.as_uri())
+    lines = warehouse.table("logs.messages")
 
     assert lines.num_rows == STORED["logs.messages"] == 144, "every physical line lands"
     codes = lines.column("currhashcode").to_pylist()
@@ -933,15 +794,16 @@ def test_the_native_identity_tells_exact_repeats_apart(ran: Ran) -> None:
     )
     grouped = within.group_by(["hour", "curruuid"]).aggregate([([], "count_all")])
     assert grouped.num_rows == lines.num_rows
-    assert ran.partitions("logs.messages") == {EVENT_CLOCK: "hour"}
-    assert ran.layout("logs.messages")["key"] == {"curruuid"}
+    layout = warehouse.layout("logs.messages")
+    assert layout["spec"] == [(EVENT_CLOCK, "hour")]
+    assert layout["key"] == {"curruuid"}
 
 
-def test_a_chain_read_back_in_order_states_what_each_step_follows(ran: Ran) -> None:
+def test_a_chain_read_back_in_order_states_what_each_step_follows(warehouse: Warehouse) -> None:
     """`currunix, seqnum` is the order the walk gave the chain, and a step read
     back in it names the step before it, which never comes later."""
-    ran.workflow()
-    refined = ran.table("fix.refined")
+    workflow(warehouse)
+    refined = warehouse.table("fix.refined")
     chain = refined.filter(pyarrow.compute.equal(refined.column("crosscode"), CHAIN)).sort_by(
         [(EVENT_CLOCK, "ascending"), ("seqnum", "ascending")]
     )
@@ -956,50 +818,60 @@ def test_a_chain_read_back_in_order_states_what_each_step_follows(ran: Ran) -> N
         before = held[step["prevuuid"]]
         assert before[EVENT_CLOCK] <= step[EVENT_CLOCK], "a step never precedes what it follows"
         assert before["seqnum"] is None or before["seqnum"] < step["seqnum"]
+    # What the walk folded, exactly: the two partial fills and the fill that
+    # closed the order, each created with the order and expiring with its day.
+    opened = datetime.datetime(2026, 8, 14, 12, 46, 39, tzinfo=UTC)
+    expires = datetime.datetime(2026, 8, 14, 16, 25, tzinfo=UTC)
+    partial = ("40PARTFILL", opened + datetime.timedelta(milliseconds=743), expires, None)
+    assert sorted(
+        (step["state"], step["creaunix"], step["exprtime"], step["seqnum"])
+        for step in chain.select(("state", "creaunix", "exprtime", "seqnum")).to_pylist()
+    ) == [partial, partial, ("80FILLED", opened, expires, 1), ("80FILLED", opened, expires, 1)]
 
 
-def test_the_refined_window_walks_what_the_parse_left_at_the_pin(ran: Ran) -> None:
+def test_the_refined_window_walks_what_the_parse_left_at_the_pin(warehouse: Warehouse) -> None:
     """A `fix.raw` row the parse could not date sits at the codec's pin, outside
     any day, and the refined window reads it there by the transaction time the
     walk dates it with: a day's run walks the day's events, dated or pinned."""
-    ran.task("parse_messages", filesystem=FIXTURE.as_uri(), **WINDOW)
-    ran.task("parse_fix_raw", **WINDOW)
-    raw = ran.table("fix.raw")
+    warehouse.run(parse_messages, FIXTURE.as_uri())
+    warehouse.run(parse_fix_raw)
+    raw = warehouse.table("fix.raw")
     pinned = raw.filter(pyarrow.compute.equal(raw.column(EVENT_CLOCK), UNDATED))
     assert pinned.num_rows == PINNED
     assert pinned.column("transacttime").null_count == 0, "each states the clock the walk reads"
 
-    refined = ran.task("parse_fix_refined", **WINDOW)
+    refined = warehouse.run(parse_fix_refined)
 
-    assert refined["read"] == raw.num_rows, "the pinned rows are the day's too"
+    assert refined.read == raw.num_rows, "the pinned rows are the day's too"
     # A window the fixture falls outside walks nothing: neither the dated rows
     # nor the pinned ones belong to it.
-    elsewhere = ran.task("parse_fix_refined", start="2026-08-15", end="2026-08-15")
-    assert counted(elsewhere) == {"read": 0, "written": 0, "skipped": 0}
+    elsewhere = warehouse.run(parse_fix_refined, window=window_of("2026-08-15", "2026-08-15"))
+    assert elsewhere == Landed(read=0, written=0)
 
 
-def test_maintenance_visits_every_table_and_reports_what_it_changed(ran: Ran) -> None:
-    """The first pass settles what is fragmented; the second finds nothing."""
-    ran.workflow()
+def test_maintenance_compacts_every_stage_table_and_keeps_its_rows(warehouse: Warehouse) -> None:
+    """`optimize` over what the stages landed: the capture spans several
+    hours, so each table holds one small file per hour and the first pass
+    settles them without losing a row; the second finds nothing to do."""
+    workflow(warehouse)
 
-    first = ran.task("optimize_iceberg")
+    def optimized() -> dict[str, dict[str, Any]]:
+        with warehouse.opened() as store:
+            reports = {}
+            for dataset in store.datasets(None):
+                try:
+                    reports[dataset.identifier] = dataset.optimize()
+                finally:
+                    dataset.close()
+            return reports
 
-    assert first["task"] == "optimize_iceberg"
-    assert first["tables"] == len(STORED)
-    assert set(first["reports"]) == set(STORED)
-    # The capture spans several hours, so each table lands one small file per
-    # hour and the first pass settles them.
-    assert first["reports"]["logs.messages"]["rewritten"] > 0
-    assert first["reports"]["fix.refined"]["rewritten"] > 0
-    assert counted(first)["read"] == len(STORED)
-    assert ran.rows() == STORED, "compaction rewrites rows, it never drops them"
+    first = optimized()
 
-    second = ran.task("optimize_iceberg")
+    assert set(first) == set(STORED)
+    assert all(report["rewritten"] > 0 for report in first.values()), first
+    assert warehouse.rows() == STORED, "compaction rewrites rows, it never drops them"
 
-    assert counted(second) == {
-        "read": len(STORED),
-        "written": 0,
-        "skipped": len(STORED),
-    }, json.dumps(second, indent=2)
-    assert all(report["rewritten"] == 0 for report in second["reports"].values())
-    assert ran.rows() == STORED, "a settled catalog is left as it was"
+    second = optimized()
+
+    assert all(report["rewritten"] == 0 for report in second.values()), second
+    assert warehouse.rows() == STORED, "a settled catalog is left as it was"

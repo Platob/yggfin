@@ -4,8 +4,8 @@
   dbt-duckdb reaches a store that is not DuckDB through a plugin, and the
   adapter hands that plugin a staged file rather than a cursor. So this stages
   the model as one Parquet file and calls the plugin with it: `rekep.dbt` reads
-  it back as an Arrow stream and commits it through the same dataset every task
-  writes through, under the keys, partition and storage types the model's own
+  it back as an Arrow stream and commits it through the same dataset every
+  `rekep.pipeline` stage writes through, under the keys, partition and storage types the model's own
   configuration declares.
 
   The DuckDB table stays: `ref()` reads it inside the same build, and nothing

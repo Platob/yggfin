@@ -32,9 +32,9 @@ EPOCH = datetime.datetime(1970, 1, 1, tzinfo=UTC)
 EPOCH_DATE = EPOCH.date()
 EPOCH_ORDINAL = EPOCH_DATE.toordinal()
 
-#: How far back a run reaches when its parameters name no `start`: one day
-#: before the instant it ends at. A task that names neither bound covers the
-#: last day, and a schedule that names both covers exactly its interval.
+#: How far back `window_of` reaches when it is given no `start`: one day
+#: before the instant it ends at. A window naming neither bound covers the
+#: last day, and one naming both covers exactly that interval.
 WINDOW = datetime.timedelta(days=1)
 
 #: Instants a configuration may name instead of spelling. Read when the value
@@ -84,14 +84,14 @@ class Stamp:
     fraction_at: int
 
     #: Which characters may separate the fraction from the seconds, empty
-    #: where a shape runs the digits straight on. A class, not a spelling:
-    #: one capture writes `01.147` and `01,147` in the same file. Whichever
-    #: it is, it is one character.
+    #: where a shape runs the digits straight on. A class, not a spelling: a
+    #: bridge under a comma locale writes `39,769` where another writes
+    #: `39.769`. Whichever it is, it is one character.
     fraction_separator: str = ""
 
-    #: Whether a separator may also sit *inside* the fraction. One capture
-    #: writes `01.147_250`, because one capture is written by several loggers
-    #: and they do not agree.
+    #: Whether a separator may also sit *inside* the fraction. The shipped
+    #: capture writes `46.524_315` beside `39.769`, because one capture is
+    #: written by several loggers and they do not agree.
     split_fraction: bool = False
 
     #: Where this shape already writes `YYYY-MM-DD`, and where it already

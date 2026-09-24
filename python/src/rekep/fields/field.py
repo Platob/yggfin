@@ -181,7 +181,7 @@ def stored_arrow_reader(
 ) -> pyarrow.RecordBatchReader:
     """Any stage's rows as a table stores them, ready for the write.
 
-    The one storage boundary every task crosses: the text read's rows on
+    The one storage boundary every stage crosses: the text read's rows on
     their way into `logs.messages`, the parse's into `fix.raw`, the walk's
     into `fix.refined`. Projecting onto `field` is most of it, and the field
     apply does that for free -- a column the stage carried and the table does

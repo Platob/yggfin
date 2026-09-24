@@ -12,8 +12,8 @@ pip install "rekep[iceberg] @ git+https://github.com/Platob/yggfin#subdirectory=
 `rekep` is installed from this repository rather than from PyPI: from a
 checkout, `pip install "./python[iceberg]"`.
 
-Market tasks require Yggdryl 0.1.11, pinned in `python/pyproject.toml` and
-`python/uv.lock`.
+The market stages require Yggdryl 0.1.11, pinned in `python/pyproject.toml`
+and `python/uv.lock`.
 
 The package ships its registry, so no dictionary path or environment variable
 is required:
@@ -30,26 +30,30 @@ assert message.by_name("symbol").as_py() == "AAPL"
 assert message.by_tag(38).as_py() == 12.0
 ```
 
-The supported ingestion graph is deliberately short:
+`rekep` is a processing library: each step of the supported ingestion graph is
+one function of `rekep.pipeline`, over one Iceberg catalog and one window, and
+where, when and over which window it runs is the caller's. The graph is
+deliberately short:
 
 ```text
-filesystem URI -> parse_messages    -> logs.messages
-logs.messages  -> parse_fix_raw     -> fix.raw
-fix.raw        -> parse_fix_refined -> fix.refined
-fix.refined    -> parse_books       -> market.books
-market.books   -> parse_orders      -> market.orders
-               -> parse_quotes      -> market.quotes
-               -> parse_executions  -> market.executions
+filesystem URI -> parse_messages             -> logs.messages
+logs.messages  -> parse_fix_raw              -> fix.raw
+fix.raw        -> parse_fix_refined          -> fix.refined
+fix.refined    -> parse_books                -> market.books
+market.books   -> parse_events("orders")     -> market.orders
+               -> parse_events("quotes")     -> market.quotes
+               -> parse_events("executions") -> market.executions
 ```
 
-The three event tasks run independently after books commit, reading the same
-pinned book snapshot. The optional dbt build remains available from refined FIX:
+The three event kinds run independently after books commit, reading the same
+pinned book snapshot. The optional dbt products are built from refined FIX by
+dbt itself:
 
 ```text
-fix.refined -> build_dbt -> orders.events, orders.current, executions.fills
+fix.refined -> dbt build -> orders.events, orders.current, executions.fills
 ```
 
-The two FIX tasks are the two native stages one codec exposes, each over a
+The two FIX stages are the two native stages one codec exposes, each over a
 table of its own, in this order and no other:
 
 ```text
@@ -65,14 +69,14 @@ what a message implied about the message before it -- the `prevuuid` it
 follows, the `seqnum` it stands at, the `parentuuids` it descends from, and the
 `creaunix`, `exprtime` and `state` its chain folded forward.
 
-Refined scans the previous hour plus the job window with `fix_window_filter`
+Refined scans the previous hour plus its window with `fix_window_filter`
 and `SORT_COLUMNS`. Iceberg streams chronological hour paths and merges no more
 than 16 overlapping files at once; there is no Python-wide `read_all` union.
 Native lifecycle processing still collects and stable-sorts that
 finite scan result. Undated rows come from the epoch partition and may
 accumulate, so this is not a batch-bounded memory path. The previous hour
-provides context only, and the job window is selected after the walk, in
-Python, because the walk needs its context rows: output is the job window
+provides context only, and the window is selected after the walk, in
+Python, because the walk needs its context rows: output is the window
 plus unresolved epoch rows, with future expiry excluded, so this bounded run
 does not claim arbitrary older-chain completeness.
 
@@ -89,32 +93,52 @@ empty rerun, while preserving rows outside it. Native identities and exact
 decimals survive the Arrow projection; Iceberg v2 stores timestamps at
 microsecond resolution and uint64 codes as signed views of the same bits.
 
-Every task is a module of `rekep.tasks`, shipped beside the JSON document of
-its defaults, and `rekep tasks <name>` shows, deploys and runs it. Run
-ingestion locally from the repository root:
+Land the [capture](data/README.md#the-capture) from the repository root, into
+the local catalog the [dbt profile](data/dbt/README.md) reads, then build the
+products over it. `uv sync --project python` installs the default `dev` and
+`dbt` groups; run the Python under `uv run --project python python`:
 
-```bash
-uv sync --project python --all-extras --dev
-uv run --project python rekep tasks list
-uv run --project python rekep tasks parse_messages deploy
-uv run --project python rekep tasks parse_messages run \
-  --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep tasks parse_fix_raw run \
-  --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep tasks parse_fix_refined run \
-  --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep tasks build_dbt run
+```python
+from rekep.iceberg import IcebergCatalog
+from rekep.pipeline import Landed, parse_fix_raw, parse_fix_refined, parse_messages
+from rekep.times import window_of
+
+catalog = IcebergCatalog.from_dict(
+    {
+        "name": "rekep",
+        "properties": {
+            "type": "sql",
+            "uri": "sqlite:///data/catalog.db",
+            "warehouse": "data/warehouse",
+        },
+    }
+)
+day = window_of("2026-08-14", "2026-08-14")
+try:
+    assert parse_messages("file:data/capture", catalog, day) == Landed(read=144, written=144)
+    assert parse_fix_raw(catalog, day) == Landed(read=144, written=49, skipped=30)
+    assert parse_fix_refined(catalog, day) == Landed(read=49, written=19)
+finally:
+    catalog.close()
 ```
 
-`list` names every task and the tables it writes, `show` prints the parameters
-a run would take, and `deploy` creates the tables a task writes ahead of its
-first run. A run creates a missing table too; deploying first is for a catalog
-the runner may not create tables in.
+```bash
+uv run --project python dbt build --project-dir data/dbt --profiles-dir data/dbt
+```
 
-A streaming task parses one window, `[start, end)`, and given neither bound
-takes the last day up to now; the sample capture under `data/capture` is dated
-2026-08-14, which is why the three runs above name that day. A run over a
-window lands its rows over what an earlier run of the same window landed, so a
+Each stage reads the table before it, replaces its window of the table it
+writes, creates that table where it is missing, and answers `Landed`: the
+source rows its window selected, the rows it wrote, and the rows the target's
+key folded into a written one. [`rekep.deploy`](python/src/rekep/deploy.py)
+creates the seven tables ahead of a first run, for a catalog the caller may
+not create tables in. The market stages run the same way, `parse_books` and
+then `parse_events` for each kind against the snapshot the books committed;
+the [pipeline guide](docs/pipeline/index.md) runs them over the capture.
+
+A window is `[start, end)` as `window_of` reads it, and given neither bound
+it is the last day up to now; the capture under `data/capture` is dated
+2026-08-14, which is why the stages above name that day. A run over a window
+lands its rows over what an earlier run of the same window landed, so a
 replay leaves each table holding each row once.
 
 `logs.messages` stores one physical line as the read decoded it -- the
@@ -153,20 +177,21 @@ session, context and sequence form the byte-length-prefixed
 `identifiers["msgsesseventid"]`. Default null spellings are empty text,
 `null`, `<null>`, `none`, `n/a`, and `[n/a]`, trimmed and case-insensitive.
 
-`build_dbt` runs the [dbt project](data/dbt/README.md) under `data/dbt` and
+`dbt build` runs the [dbt project](data/dbt/README.md) under `data/dbt` and
 reads `fix.refined`: DuckDB owns the SQL, and every read and commit goes through
-the same Iceberg dataset the tasks write through, so there is no second catalog
-and no extract.
+the same Iceberg dataset the stages write through, so there is no second
+catalog and no extract.
 
 The reviewed contracts are [Message](schemas/rekep/message.json),
 [FixMsg](schemas/rekep/fixmsg.json), [Book](schemas/rekep/book.json), and
 [MarketEvent](schemas/rekep/marketevent.json). Their runtime constructors own
 the schemas, keys, hour partitions and sort orders; all three flat market
-tables share MarketEvent. Continue with the [market tasks](docs/pipeline/tasks/parse-books.md)
-or use Airflow to pin one book snapshot for the parallel event stages.
-The [pipeline guide](docs/pipeline/index.md) covers local files, S3, AWS Glue,
-AWS S3 Tables, Airflow, and operations; the
-[data-product guide](docs/products/index.md) defines every published column.
+tables share MarketEvent. Continue with the
+[market stages](docs/pipeline/parse-books.md), which pin one book snapshot for
+the parallel event kinds. The [pipeline guide](docs/pipeline/index.md) covers
+each stage, [catalogs](docs/storage/catalogs.md) covers local files, S3, AWS
+Glue and AWS S3 Tables, and the [data-product guide](docs/products/index.md)
+defines every published column.
 
 Development:
 
@@ -174,11 +199,11 @@ Development:
 cd python
 uv run pytest
 uv run pytest -m integration
-uv run ruff check . ../airflow ../tools
-uv run ruff format --check . ../airflow ../tools
+uv run ruff check . ../tools
+uv run ruff format --check . ../tools
 uv run --group docs mkdocs build --strict --config-file ../mkdocs.yml
 ```
 
 `mkdocs-material` is in the `docs` group, which is not a default group, so the
 documentation build names it; everything above it runs under the default
-`dev`, `runner` and `airflow` groups.
+`dev` and `dbt` groups.

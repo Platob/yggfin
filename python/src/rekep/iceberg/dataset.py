@@ -525,8 +525,9 @@ class IcebergDataset(Dataset):
         the first interval of a fresh catalog every stage reads an upstream
         that its own upstream has not created yet, and "nothing there" is the
         true answer to that -- so it is answered once here rather than by an
-        `exists` guard at each call site. `parse_messages` refuses a missing
-        text source instead, because nothing in the pipeline creates one.
+        `exists` guard at each call site. `rekep.pipeline.parse_messages`
+        refuses a missing text source instead, because nothing in the
+        pipeline creates one.
         """
         if isinstance(order_by, str):
             requested_order = (order_by,)

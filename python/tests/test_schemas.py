@@ -132,12 +132,12 @@ def test_a_contract_does_not_carry_what_only_arrow_metadata_states() -> None:
 def test_the_fix_contract_is_what_the_current_dictionary_answers() -> None:
     """Drift fails here rather than surfacing in a table.
 
-    The document is generated output -- `rekep fields dump --pyclass
-    rekep.fix:fix_message_field` writes it -- so this compares the committed
-    bytes with what the installed yggdryl produces today, column for column,
-    and a dictionary that moved under it is a failing test rather than a
-    schema evolution nobody asked for. One document for two tables, because
-    `fix.raw` and `fix.refined` are one shape.
+    The document is generated output -- `iceberg_contract(fix_message_field())`
+    and a closing newline -- so this compares the committed bytes with what
+    the installed yggdryl produces today, column for column, and a dictionary
+    that moved under it is a failing test rather than a schema evolution
+    nobody asked for. One document for two tables, because `fix.raw` and
+    `fix.refined` are one shape.
     """
     document = FIX_CONTRACT.read_text(encoding="utf-8")
     fixed = load_fix_contract()

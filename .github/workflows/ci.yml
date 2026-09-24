@@ -20,8 +20,10 @@ jobs:
         python: ["3.10", "3.13"]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       - name: Sync
         run: uv sync --python ${{ matrix.python }}
       - name: Lint
@@ -32,33 +34,14 @@ jobs:
         run: uv run pytest -q -m "not integration"
       - name: Market pipeline transactions
         run: uv run pytest -q -m integration tests/test_market_pipeline.py tests/test_market_projection.py tests/iceberg/test_window_overwrite.py
-      - name: Scheduled market pipeline
-        if: runner.os == 'Linux' && matrix.python == '3.13'
-        run: uv run pytest -q -m integration tests/test_rekep_operator.py -k real_dag_run
-
-  # The image an EKS pod runs, built as a deployment builds it, then every
-  # stage run in it with exactly the command and arguments the operator hands
-  # its pod.
-  image:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - name: Build
-        run: docker build -t rekep:ci .
-        working-directory: .
-      - name: Sync
-        run: uv sync
-      - name: Pods
-        run: uv run pytest -q -m integration tests/test_eks_rekep_operator.py -k image
-        env:
-          REKEP_IMAGE: rekep:ci
 
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       - name: Sync
         run: uv sync --group docs
       # --strict: a broken link or a page nobody navigates to fails the build

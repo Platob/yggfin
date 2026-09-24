@@ -1,35 +1,59 @@
 # parse_fix_raw
 
-Parse one capture window into settled FIX events and write `fix.raw`.
-Nothing in this task walks lifecycle chains.
+`parse_fix_raw(catalog, window, *, codec=None, source=MESSAGES, target=RAW)`
+parses the stored lines of one window into settled FIX events and lands them
+in `fix.raw`. Nothing in this stage walks lifecycle chains.
 
-## Parameters
+```python
+import tempfile
+from pathlib import Path
 
-`python/src/rekep/tasks/parse_fix_raw.py` runs the task, and
-`parse_fix_raw.json` beside it holds its defaults, which
-`rekep tasks parse_fix_raw show` prints under any override:
+import pyarrow.compute
 
-```json
-{
-  "messages": "logs.messages",
-  "registry": null,
-  "codec_options": null,
-  "start": null,
-  "end": null,
-  "catalog": {
-    "name": "rekep",
-    "properties": {
-      "type": "sql",
-      "uri": "sqlite:///data/catalog.db",
-      "warehouse": "data/warehouse"
+from rekep.fix import UNDATED, fix_codec
+from rekep.iceberg import IcebergCatalog
+from rekep.pipeline import Landed, parse_fix_raw, parse_messages
+from rekep.times import window_of
+
+root = Path(tempfile.mkdtemp())
+catalog = IcebergCatalog.from_dict(
+    {
+        "name": "rekep",
+        "properties": {
+            "type": "sql",
+            "uri": f"sqlite:///{root}/catalog.db",
+            "warehouse": str(root / "warehouse"),
+        },
     }
-  }
-}
+)
+day = window_of("2026-08-14", "2026-08-14")
+codec = fix_codec(threads=2, batch_row_size=4_096)
+try:
+    parse_messages("file:data/capture", catalog, day)
+    # 144 lines answer 79 messages, and the key folds the 30 that restate an
+    # event another hop already logged: 49 events.
+    assert parse_fix_raw(catalog, day, codec=codec) == Landed(read=144, written=49, skipped=30)
+
+    raw = catalog.dataset("fix.raw").read_arrow_table(
+        columns=("currunix", "seqnum", "prevuuid", "parentuuids", "srcuuids")
+    )
+    # Nothing has walked: no row has a place in a chain yet.
+    for walked in ("seqnum", "prevuuid", "parentuuids"):
+        assert raw.column(walked).null_count == raw.num_rows == 49
+    # Each row names the one line it was parsed out of.
+    assert pyarrow.compute.all(
+        pyarrow.compute.equal(pyarrow.compute.list_value_length(raw.column("srcuuids")), 1)
+    ).as_py()
+    # A message that stated no clock waits at the pin for the walk to date it.
+    undated = pyarrow.compute.equal(raw.column("currunix"), pyarrow.scalar(UNDATED))
+    assert pyarrow.compute.sum(undated).as_py() == 33
+finally:
+    catalog.close()
 ```
 
 ## The parse, and nothing after it
 
-The task prunes `logs.messages` to `[start, end)` on `currunix`, the event the
+The stage prunes `logs.messages` to `[start, end)` on `currunix`, the event the
 read settled over each line, and reads the lines at the epoch pin beside
 them, where a handle with no clock at all leaves a line. `currunix` is the
 partition column itself and is never null, so the predicate names it and
@@ -49,17 +73,16 @@ independent per event and may execute concurrently. `threads` defaults to
 the available CPU count and zero becomes one. Output order remains input
 order.
 
-`codec_options: null` delegates every native default. An object is forwarded
-unchanged to `FixCodec`; Python keeps no whitelist or second interpretation.
-Common pins include
+`codec` is the whole parse surface. `fix_codec(registry, **pins)` forwards
+every pin unchanged to `FixCodec`, which validates each keyword natively;
+Python keeps no whitelist or second interpretation. Common pins include
 `batch_row_size`, `batch_byte_size`, `include_msgtypes`, `exclude_msgtypes`,
-`threads`, `official_time_delay_ms`, and `snapshot_ns`; native construction
-rejects unknown names.
+`threads`, `official_time_delay_ms`, and `snapshot_ns`.
 Batching defaults to 32,768 rows and 128 MiB.
 `snapshot_ns` is normally zero for the raw stage because snapshots belong to
 a lifecycle walk.
 `lstrip` belongs to the text read's `TextOptions`, changes the bytes a line
-retains, and is neither a codec option nor enabled by this task.
+retains, and is neither a codec option nor enabled by this stage.
 
 The default absence values are empty text, `null`, `<null>`, `none`, `n/a`,
 and `[n/a]`, after trimming and case folding. `null_values` replaces that set.
@@ -70,13 +93,15 @@ and `[n/a]`, after trimming and case folding. `null_values` replaces that set.
 parse door and `fix.raw`. `msgthreadid`, `loglevel` and `body` exist only in
 `logs.messages`, and `crosscode` and `seqnum` stand on both shapes meaning
 the row they sit on -- here the message's chain identifier and its step in
-the chain -- so no carried or unstored schema is constructed. The reviewed
-**FixMsg** contract is
-[`schemas/rekep/fixmsg.json`](../../contracts/index.md).
+the chain -- so no carried or unstored schema is constructed. The field is
+declared from the dictionary alone rather than from the first batch, so an
+empty window creates the same table a full one does. The reviewed **FixMsg**
+contract is [`schemas/rekep/fixmsg.json`](../contracts/index.md).
 
-The dataset is keyed by `curruuid`, partitioned by hour of `currunix`, and sorted by
-`currunix, seqnum, curruuid`. An overwrite is scoped to matching identifiers
-inside affected partitions; append remains a blind generic Iceberg append.
+The dataset is keyed by `curruuid`, partitioned by hour of `currunix`, and
+sorted by `currunix, seqnum, curruuid`. The write replaces matching
+identifiers inside affected partitions and adds columns a newer dictionary
+declares (`merge_schema=True`).
 
 ## A row is an event, not a line
 
@@ -106,9 +131,12 @@ the original pair order or framing bytes.
 
 ## Registry override
 
-Set `registry` to a directory or URI only when the task must use an explicit
-venue dictionary. The same registry must declare the table field and parse its
-rows; it is never inferred from a batch.
+A venue dictionary is a codec over it:
+`codec=fix_codec(fix_registry("file:///srv/fix"))`. The same codec must
+declare the table field and parse its rows; a dictionary is never inferred
+from a batch. Hand the same codec to
+[`parse_fix_refined`](parse-fix-refined.md#registry-override), which reads each
+row back with the dictionary that wrote it.
 
 ## Row behavior
 
@@ -119,20 +147,6 @@ rows; it is never inferred from a batch.
 - `recdunix` and `refrecdunix` are both the line's own clock. `execunix` is
   what the bridge states, where it does.
 - A message that stated no `SendingTime` sits at the codec's epoch pin until
-  the walk dates it by its `TransactTime`.
+  the walk dates it by its `TransactTime`: 33 of the capture's 49 rows.
 - Unknown names remain residual tag-zero entries.
 - A replay of one window overwrites the same partition-scoped `curruuid` rows.
-
-## Sample rows
-
-The checked sample is regenerated from the current codec and contract; the
-include owns its measured counts.
-
---8<-- "docs/pipeline/tasks/samples/parse-fix-raw.md"
-
-## Run
-
-```bash
-uv run --project python rekep tasks parse_fix_raw run \
-  --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-```
