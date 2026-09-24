@@ -12,7 +12,7 @@ from rekep.market import market_window_filter
 from rekep.times import window_of
 
 from .test_market import FRAMES
-from .test_workflow import ROOT, Ran
+from .test_workflow import Ran
 
 pytestmark = pytest.mark.integration
 
@@ -134,7 +134,7 @@ def test_missing_pinned_book_table_refuses_before_clearing_events(tmp_path, caps
             "books": "market.missing",
             "snapshot_id": books["snapshot_id"],
         }
-        argv = ["task", "run", str(ROOT / "tasks" / f"parse_{kind}" / f"parse_{kind}.json")]
+        argv = ["tasks", f"parse_{kind}", "run"]
         for name, value in parameters.items():
             argv.extend(["--parameter", f"{name}={json.dumps(value)}"])
         assert cli.main(argv) == 1

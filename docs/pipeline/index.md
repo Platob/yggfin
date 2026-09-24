@@ -28,24 +28,29 @@ flowchart LR
 | [`parse_executions`](tasks/parse-executions.md) | pinned `market.books` | `market.executions` | native execution leaves |
 | [`build_dbt`](tasks/build-dbt.md), optional | `fix.refined` | `orders.events`, `orders.current`, `executions.fills` | existing SQL products |
 
-The adjacent JSON documents own defaults and the Marimo applications own task
-execution. CLI and Airflow run those same applications. The market stages
-require Yggdryl 0.1.11, declared in `python/pyproject.toml` and locked in
-`python/uv.lock`.
+Each task is a module of `rekep.tasks`, shipped beside the JSON document of
+its defaults. `rekep tasks <name> run` runs one, `show` prints the parameters
+a run would take and `deploy` creates the tables it writes; Airflow's operator
+runs that same `run` command. `rekep tasks list` names every task and its
+tables. The market stages require Yggdryl 0.1.11, declared in
+`python/pyproject.toml` and locked in `python/uv.lock`.
 
 ## Run a window
 
-From the repository root, install the locked dependencies and deploy all
-seven table declarations:
+From the repository root, install the locked dependencies, deploy the seven
+tables the ingestion tasks write, and run the three source stages:
 
 ```bash
 uv sync --project python --all-extras --dev
-uv run --project python rekep iceberg deploy tasks/parse_messages/parse_messages.json
-uv run --project python rekep task run tasks/parse_messages/parse_messages.json \
+for TASK in parse_messages parse_fix_raw parse_fix_refined \
+  parse_books parse_orders parse_quotes parse_executions; do
+  uv run --project python rekep tasks "$TASK" deploy
+done
+uv run --project python rekep tasks parse_messages run \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep task run tasks/parse_fix_raw/parse_fix_raw.json \
+uv run --project python rekep tasks parse_fix_raw run \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep task run tasks/parse_fix_refined/parse_fix_refined.json \
+uv run --project python rekep tasks parse_fix_refined run \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
 ```
 
@@ -55,7 +60,7 @@ your deployed `fix.refined` table containing valid admitted market records.
 This separate example selects a ten-second window on 21 September:
 
 ```bash
-uv run --project python rekep task run tasks/parse_books/parse_books.json \
+uv run --project python rekep tasks parse_books run \
   --parameter 'start="2026-09-21T10:00:00Z"' --parameter 'end="2026-09-21T10:00:10Z"' \
   --result-file /tmp/rekep-books.json
 ```
@@ -67,7 +72,8 @@ result automatically. The optional dbt build continues to read `fix.refined`.
 
 Default capture, catalog, warehouse and dictionary remain `file:data/capture`,
 `sqlite:///data/catalog.db`, `data/warehouse` and the bundled registry.
-Each task page includes its actual JSON defaults rather than a second copy.
+Each task page shows its shipped defaults, and `rekep tasks <name> show`
+prints them under any override.
 
 ## Time, state and replay
 
@@ -137,4 +143,4 @@ difference.
 | derived products | n/a | same catalog | same warehouse | [build_dbt](tasks/build-dbt.md) |
 
 Credentials belong to the process environment, workload role, or standard AWS
-configuration -- not task JSON or command history.
+configuration -- not a parameters file or command history.

@@ -299,7 +299,7 @@ Configure warehouse S3 behavior with standard catalog properties:
 ```
 
 Credentials belong in the provider chain or secret-backed `s3.*` properties,
-never in committed task documents.
+never in a committed parameters file.
 
 AWS S3 Tables is the one type rekep resolves itself, because a table bucket is
 served by an Iceberg REST catalog AWS hosts -- at two endpoints, which the
@@ -377,7 +377,7 @@ nothing, is keyed only by `curruuid`, and is laid out by the hour of
 `currunix` alone. A `logs.messages` written under yggdryl 0.1.9 or earlier
 holds other identities under other field ids and is not evolved into this
 shape: the table is dropped, recreated from `Message.into_field()` by
-`rekep iceberg deploy`, and its captures replayed -- together with both FIX
+`rekep tasks parse_messages deploy`, and its captures replayed -- together with both FIX
 tables and dependent market or optional SQL products, whose provenance and keys join to it. rekep
 carries no legacy name, timestamp-type, digest-name, or partition-layout
 compatibility path.
@@ -402,10 +402,12 @@ Under an S3 Tables table bucket it removes nothing: the service writes and
 deletes those files as it compacts, and the bucket behind a table is not one
 the account lists, so no listing here can settle a file's ownership. The sweep
 reports `deleted: 0` and records which bucket keeps its files.
-The checked maintenance job exposes the same controls:
+The bundled maintenance task exposes the same controls, and
+`rekep tasks optimize_iceberg show` prints its defaults:
 
 ```bash
-rekep task run tasks/optimize_iceberg/optimize_iceberg.json
+rekep tasks optimize_iceberg run
+rekep tasks optimize_iceberg run --parameter namespace=fix --parameter remove_orphans=false
 ```
 
 | parameter | meaning |

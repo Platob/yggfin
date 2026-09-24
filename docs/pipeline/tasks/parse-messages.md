@@ -3,24 +3,24 @@
 `parse_messages` recursively reads a local or object-store text source and
 publishes one row per line the window covers to `logs.messages`.
 
-## Task document
+## Parameters
+
+`python/src/rekep/tasks/parse_messages.py` runs the task, and
+`parse_messages.json` beside it holds its defaults, which
+`rekep tasks parse_messages show` prints under any override:
 
 ```json
 {
-  "name": "parse_messages",
-  "application": "parse_messages.py",
-  "parameters": {
-    "filesystem": "file:data/capture",
-    "rowheader": null,
-    "start": null,
-    "end": null,
-    "catalog": {
-      "name": "rekep",
-      "properties": {
-        "type": "sql",
-        "uri": "sqlite:///data/catalog.db",
-        "warehouse": "data/warehouse"
-      }
+  "filesystem": "file:data/capture",
+  "rowheader": null,
+  "start": null,
+  "end": null,
+  "catalog": {
+    "name": "rekep",
+    "properties": {
+      "type": "sql",
+      "uri": "sqlite:///data/catalog.db",
+      "warehouse": "data/warehouse"
     }
   }
 }
@@ -64,7 +64,7 @@ The row header is the bridge's own `ULBRIDGE_ROWHEADER`, spelled once in
 `rekep.times` and pinned against the native `yggdryl.fix.ULBRIDGE_ROWHEADER`
 by `python/tests/test_times.py`: the same bracket part for part, under the
 names the read fills from. The native constant names its clock `timestamp`
-and its level `level` and therefore dates nothing; yggfin's spells `mtime`
+and its level `level` and therefore dates nothing; rekep's spells `mtime`
 and `loglevel`, with a wider, optional fraction. It captures `mtime`,
 `msgthreadid`, `msgsessionid`, `msgctxid`, `msgseqnum`, `msgpluginid` and
 `loglevel`, each named for what the native read fills from it. `mtime` fills
@@ -196,7 +196,7 @@ modification time of the object it was read from, so the window of that
 instant covers it and no other does; a line at the epoch -- one read from a
 handle with no clock at all -- is in the window that covers 1970 alone.
 The window is the last day, ending at the instant the run starts, when the
-document names neither bound; `start` and `end` read the way every instant
+parameters name neither bound; `start` and `end` read the way every instant
 here does, and `end` naming a whole day means the end of that day.
 
 ```python
@@ -248,8 +248,7 @@ and the integration suite checks it with `--check`.
 ## Run
 
 ```bash
-uv run --project python rekep task run \
-  tasks/parse_messages/parse_messages.json \
+uv run --project python rekep tasks parse_messages run \
   --parameter 'filesystem="file:/srv/captures/2026-08-14"' \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
 ```
@@ -260,10 +259,9 @@ scheduled run over a live capture wants and what a dated capture is outside.
 For S3:
 
 ```bash
-uv run --project python rekep task run \
-  tasks/parse_messages/parse_messages.json \
-  --parameter 'filesystem="s3://market-capture/ulbridge/2026/08/14?region=eu-west-1"' \
-  --parameters-file /run/rekep/catalog.json
+uv run --project python rekep tasks parse_messages run \
+  --parameters-file /run/rekep/catalog.json \
+  --parameter 'filesystem="s3://market-capture/ulbridge/2026/08/14?region=eu-west-1"'
 ```
 
 ## Failures

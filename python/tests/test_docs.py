@@ -5,17 +5,34 @@ from __future__ import annotations
 import ast
 import json
 import re
+import shlex
 from collections.abc import Iterator
 from pathlib import Path
 
 import yaml
 
 from rekep import Field, Message
+from rekep.cli import _overrides, _parser, _settings
+from rekep.tasks import Task
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
 FENCE = re.compile(r"^```python\n(.*?)^```", re.MULTILINE | re.DOTALL)
 JSON_FENCE = re.compile(r"^```json\n(.*?)^```", re.MULTILINE | re.DOTALL)
+SHELL_FENCE = re.compile(r"^```bash\n(.*?)^```", re.MULTILINE | re.DOTALL)
+INVOKED = re.compile(r"(?:^|\s)rekep\s")
+LOOP = re.compile(r"^\s*for (\w+) in ([^;]+); do\s*$")
+
+#: Every page a reader copies a command from.
+PAGES = [
+    ROOT / "README.md",
+    ROOT / ".claude" / "skills" / "rekep" / "SKILL.md",
+    ROOT / "airflow" / "README.md",
+    ROOT / "config" / "README.md",
+    ROOT / "data" / "README.md",
+    ROOT / "data" / "dbt" / "README.md",
+    *sorted(DOCS.rglob("*.md")),
+]
 
 
 def code_fences(page: Path, pattern: re.Pattern[str]) -> Iterator[str]:
@@ -155,8 +172,8 @@ def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
 
 
 def test_public_python_uses_the_rekep_surface() -> None:
-    """Examples and applications import their product, not its runtime."""
-    roots = [ROOT / "README.md", ROOT / "schemas", DOCS, ROOT / "tasks", ROOT / "tools"]
+    """Examples, DAGs and tools import their product, not its runtime."""
+    roots = [ROOT / "README.md", ROOT / "schemas", DOCS, ROOT / "airflow", ROOT / "tools"]
     sources = []
     for root in roots:
         for path in [root] if root.is_file() else root.rglob("*"):
@@ -179,8 +196,8 @@ def test_public_python_uses_the_rekep_surface() -> None:
         ), path
 
 
-def test_each_task_page_publishes_its_document_verbatim() -> None:
-    """Pasted documents and repository snippets state the executable defaults."""
+def test_each_task_page_publishes_its_defaults_verbatim() -> None:
+    """Pasted defaults and repository snippets state what a run takes."""
     pages = {
         "pipeline/tasks/parse-messages.md": "parse_messages",
         "pipeline/tasks/parse-fix-raw.md": "parse_fix_raw",
@@ -193,6 +210,66 @@ def test_each_task_page_publishes_its_document_verbatim() -> None:
     }
 
     for page, name in pages.items():
-        document = json.loads((ROOT / "tasks" / name / f"{name}.json").read_text(encoding="utf-8"))
         shown = [json.loads(source) for source in code_fences(DOCS / page, JSON_FENCE)]
-        assert document in shown, f"{page} no longer shows {name}.json as it is"
+        assert Task(name).parameters in shown, f"{page} no longer shows {name}.json as it is"
+
+
+def shell_commands() -> Iterator[tuple[Path, list[str]]]:
+    """Every `rekep` invocation in a shell fence, as the arguments after `rekep`.
+
+    A command inside a `for` loop is read once per value the loop names. A
+    command spelled with a placeholder, `<name>`, states a form rather than a
+    command and is left out.
+    """
+    for page in PAGES:
+        for fence in SHELL_FENCE.findall(page.read_text(encoding="utf-8")):
+            loops: dict[str, list[str]] = {}
+            for line in fence.replace("\\\n", " ").splitlines():
+                if looped := LOOP.match(line):
+                    loops[looped.group(1)] = looped.group(2).split()
+                    continue
+                if "<" in line or not INVOKED.search(line):
+                    continue
+                spellings = [line]
+                for variable, values in loops.items():
+                    spellings = [
+                        re.sub(rf"\$\{{{variable}\}}|\${variable}\b", value, spelled)
+                        for spelled in spellings
+                        for value in values
+                    ]
+                for spelled in dict.fromkeys(spellings):
+                    words = shlex.split(spelled, comments=True)
+                    if "rekep" not in words:
+                        continue
+                    words = words[words.index("rekep") + 1 :]
+                    for end, word in enumerate(words):
+                        if word in {"&", "&&", ";", "|", "||"}:
+                            words = words[:end]
+                            break
+                    yield page, words
+
+
+def test_documented_commands_parse() -> None:
+    """A documented command is one the CLI takes, naming what its task declares."""
+    commands = list(shell_commands())
+
+    assert commands
+    for page, words in commands:
+        where = f"{page.relative_to(ROOT)}: rekep {shlex.join(words)}"
+        try:
+            arguments = _parser().parse_args(words)
+        except SystemExit as ended:
+            # `--help` and `--version` answer and exit cleanly; a refusal does not.
+            assert ended.code == 0, where
+            continue
+        if getattr(arguments, "command", None) != "tasks" or arguments.task == "list":
+            continue
+        # What `main` does after parsing, but for reading a parameters file,
+        # which a page names without shipping: every `--parameter` is a pair
+        # the task declares, and every `--table-property` a pair.
+        arguments.parameters_file = None
+        try:
+            Task(arguments.task).resolved(_overrides(arguments))
+            _settings(getattr(arguments, "table_property", None))
+        except (TypeError, ValueError) as refused:
+            raise AssertionError(f"{where}: {refused}") from refused

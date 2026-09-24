@@ -29,7 +29,7 @@ flowchart LR
 | market core | admission, continuation, book state, expirations, native event identities and AE decomposition |
 | Arrow | columnar delta selection and list flattening |
 | Iceberg | table conversion, identifiers, snapshots, scan planning, atomic window commits |
-| tasks | application parameters, stage boundaries, counts, and orchestration |
+| tasks | task parameters, stage boundaries, counts, and orchestration |
 
 There is one `Field`, one resource handle, one text reader, one codec, and one
 FIX registry. rekep re-exports those types rather than wrapping them in
@@ -94,23 +94,28 @@ provenance links across storage.
 
 ```text
 python/src/rekep/         public package and bundled registry
-tasks/parse_messages/     text-line Marimo application + JSON parameters
-tasks/parse_fix_raw/      FIX parse Marimo application + JSON parameters
-tasks/parse_fix_refined/  FIX lifecycle Marimo application + JSON parameters
-tasks/parse_books/        native book Marimo application + JSON parameters
-tasks/parse_orders/       order-delta projection
-tasks/parse_quotes/       quote-delta projection
-tasks/parse_executions/   execution projection
-tasks/build_dbt/          dbt Marimo application + JSON parameters
-tasks/optimize_iceberg/   maintenance Marimo application + JSON parameters
-tasks/airflow/            DAGs, operator, and standalone child runner
+python/src/rekep/tasks/   one module per task, beside the JSON of its defaults:
+  parse_messages          text lines
+  parse_fix_raw           FIX parse
+  parse_fix_refined       FIX lifecycle
+  parse_books             native book fold
+  parse_orders            order-delta projection
+  parse_quotes            quote-delta projection
+  parse_executions        execution projection
+  events                  the body the three projections share, not a task
+  build_dbt               the dbt build
+  optimize_iceberg        maintenance
+airflow/                  DAGs and the operator that runs `rekep tasks <name> run`
 schemas/rekep/            reviewed table contracts
 docs/                     contracts, operations, products, and roadmap
-tools/                    registry browser and documentation projection
+tools/                    registry asset dump and documentation projection
 data/                     default capture, catalog and warehouse locations
 data/dbt/                 the dbt project: models, schemas, macros, one profile
 config/                   an operator's own FIX dictionary, when one is used
 ```
+
+`rekep tasks list` names each task with the tables it writes, and
+`rekep tasks <name> show` prints its defaults.
 
 `optimize_iceberg` is maintenance rather than ingestion: it is not in the
 scheduled graph, and it is documented with the storage it settles, under

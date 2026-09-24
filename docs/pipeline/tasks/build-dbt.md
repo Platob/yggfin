@@ -5,20 +5,20 @@ each of its products back into Iceberg. dbt owns the SQL; every read, schema
 and commit stays on the same `IcebergDataset` the three ingestion tasks write
 through.
 
-## Task document
+## Parameters
+
+`python/src/rekep/tasks/build_dbt.py` runs the task, and `build_dbt.json`
+beside it holds its defaults, which `rekep tasks build_dbt show` prints under
+any override:
 
 ```json
 {
-  "name": "build_dbt",
-  "application": "build_dbt.py",
-  "parameters": {
-    "project": "data/dbt",
-    "profiles": null,
-    "target": null,
-    "select": null,
-    "catalog": null,
-    "log_level": "INFO"
-  }
+  "project": "data/dbt",
+  "profiles": null,
+  "target": null,
+  "select": null,
+  "catalog": null,
+  "log_level": "INFO"
 }
 ```
 
@@ -31,10 +31,10 @@ through.
 | `catalog` | `null` | the catalog to read and commit through; `null` is the profile's own |
 | `log_level` | `INFO` | the level this package's records are written at |
 
-`catalog` is the same mapping every other task document spells. The task hands
-it to dbt as `REKEP_DBT_CATALOG`, which the plugin reads ahead of the profile,
-so a deployment configures dbt the way it configures every other task and the
-checked-in project keeps its local default.
+`catalog` is the same mapping every other task's `catalog` spells. The task
+hands it to dbt as `REKEP_DBT_CATALOG`, which the plugin reads ahead of the
+profile, so a deployment configures dbt the way it configures every other task
+and the checked-in project keeps its local default.
 
 ## How a model reaches Iceberg
 
@@ -172,7 +172,7 @@ synthetic expiry away from its deadline.
 ## Run it
 
 ```bash
-uv run --project python rekep task run tasks/build_dbt/build_dbt.json
+uv run --project python rekep tasks build_dbt run
 ```
 
 Relative locations -- the project, the staging directory, the local catalog and
@@ -187,14 +187,15 @@ dbt on its own reads the same project and the same profile:
 uv run --project python dbt build --project-dir data/dbt --profiles-dir data/dbt
 ```
 
-Narrow a run the way dbt does:
+`select` is handed to dbt as `--select`, and it narrows what the in-memory
+database holds as well as what is built: `stg_fix_messages`, which every
+product reads, is not in `orders_events+`, and a test that reads two products
+-- `every_fill_belongs_to_a_known_order`, or the relationship `orders.current`
+states to `orders.events` -- fails when a selection builds only one of them.
+The shipped products read one another, so the shipped project builds whole;
+`select` is for a project whose models stand apart.
 
-```bash
-uv run --project python rekep task run tasks/build_dbt/build_dbt.json \
-  --parameter 'select=["orders_events+"]'
-```
-
-Airflow runs the same document. The [`rekep_products`](../airflow.md#the-products-dag)
+Airflow runs the same task. The [`rekep_products`](../airflow.md#the-products-dag)
 DAG is scheduled on the `fix.refined` Asset the ingestion DAG publishes, so a
 build starts when `parse_fix_refined` writes.
 

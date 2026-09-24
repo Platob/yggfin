@@ -1,8 +1,10 @@
 # Benchmarks
 
 Reference host, fastest of two warmed runs. Not portable service-level
-guarantees: they include local PyIceberg transaction work and fresh
-Python/Marimo startup.
+guarantees: they include local PyIceberg transaction work and fresh Python
+startup. The fresh-process and end-to-end figures were taken while each task
+ran as a notebook application, whose startup they include; they have not been
+measured again under `rekep tasks <name> run`.
 
 ## Message parsing
 
@@ -55,7 +57,7 @@ pruning     a one-hour filter read 100,000 rows from one file, pruned two
 compression 1.82 MiB gzip → 12.58 MiB decoded, three batches
 ```
 
-Fresh-process rates are dominated by Python/Marimo startup rather than by the
+Fresh-process rates are dominated by Python startup rather than by the
 pipeline. A replay of an interval lands its 100,000 rows again over the ones
 it landed -- one more data file and one more snapshot -- and reports them as
 written; what that replace costs over an append is measured below.
@@ -80,8 +82,8 @@ Each later refined job read its previous hour plus its own and published only
 its own 22,000 rows. Final counts were 220,000 in `logs.messages`, `fix.raw`,
 `fix.refined` and `orders.events`, and 110,000 in both `orders.current` and
 `executions.fills`; all 25 dbt checks passed. `stage` is the task's reported
-work time. `job` includes the application run, and `full command` also includes
-interpreter, CLI, and UI startup.
+work time. `job` includes running the task, and `full command` also includes
+interpreter and CLI startup.
 
 A streaming audit checked all 220,000 refined rows rather than a sample: every
 UUIDv7 was unique and its timestamp matched `currunix` to the millisecond,
@@ -98,7 +100,7 @@ the pipeline is not globally memory-bounded.
 
 A wall-time profile found no Python per-row allocation loop: fixed-row
 widening and native lifecycle construction each accounted for about 2.6 s,
-application imports about 2.1 s, table existence/loading about 1.5 s, and the
+task imports about 2.1 s, table existence/loading about 1.5 s, and the
 overwrite commit about 1.2 s. These cumulative timers overlap and are not an
 additive breakdown.
 

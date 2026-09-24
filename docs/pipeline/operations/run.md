@@ -1,20 +1,30 @@
 # Run tasks
 
-`rekep task run` loads one task JSON document, resolves its adjacent Marimo
-application, replaces the `parameters` cell, validates the returned stage
-result, and writes one compact JSON result to stdout. Logs and tracebacks go to
-stderr.
+Every task is a module of `rekep.tasks`, and `rekep tasks <name> run` runs one
+in this process: it resolves the parameters, calls the module's `run`,
+validates the returned stage result, and writes it to stdout as one compact
+JSON line. Logs and tracebacks go to stderr, and a failure exits 1.
+
+```bash
+uv run --project python rekep tasks list
+uv run --project python rekep tasks parse_messages show
+uv run --project python rekep tasks parse_messages --help
+```
+
+`list` names every task, in the order the graph runs them, with its summary
+and the tables it writes. `show` prints the parameters a run would take, under
+the same overrides a run is given, and `--help` lists the defaults.
 
 ## Ingestion and optional dbt
 
 ```bash
-uv run --project python rekep task run tasks/parse_messages/parse_messages.json \
+uv run --project python rekep tasks parse_messages run \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep task run tasks/parse_fix_raw/parse_fix_raw.json \
+uv run --project python rekep tasks parse_fix_raw run \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep task run tasks/parse_fix_refined/parse_fix_refined.json \
+uv run --project python rekep tasks parse_fix_refined run \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep task run tasks/build_dbt/build_dbt.json
+uv run --project python rekep tasks build_dbt run
 ```
 
 The order is required: `parse_fix_raw` reads `logs.messages` rather than
@@ -29,13 +39,13 @@ in the named September window. The bundled August ingestion fixture contains
 an incomplete AE side and is not a book demo. Capture the book result:
 
 ```bash
-uv run --project python rekep task run tasks/parse_books/parse_books.json \
+uv run --project python rekep tasks parse_books run \
   --parameter 'start="2026-09-21T10:00:00Z"' --parameter 'end="2026-09-21T10:00:10Z"' \
   --result-file /tmp/rekep-books.json
 BOOK_SNAPSHOT=$(python -c 'import json; print(json.load(open("/tmp/rekep-books.json"))["snapshot_id"])')
 pids=()
 for KIND in orders quotes executions; do
-  uv run --project python rekep task run "tasks/parse_${KIND}/parse_${KIND}.json" \
+  uv run --project python rekep tasks "parse_${KIND}" run \
     --parameter 'start="2026-09-21T10:00:00Z"' --parameter 'end="2026-09-21T10:00:10Z"' \
     --parameter "snapshot_id=$BOOK_SNAPSHOT" &
   pids+=("$!")
@@ -87,16 +97,14 @@ day's events, dated or pinned, so it is run over the same window again.
 strings so a URI is not mistaken for syntax:
 
 ```bash
-uv run --project python rekep task run \
-  tasks/parse_messages/parse_messages.json \
+uv run --project python rekep tasks parse_messages run \
   --parameter 'filesystem="file:/srv/capture/2026-08-14"'
 ```
 
 Point the FIX parse at a candidate dictionary:
 
 ```bash
-uv run --project python rekep task run \
-  tasks/parse_fix_raw/parse_fix_raw.json \
+uv run --project python rekep tasks parse_fix_raw run \
   --parameter 'registry="file:///srv/fix"'
 ```
 
@@ -106,11 +114,13 @@ There is no version left to pin: what a message was read at is what its own
 `beginstring` said, and native `FixCodec` validates every keyword it receives.
 `codec_options: null` delegates native defaults; an object is forwarded
 unchanged. Useful pins include `batch_row_size`, `include_msgtypes`,
-`exclude_msgtypes`, `threads`, `official_time_delay_ms`, and `snapshot_ns`. `version` is no longer a task parameter, so a
-`--parameter 'version="4.4"'` names nothing the document declares -- the CLI
-carries it into an unused definition and Airflow's operator fails the task
-outright. There is no switch on the walk: the parsed rows without their
-chains are `fix.raw`, which `parse_fix_raw` publishes on its own.
+`exclude_msgtypes`, `threads`, `official_time_delay_ms`, and `snapshot_ns`.
+`version` is no longer a task parameter, so a `--parameter 'version="4.4"'`
+names nothing the task declares, and the CLI and Airflow's operator both
+refuse it before anything runs:
+`parse_fix_raw takes no version; it takes messages, registry, codec_options, start, end, catalog`.
+There is no switch on the walk: the parsed rows without their chains are
+`fix.raw`, which `parse_fix_raw` publishes on its own.
 
 ## Parameters file
 
@@ -131,22 +141,22 @@ Use a file for nested catalog settings and keep secrets out of it:
 ```
 
 ```bash
-uv run --project python rekep task run \
-  tasks/parse_messages/parse_messages.json \
+uv run --project python rekep tasks parse_messages run \
   --parameters-file /run/rekep/aws.json \
   --parameter 'filesystem="s3://market-capture/ulbridge/2026/08/14?region=eu-west-1"'
 ```
 
-Precedence is task defaults, parameters file, then repeated command-line
-parameters. Airflow uses task defaults, operator parameters, DAG-run Params,
-then the run's data interval for `start` and `end`, unless the run's conf
-names them.
+Precedence is the shipped defaults, then the parameters file, then each
+`--parameter`. An override replaces a parameter whole, so a `catalog` override
+is the whole mapping, and a name the task does not declare is refused. `show`
+takes the same options and prints what the run would take. Airflow uses the
+shipped defaults, operator parameters, DAG-run Params, then the run's data
+interval for `start` and `end`, unless the run's conf names them.
 
 ## Capture a result
 
 ```bash
-uv run --project python rekep task run \
-  tasks/parse_fix_raw/parse_fix_raw.json \
+uv run --project python rekep tasks parse_fix_raw run \
   --result-file /run/rekep/parse-fix-raw-result.json
 ```
 

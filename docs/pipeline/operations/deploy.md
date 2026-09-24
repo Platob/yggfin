@@ -1,24 +1,34 @@
 # Deploy Iceberg tables
 
-`rekep iceberg deploy` creates seven tables from four runtime field factories:
-Message for `logs.messages`, FixMsg for `fix.raw` and `fix.refined`, Book for
+`rekep tasks <name> deploy` creates the table a task writes when its catalog
+lacks it. The catalog is the task's own `catalog` parameter, resolved exactly
+as a run resolves it -- shipped defaults, then `--parameters-file`, then each
+`--parameter` -- so a table lands where the task later looks for it. The seven
+ingestion tables come from four runtime field factories: Message for
+`logs.messages`, FixMsg for `fix.raw` and `fix.refined`, Book for
 `market.books`, and MarketEvent for `market.orders`, `market.quotes` and
 `market.executions`. Shapes derive without consuming input rows. Deployment
-is idempotent: existing tables are reported as `present` and left unchanged.
+is idempotent: an existing table is reported as `present` and left unchanged.
 
 The optional dbt models declare their own shapes and create their tables on
-first commit. Install the pinned Yggdryl 0.1.11 dependency before deploy.
+their first build, so `rekep tasks build_dbt deploy` creates nothing and says
+so; `optimize_iceberg` writes no table of its own. `rekep tasks list` names
+the tables each task writes. Install the pinned Yggdryl 0.1.11 dependency
+before deploy.
 
 ## Local SQLite and files
 
-The checked task document already names a SQLite catalog and local warehouse:
+The shipped defaults already name a SQLite catalog and local warehouse.
+Deploying all seven tables is deploying each ingestion task:
 
 ```bash
-uv run --project python rekep iceberg deploy \
-  tasks/parse_messages/parse_messages.json
+for TASK in parse_messages parse_fix_raw parse_fix_refined \
+  parse_books parse_orders parse_quotes parse_executions; do
+  uv run --project python rekep tasks "$TASK" deploy
+done
 ```
 
-Expected result shape:
+Each task prints the catalog it used and what became of its table:
 
 ```json
 {
@@ -31,13 +41,7 @@ Expected result shape:
     }
   },
   "tables": {
-    "logs.messages": "created",
-    "fix.raw": "created",
-    "fix.refined": "created",
-    "market.books": "created",
-    "market.orders": "created",
-    "market.quotes": "created",
-    "market.executions": "created"
+    "logs.messages": "created"
   }
 }
 ```
@@ -49,34 +53,55 @@ stays relative and also resolves against the working directory. Run deploy
 from the checkout root, or give both settings absolute values, so the tables
 land where the tasks later look for them.
 
-Preview without creating anything:
+Preview without creating anything; a table the catalog lacks is reported
+`missing`:
 
 ```bash
-uv run --project python rekep iceberg deploy \
-  tasks/parse_messages/parse_messages.json --dry-run
+uv run --project python rekep tasks parse_messages deploy --dry-run
 ```
 
-Create one product only:
+Create one product only by deploying the task that writes it:
 
 ```bash
-uv run --project python rekep iceberg deploy \
-  tasks/parse_messages/parse_messages.json --table fix.raw
+uv run --project python rekep tasks parse_fix_raw deploy
 ```
 
 ## S3 with a SQL catalog
 
 This mode keeps catalog metadata in a durable SQL database while data and
 metadata files live on S3. The example uses SQLite for a single worker; use a
-shared SQL service when multiple workers need the catalog.
+shared SQL service when multiple workers need the catalog. The catalog goes
+in a parameters file, `/run/rekep/s3.json`:
+
+```json
+{
+  "catalog": {
+    "name": "rekep",
+    "properties": {
+      "type": "sql",
+      "uri": "sqlite:////var/lib/rekep/catalog.db",
+      "warehouse": "s3://market-warehouse/rekep",
+      "s3.region": "eu-west-1"
+    }
+  }
+}
+```
 
 ```bash
 export AWS_REGION=eu-west-1
-uv run --project python rekep iceberg deploy \
-  --catalog rekep \
-  --property type=sql \
-  --property uri=sqlite:////var/lib/rekep/catalog.db \
-  --property warehouse=s3://market-warehouse/rekep \
-  --property s3.region=eu-west-1
+for TASK in parse_messages parse_fix_raw parse_fix_refined \
+  parse_books parse_orders parse_quotes parse_executions; do
+  uv run --project python rekep tasks "$TASK" deploy --parameters-file /run/rekep/s3.json
+done
+```
+
+Hand every run the same file, so the tasks read and write the tables deploy
+created. A catalog can also be one `--parameter`, read as JSON, which replaces
+the whole mapping:
+
+```bash
+uv run --project python rekep tasks parse_messages deploy --parameter \
+  'catalog={"name": "rekep", "properties": {"type": "sql", "uri": "sqlite:////var/lib/rekep/catalog.db", "warehouse": "s3://market-warehouse/rekep", "s3.region": "eu-west-1"}}'
 ```
 
 For an S3-compatible service, also set `s3.endpoint` and, when required,
@@ -96,23 +121,8 @@ export AWS_REGION=eu-west-1
 aws sts get-caller-identity
 ```
 
-Create the seven tables:
-
-```bash
-uv run --project python rekep iceberg deploy \
-  --catalog rekep \
-  --property type=glue \
-  --property warehouse=s3://market-warehouse/rekep \
-  --property glue.region=eu-west-1 \
-  --property s3.region=eu-west-1
-```
-
-The worker needs Glue database/table permissions and S3 list/read/write/delete
-permissions for the warehouse prefix. The capture bucket additionally needs
-list/read permissions. Prefer an IAM role; do not place access keys in task
-JSON, CLI arguments, or Airflow Params.
-
-Use this parameters file for the ingestion and market tasks:
+The catalog goes in a parameters file, `/run/rekep/aws.json`, which deploy
+and every run of the ingestion and market tasks read:
 
 ```json
 {
@@ -128,16 +138,29 @@ Use this parameters file for the ingestion and market tasks:
 }
 ```
 
+Create the seven tables:
+
 ```bash
-uv run --project python rekep task run \
-  tasks/parse_messages/parse_messages.json \
+for TASK in parse_messages parse_fix_raw parse_fix_refined \
+  parse_books parse_orders parse_quotes parse_executions; do
+  uv run --project python rekep tasks "$TASK" deploy --parameters-file /run/rekep/aws.json
+done
+```
+
+The worker needs Glue database/table permissions and S3 list/read/write/delete
+permissions for the warehouse prefix. The capture bucket additionally needs
+list/read permissions. Prefer an IAM role; do not place access keys in a
+parameters file, CLI arguments, or Airflow Params.
+
+Run the ingestion tasks against the same file:
+
+```bash
+uv run --project python rekep tasks parse_messages run \
   --parameters-file /run/rekep/aws.json \
   --parameter 'filesystem="s3://market-capture/ulbridge/2026/08/14?region=eu-west-1"'
-uv run --project python rekep task run \
-  tasks/parse_fix_raw/parse_fix_raw.json \
+uv run --project python rekep tasks parse_fix_raw run \
   --parameters-file /run/rekep/aws.json
-uv run --project python rekep task run \
-  tasks/parse_fix_refined/parse_fix_refined.json \
+uv run --project python rekep tasks parse_fix_refined run \
   --parameters-file /run/rekep/aws.json
 ```
 
@@ -176,13 +199,6 @@ aws sts get-caller-identity
 
 The ARN states the region, so the ARN is the whole configuration:
 
-```bash
-uv run --project python rekep iceberg deploy \
-  --catalog rekep \
-  --property type=s3tables \
-  --property warehouse=arn:aws:s3tables:eu-west-1:123456789012:bucket/market-tables
-```
-
 ```json
 {
   "catalog": {
@@ -206,9 +222,10 @@ Integrate the table bucket with the AWS analytics services first: that mounts
 it in the Glue Data Catalog as the federated catalog `s3tablescatalog/<name>`,
 which is the name this door takes, and it puts Lake Formation in front of
 every table. Grant the worker's role what it has to do there -- creating the
-namespaces and tables `rekep iceberg deploy` creates, and reading and writing
-the ones ingestion fills -- and enable full table access for external engines,
-which is what lets Lake Formation vend credentials to a client like this one.
+namespaces and tables `rekep tasks <name> deploy` creates, and reading and
+writing the ones ingestion fills -- and enable full table access for external
+engines, which is what lets Lake Formation vend credentials to a client like
+this one.
 
 ```json
 {
@@ -235,19 +252,22 @@ beside the S3 Tables data actions above.
 
 ### Either door
 
-The catalog goes in a parameters file, for the three ingestion tasks and for
-`build_dbt`:
+The catalog goes in a parameters file, `/run/rekep/aws.json`, and every task
+reads it, deploy and run alike, `build_dbt` included:
 
 ```bash
-uv run --project python rekep task run \
-  tasks/parse_messages/parse_messages.json \
+for TASK in parse_messages parse_fix_raw parse_fix_refined \
+  parse_books parse_orders parse_quotes parse_executions; do
+  uv run --project python rekep tasks "$TASK" deploy --parameters-file /run/rekep/aws.json
+done
+uv run --project python rekep tasks parse_messages run \
   --parameters-file /run/rekep/aws.json \
   --parameter 'filesystem="s3://market-capture/ulbridge/2026/08/14?region=eu-west-1"'
 ```
 
 The capture bucket still needs its own list and read permissions. Prefer an
-IAM role; do not place access keys in task JSON, CLI arguments, or Airflow
-Params.
+IAM role; do not place access keys in a parameters file, CLI arguments, or
+Airflow Params.
 
 ### Where the endpoint is
 
@@ -299,7 +319,7 @@ another `rest.signing-region`, explicit `s3.*` credentials:
 
 The worker's environment is the third way to say where the endpoint is, and
 the one that states it for every S3 Tables catalog the worker runs rather
-than in one document. It is read from the endpoint variables the AWS CLI
+than in one parameters file. It is read from the endpoint variables the AWS CLI
 reads -- the variables alone, not a profile's `endpoint_url` or `services`
 section -- after a `uri` stated outright and the locator's endpoint, and
 before the regional one: `AWS_ENDPOINT_URL_S3TABLES` for an ARN or a locator,
@@ -335,28 +355,26 @@ Two things differ, and both because the service owns the files:
   [`optimize_iceberg`](../../storage/iceberg.md#maintenance) deletes nothing
   here, reports `deleted: 0` and records which bucket keeps its files, while
   the compaction and snapshot expiry it asks for still commit through the
-  catalog. Set `remove_orphans` to `false` to say so in the document as well,
-  and consider leaving the pass itself to the service.
+  catalog. Pass `--parameter remove_orphans=false` to say so as well, and
+  consider leaving the pass itself to the service.
 - A drop takes the data with it. What a drop may ask for is the table's to
   decide and not the door's: an S3 Tables table answers a drop that would keep
   its files with a 400, so `drop_table` purges on a table bucket whether or
   not it was asked to.
 
-## Table properties and branches
+## Table properties
 
 ```bash
-uv run --project python rekep iceberg deploy \
-  --catalog rekep \
-  --property type=glue \
-  --property warehouse=s3://market-warehouse/rekep \
+uv run --project python rekep tasks parse_fix_raw deploy \
+  --parameters-file /run/rekep/aws.json \
   --table-property write.format.default=parquet \
-  --table-property write.parquet.compression-codec=zstd \
-  --branch production
+  --table-property write.parquet.compression-codec=zstd
 ```
 
-Properties are applied only when a table is created. Deployment deliberately
-does not mutate an existing table; use maintenance or a reviewed migration for
-that.
+`--table-property` is repeatable. Properties are applied only when a table is
+created: deployment deliberately does not mutate an existing table; use
+maintenance or a reviewed migration for that. A table is created on `main`,
+the branch every task commits to.
 
 A newly deployed FIX table has exactly the 128 native FixMsg columns, and a
 newly deployed `logs.messages` the 12 columns of the `Message` contract. A
@@ -368,7 +386,7 @@ replayed from capture, as the next section says.
 An existing table with an obsolete native schema or identity contract must
 be rebuilt from its source under the pinned release. Deployment reports an
 existing table as `present`; it does not validate or rewrite its schema.
-There is no second identity spelling or translation layer in Yggfin.
+There is no second identity spelling or translation layer in Rekep.
 
 Recreate affected source tables and dependent products together, deploy their
 current declarations, and replay capture through `parse_messages`,
@@ -392,7 +410,7 @@ revision produces a different one.
 ## Python API
 
 ```python
-from rekep.deploy import deploy
+from rekep.deploy import TABLES, deploy
 from rekep.iceberg import IcebergCatalog
 
 catalog = IcebergCatalog(
@@ -409,7 +427,23 @@ try:
 finally:
     catalog.close()
 
-assert set(result) == {"logs.messages", "fix.raw", "fix.refined"}
+assert set(result) == {shape.table for shape in TABLES}
+```
+
+`deploy(catalog, tables=["fix.raw"])` creates the named tables alone.
+`rekep tasks <name> deploy` is `Task.deploy`, which resolves the task's
+`catalog` under the same overrides a run takes and deploys what it writes:
+
+```python
+from rekep.tasks import Task
+
+glue = {
+    "name": "rekep",
+    "properties": {"type": "glue", "warehouse": "s3://market-warehouse/rekep"},
+}
+done = Task("parse_fix_raw").deploy({"catalog": glue}, dry_run=True)
+
+assert set(done["tables"]) == {"fix.raw"}
 ```
 
 ## Verification

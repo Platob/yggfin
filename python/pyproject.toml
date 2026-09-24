@@ -75,16 +75,16 @@ dev = [
     "tomli>=2.0; python_version < '3.11'",
     "rekep[iceberg,polars,s3tables]",
 ]
-# What either task runner needs to execute a Marimo document: Marimo imports
-# the application and runs its cells, and Glue is the catalog a production
-# warehouse is behind. Nothing here is imported by `src/` -- a task is a job,
-# not a feature of the package -- so it is a group rather than an extra.
+# What running a task needs beyond the package: Glue is the catalog a
+# production warehouse is behind, and nothing here is imported by `src/` at
+# import time -- a task is a job, not a feature of the package -- so it is a
+# group rather than an extra. `rekep tasks <name> run` executes under it.
 #
 # dbt is here for the same reason and no other: `build_dbt` is a task, it runs
 # a build in its own process, and the plugin dbt loads to reach this package is
-# `rekep.dbt`, which nothing under `src/` imports. A runner that can execute one
-# task document can execute every one of them, so the group that runs a task is
-# the group that carries it.
+# `rekep.dbt`, which `rekep.tasks.build_dbt` imports only when it runs. A
+# runner that can execute one task can execute every one of them, so the group
+# that runs a task is the group that carries it.
 #
 # It narrows three pins the rest of the lock shares, because dbt states upper
 # bounds where Airflow states none: `protobuf<7` (dbt-adapters and dbt-common),
@@ -92,7 +92,6 @@ dev = [
 # metricflow. Each resolves to a release every other consumer already accepts,
 # and the whole suite -- Airflow's own tests included -- runs against them.
 runner = [
-    "marimo>=0.16,<1",
     "dbt-core>=1.10,<2",
     "dbt-duckdb>=1.9,<2",
     "rekep[glue,iceberg,polars,s3tables]",
@@ -100,7 +99,7 @@ runner = [
 # What the Airflow DAG and its operator are tested against. Airflow is an
 # orchestrator this repository is deployed into, never a runtime dependency of
 # `rekep`, so it stays out of every extra and out of `runner`: the operator
-# launches the standalone Marimo runner under that group. Airflow runs on POSIX
+# launches `rekep tasks <name> run` under that group. Airflow runs on POSIX
 # only, so the marker keeps CI's Windows leg syncable and the tests skip
 # themselves there through `pytest.importorskip`.
 #
@@ -108,8 +107,14 @@ runner = [
 # `AirflowException` out of `airflow.sdk.exceptions`, which the task SDK grew
 # in 1.1.0. Airflow 3.0.x pins `apache-airflow-task-sdk<1.1.0`, so resolving to
 # it makes the operator -- and with it the whole DAG -- fail to import.
+#
+# The Amazon provider carries `EksPodOperator`, which `EksRekepOperator`
+# dispatches a task through onto an EKS cluster; its `cncf-kubernetes` extra is
+# the `KubernetesPodOperator` that one is built on. 9.36 is the release this
+# lock resolved and the operator is tested against.
 airflow = [
     "apache-airflow>=3.1,<4; sys_platform != 'win32'",
+    "apache-airflow-providers-amazon[cncf-kubernetes]>=9.36,<10; sys_platform != 'win32'",
     "apache-airflow-providers-standard>=1.0,<2; sys_platform != 'win32'",
     "rekep",
 ]
@@ -121,7 +126,7 @@ bench = [
 ]
 
 [tool.uv]
-# `uv run pytest` syncs these, so a test that imports marimo or airflow finds
+# `uv run pytest` syncs these, so a test that imports dbt or airflow finds
 # them: the runner group is what a task executes under, and the airflow group
 # is what the DAG and its operator are tested against.
 default-groups = ["dev", "runner", "airflow"]

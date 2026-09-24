@@ -408,8 +408,7 @@ class IcebergCatalog(Convertible):
         here lives in the same one. `py-io-impl` defaults to Arrow's FileIO;
         a named implementation is wrapped so failed commits still own every
         output they created. A `s3tables` type resolves here rather than in
-        `__post_init__`, so a bucket named by a later `--property` resolves
-        too.
+        `__post_init__`, so a property set after construction resolves too.
         """
         loaded = self.__dict__.get("catalog")
         if loaded is not None:

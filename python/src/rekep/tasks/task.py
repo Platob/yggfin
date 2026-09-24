@@ -1,64 +1,141 @@
-"""Marimo application configuration as a portable document."""
+"""The pipeline tasks this package bundles, and the one way each one runs."""
 
 from __future__ import annotations
 
 import dataclasses
+import importlib
+import json
 from collections.abc import Mapping
-from pathlib import Path
+from importlib import resources
+from types import ModuleType
 from typing import Any
 
-from rekep.convert import Convertible
+#: Every bundled task, in the order the supported graph runs them. A name is
+#: both its module under `rekep.tasks` and the JSON document of defaults
+#: shipped beside that module.
+NAMES = (
+    "parse_messages",
+    "parse_fix_raw",
+    "parse_fix_refined",
+    "parse_books",
+    "parse_orders",
+    "parse_quotes",
+    "parse_executions",
+    "build_dbt",
+    "optimize_iceberg",
+)
 
 
-@dataclasses.dataclass
-class Task(Convertible):
-    """A Marimo application and the definitions a runner runs it with."""
+@dataclasses.dataclass(frozen=True)
+class Task:
+    """One bundled task: its shipped defaults and the module that runs them.
 
-    name: str = ""
-    """Stable scheduler and result name."""
+    `rekep.tasks.<name>` defines `run`, whose keyword-only parameters are
+    exactly the keys of `<name>.json`, and `TARGETS`, the tables it writes.
+    Reading the defaults imports nothing, so a scheduler can declare a task
+    without loading what running it needs.
+    """
 
-    application: str = ""
-    """Marimo application path, relative to this task document."""
-
-    parameters: dict[str, Any] = dataclasses.field(default_factory=dict)
-    """Defaults for the application's parameter cell, one key per definition."""
+    name: str
 
     def __post_init__(self) -> None:
-        if not self.name:
-            raise ValueError("a task document must name its task")
-        if not self.application:
-            raise ValueError("a task document must point to a Marimo application")
+        if self.name not in NAMES:
+            raise ValueError(f"no task is named {self.name!r}; the tasks are {', '.join(NAMES)}")
 
-    @classmethod
-    def from_dict(cls, mapping: Mapping[str, Any]) -> Task:
-        """Build a task, refusing a document that carries an undeclared key."""
-        if not isinstance(mapping, Mapping):
-            raise TypeError("a task document is a mapping")
-        declared = {member.name for member in dataclasses.fields(cls)}
-        unexpected = sorted(set(mapping) - declared)
+    @property
+    def parameters(self) -> dict[str, Any]:
+        """The shipped defaults, as a fresh mapping on every read."""
+        document = resources.files(__package__).joinpath(f"{self.name}.json")
+        return json.loads(document.read_text(encoding="utf-8"))
+
+    @property
+    def module(self) -> ModuleType:
+        """The module whose `run` does the work."""
+        return importlib.import_module(f"{__package__}.{self.name}")
+
+    @property
+    def summary(self) -> str:
+        """The first line of the module's docstring."""
+        return (self.module.__doc__ or "").strip().splitlines()[0]
+
+    @property
+    def targets(self) -> tuple[str, ...]:
+        """The tables a run writes."""
+        return tuple(self.module.TARGETS)
+
+    def resolved(self, overrides: Mapping[str, Any] | None = None) -> dict[str, Any]:
+        """The defaults under `overrides`, refusing a name the task does not take."""
+        parameters = self.parameters
+        undeclared = sorted(set(overrides or {}) - set(parameters))
+        if undeclared:
+            raise TypeError(
+                f"{self.name} takes no {', '.join(undeclared)}; it takes {', '.join(parameters)}"
+            )
+        parameters.update(overrides or {})
+        return parameters
+
+    def run(self, overrides: Mapping[str, Any] | None = None) -> dict[str, Any]:
+        """Run once and return the validated `rekep.logs.Stage` result."""
+        from rekep.logs import Stage
+
+        result = Stage.validated(self.module.run(**self.resolved(overrides)))
+        if result["task"] != self.name:
+            raise ValueError(f"{self.name} returned {result['task']!r}, not a {self.name} run")
+        return result
+
+    def deploy(
+        self,
+        overrides: Mapping[str, Any] | None = None,
+        *,
+        table_properties: Mapping[str, str] | None = None,
+        dry_run: bool = False,
+    ) -> dict[str, Any]:
+        """Create each table this task writes that its catalog lacks.
+
+        Answers the catalog it used and `created`, `present` or, under
+        `dry_run`, `missing` per table. A table no `rekep.deploy.TABLES` entry
+        declares -- a dbt product, whose model declares it -- is created by
+        the run that first commits it, so it is not among them.
+        """
+        from rekep.deploy import TABLES, deploy
+        from rekep.fix import fix_codec, fix_registry
+        from rekep.iceberg import IcebergCatalog
+
+        parameters = self.resolved(overrides)
+        declared = {shape.table for shape in TABLES}
+        tables = [table for table in self.targets if table in declared]
+        configured = parameters.get("catalog")
+        if not tables:
+            return {"catalog": configured, "tables": {}}
+        codec = None
+        if "registry" in parameters:
+            # The dictionary a run parses with is what types the FIX tables
+            # it creates, and one the run would refuse is refused here,
+            # before any table is.
+            codec = fix_codec(
+                fix_registry(parameters["registry"]), **(parameters.get("codec_options") or {})
+            )
+        if not isinstance(configured, Mapping):
+            raise TypeError("a task catalog is a mapping of name and properties")
+        unexpected = sorted(set(configured) - {"name", "properties"})
         if unexpected:
             raise TypeError(
-                "a task document declares name, application and parameters; unexpected "
+                "a task catalog accepts only name and properties; unexpected "
                 + ", ".join(unexpected)
             )
-        # Checked before decoding, which would otherwise report a list of
-        # parameters as whatever failed to unpack inside it.
-        if not isinstance(mapping.get("parameters", {}), Mapping):
-            raise TypeError("task parameters must be a mapping of definition names")
-        return super().from_dict(mapping)
+        catalog = IcebergCatalog.from_dict(configured)
+        try:
+            done = deploy(
+                catalog,
+                table_properties=dict(table_properties or {}),
+                tables=tables,
+                dry_run=dry_run,
+                codec=codec,
+            )
+            return {"catalog": catalog.into_dict(), "tables": done}
+        finally:
+            catalog.close()
 
-    def into_application_path(self, document: str | Path) -> Path:
-        """Resolve the application beside `document`, refusing one outside it.
 
-        Containment is the check a deployment needs: a task document names the
-        job next to it, so an application reached through `..` or out of
-        another checkout is a mistake rather than a configuration.
-        """
-        directory = Path(document).resolve().parent
-        named = Path(self.application)
-        resolved = (named if named.is_absolute() else directory / named).resolve()
-        if not resolved.is_relative_to(directory):
-            raise ValueError(f"{self.application} is outside {directory}")
-        if not resolved.is_file():
-            raise FileNotFoundError(resolved)
-        return resolved
+#: Every bundled task, in the order the supported graph runs them.
+TASKS = tuple(Task(name) for name in NAMES)

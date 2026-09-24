@@ -14,8 +14,9 @@ Run from the repository root whenever a stage or the fixture changes:
     uv run --project python --group runner python tools/pipeline_samples.py
     uv run --project python --group runner python tools/pipeline_samples.py --check
 
-`--catalog` reads an existing warehouse -- the one an Airflow run wrote, say --
-instead of running the four tasks into a private one.
+Each of the four tasks runs as `rekep tasks <name> run` runs it, into a
+private catalog; `--catalog` reads an existing warehouse -- the one an Airflow
+run wrote, say -- instead.
 """
 
 from __future__ import annotations
@@ -91,9 +92,9 @@ def landed(root: pathlib.Path) -> dict[str, Any]:
     os.environ.setdefault("DBT_LOG_PATH", str(root / "dbt-logs"))
     for name, held in TASKS:
         argv = [
-            "task",
+            "tasks",
+            name,
             "run",
-            f"tasks/{name}/{name}.json",
             "--parameter",
             f"catalog={json.dumps(catalog)}",
         ]

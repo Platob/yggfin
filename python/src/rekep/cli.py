@@ -5,31 +5,30 @@ from __future__ import annotations
 import argparse
 import contextlib
 import importlib
-import importlib.util
 import inspect
 import json
 import os
 import pathlib
+import signal
 import sys
+import threading
 import traceback
 import urllib.parse
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from typing import Any
 
 from rekep import __version__
 from rekep.console import Console
-from rekep.deploy import TABLES, deploy
 from rekep.fields import Field, field_of
 from rekep.iceberg import (
-    IcebergCatalog,
     iceberg_contract,
     iceberg_contract_field,
     partition_keys,
     primary_keys,
 )
-from rekep.logs import COMMAND_LEVEL, Stage, configure
+from rekep.logs import COMMAND_LEVEL, TASK_LEVEL, configure
 from rekep.resources import read_bytes, resource
-from rekep.tasks import Task
+from rekep.tasks import TASKS, Task
 
 CONSOLE = Console(stream="stderr")
 
@@ -49,6 +48,9 @@ class CommandParser(argparse.ArgumentParser):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("formatter_class", CommandFormatter)
+        # An option is spelled whole: a prefix such as `--table` would
+        # otherwise be read as `--table-property`.
+        kwargs.setdefault("allow_abbrev", False)
         super().__init__(*args, **kwargs)
 
     def error(self, message: str) -> None:
@@ -61,19 +63,43 @@ def main(argv: list[str] | None = None) -> int:
     """Run one command; return the exit code rather than raising it."""
     parser = _parser()
     arguments = parser.parse_args(argv)
-    configure(arguments.log_level)
+    configure(arguments.log_level or COMMAND_LEVEL)
+    with _terminable():
+        try:
+            return arguments.run(arguments)
+        except (
+            AttributeError,
+            ImportError,
+            KeyError,
+            OSError,
+            TypeError,
+            ValueError,
+        ) as error:
+            CONSOLE.fail(f"{type(error).__name__}: {error}")
+            return 1
+
+
+@contextlib.contextmanager
+def _terminable() -> Iterator[None]:
+    """SIGTERM ends the command as an exit, so what it opened is closed.
+
+    A pod's container runs the command as its first process, which a signal
+    it installs no handler for does not stop: deleting the pod would wait out
+    its grace period and kill it. Scoped to the command, so a caller of `main`
+    keeps its own handler.
+    """
+    if threading.current_thread() is not threading.main_thread():
+        yield
+        return
+    previous = signal.signal(signal.SIGTERM, _terminated)
     try:
-        return arguments.run(arguments)
-    except (
-        AttributeError,
-        ImportError,
-        KeyError,
-        OSError,
-        TypeError,
-        ValueError,
-    ) as error:
-        CONSOLE.fail(f"{type(error).__name__}: {error}")
-        return 1
+        yield
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+
+
+def _terminated(signum: int, frame: Any) -> None:
+    raise SystemExit(128 + signum)
 
 
 def dump(arguments: argparse.Namespace) -> int:
@@ -164,34 +190,47 @@ def _write_json(document: Any) -> None:
     sys.stdout.write("\n")
 
 
+def list_tasks(arguments: argparse.Namespace) -> int:
+    """Write every bundled task, in the order the graph runs them."""
+    _write_json(
+        [
+            {"name": task.name, "summary": task.summary, "targets": list(task.targets)}
+            for task in TASKS
+        ]
+    )
+    return 0
+
+
+def show_task(arguments: argparse.Namespace) -> int:
+    """Write the parameters a run of one task would take."""
+    _write_json(Task(arguments.task).resolved(_overrides(arguments)))
+    return 0
+
+
 def run_task(arguments: argparse.Namespace) -> int:
-    """Execute one task document's Marimo application in this process."""
-    document = pathlib.Path(arguments.document).resolve()
-    task = Task.from_json(str(document))
-    application = task.into_application_path(document)
-    parameters = dict(task.parameters)
-    if arguments.parameters_file:
-        parameters.update(_parameters_document(arguments.parameters_file))
-    for spelled in arguments.parameter or ():
-        name, separator, value = spelled.partition("=")
-        if not separator:
-            raise ValueError(f"a parameter is name=value, not {spelled!r}")
-        parameters[name] = _parameter(value)
-    CONSOLE.warn(f"{task.name} {CONSOLE.glyph('arrow')} {application.name}")
-    app = _application(application)
+    """Run one bundled task in this process and write its result."""
+    task = Task(arguments.task)
+    overrides = _overrides(arguments)
+    # A name the task does not take is a mistake in the command, said in one
+    # line before anything runs rather than as a traceback out of the run.
+    declared = task.resolved(overrides)
+    # A task log is read after the fact, so a run records at INFO unless the
+    # command line said otherwise. A task declaring `log_level` configures its
+    # own records, so a level the command line names reaches it as that
+    # parameter, unless the parameter itself was named.
+    if arguments.log_level and "log_level" in declared and "log_level" not in overrides:
+        overrides["log_level"] = arguments.log_level
+    configure(arguments.log_level or TASK_LEVEL)
+    CONSOLE.note(f"{task.name} {CONSOLE.glyph('arrow')} {', '.join(task.targets) or 'catalog'}")
     try:
+        # A task's own output -- dbt's, a library's print -- is a log line, so
+        # stdout carries the one result document and nothing else.
         with contextlib.redirect_stdout(sys.stderr):
-            _, definitions = app.run(defs=parameters)
+            result = task.run(overrides)
     except Exception as error:
         traceback.print_exc()
         CONSOLE.fail(f"{task.name}: {type(error).__name__}: {error}")
         return 1
-    if "result" not in definitions:
-        raise ValueError(f"{application} defines no result")
-    result = Stage.validated(definitions["result"])
-    named = result["task"]
-    if named != task.name and not named.startswith(f"{task.name}_"):
-        raise ValueError(f"{application} returned {named!r}, not a {task.name} run")
     payload = json.dumps(result, ensure_ascii=False, separators=(",", ":"))
     if arguments.result_file:
         _publish(pathlib.Path(arguments.result_file), payload)
@@ -200,22 +239,42 @@ def run_task(arguments: argparse.Namespace) -> int:
     return 0
 
 
-def _application(path: pathlib.Path) -> Any:
-    """Import the Marimo ``app`` exported by ``path``."""
-    if importlib.util.find_spec("marimo") is None:
-        raise ImportError(
-            "running a task needs marimo: uv sync --project python --locked --group runner"
+def deploy_task(arguments: argparse.Namespace) -> int:
+    """Create the tables one task writes, ahead of its first run."""
+    task = Task(arguments.task)
+    overrides = _overrides(arguments)
+    task.resolved(overrides)
+    table_properties = _settings(arguments.table_property)
+    try:
+        document = task.deploy(
+            overrides, table_properties=table_properties, dry_run=arguments.dry_run
         )
-    specification = importlib.util.spec_from_file_location(path.stem, path)
-    if specification is None or specification.loader is None:
-        raise ImportError(f"{path} is not an importable module")
-    module = importlib.util.module_from_spec(specification)
-    sys.modules[specification.name] = module
-    specification.loader.exec_module(module)
-    app = getattr(module, "app", None)
-    if app is None:
-        raise AttributeError(f"{path} exports no marimo app")
-    return app
+    except Exception as error:
+        # A catalog that cannot be reached fails in its own driver's terms,
+        # which is the traceback; the line under it says whose deploy it was.
+        traceback.print_exc()
+        CONSOLE.fail(f"{task.name}: {type(error).__name__}: {error}")
+        return 1
+    for table, outcome in document["tables"].items():
+        line = f"{table} {CONSOLE.glyph('arrow')} {outcome}"
+        (CONSOLE.warn if outcome == "missing" else CONSOLE.ok)(line)
+    if not document["tables"]:
+        CONSOLE.note(f"{task.name} declares no table to create ahead of a run")
+    _write_json(document)
+    return 0
+
+
+def _overrides(arguments: argparse.Namespace) -> dict[str, Any]:
+    """The parameters file, under each repeated ``--parameter``."""
+    overrides: dict[str, Any] = {}
+    if arguments.parameters_file:
+        overrides.update(_parameters_document(arguments.parameters_file))
+    for spelled in arguments.parameter or ():
+        name, separator, value = spelled.partition("=")
+        if not separator:
+            raise ValueError(f"a parameter is name=value, not {spelled!r}")
+        overrides[name] = _parameter(value)
+    return overrides
 
 
 def _parameters_document(path: str) -> Mapping[str, Any]:
@@ -237,55 +296,6 @@ def _publish(path: pathlib.Path, payload: str) -> None:
     os.replace(staged, path)
 
 
-def deploy_tables(arguments: argparse.Namespace) -> int:
-    """Create every selected pipeline table ahead of ingestion."""
-    settings = _catalog_settings(arguments)
-    catalog = settings["catalog"]
-    try:
-        done = deploy(
-            catalog,
-            table_properties=settings["table_properties"],
-            branch=settings["branch"],
-            tables=arguments.table or None,
-            dry_run=arguments.dry_run,
-        )
-        document = {"catalog": catalog.into_dict(), "tables": done}
-    finally:
-        catalog.close()
-    for table, outcome in done.items():
-        line = f"{table} {CONSOLE.glyph('arrow')} {outcome}"
-        (CONSOLE.warn if outcome == "missing" else CONSOLE.ok)(line)
-    _write_json(document)
-    return 0
-
-
-def _catalog_settings(arguments: argparse.Namespace) -> dict[str, Any]:
-    """Build catalog and table settings from a task document and overrides."""
-    parameters: dict[str, Any] = {}
-    if arguments.document:
-        document = pathlib.Path(arguments.document).resolve()
-        parameters = dict(Task.from_json(str(document)).parameters)
-    configured = parameters.get("catalog") or {}
-    if not isinstance(configured, Mapping):
-        raise TypeError("task catalog must be a mapping with name and properties")
-    unexpected = sorted(set(configured) - {"name", "properties"})
-    if unexpected:
-        raise TypeError(
-            "task catalog accepts only name and properties; unexpected " + ", ".join(unexpected)
-        )
-    catalog = IcebergCatalog.from_dict(configured)
-    if arguments.catalog:
-        catalog.name = arguments.catalog
-    catalog.properties.update(_settings(arguments.property))
-    settings = {
-        "catalog": catalog,
-        "table_properties": dict(parameters.get("table_properties") or {}),
-        "branch": arguments.branch or parameters.get("branch"),
-    }
-    settings["table_properties"].update(_settings(arguments.table_property))
-    return settings
-
-
 def _settings(spelled: Sequence[str] | None) -> dict[str, str]:
     """Return repeated ``NAME=VALUE`` options as a mapping."""
     settings = {}
@@ -305,78 +315,97 @@ def _parameter(value: str) -> Any:
         return value
 
 
-def _parser() -> argparse.ArgumentParser:
-    parser = CommandParser(
-        prog="rekep",
-        description=__doc__.splitlines()[0],
-        epilog="""examples:
-  rekep task run tasks/parse_messages/parse_messages.json
-  rekep fields dump --pyclass rekep.text:Message
-  rekep iceberg deploy tasks/parse_messages/parse_messages.json""",
-    )
-    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+def _overridable(parser: argparse.ArgumentParser) -> None:
+    """The two ways a command line sets a task's parameters."""
     parser.add_argument(
-        "--log-level",
-        default=COMMAND_LEVEL,
-        choices=("DEBUG", "INFO", "WARNING", "ERROR"),
-        help=f"records this package writes to stderr; default {COMMAND_LEVEL}",
-    )
-    commands = parser.add_subparsers(
-        dest="command", required=True, title="commands", metavar="COMMAND"
-    )
-
-    tasks = commands.add_parser(
-        "task", help="run task applications", description="Execute project task documents."
-    )
-    running = tasks.add_subparsers(
-        dest="action", required=True, title="commands", metavar="COMMAND"
-    ).add_parser("run", help="execute one task document's Marimo application")
-    running.add_argument("document", help="path to a task JSON document under tasks/")
-    running.add_argument(
         "--parameter",
         action="append",
         default=None,
         metavar="NAME=VALUE",
         help="override one parameter; repeatable, values read as JSON then as text",
     )
-    running.add_argument(
+    parser.add_argument(
         "--parameters-file",
         default=None,
         metavar="PATH",
         help="JSON object of overrides, applied under any --parameter",
     )
-    running.add_argument(
-        "--result-file",
-        default=None,
-        metavar="PATH",
-        help="where the result document is published atomically",
-    )
-    running.set_defaults(run=run_task)
 
-    iceberg = commands.add_parser(
-        "iceberg",
-        help="deploy ingestion tables",
-        description="Create the Iceberg tables the ingestion tasks write.",
+
+def _defaults(task: Task) -> str:
+    """One task's parameters and their defaults, as its help lists them."""
+    return "parameters (defaults):\n" + "\n".join(
+        f"  {name} = {json.dumps(value)}" for name, value in task.parameters.items()
     )
-    deploying = iceberg.add_subparsers(
-        dest="action", required=True, title="commands", metavar="COMMAND"
-    ).add_parser("deploy", help="create each declared table that is not there yet")
-    deploying.add_argument(
-        "document", nargs="?", default=None, help="task JSON carrying catalog settings"
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = CommandParser(
+        prog="rekep",
+        description=__doc__.splitlines()[0],
+        epilog="""examples:
+  rekep tasks list
+  rekep tasks parse_messages run --parameter start=2026-08-14 --parameter end=2026-08-14
+  rekep tasks parse_messages deploy
+  rekep fields dump --pyclass rekep.text:Message""",
     )
-    deploying.add_argument("--catalog", default=None, help="catalog name")
-    deploying.add_argument("--property", action="append", default=None, metavar="NAME=VALUE")
-    deploying.add_argument("--table-property", action="append", default=None, metavar="NAME=VALUE")
-    deploying.add_argument("--branch", default=None, help="branch tables are created on")
-    deploying.add_argument(
-        "--table",
-        action="append",
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.add_argument(
+        "--log-level",
         default=None,
-        choices=[shape.table for shape in TABLES],
-        metavar="NAME",
+        choices=("DEBUG", "INFO", "WARNING", "ERROR"),
+        help=(
+            f"records this package writes to stderr; default {COMMAND_LEVEL}, "
+            f"and {TASK_LEVEL} for `tasks <name> run`, where it also sets a task's "
+            "own `log_level` parameter"
+        ),
     )
-    deploying.add_argument("--dry-run", action="store_true")
-    deploying.set_defaults(run=deploy_tables)
+    commands = parser.add_subparsers(
+        dest="command", required=True, title="commands", metavar="COMMAND"
+    )
+
+    tasks = commands.add_parser(
+        "tasks",
+        help="run and deploy the bundled pipeline tasks",
+        description="Show, run and deploy the pipeline tasks bundled in rekep.tasks.",
+        epilog="""examples:
+  rekep tasks list
+  rekep tasks parse_messages show
+  rekep tasks parse_messages deploy --dry-run
+  rekep tasks parse_messages run --parameter start=2026-08-14 --parameter end=2026-08-14""",
+    )
+    named = tasks.add_subparsers(dest="task", required=True, title="tasks", metavar="TASK")
+    named.add_parser("list", help="every bundled task as JSON").set_defaults(run=list_tasks)
+    for task in TASKS:
+        one = named.add_parser(
+            task.name, help=task.summary, description=task.summary, epilog=_defaults(task)
+        )
+        actions = one.add_subparsers(
+            dest="action", required=True, title="commands", metavar="COMMAND"
+        )
+        showing = actions.add_parser("show", help="print the parameters a run would take")
+        _overridable(showing)
+        showing.set_defaults(run=show_task)
+        running = actions.add_parser("run", help="run once and print the result")
+        _overridable(running)
+        running.add_argument(
+            "--result-file",
+            default=None,
+            metavar="PATH",
+            help="where the result document is published atomically",
+        )
+        running.set_defaults(run=run_task)
+        deploying = actions.add_parser(
+            "deploy", help="create the tables it writes that its catalog lacks"
+        )
+        _overridable(deploying)
+        deploying.add_argument(
+            "--table-property", action="append", default=None, metavar="NAME=VALUE"
+        )
+        deploying.add_argument(
+            "--dry-run", action="store_true", help="report what is missing, create nothing"
+        )
+        deploying.set_defaults(run=deploy_task)
 
     field_commands = commands.add_parser(
         "fields",

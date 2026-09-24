@@ -11,7 +11,7 @@ a page load does not owe a reader that:
 
 Run from the repository root whenever the bundled registry changes:
 
-    python tools/fix_registry_dump.py
+    uv run --project python python tools/fix_registry_dump.py
 """
 
 from __future__ import annotations

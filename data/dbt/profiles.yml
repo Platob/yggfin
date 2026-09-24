@@ -4,7 +4,7 @@
 # database and a build leaves no second copy of the warehouse behind.
 #
 # The catalog below is the local default a clone already has: the same SQLite
-# catalog and file warehouse every task document names, spelled the same way.
+# catalog and file warehouse every task's shipped defaults name, spelled the same way.
 # Like them it is relative, so a build runs from the repository root -- and
 # `REKEP_DBT_CATALOG` replaces the whole mapping with the JSON a deployment
 # names, which is how `build_dbt` passes a catalog of its own through.

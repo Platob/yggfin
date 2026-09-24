@@ -1,7 +1,7 @@
 # Coding patterns
 
 Optimize Rust core behavior in Yggdryl first, then Python and JavaScript
-bindings, then yggfin documentation. Keep one obvious implementation per
+bindings, then rekep documentation. Keep one obvious implementation per
 behavior.
 
 ## Writing
@@ -23,9 +23,9 @@ behavior.
   parsing, the fixed `fixmsg` row, and the lifecycle stage after the parse.
 - Arrow owns columnar shape conversions and kernels.
 - PyIceberg owns table conversion, ids, snapshots, scan planning, and commits.
-- Yggfin owns the text `Message` contract and its narrow PyArrow/PyIceberg seam.
+- Rekep owns the text `Message` contract and its narrow PyArrow/PyIceberg seam.
 - Never add a second Field class, filesystem/path layer, text reader, codec, or
-  registry in yggfin.
+  registry in rekep.
 
 The deleted Rekep FIX and market implementation is not a compatibility target.
 
@@ -62,8 +62,8 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   for a whole day of lines, with no error anywhere.
 - `ULBRIDGE_ROWHEADER` is the default and the only one spelled here. A bridge
   writing the same facts in a layout of its own is read by naming its header
-  in the task document, never by a second constant: the layout is a parameter
-  and the capture names are the contract.
+  in the task's `rowheader` parameter, never by a second constant: the layout
+  is a parameter and the capture names are the contract.
 - The shipped clock reads every fraction this bridge writes: three digits
   under a point or a comma, none at all, and the micros some of its loggers
   group after them as `.524_315`. The `mtime` capture is consumed at
@@ -115,7 +115,7 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   the `warehouse` is what picks one: a bucket ARN is the S3 Tables endpoint
   signed for `s3tables`, and `<account>:s3tablescatalog/<name>` is the Glue
   endpoint signed for `glue`, under Lake Formation. The warehouse is read as
-  the `yggdryl.Uri` it is, never by a regular expression of yggfin's: an ARN
+  the `yggdryl.Uri` it is, never by a regular expression of rekep's: an ARN
   redirects through `Arn.locator()` to the `s3tables:` URL it names, and that
   locator is the second spelling of the S3 Tables door -- `s3tables://<name>`
   with `region`, `account` and, outside `aws`, `partition` in its query --
@@ -157,9 +157,11 @@ fix.refined    -> build_dbt (optional)-> orders.events, orders.current, executio
 `raw` and `refined` are the two FIX tables and nothing else here is called
 either: a `logs.messages` row is a line, or a text row.
 
-Each task directory contains one Marimo application beside its JSON document.
+Each task is a module of `rekep.tasks` beside the JSON document of its
+defaults, run by `rekep tasks <name> run`; `show` prints its parameters and
+`deploy` creates the tables it writes.
 `parse_messages` passes `filesystem` to `IOBase.from_uri`, frames each line
-under the `rowheader` its document names, hands the read the run's window as
+under the `rowheader` its parameters name, hands the read the run's window as
 its `where` -- the decode cuts every line and the record surface answers the
 clause over the rows they become, so nothing is filtered after the read --
 applies `Message.into_field()` at the storage boundary, and writes one
@@ -187,7 +189,7 @@ every other line its event was logged on; each joins to a text row's
 identity means.
 
 Every `curruuid` and `currhashcode` is the installed native revision's value.
-Yggfin never reimplements identity derivation or translates old identities.
+Rekep never reimplements identity derivation or translates old identities.
 An identity contract change requires rebuilding affected products from their
 source under one native revision; mixing old and new keys leaves duplicate
 logical events. Market window replacement removes superseded keys inside its
@@ -225,7 +227,7 @@ the walk folds every copy of one message into one row naming every line it
 was logged on.
 
 Both tables use the native `fix_message_field(codec)` field directly,
-without a yggfin FIX model. Parse, storage, reconstruction,
+without a rekep FIX model. Parse, storage, reconstruction,
 and lifecycle all use the same 128-column **FixMsg** contract. `msgthreadid`,
 `loglevel` and `body` remain only in `logs.messages`, and `crosscode` and
 `seqnum` stand on both shapes meaning the row they sit on -- the object a
@@ -314,16 +316,23 @@ and never `fix.raw`, because a product needs the chain and `fix.raw` carries
 none; a market fact is FIX's own field, and the staging model restates the
 products' reading of it off those fields.
 
-Airflow launches the adjacent standalone runner through the locked `uv`
-`runner` group; the operator never calls the Rekep CLI. `rekep_ingestion` is
-the seven streaming stages, daily, each run over its data interval unless
-the run's conf names `start` or `end`. The three event stages share the book
-writer's committed snapshot. `rekep_products` remains the optional `build_dbt`
-DAG, scheduled on the `fix.refined` Asset.
+Airflow's `RekepOperator` (`airflow/rekep_operator.py`) launches
+`rekep tasks <name> run` through the locked `uv` `runner` group, with the
+defaults of the checkout it runs. With `REKEP_EKS_CONFIG` naming a document of
+`EksPodOperator` keywords, `airflow/dispatch.py` makes every node an
+`EksRekepOperator` instead, which runs the same command in a pod of the
+`Dockerfile` image and reads its result back from the XCom sidecar. Both share
+`RekepTask`: one parameter resolution, one result validation. `rekep_ingestion` is the seven streaming
+stages, daily, each run over its data interval unless the run's conf names
+`start` or `end`. The three event stages share the book writer's committed
+snapshot. `rekep_products` remains the optional `build_dbt` DAG, scheduled on
+the `fix.refined` Asset.
 
 Every task result and its closing INFO record use `rekep.logs.Stage` and agree
 on `task`, `read`, `written`, `skipped`, `sources`, `targets`, `window`, and
-`elapsed_ms`.
+`elapsed_ms`. The runner configures the records -- INFO unless `--log-level`
+says otherwise -- and a task module configures them only through a
+`log_level` parameter it declares.
 
 ## Tests and benchmarks
 
@@ -340,23 +349,15 @@ on `task`, `read`, `written`, `skipped`, `sources`, `targets`, `window`, and
 python/src/rekep/
   fields/       native Field metadata helpers
   iceberg/      catalog, dataset, schema bridge, and PyIceberg FileIO
-  tasks/        application configuration only
+  tasks/        the bundled tasks: a module and the JSON of its defaults each
   text/         the text Message declaration
   fix.py        the bundled registry and the two FIX stages over two tables
   times.py      instant readings, the run window and the ULBridge row header
   resources.py  Yggdryl binding and required byte reads
   dbt.py        the dbt-duckdb plugin: a source is a read, a model is a commit
-tasks/
-  airflow/
-  parse_messages/
-  parse_fix_raw/
-  parse_fix_refined/
-  parse_books/
-  parse_orders/
-  parse_quotes/
-  parse_executions/
-  optimize_iceberg/
-  build_dbt/
+airflow/        the DAGs, where their nodes run (dispatch.py), and the two operators
+Dockerfile      the task image an EKS pod runs
+.claude/skills/rekep/SKILL.md  how an agent runs, deploys and extends all of it
 data/dbt/       the dbt project: models, schemas, macros and its one profile
 schemas/rekep/message.json
 schemas/rekep/fixmsg.json

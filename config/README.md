@@ -6,20 +6,23 @@ own, next to the checkout rather than inside the package.
 
 The default dictionary is bundled in the installed package, at
 `python/src/rekep/_data/fix`, and `fix_registry()` returns it with no location
-and no environment variable. `tasks/parse_fix_raw/parse_fix_raw.json`
-and `tasks/parse_fix_refined/parse_fix_refined.json` therefore declare
-`"registry": null`, and the two FIX tasks are the only ones that take a
-`registry` parameter at all. Both take it because the walk reads each row back
-as the message the dictionary wrote, so the two run under the same one.
+and no environment variable. The shipped defaults of the tasks that take a
+`registry` parameter -- `parse_fix_raw`, `parse_fix_refined` and
+`parse_books`, under `python/src/rekep/tasks/` -- therefore declare
+`"registry": null`. All three take it because each stage after the parse
+reads a row back as the message the dictionary wrote, so they run under the
+same one.
 
 To parse against another dictionary -- the canonical `fields/`, `components/`
 and `groups/` JSON documents `FixRegistry.write_into` emits, read back by
 `FixRegistry.from_handle` -- write it anywhere, here included, and point that
-one parameter at it on both tasks:
+one parameter at it on each task:
 
 ```bash
-uv run --project python rekep task run tasks/parse_fix_raw/parse_fix_raw.json \
-  --parameter 'registry="file:config/fix"'
+for TASK in parse_fix_raw parse_fix_refined parse_books; do
+  uv run --project python rekep tasks "$TASK" run \
+    --parameter 'registry="file:config/fix"'
+done
 ```
 
 The location must hold specification fields; runtime and bridge fields are

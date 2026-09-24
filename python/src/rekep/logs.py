@@ -100,9 +100,9 @@ def configure(level: str | int = TASK_LEVEL) -> logging.Logger:
 class Stage:
     """One task's run: what it opened on, and the result it closes with.
 
-    The numbers are the application's -- a task is a job, and jobs live under
-    `tasks/`. This class owns the one result shape and its opening and closing
-    records, so every application and runner reads the same contract.
+    The numbers are the task's -- a task is a job, and jobs live under
+    `rekep.tasks`. This class owns the one result shape and its opening and
+    closing records, so every task and every runner reads the same contract.
 
     Every task returns the same keys -- `task`, `read`, `written`, `skipped`,
     `sources`, `targets`, `window`, `elapsed_ms` -- and whatever else it alone
@@ -123,7 +123,7 @@ class Stage:
         "elapsed_ms",
     )
 
-    #: The task document's own name, so a result identifies itself.
+    #: The task's own name, so a result identifies itself.
     task: str
 
     #: What was read and what was written, keyed by the role this stage calls

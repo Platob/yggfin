@@ -3,12 +3,14 @@
 Read one pinned `market.books` snapshot and write `market.executions` for the
 requested strict `[start, end)` window.
 
-## Task document
+## Parameters
 
-These are the executable defaults:
+`python/src/rekep/tasks/parse_executions.py` runs the task, and
+`parse_executions.json` beside it holds its defaults, which
+`rekep tasks parse_executions show` prints under any override:
 
 ```json
---8<-- "tasks/parse_executions/parse_executions.json"
+--8<-- "python/src/rekep/tasks/parse_executions.json"
 ```
 
 `snapshot_id=null` resolves the current source snapshot once at task entry;
@@ -44,8 +46,15 @@ Use the [run guide](../operations/run.md#market-events-from-one-book-snapshot)
 to launch all three projections against one snapshot. They are independent
 and can execute concurrently after book creation succeeds.
 
-## Application
+## Module
 
 ```python
---8<-- "tasks/parse_executions/parse_executions.py"
+--8<-- "python/src/rekep/tasks/parse_executions.py"
+```
+
+`flattened` is the one body `parse_orders`, `parse_quotes` and
+`parse_executions` share, in `python/src/rekep/tasks/events.py`:
+
+```python
+--8<-- "python/src/rekep/tasks/events.py"
 ```
