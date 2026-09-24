@@ -38,7 +38,7 @@ WORKFLOW = (("parse_messages", {}), ("parse_fix_raw", {}), ("parse_fix_refined",
 EPOCH = datetime.datetime(1970, 1, 1, tzinfo=UTC)
 
 #: The day the bridge fixture was captured on. A task covers the last day
-#: unless its document names a window, and the fixture is dated, so every
+#: unless its parameters name a window, and the fixture is dated, so every
 #: run here names its day -- `end: 2026-08-14` is the exclusive end of it.
 WINDOW = {"start": "2026-08-14", "end": "2026-08-14"}
 
@@ -107,9 +107,9 @@ class Ran:
     def task(self, name: str, **overrides: Any) -> dict[str, Any]:
         """One task, with its result read back off `stdout`."""
         argv = [
-            "task",
+            "tasks",
+            name,
             "run",
-            str(ROOT / "tasks" / name / f"{name}.json"),
             "--parameter",
             f"catalog={json.dumps(self.catalog)}",
         ]
@@ -326,9 +326,9 @@ def test_a_fix_stage_refuses_an_empty_registry_before_creating_a_table(
     registry = tmp_path / "empty-fix-registry"
     registry.mkdir()
     argv = [
-        "task",
+        "tasks",
+        name,
         "run",
-        str(ROOT / "tasks" / name / f"{name}.json"),
         "--parameter",
         f"catalog={json.dumps(ran.catalog)}",
         "--parameter",
@@ -528,9 +528,9 @@ def test_a_text_table_of_the_previous_shape_is_a_table_of_its_own(ran: Ran) -> N
 
 def test_a_capture_missing_altogether_is_reported(ran: Ran, tmp_path: Path) -> None:
     argv = [
-        "task",
+        "tasks",
+        "parse_messages",
         "run",
-        str(ROOT / "tasks" / "parse_messages" / "parse_messages.json"),
         "--parameter",
         f"catalog={json.dumps(ran.catalog)}",
         "--parameter",

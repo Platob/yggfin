@@ -3,25 +3,25 @@
 Parse one capture window into settled FIX events and write `fix.raw`.
 Nothing in this task walks lifecycle chains.
 
-## Task document
+## Parameters
+
+`python/src/rekep/tasks/parse_fix_raw.py` runs the task, and
+`parse_fix_raw.json` beside it holds its defaults, which
+`rekep tasks parse_fix_raw show` prints under any override:
 
 ```json
 {
-  "name": "parse_fix_raw",
-  "application": "parse_fix_raw.py",
-  "parameters": {
-    "messages": "logs.messages",
-    "registry": null,
-    "codec_options": null,
-    "start": null,
-    "end": null,
-    "catalog": {
-      "name": "rekep",
-      "properties": {
-        "type": "sql",
-        "uri": "sqlite:///data/catalog.db",
-        "warehouse": "data/warehouse"
-      }
+  "messages": "logs.messages",
+  "registry": null,
+  "codec_options": null,
+  "start": null,
+  "end": null,
+  "catalog": {
+    "name": "rekep",
+    "properties": {
+      "type": "sql",
+      "uri": "sqlite:///data/catalog.db",
+      "warehouse": "data/warehouse"
     }
   }
 }
@@ -133,6 +133,6 @@ include owns its measured counts.
 ## Run
 
 ```bash
-uv run --project python rekep task run tasks/parse_fix_raw/parse_fix_raw.json \
+uv run --project python rekep tasks parse_fix_raw run \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
 ```

@@ -32,6 +32,7 @@ from rekep.dbt import (
 from rekep.deploy import TABLES
 from rekep.fix import FixCodec, fix_registry
 from rekep.iceberg import IcebergCatalog, partition_keys, primary_keys, sort_keys
+from rekep.tasks import Task
 
 ROOT = Path(__file__).resolve().parents[2]
 PROJECT = ROOT / "data" / "dbt"
@@ -240,8 +241,8 @@ def test_a_check_that_spans_two_products_warns_rather_than_fails(manifest: Any) 
 
 def test_the_products_dag_announces_the_tables_the_models_commit(manifest: Any) -> None:
     """The DAG's Assets are read from its source rather than from Airflow, so
-    this holds on every platform."""
-    declared = ast.parse((ROOT / "tasks" / "airflow" / "products.py").read_text(encoding="utf-8"))
+    this holds on every platform; the task's targets are the same tables."""
+    declared = ast.parse((ROOT / "airflow" / "products.py").read_text(encoding="utf-8"))
     announced = next(
         ast.literal_eval(statement.value)
         for statement in declared.body
@@ -250,6 +251,7 @@ def test_the_products_dag_announces_the_tables_the_models_commit(manifest: Any) 
     )
 
     assert set(announced) == set(published(manifest))
+    assert set(Task("build_dbt").targets) == set(announced)
 
 
 def spelled(macro: str) -> set[str]:
@@ -444,9 +446,9 @@ def test_the_products_are_built_from_the_fixture_and_a_replay_writes_nothing(
 
     def ran(name: str) -> dict[str, Any]:
         argv = [
-            "task",
+            "tasks",
+            name,
             "run",
-            str(ROOT / "tasks" / name / f"{name}.json"),
             "--parameter",
             f"catalog={json.dumps(catalog)}",
         ]

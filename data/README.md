@@ -1,7 +1,8 @@
 # Local data
 
-This directory is what the checked-in task documents point at, so a clone runs
-the pipeline without being configured first.
+This directory is what the shipped task defaults point at, so a clone runs
+the pipeline without being configured first; `rekep tasks <name> show` prints
+them.
 
 | path | tracked | what it is |
 | --- | :---: | --- |

@@ -1,8 +1,17 @@
 # Logs and task results
 
-Every application uses `rekep.logs.Stage`. Human-readable lifecycle records go
-to stderr; one machine-readable result goes to stdout and, when requested, an
-atomic result file.
+Every task uses `rekep.logs.Stage`. Under `rekep tasks <name> run`,
+human-readable lifecycle records go to stderr; one machine-readable result goes
+to stdout and, under `--result-file`, an atomic result file.
+
+The records are written at INFO: one per completed operation. The global
+option turns them, and `DEBUG` adds the scans, projections and files under
+each one; `build_dbt` and `optimize_iceberg` take a `log_level` parameter
+instead:
+
+```bash
+uv run --project python rekep --log-level DEBUG tasks parse_fix_raw run
+```
 
 ## Result schema
 
@@ -53,9 +62,9 @@ small enough for Airflow XCom because it contains no rows or schemas.
 epoch nanoseconds -- the bounds it was given, or the last day up to now when
 it was given none; `build_dbt` declares no window and reports the open one,
 `{"start": null, "end": null}`. It is never `null`, and
-`Stage.validated` -- which both the runner and the operator call before a
-result is published or pushed to XCom -- refuses anything that is not a
-mapping of exactly `start` and `end`.
+`Stage.validated` -- which `Task.run` and the Airflow operator both call
+before a result is published or pushed to XCom -- refuses anything that is not
+a mapping of exactly `start` and `end`.
 
 ## Market task handoff
 

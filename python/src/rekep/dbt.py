@@ -2,9 +2,9 @@
 
 dbt-duckdb reaches anything that is not DuckDB through a plugin module it
 imports by name, and this is that module: a source is one Iceberg read, a model
-is one Iceberg commit, and DuckDB owns only the SQL in between. Nothing in
-`rekep` imports it -- dbt does, under the `runner` group a task executes in --
-so the package itself declares no dbt dependency.
+is one Iceberg commit, and DuckDB owns only the SQL in between. dbt imports
+it, and `rekep.tasks.build_dbt` only when it runs, under the `runner` group a
+task executes in -- so the package itself declares no dbt dependency.
 
 A model's own configuration is the declaration: `table` names the Iceberg table,
 `primary_key`, `partition_by`, `sort_by` and `arrow_types` say what its rows
@@ -33,8 +33,9 @@ from rekep.iceberg import IcebergCatalog
 LOGGER = logging.getLogger(__name__)
 
 #: The catalog an operator names without editing the profile. It holds the same
-#: mapping every task document spells, as JSON, and wins over the profile's own
-#: so one deployment configures dbt the way it configures every other task.
+#: mapping every task's `catalog` parameter spells, as JSON, and wins over the
+#: profile's own so one deployment configures dbt the way it configures every
+#: other task.
 CATALOG = "REKEP_DBT_CATALOG"
 
 #: What a source or a model takes for a table it does not name itself.

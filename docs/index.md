@@ -27,12 +27,15 @@ for installing and running the pinned environment.
 ## Run
 
 ```bash
-rekep task run tasks/parse_messages/parse_messages.json
-rekep task run tasks/parse_fix_raw/parse_fix_raw.json
-rekep task run tasks/parse_fix_refined/parse_fix_refined.json
+rekep tasks list
+rekep tasks parse_messages run --parameter filesystem=file:python/tests/data/ulbridge.log \
+  --parameter start=2026-08-14 --parameter end=2026-08-14
+rekep tasks parse_fix_raw run --parameter start=2026-08-14 --parameter end=2026-08-14
+rekep tasks parse_fix_refined run --parameter start=2026-08-14 --parameter end=2026-08-14
 ```
 
-The checked ULBridge fixture demonstrates the three source stages:
+From the repository root, over the checked ULBridge fixture and the day it was
+captured on, the three source stages report:
 
 ```text
 parse_messages     144 read, 144 written,  0 skipped  → logs.messages

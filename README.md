@@ -86,19 +86,27 @@ empty rerun, while preserving rows outside it. Native identities and exact
 decimals survive the Arrow projection; Iceberg v2 stores timestamps at
 microsecond resolution and uint64 codes as signed views of the same bits.
 
-Run ingestion locally from the repository root:
+Every task is a module of `rekep.tasks`, shipped beside the JSON document of
+its defaults, and `rekep tasks <name>` shows, deploys and runs it. Run
+ingestion locally from the repository root:
 
 ```bash
 uv sync --project python --all-extras --dev
-uv run --project python rekep iceberg deploy tasks/parse_messages/parse_messages.json
-uv run --project python rekep task run tasks/parse_messages/parse_messages.json \
+uv run --project python rekep tasks list
+uv run --project python rekep tasks parse_messages deploy
+uv run --project python rekep tasks parse_messages run \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep task run tasks/parse_fix_raw/parse_fix_raw.json \
+uv run --project python rekep tasks parse_fix_raw run \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep task run tasks/parse_fix_refined/parse_fix_refined.json \
+uv run --project python rekep tasks parse_fix_refined run \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-uv run --project python rekep task run tasks/build_dbt/build_dbt.json
+uv run --project python rekep tasks build_dbt run
 ```
+
+`list` names every task and the tables it writes, `show` prints the parameters
+a run would take, and `deploy` creates the tables a task writes ahead of its
+first run. A run creates a missing table too; deploying first is for a catalog
+the runner may not create tables in.
 
 A streaming task parses one window, `[start, end)`, and given neither bound
 takes the last day up to now; the sample capture under `data/capture` is dated
@@ -163,8 +171,8 @@ Development:
 cd python
 uv run pytest
 uv run pytest -m integration
-uv run ruff check . ../tasks ../tools
-uv run ruff format --check . ../tasks ../tools
+uv run ruff check . ../airflow ../tools
+uv run ruff format --check . ../airflow ../tools
 uv run --group docs mkdocs build --strict --config-file ../mkdocs.yml
 ```
 

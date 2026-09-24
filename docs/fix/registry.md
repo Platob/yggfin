@@ -251,8 +251,9 @@ Search the same 7,781 definitions here, by tag, name, spelling or description:
 
 <div data-fix="registry"></div>
 
-The [registry browser](../tools/fix-registry.md) is the Marimo tool over the
-same dictionary; it exposes branches, groups, members, code sets, lineage, the
-complete field metadata, Field JSON, and the complete `FixMsg` schema. Both
-read generated
-assets that are read-only projections of this same bundled registry.
+An opened entry shows its members, code set and lineage. The search reads
+generated assets, read-only projections of this same bundled registry, and
+[Registry assets](../tools/fix-registry.md) regenerates them. The complete
+field metadata, Field JSON and the complete `FixMsg` schema are the Python
+API's: `fix_registry()` above, and `fix_message_field()` for the row a codec
+lands.

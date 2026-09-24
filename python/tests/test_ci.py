@@ -1,6 +1,7 @@
 """CI keeps the costly Iceberg checks available without slowing every PR."""
 
 import importlib.util
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -49,6 +50,20 @@ def test_pull_request_ci_selects_the_fast_suite() -> None:
     steps = workflow["jobs"]["test"]["steps"]
     test = next(step for step in steps if step.get("name") == "Test")
     assert '-m "not integration"' in test["run"]
+
+
+def test_the_scheduled_pipeline_step_selects_the_real_dag_run() -> None:
+    """The step names a file and a `-k`, so a rename would leave it selecting nothing."""
+    workflow = _workflow("ci.yml")
+    steps = workflow["jobs"]["test"]["steps"]
+    step = next(step for step in steps if step.get("name") == "Scheduled market pipeline")
+    command = step["run"].split()
+    assert "-m integration" in step["run"]
+    (path,) = [argument for argument in command if argument.endswith(".py")]
+    assert path == "tests/test_rekep_operator.py"
+    selected = command[command.index("-k") + 1]
+    source = (ROOT / "python" / path).read_text(encoding="utf-8")
+    assert re.search(rf"^def test_\w*{selected}\w*\(", source, re.MULTILINE), selected
 
 
 def test_the_integration_workflow_runs_only_trusted_code_paths() -> None:

@@ -66,7 +66,7 @@ nav:
       - Decode: fix/decode.md
       - Encode: fix/encode.md
       - Quality: fix/quality.md
-      - Registry browser (tool): tools/fix-registry.md
+      - Registry assets (tool): tools/fix-registry.md
   - Storage:
       - Iceberg: storage/iceberg.md
       - Benchmarks: storage/benchmarks.md
@@ -105,8 +105,8 @@ markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
-  # Lets a page include a file from the checkout, so a documented application
-  # is the application rather than a copy of it that drifts.
+  # Lets a page include a file from the checkout, so a documented task is the
+  # task rather than a copy of it that drifts.
   - pymdownx.snippets:
       base_path:
         - .

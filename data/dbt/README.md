@@ -37,7 +37,7 @@ From the repository root, because every relative location here is spelled from
 there:
 
 ```bash
-uv run --project python rekep task run tasks/build_dbt/build_dbt.json
+uv run --project python rekep tasks build_dbt run
 ```
 
 That is the repository's own route: it runs this project, reports what each
@@ -46,9 +46,11 @@ reads the same project and the same profile:
 
 ```bash
 uv run --project python dbt build --project-dir data/dbt --profiles-dir data/dbt
-uv run --project python dbt build --project-dir data/dbt --profiles-dir data/dbt \
-  --select orders_events+
 ```
+
+The project builds whole. DuckDB holds only what a build selected, so a
+selection such as `orders_events+` leaves out `stg_fix_messages`, which every
+product reads, and a test spanning two products fails when only one is built.
 
 A build needs `fix.refined` to exist, which is what `parse_fix_refined` writes
 at the end of the ingestion graph; `fix.raw` holds the same events before
@@ -59,8 +61,9 @@ package file, and every macro a model reads is here.
 ## Configure it
 
 `profiles.yml` names the local SQLite catalog and file warehouse a clone
-already has. `REKEP_DBT_CATALOG` replaces it with the JSON mapping every task
-document spells, which is how `build_dbt` passes a deployed catalog through:
+already has. `REKEP_DBT_CATALOG` replaces it with the JSON mapping every
+task's `catalog` parameter spells, which is how `build_dbt` passes a deployed
+catalog through:
 
 ```bash
 REKEP_DBT_CATALOG='{"name": "rekep", "properties": {"type": "glue", "warehouse": "s3://bucket/warehouse"}}' \

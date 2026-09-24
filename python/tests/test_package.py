@@ -152,10 +152,11 @@ def test_the_bundled_dictionary_is_the_crates_own_where_it_restates_the_crate() 
 def test_the_scheduling_dependencies_are_installed_wherever_they_can_be() -> None:
     """A skipped Airflow suite must not be able to read as a green one.
 
-    `tests/test_marimo_operator.py` opens with `importorskip("airflow")`, so
+    `tests/test_rekep_operator.py` opens with `importorskip("airflow")`, so
     dropping the `airflow` group would delete the operator and DAG tests from
     the run without failing anything. This is the one assertion that notices,
-    on every platform Airflow supports.
+    on every platform Airflow supports -- and that the `runner` group the
+    operator launches every task under can run `build_dbt`.
     """
     import importlib.util
     import sys
@@ -163,8 +164,8 @@ def test_the_scheduling_dependencies_are_installed_wherever_they_can_be() -> Non
     if sys.platform == "win32":  # pragma: no cover - Airflow is POSIX-only
         pytest.skip("Airflow does not run on Windows")
 
-    for name in ("airflow", "airflow.providers.standard.hooks.subprocess", "marimo"):
+    for name in ("airflow", "airflow.providers.standard.hooks.subprocess", "dbt.cli.main"):
         assert importlib.util.find_spec(name) is not None, (
-            f"{name} is missing: the operator, DAG and runner tests would silently skip. "
+            f"{name} is missing: the operator and DAG tests would silently skip. "
             "Sync the default groups (dev, runner, airflow)."
         )

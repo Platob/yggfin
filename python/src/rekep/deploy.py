@@ -20,7 +20,7 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 from rekep.fields import Field, field_of
-from rekep.fix import fix_message_field
+from rekep.fix import FixCodec, fix_message_field
 from rekep.iceberg import IcebergCatalog
 from rekep.market import book_field, market_event_field
 from rekep.text import Message
@@ -34,14 +34,18 @@ class Deployed:
     table: str
 
     #: The field factory used by the task that writes this table.
-    shape: Callable[[], Field]
+    shape: Callable[..., Field]
 
     #: Physical order is opt-in; pipeline reads request their logical order.
     sort_by: tuple[str, ...] | None = None
 
-    def into_field(self) -> Field:
+    #: Whether the shape is the dictionary's row, typed by the codec a run
+    #: parses with rather than by nothing but the package.
+    typed: bool = False
+
+    def into_field(self, codec: FixCodec | None = None) -> Field:
         """The shape this table carries, named as the table."""
-        return field_of(self.shape(), self.table)
+        return field_of(self.shape(codec) if self.typed else self.shape(), self.table)
 
 
 #: The tables the supported ingestion graph writes, in production order. The
@@ -49,8 +53,8 @@ class Deployed:
 #: restated are the same row, and only what the walk filled tells them apart.
 TABLES: tuple[Deployed, ...] = (
     Deployed("logs.messages", Message.into_field),
-    Deployed("fix.raw", fix_message_field),
-    Deployed("fix.refined", fix_message_field),
+    Deployed("fix.raw", fix_message_field, typed=True),
+    Deployed("fix.refined", fix_message_field, typed=True),
     Deployed("market.books", book_field),
     Deployed("market.orders", market_event_field),
     Deployed("market.quotes", market_event_field),
@@ -65,6 +69,7 @@ def deploy(
     branch: str | None = None,
     tables: Sequence[str] | None = None,
     dry_run: bool = False,
+    codec: FixCodec | None = None,
 ) -> dict[str, str]:
     """Create the declared tables, and say what each one was: what it did.
 
@@ -72,6 +77,9 @@ def deploy(
     the catalog is left exactly as it is, properties included. Redeploying is
     how a deployment is checked, not how one is rewritten -- `optimize` owns
     retrofitting properties onto a table that already holds rows.
+
+    `codec` types the two FIX tables the way the run parsing into them does;
+    None is the bundled dictionary's.
 
     Returns `created`, `present` or, under `dry_run`, `missing` per table.
     """
@@ -83,7 +91,7 @@ def deploy(
             f"ingestion writes no such table: {', '.join(unknown)}; it writes {', '.join(declared)}"
         )
     return {
-        name: _deployed(catalog, declared[name], table_properties, branch, dry_run)
+        name: _deployed(catalog, declared[name], table_properties, branch, dry_run, codec)
         for name in wanted
     }
 
@@ -94,11 +102,12 @@ def _deployed(
     table_properties: dict[str, str] | None,
     branch: str | None,
     dry_run: bool,
+    codec: FixCodec | None,
 ) -> str:
     """One table, through the catalog handle the whole deployment shares."""
     dataset: Any = store.dataset(
         shape.table,
-        field=shape.into_field(),
+        field=shape.into_field(codec),
         table_properties=dict(table_properties or {}),
         branch=branch,
         sort_by=shape.sort_by,

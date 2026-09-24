@@ -3,6 +3,7 @@
 import dataclasses
 import json
 from pathlib import Path
+from typing import Any
 
 import pyarrow
 import pytest
@@ -10,6 +11,10 @@ import pytest
 from rekep import cli
 from rekep.fields import field_of
 from rekep.iceberg import iceberg_contract, iceberg_contract_field
+from rekep.logs import Stage
+from rekep.tasks import TASKS, Task
+
+from .tasks.test_task import replaced
 
 
 def run(*argv: str) -> int:
@@ -256,175 +261,213 @@ def test_contract_document_codecs_consume_and_return_text(tmp_path: Path) -> Non
     assert f"{iceberg_contract(rebuilt)}\n" == target.read_text()
 
 
-# -- running a task ----------------------------------------------------------
-
-#: A task application small enough to read, carrying everything the runner
-#: contracts on: definitions from the document, a record on `stderr`, a print
-#: on `stdout` that must not reach the payload, and a `Stage` result.
-APPLICATION = """
-import marimo
-
-app = marimo.App()
-
-with app.setup:
-    import pathlib
-
-    from rekep.logs import Stage, configure
-    from rekep.tasks import Task
+# -- the bundled tasks -------------------------------------------------------
 
 
-@app.cell
-def parameters():
-    _defaults = Task.from_json(str(pathlib.Path(__file__).with_suffix(".json"))).parameters
-    source = _defaults["source"]
-    rows = _defaults["rows"]
-    secret = _defaults["secret"]
-    log_level = _defaults["log_level"]
-    return log_level, rows, secret, source
+def test_the_task_list_is_every_bundled_task_as_json(capsys: pytest.CaptureFixture) -> None:
+    assert run("tasks", "list") == 0
+
+    assert json.loads(capsys.readouterr().out) == [
+        {"name": task.name, "summary": task.summary, "targets": list(task.targets)}
+        for task in TASKS
+    ]
 
 
-@app.cell
-def _(log_level):
-    records = configure(log_level)
-    return (records,)
+def test_the_task_help_lists_every_task_with_its_summary(capsys: pytest.CaptureFixture) -> None:
+    with pytest.raises(SystemExit) as stopped:
+        run("tasks", "--help")
+    assert stopped.value.code == 0
+
+    # argparse wraps a long summary, so the words are compared, not the lines.
+    listed = " ".join(capsys.readouterr().out.split())
+    for task in TASKS:
+        assert f"{task.name} {' '.join(task.summary.split())}" in listed
 
 
-@app.cell
-def _(records, rows, secret, source):
-    print("an application writes to stdout")
-    stage = Stage("sample", sources={"input": source}, targets={"output": "out.rows"})
-    stage.says("holding %d characters of configuration", len(secret))
-    result = stage.finished(read=rows, written=rows, rows=rows)
-    return (result,)
-"""
+@pytest.mark.parametrize("name", [task.name for task in TASKS])
+def test_a_task_help_lists_its_defaults(capsys: pytest.CaptureFixture, name: str) -> None:
+    with pytest.raises(SystemExit) as stopped:
+        run("tasks", name, "--help")
+    assert stopped.value.code == 0
 
-DOCUMENT = json.dumps(
-    {
-        "name": "sample",
-        "application": "sample.py",
-        "parameters": {
-            "source": "data/capture",
-            "rows": 1,
-            "secret": "unset",
-            "log_level": "INFO",
-        },
-    }
-)
+    shown = capsys.readouterr().out
+    assert all(action in shown for action in ("show", "run", "deploy"))
+    for parameter, value in Task(name).parameters.items():
+        assert f"\n  {parameter} = {json.dumps(value)}\n" in shown
 
 
-def task(tmp_path: Path, application: str = APPLICATION, document: str = DOCUMENT) -> str:
-    """One task directory, as the repository lays them out."""
-    directory = tmp_path / "sample"
-    directory.mkdir()
-    (directory / "sample.py").write_text(application, encoding="utf-8")
-    (directory / "sample.json").write_text(document, encoding="utf-8")
-    return str(directory / "sample.json")
+@pytest.mark.parametrize("name", [task.name for task in TASKS])
+def test_show_without_overrides_is_the_shipped_defaults(
+    capsys: pytest.CaptureFixture, name: str
+) -> None:
+    assert run("tasks", name, "show") == 0
+    assert json.loads(capsys.readouterr().out) == Task(name).parameters
 
 
-def test_a_task_run_publishes_the_same_document_to_stdout_and_the_result_file(
+def test_the_parameters_file_applies_over_the_defaults_and_the_command_line_last(
     tmp_path: Path, capsys: pytest.CaptureFixture
 ) -> None:
-    published = tmp_path / "result.json"
-
-    assert run("task", "run", task(tmp_path), "--result-file", str(published)) == 0
-
-    captured = capsys.readouterr()
-    assert json.loads(captured.out) == json.loads(published.read_text(encoding="utf-8"))
-    assert captured.out.count("\n") == 1, "one line, so a pipeline reads one document"
-    assert published.read_text(encoding="utf-8") == captured.out.strip()
-
-
-def test_the_result_carries_every_key_a_route_reads(
-    tmp_path: Path, capsys: pytest.CaptureFixture
-) -> None:
-    assert run("task", "run", task(tmp_path)) == 0
-
-    result = json.loads(capsys.readouterr().out)
-    assert set(result) == {
-        "task",
-        "read",
-        "written",
-        "skipped",
-        "sources",
-        "targets",
-        "window",
-        "elapsed_ms",
-        "rows",
-    }
-    assert result["task"] == "sample"
-    assert (result["read"], result["written"], result["skipped"]) == (1, 1, 0)
-    assert result["window"] == {"start": None, "end": None}
-
-
-def test_only_the_result_reaches_stdout(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
-    """An application may print anything; the payload is the document alone."""
-    assert run("task", "run", task(tmp_path)) == 0
-
-    captured = capsys.readouterr()
-    assert json.loads(captured.out)
-    assert "an application writes to stdout" in captured.err
-    assert "an application writes to stdout" not in captured.out
-    assert "sample finished: 1 read" in captured.err, "and the records are there too"
-
-
-def test_both_override_forms_apply_with_the_command_line_last(
-    tmp_path: Path, capsys: pytest.CaptureFixture
-) -> None:
-    """A document is what a caller wrote; a `--parameter` is what a person typed."""
-    document = task(tmp_path)
+    """A file is what a caller wrote; a `--parameter` is what a person typed."""
     overrides = tmp_path / "parameters.json"
-    overrides.write_text(json.dumps({"rows": 2, "source": "from-the-file"}), encoding="utf-8")
+    overrides.write_text(
+        json.dumps({"start": "2026-08-13", "filesystem": "file:from-the-file"}), encoding="utf-8"
+    )
 
     assert (
         run(
-            "task",
-            "run",
-            document,
+            "tasks",
+            "parse_messages",
+            "show",
             "--parameters-file",
             str(overrides),
             "--parameter",
-            "rows=3",
+            "start=2026-08-14",
         )
         == 0
     )
+    assert json.loads(capsys.readouterr().out) == {
+        **Task("parse_messages").parameters,
+        "filesystem": "file:from-the-file",
+        "start": "2026-08-14",
+    }
 
-    result = json.loads(capsys.readouterr().out)
-    assert result["read"] == 3, "the command line wins over the file"
-    assert result["sources"] == {"input": "from-the-file"}, "which wins over the document"
 
-
+@pytest.mark.parametrize(
+    ("spelled", "read"),
+    [
+        ("snapshot_id=3", 3),
+        ("snapshot_id=null", None),
+        ('books="market.books"', "market.books"),
+        ("books=market.books", "market.books"),
+        ("books=a=b", "a=b"),
+        ("start=2026-08-14", "2026-08-14"),
+        ("start=", ""),
+        ('catalog={"name": "other", "properties": {}}', {"name": "other", "properties": {}}),
+    ],
+)
 def test_a_parameter_is_read_as_json_then_as_text(
+    capsys: pytest.CaptureFixture, spelled: str, read: object
+) -> None:
+    assert run("tasks", "parse_orders", "show", "--parameter", spelled) == 0
+    assert json.loads(capsys.readouterr().out)[spelled.partition("=")[0]] == read
+
+
+@pytest.mark.parametrize("action", ["show", "run", "deploy"])
+def test_an_undeclared_parameter_is_one_line_and_runs_nothing(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture, action: str
+) -> None:
+    seen = replaced(monkeypatch)
+
+    assert run("tasks", "parse_messages", action, "--parameter", "rows=1") == 1
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.strip().count("\n") == 0
+    assert (
+        "parse_messages takes no rows; it takes filesystem, rowheader, start, end, catalog"
+        in captured.err
+    )
+    assert seen == []
+
+
+def test_an_undeclared_name_in_the_parameters_file_is_refused_too(
     tmp_path: Path, capsys: pytest.CaptureFixture
 ) -> None:
-    assert run("task", "run", task(tmp_path), "--parameter", "rows=4") == 0
-    assert json.loads(capsys.readouterr().out)["rows"] == 4
+    overrides = tmp_path / "parameters.json"
+    overrides.write_text(json.dumps({"source": "data/capture"}), encoding="utf-8")
 
-    again = tmp_path / "again"
-    again.mkdir()
-    assert run("task", "run", task(again), "--parameter", "source=data/two") == 0
-    assert json.loads(capsys.readouterr().out)["sources"] == {"input": "data/two"}
+    assert run("tasks", "parse_messages", "show", "--parameters-file", str(overrides)) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "parse_messages takes no source" in captured.err
 
 
-def test_a_parameter_without_a_value_is_refused(
+def test_a_parameter_without_a_value_is_refused(capsys: pytest.CaptureFixture) -> None:
+    assert run("tasks", "parse_messages", "run", "--parameter", "start") == 1
+    assert "a parameter is name=value, not 'start'" in capsys.readouterr().err
+
+
+def test_a_parameters_file_that_is_not_an_object_is_refused(
     tmp_path: Path, capsys: pytest.CaptureFixture
 ) -> None:
-    assert run("task", "run", task(tmp_path), "--parameter", "rows") == 1
-    assert "name=value" in capsys.readouterr().err
+    overrides = tmp_path / "parameters.json"
+    overrides.write_text("[1, 2]", encoding="utf-8")
+
+    assert run("tasks", "parse_messages", "show", "--parameters-file", str(overrides)) == 1
+    assert "JSON object of parameters" in capsys.readouterr().err
+
+
+def test_a_run_prints_one_compact_line_and_publishes_the_same_result(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    seen = replaced(monkeypatch)
+    published = tmp_path / "deep" / "result.json"
+
+    assert run("tasks", "parse_messages", "run", "--result-file", str(published)) == 0
+
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert captured.out == json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\n"
+    assert published.read_text(encoding="utf-8") == captured.out.strip()
+    assert sorted(path.name for path in published.parent.iterdir()) == ["result.json"]
+    assert set(result) == set(Stage.KEYS)
+    assert (result["task"], result["read"], result["written"]) == ("parse_messages", 1, 1)
+    assert seen == [Task("parse_messages").parameters]
+
+
+def test_a_run_takes_the_parameters_the_command_resolved(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    seen = replaced(monkeypatch)
+    overrides = tmp_path / "parameters.json"
+    overrides.write_text(json.dumps({"start": "2026-08-13", "end": "2026-08-15"}), "utf-8")
+
+    assert (
+        run(
+            "tasks",
+            "parse_messages",
+            "run",
+            "--parameters-file",
+            str(overrides),
+            "--parameter",
+            "start=2026-08-14",
+        )
+        == 0
+    )
+    assert seen == [
+        {**Task("parse_messages").parameters, "start": "2026-08-14", "end": "2026-08-15"}
+    ]
+
+
+def test_only_the_result_reaches_stdout(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """A task may print anything; the payload is the result alone."""
+    replaced(monkeypatch)
+
+    assert run("tasks", "parse_messages", "run") == 0
+
+    captured = capsys.readouterr()
+    assert json.loads(captured.out)
+    assert "a task writes to stdout" in captured.err
+    assert "a task writes to stdout" not in captured.out
+    assert "parse_messages finished: 1 read" in captured.err, "and the records are there too"
 
 
 def test_a_configured_secret_is_never_written_anywhere_a_reader_looks(
-    tmp_path: Path, capsys: pytest.CaptureFixture
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture
 ) -> None:
-    """The runner echoes no parameter: what a task holds stays in the task."""
+    """The command echoes no parameter: what a task holds stays in the task."""
+    seen = replaced(monkeypatch)
     published = tmp_path / "result.json"
 
     assert (
         run(
-            "task",
+            "tasks",
+            "parse_messages",
             "run",
-            task(tmp_path),
             "--parameter",
-            'secret="s3://key:hunter2@bucket"',
+            "filesystem=s3://key:hunter2@bucket",
             "--result-file",
             str(published),
         )
@@ -435,90 +478,71 @@ def test_a_configured_secret_is_never_written_anywhere_a_reader_looks(
     assert "hunter2" not in captured.out
     assert "hunter2" not in captured.err
     assert "hunter2" not in published.read_text(encoding="utf-8")
-    assert "holding 23 characters" in captured.err, "and the task still got it"
-
-
-def test_an_application_exporting_no_app_is_reported(
-    tmp_path: Path, capsys: pytest.CaptureFixture
-) -> None:
-    assert run("task", "run", task(tmp_path, application="version = 1\n")) == 1
-    assert "exports no marimo app" in capsys.readouterr().err
-
-
-def test_an_application_publishing_no_result_is_reported(
-    tmp_path: Path, capsys: pytest.CaptureFixture
-) -> None:
-    application = APPLICATION.replace("    return (result,)", "    return")
-    application = application.replace("    result = stage.finished", "    stage.finished")
-
-    assert run("task", "run", task(tmp_path, application=application)) == 1
-    assert "defines no result" in capsys.readouterr().err
+    assert seen[0]["filesystem"] == "s3://key:hunter2@bucket", "and the task still got it"
+    assert "holding 23 characters" in captured.err
 
 
 @pytest.mark.parametrize(
-    ("published", "reported"),
+    ("answer", "reported"),
     [
-        ("3", "is a mapping"),
-        ('{"task": "sample"}', "is missing"),
-        ('{**stage.finished(read=1, written=1), "read": -1}', "not negative"),
-        ('{**stage.finished(read=1, written=1), "read": True}', "as an integer"),
-        ('{**stage.finished(read=1, written=1), "window": {}}', "start and an end"),
-        ('{**stage.finished(read=1, written=1), "targets": {"a": 1}}', "role=name text"),
+        (lambda stage: 3, "is a mapping"),
+        (lambda stage: {"task": "parse_messages"}, "is missing"),
+        (lambda stage: {**stage.finished(read=1, written=1), "read": -1}, "not negative"),
+        (lambda stage: {**stage.finished(read=1, written=1), "read": True}, "as an integer"),
+        (lambda stage: {**stage.finished(read=1, written=1), "window": {}}, "start and an end"),
+        (
+            lambda stage: {**stage.finished(read=1, written=1), "targets": {"a": 1}},
+            "role=name text",
+        ),
     ],
     ids=["scalar", "short", "negative", "boolean", "window", "targets"],
 )
 def test_a_malformed_result_is_refused_before_it_is_published(
-    tmp_path: Path, capsys: pytest.CaptureFixture, published: str, reported: str
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture,
+    answer: Any,
+    reported: str,
 ) -> None:
-    application = APPLICATION.replace(
-        "result = stage.finished(read=rows, written=rows, rows=rows)", f"result = {published}"
-    )
-    target = tmp_path / "result.json"
+    replaced(monkeypatch, answer)
+    published = tmp_path / "result.json"
 
-    assert (
-        run("task", "run", task(tmp_path, application=application), "--result-file", str(target))
-        == 1
-    )
-    assert reported in capsys.readouterr().err
-    assert not target.exists(), "nothing is published when the shape is wrong"
+    assert run("tasks", "parse_messages", "run", "--result-file", str(published)) == 1
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert reported in captured.err
+    assert list(tmp_path.iterdir()) == [], "nothing is published when the shape is wrong"
 
 
 def test_a_result_naming_another_task_is_refused(
-    tmp_path: Path, capsys: pytest.CaptureFixture
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ) -> None:
-    application = APPLICATION.replace('Stage("sample"', 'Stage("other"')
+    replaced(monkeypatch, task="parse_fix_raw")
 
-    assert run("task", "run", task(tmp_path, application=application)) == 1
-    assert "returned 'other', not a sample run" in capsys.readouterr().err
+    assert run("tasks", "parse_messages", "run") == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "returned 'parse_fix_raw', not a parse_messages run" in captured.err
 
 
-def test_one_document_may_run_under_a_discriminated_name(
-    tmp_path: Path, capsys: pytest.CaptureFixture
+def test_a_failing_run_publishes_nothing_and_says_where_it_raised(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture
 ) -> None:
-    application = APPLICATION.replace('Stage("sample"', 'Stage("sample_replay"')
+    def refused(stage: Stage) -> Any:
+        raise RuntimeError("the venue refused")
 
-    assert run("task", "run", task(tmp_path, application=application)) == 0
-    assert json.loads(capsys.readouterr().out)["task"] == "sample_replay"
-
-
-def test_a_failing_cell_leaves_no_result_and_says_where_it_raised(
-    tmp_path: Path, capsys: pytest.CaptureFixture
-) -> None:
-    application = APPLICATION.replace(
-        "    stage = Stage(", "    raise RuntimeError('the venue refused')\n    stage = Stage("
-    )
+    replaced(monkeypatch, refused)
     published = tmp_path / "result.json"
 
-    assert (
-        run("task", "run", task(tmp_path, application=application), "--result-file", str(published))
-        == 1
-    )
+    assert run("tasks", "parse_messages", "run", "--result-file", str(published)) == 1
 
     captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "Traceback" in captured.err
     assert "the venue refused" in captured.err
-    assert "sample.py" in captured.err, "the traceback names the line that raised"
-    assert not published.exists()
-    assert list(published.parent.glob("*.partial")) == []
+    assert "test_cli.py" in captured.err, "the traceback names the line that raised"
+    assert list(tmp_path.iterdir()) == [], "no result and no partial one"
 
 
 def test_a_published_result_replaces_the_previous_one_whole(tmp_path: Path) -> None:
@@ -533,11 +557,41 @@ def test_a_published_result_replaces_the_previous_one_whole(tmp_path: Path) -> N
     assert sorted(path.name for path in published.parent.iterdir()) == ["result.json"]
 
 
-def test_a_parameters_file_that_is_not_an_object_is_refused(
-    tmp_path: Path, capsys: pytest.CaptureFixture
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ("tasks",),
+        ("tasks", "parse_messages"),
+        ("tasks", "parse_message", "run"),
+        ("tasks", "parse_messages", "deploy", "--table", "logs.messages"),
+    ],
+    ids=["no-task", "no-action", "unknown", "prefix"],
+)
+def test_a_command_the_tasks_do_not_take_is_an_argument_error(
+    capsys: pytest.CaptureFixture, argv: tuple[str, ...]
 ) -> None:
-    overrides = tmp_path / "parameters.json"
-    overrides.write_text("[1, 2]", encoding="utf-8")
+    with pytest.raises(SystemExit) as stopped:
+        run(*argv)
+    assert stopped.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "--help" in captured.err
 
-    assert run("task", "run", task(tmp_path), "--parameters-file", str(overrides)) == 1
-    assert "JSON object of parameters" in capsys.readouterr().err
+
+@pytest.mark.parametrize(
+    ("level", "recorded"), [((), True), (("--log-level", "ERROR"), False)], ids=["default", "error"]
+)
+def test_a_run_records_at_info_unless_the_command_line_says_otherwise(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture,
+    level: tuple[str, ...],
+    recorded: bool,
+) -> None:
+    """The runner configures the records, not the task: a task log is read
+    afterwards at INFO, and `--log-level` is what a person turns it with."""
+    replaced(monkeypatch)
+
+    assert run(*level, "tasks", "parse_messages", "run") == 0
+
+    err = capsys.readouterr().err
+    assert ("INFO rekep.logs parse_messages finished" in err) is recorded

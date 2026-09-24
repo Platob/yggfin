@@ -3,25 +3,25 @@
 Read a bounded ordered history from `fix.raw`, walk lifecycle state, and
 write only this job's `fix.refined` events.
 
-## Task document
+## Parameters
+
+`python/src/rekep/tasks/parse_fix_refined.py` runs the task, and
+`parse_fix_refined.json` beside it holds its defaults, which
+`rekep tasks parse_fix_refined show` prints under any override:
 
 ```json
 {
-  "name": "parse_fix_refined",
-  "application": "parse_fix_refined.py",
-  "parameters": {
-    "raw": "fix.raw",
-    "registry": null,
-    "codec_options": null,
-    "start": null,
-    "end": null,
-    "catalog": {
-      "name": "rekep",
-      "properties": {
-        "type": "sql",
-        "uri": "sqlite:///data/catalog.db",
-        "warehouse": "data/warehouse"
-      }
+  "raw": "fix.raw",
+  "registry": null,
+  "codec_options": null,
+  "start": null,
+  "end": null,
+  "catalog": {
+    "name": "rekep",
+    "properties": {
+      "type": "sql",
+      "uri": "sqlite:///data/catalog.db",
+      "warehouse": "data/warehouse"
     }
   }
 }
@@ -108,12 +108,6 @@ Set `registry` only to replay with an explicit dictionary. Both stages must
 use the same field and central `FIX:codeset` vocabularies. Review and deploy
 the resulting schema change before writing it.
 
-## Presentation
-
-The interactive result reads row and partition counts from snapshot metadata.
-Its visible chain is a bounded, ordered sample of at most 64 rows from the job
-window; it never scans the full refined table merely to render the notebook.
-
 ## Sample rows
 
 The checked sample is generated from the current task and owns its measured
@@ -131,6 +125,6 @@ obsolete identities or repair field IDs. The steps are on
 ## Run
 
 ```bash
-uv run --project python rekep task run tasks/parse_fix_refined/parse_fix_refined.json \
+uv run --project python rekep tasks parse_fix_refined run \
   --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
 ```

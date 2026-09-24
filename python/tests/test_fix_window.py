@@ -15,7 +15,6 @@ from rekep.fix import fix_codec, fix_message_field, fix_parse_arrow_reader
 from rekep.iceberg import IcebergCatalog
 
 UTC = datetime.timezone.utc
-ROOT = Path(__file__).resolve().parents[2]
 pytestmark = pytest.mark.integration
 
 
@@ -87,9 +86,9 @@ def test_refined_uses_previous_hour_and_filters_history_and_future_expiry(
 
     monkeypatch.setattr(PyArrowFile, "open", tracked)
     argv = [
-        "task",
+        "tasks",
+        "parse_fix_refined",
         "run",
-        str(ROOT / "tasks/parse_fix_refined/parse_fix_refined.json"),
         "--parameter",
         f"catalog={json.dumps(catalog)}",
         "--parameter",

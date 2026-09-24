@@ -9,5 +9,5 @@ file, no framework, no build step. They mount on any page carrying a
 
 `fix-registry.json` and `fix-details.json` are generated projections of the
 bundled dictionary, not hand-edited sources. Rebuild them with
-`python tools/fix_registry_dump.py`; see
-[the registry browser page](../tools/fix-registry.md#regenerate-the-published-assets).
+`uv run --project python python tools/fix_registry_dump.py`; see
+[the registry assets page](../tools/fix-registry.md#regenerate-the-published-assets).

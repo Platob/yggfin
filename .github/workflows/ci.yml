@@ -34,7 +34,7 @@ jobs:
         run: uv run pytest -q -m integration tests/test_market_pipeline.py tests/test_market_projection.py tests/iceberg/test_window_overwrite.py
       - name: Scheduled market pipeline
         if: runner.os == 'Linux' && matrix.python == '3.13'
-        run: uv run pytest -q -m integration tests/test_marimo_operator.py -k real_dag_run
+        run: uv run pytest -q -m integration tests/test_rekep_operator.py -k real_dag_run
 
   docs:
     runs-on: ubuntu-latest

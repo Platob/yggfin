@@ -4,12 +4,14 @@ Read refined FIX events in `[start, end)` and write native book continuations
 to `market.books`. The task returns the exact committed book `snapshot_id`
 for the three downstream event tasks.
 
-## Task document
+## Parameters
 
-These are the executable defaults:
+`python/src/rekep/tasks/parse_books.py` runs the task, and
+`parse_books.json` beside it holds its defaults, which
+`rekep tasks parse_books show` prints under any override:
 
 ```json
---8<-- "tasks/parse_books/parse_books.json"
+--8<-- "python/src/rekep/tasks/parse_books.json"
 ```
 
 The native dependency is Yggdryl 0.1.11. Install the locked environment before
@@ -62,7 +64,7 @@ records in the named window. It does not read the bundled August ingestion
 fixture, whose incomplete AE side is correctly refused by native projection.
 
 ```bash
-uv run --project python rekep task run tasks/parse_books/parse_books.json \
+uv run --project python rekep tasks parse_books run \
   --parameter 'start="2026-09-21T10:00:00Z"' --parameter 'end="2026-09-21T10:00:10Z"' \
   --result-file /tmp/rekep-books.json
 ```
@@ -73,8 +75,8 @@ Pass that result's `snapshot_id` and exact bounds to
 the validated parent result rather than independently following the book
 head. Snapshot ID zero means no source head and must remain empty on replay.
 
-## Application
+## Module
 
 ```python
---8<-- "tasks/parse_books/parse_books.py"
+--8<-- "python/src/rekep/tasks/parse_books.py"
 ```

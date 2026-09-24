@@ -62,8 +62,8 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   for a whole day of lines, with no error anywhere.
 - `ULBRIDGE_ROWHEADER` is the default and the only one spelled here. A bridge
   writing the same facts in a layout of its own is read by naming its header
-  in the task document, never by a second constant: the layout is a parameter
-  and the capture names are the contract.
+  in the task's `rowheader` parameter, never by a second constant: the layout
+  is a parameter and the capture names are the contract.
 - The shipped clock reads every fraction this bridge writes: three digits
   under a point or a comma, none at all, and the micros some of its loggers
   group after them as `.524_315`. The `mtime` capture is consumed at
@@ -157,9 +157,11 @@ fix.refined    -> build_dbt (optional)-> orders.events, orders.current, executio
 `raw` and `refined` are the two FIX tables and nothing else here is called
 either: a `logs.messages` row is a line, or a text row.
 
-Each task directory contains one Marimo application beside its JSON document.
+Each task is a module of `rekep.tasks` beside the JSON document of its
+defaults, run by `rekep tasks <name> run`; `show` prints its parameters and
+`deploy` creates the tables it writes.
 `parse_messages` passes `filesystem` to `IOBase.from_uri`, frames each line
-under the `rowheader` its document names, hands the read the run's window as
+under the `rowheader` its parameters name, hands the read the run's window as
 its `where` -- the decode cuts every line and the record surface answers the
 clause over the rows they become, so nothing is filtered after the read --
 applies `Message.into_field()` at the storage boundary, and writes one
@@ -314,16 +316,19 @@ and never `fix.raw`, because a product needs the chain and `fix.raw` carries
 none; a market fact is FIX's own field, and the staging model restates the
 products' reading of it off those fields.
 
-Airflow launches the adjacent standalone runner through the locked `uv`
-`runner` group; the operator never calls the Rekep CLI. `rekep_ingestion` is
-the seven streaming stages, daily, each run over its data interval unless
-the run's conf names `start` or `end`. The three event stages share the book
-writer's committed snapshot. `rekep_products` remains the optional `build_dbt`
-DAG, scheduled on the `fix.refined` Asset.
+Airflow's `RekepOperator` (`airflow/rekep_operator.py`) launches
+`rekep tasks <name> run` through the locked `uv` `runner` group, with the
+defaults of the checkout it runs. `rekep_ingestion` is the seven streaming
+stages, daily, each run over its data interval unless the run's conf names
+`start` or `end`. The three event stages share the book writer's committed
+snapshot. `rekep_products` remains the optional `build_dbt` DAG, scheduled on
+the `fix.refined` Asset.
 
 Every task result and its closing INFO record use `rekep.logs.Stage` and agree
 on `task`, `read`, `written`, `skipped`, `sources`, `targets`, `window`, and
-`elapsed_ms`.
+`elapsed_ms`. The runner configures the records -- INFO unless `--log-level`
+says otherwise -- and a task module configures them only through a
+`log_level` parameter it declares.
 
 ## Tests and benchmarks
 
@@ -340,23 +345,14 @@ on `task`, `read`, `written`, `skipped`, `sources`, `targets`, `window`, and
 python/src/rekep/
   fields/       native Field metadata helpers
   iceberg/      catalog, dataset, schema bridge, and PyIceberg FileIO
-  tasks/        application configuration only
+  tasks/        the bundled tasks: a module and the JSON of its defaults each
   text/         the text Message declaration
   fix.py        the bundled registry and the two FIX stages over two tables
   times.py      instant readings, the run window and the ULBridge row header
   resources.py  Yggdryl binding and required byte reads
   dbt.py        the dbt-duckdb plugin: a source is a read, a model is a commit
-tasks/
-  airflow/
-  parse_messages/
-  parse_fix_raw/
-  parse_fix_refined/
-  parse_books/
-  parse_orders/
-  parse_quotes/
-  parse_executions/
-  optimize_iceberg/
-  build_dbt/
+airflow/        the DAGs and the operator that runs a bundled task
+.claude/skills/rekep/SKILL.md  how an agent runs, deploys and extends all of it
 data/dbt/       the dbt project: models, schemas, macros and its one profile
 schemas/rekep/message.json
 schemas/rekep/fixmsg.json
