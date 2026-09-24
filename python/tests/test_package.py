@@ -36,7 +36,7 @@ PACKAGES = (
     "rekep.fix",
     "rekep.iceberg",
     "rekep.market",
-    "rekep.tasks",
+    "rekep.pipeline",
     "rekep.text",
 )
 
@@ -45,6 +45,12 @@ def test_the_package_version_is_the_one_the_build_publishes() -> None:
     """Two spellings of one number, which is exactly how they drift apart."""
     declared = tomllib.loads(PYPROJECT.read_text())["project"]["version"]
     assert rekep.__version__ == declared
+
+
+def test_the_package_installs_no_command() -> None:
+    """The package is processing called from Python: the wheel carries no script."""
+    project = tomllib.loads(PYPROJECT.read_text())["project"]
+    assert not {"scripts", "gui-scripts", "entry-points"} & set(project)
 
 
 @pytest.mark.parametrize("package", PACKAGES)
@@ -147,31 +153,3 @@ def test_the_bundled_dictionary_is_the_crates_own_where_it_restates_the_crate() 
     # And the registry is the same one with them or without: the core seeds
     # what they restate, so nothing is added and nothing is lost.
     assert len(fix_registry()) == 7781
-
-
-def test_the_scheduling_dependencies_are_installed_wherever_they_can_be() -> None:
-    """A skipped Airflow suite must not be able to read as a green one.
-
-    `tests/test_rekep_operator.py` opens with `importorskip("airflow")`, so
-    dropping the `airflow` group would delete the operator and DAG tests from
-    the run without failing anything. This is the one assertion that notices,
-    on every platform Airflow supports -- and that the `runner` group the
-    operator launches every task under can run `build_dbt`.
-    """
-    import importlib.util
-    import sys
-
-    if sys.platform == "win32":  # pragma: no cover - Airflow is POSIX-only
-        pytest.skip("Airflow does not run on Windows")
-
-    for name in (
-        "airflow",
-        "airflow.providers.standard.hooks.subprocess",
-        "airflow.providers.amazon.aws.operators.eks",
-        "airflow.providers.cncf.kubernetes.operators.pod",
-        "dbt.cli.main",
-    ):
-        assert importlib.util.find_spec(name) is not None, (
-            f"{name} is missing: the operator and DAG tests would silently skip. "
-            "Sync the default groups (dev, runner, airflow)."
-        )

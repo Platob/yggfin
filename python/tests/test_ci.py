@@ -66,35 +66,18 @@ def test_pull_request_ci_selects_the_fast_suite() -> None:
     assert '-m "not integration"' in test["run"]
 
 
-def test_the_scheduled_pipeline_step_selects_the_real_dag_run() -> None:
-    """The step names a file and a `-k`, so a rename would leave it selecting nothing."""
+def test_the_market_pipeline_step_runs_real_integration_tests() -> None:
+    """The step names files, so a rename or a lost mark would leave it running nothing."""
     workflow = _workflow("ci.yml")
     steps = workflow["jobs"]["test"]["steps"]
-    step = next(step for step in steps if step.get("name") == "Scheduled market pipeline")
-    command = step["run"].split()
+    step = next(step for step in steps if step.get("name") == "Market pipeline transactions")
     assert "-m integration" in step["run"]
-    (path,) = [argument for argument in command if argument.endswith(".py")]
-    assert path == "tests/test_rekep_operator.py"
-    selected = command[command.index("-k") + 1]
-    source = (ROOT / "python" / path).read_text(encoding="utf-8")
-    assert re.search(rf"^def test_\w*{selected}\w*\(", source, re.MULTILINE), selected
-
-
-def test_the_image_job_runs_every_stage_in_the_image_it_built() -> None:
-    """The step names the image it built and a `-k` that selects a real test."""
-    job = _workflow("ci.yml")["jobs"]["image"]
-    build = next(step for step in job["steps"] if step.get("name") == "Build")
-    assert build["run"].split()[:4] == ["docker", "build", "-t", "rekep:ci"]
-    assert build["working-directory"] == ".", "the build context is the repository root"
-    pods = next(step for step in job["steps"] if step.get("name") == "Pods")
-    assert pods["env"]["REKEP_IMAGE"] == "rekep:ci"
-    command = pods["run"].split()
-    assert "-m integration" in pods["run"]
-    (path,) = [argument for argument in command if argument.endswith(".py")]
-    selected = command[command.index("-k") + 1]
-    source = (ROOT / "python" / path).read_text(encoding="utf-8")
-    assert re.search(rf"^def test_\w*{selected}\w*\(", source, re.MULTILINE), selected
-    assert (ROOT / "Dockerfile").is_file()
+    paths = [argument for argument in step["run"].split() if argument.endswith(".py")]
+    assert paths
+    for path in paths:
+        source = (ROOT / "python" / path).read_text(encoding="utf-8")
+        marked = r"^(?:@pytest\.mark\.integration|pytestmark = pytest\.mark\.integration)$"
+        assert re.search(marked, source, re.MULTILINE), f"{path} holds no integration test"
 
 
 def test_the_integration_workflow_runs_only_trusted_code_paths() -> None:

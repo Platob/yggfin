@@ -23,7 +23,8 @@ behavior.
   parsing, the fixed `fixmsg` row, and the lifecycle stage after the parse.
 - Arrow owns columnar shape conversions and kernels.
 - PyIceberg owns table conversion, ids, snapshots, scan planning, and commits.
-- Rekep owns the text `Message` contract and its narrow PyArrow/PyIceberg seam.
+- Rekep owns the text `Message` contract, its narrow PyArrow/PyIceberg seam,
+  and the `rekep.pipeline` stages that compose them into tables.
 - Never add a second Field class, filesystem/path layer, text reader, codec, or
   registry in rekep.
 
@@ -62,8 +63,9 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   for a whole day of lines, with no error anywhere.
 - `ULBRIDGE_ROWHEADER` is the default and the only one spelled here. A bridge
   writing the same facts in a layout of its own is read by naming its header
-  in the task's `rowheader` parameter, never by a second constant: the layout
-  is a parameter and the capture names are the contract.
+  as the `rowheader` that `parse_messages` and `Message.text_options` take,
+  never by a second constant: the layout is a parameter and the capture names
+  are the contract.
 - The shipped clock reads every fraction this bridge writes: three digits
   under a point or a comma, none at all, and the micros some of its loggers
   group after them as `.524_315`. The `mtime` capture is consumed at
@@ -139,35 +141,42 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
 - Maintenance reports settled changes and never deletes a file whose ownership
   is ambiguous.
 
-## Workflow
+## Pipeline
 
-The supported graph is:
+Rekep is a processing library. Commands, schedules, catalogs and run windows
+belong to its callers; the package holds only the table names its stages
+write. The supported graph is one function of `rekep.pipeline` per table,
+each over one `IcebergCatalog` and one window:
 
 ```text
-filesystem URI -> parse_messages     -> logs.messages
-logs.messages  -> parse_fix_raw      -> fix.raw
-fix.raw        -> parse_fix_refined  -> fix.refined
-fix.refined    -> parse_books        -> market.books
-market.books   -> parse_orders       -> market.orders
-               -> parse_quotes       -> market.quotes
-               -> parse_executions   -> market.executions
-fix.refined    -> build_dbt (optional)-> orders.events, orders.current, executions.fills
+filesystem URI -> parse_messages             -> logs.messages
+logs.messages  -> parse_fix_raw              -> fix.raw
+fix.raw        -> parse_fix_refined          -> fix.refined
+fix.refined    -> parse_books                -> market.books
+market.books   -> parse_events("orders")     -> market.orders
+               -> parse_events("quotes")     -> market.quotes
+               -> parse_events("executions") -> market.executions
+fix.refined    -> dbt build (optional)       -> orders.events, orders.current, executions.fills
 ```
 
 `raw` and `refined` are the two FIX tables and nothing else here is called
 either: a `logs.messages` row is a line, or a text row.
 
-Each task is a module of `rekep.tasks` beside the JSON document of its
-defaults, run by `rekep tasks <name> run`; `show` prints its parameters and
-`deploy` creates the tables it writes.
-`parse_messages` passes `filesystem` to `IOBase.from_uri`, frames each line
-under the `rowheader` its parameters name, hands the read the run's window as
-its `where` -- the decode cuts every line and the record surface answers the
-clause over the rows they become, so nothing is filtered after the read --
-applies `Message.into_field()` at the storage boundary, and writes one
-schema-bearing reader directly to Iceberg. The window is `[start, end)`; a
-task given neither takes the last day up to now, and a run over a window
-replaces what an earlier run of it landed. `currunix` is the
+A stage reads its `source` table and writes its `target`, both defaulted to
+the module's constants (`MESSAGES`, `RAW`, `REFINED`, `BOOKS`,
+`EVENTS[kind]`), creates a missing target, never closes the catalog it is
+handed, and answers `Landed`. `rekep.deploy.deploy(catalog)` creates the
+tables the graph writes ahead of a first run, for a catalog the caller may
+not create tables in; `TABLES` is that layout.
+`parse_messages` binds a URI `source` with `IOBase.from_uri` or reads the
+`IOBase` it is handed, frames each line under its `rowheader`, hands the read
+the window as its `where` -- the decode cuts every line and the record
+surface answers the clause over the rows they become, so nothing is filtered
+after the read -- applies `Message.into_field()` at the storage boundary, and
+writes one schema-bearing reader directly to Iceberg. The window is
+`[start, end)` as `rekep.times.window_of` answers it -- given neither bound,
+the last day up to now -- and a run over a window replaces what an earlier
+run of it landed. `currunix` is the
 instant the read settles over the line, read off the header's `mtime` capture;
 a line the header could not date takes the modification time of the object it
 was read from, the one clock the read has left for it, and `EPOCH` only where
@@ -198,8 +207,8 @@ The same rule covers a contract change: `logs.messages` lost `sourceurl`
 and `rownum` for `crosscode` and `seqnum`, which renumbers every Iceberg field
 id, so it is recreated rather than evolved in place.
 
-The two FIX stages one codec exposes are two tasks over two tables, in this
-order and no other:
+The two FIX stages one codec exposes are two functions over two tables, in
+this order and no other:
 
 ```text
 parse -> fix.raw, lifecycle -> fix.refined
@@ -215,7 +224,7 @@ and `refrecdunix` alike.
 `parse_fix_refined` reads the previous
 hour and the run's window from `fix.raw`, including undated epoch rows, in
 `currunix, seqnum, curruuid` order. The previous hour is context only: it lands
-the job window plus still-undated rows and excludes future expiry events. This
+the run's window plus still-undated rows and excludes future expiry events. This
 bounded history does not claim arbitrary old-chain completeness. It reads each
 row back as the message that wrote it, walks the chains, and lands the walked
 rows. The walk reads the fixed row alone. A `fix.refined` row differs from the
@@ -266,8 +275,10 @@ defaults to zero (off), and a positive value emits owned lifecycle snapshots
 on that nanosecond grid. A capture order is pinned only where a door resolves one by
 position, which is the line door. A version is not among the pins -- what a message was
 read at is what its own `beginstring` said. Native construction validates
-every keyword; both FIX tasks expose `codec_options`, where `null` delegates
-native defaults and an object is forwarded unchanged. Useful pins include
+every keyword `fix_codec` forwards. `parse_fix_raw`, `parse_fix_refined` and
+`parse_books` take the `codec` a caller pinned, `fix_codec()` when None, and
+it is one codec for all three, because each stage after the parse reads a row
+back as the message the same dictionary wrote. Useful pins include
 `batch_row_size`, `include_msgtypes`, `exclude_msgtypes`, `threads`,
 `official_time_delay_ms`, and `snapshot_ns`. The doors are named for
 their stage: `fix_parse_*` and `fix_lifecycle_*`, a line door and a batch door each.
@@ -286,11 +297,14 @@ identity; invalid admitted messages remain errors. Books start with no depth
 before `start`; this is a window-local fold, not checkpoint reconstruction.
 Filter generated book times to the same strict window, including expirations.
 
-`parse_orders`, `parse_quotes` and `parse_executions` run in parallel after
-books commit, all against the same pinned book snapshot. Arrow kernels flatten
-bid/ask deltas by `operationkind` or the root execution list. Never flatten
-`live` into event history, derive child identities, decompose AE trades again,
-or perform a Python loop over rows. Preserve each child's own facts.
+`parse_events` runs once per kind -- `orders`, `quotes`, `executions` -- after
+books commit, every kind against the one book snapshot `parse_books` answered
+in `Landed.snapshot_id`, and projects only the book columns its kind flattens
+(`FLATTENED`); the kinds are independent and may run in parallel. Arrow
+kernels flatten bid/ask deltas by `operationkind` or the root execution list.
+Never flatten `live` into event history, derive child identities, decompose AE
+trades again, or perform a Python loop over rows. Preserve each child's own
+facts.
 
 `book_field()` derives from the native empty book reader's schema;
 `market_event_field()` derives from its execution child. Their Iceberg
@@ -299,40 +313,33 @@ extensions to storage, uint64 to signed bit views. The four reviewed contract
 snapshots are Message, FixMsg, Book and MarketEvent; the latter serves all
 three event tables.
 
-Market tasks atomically replace exactly their strict window using bounded
-staging and one Iceberg snapshot commit. An empty rerun removes old rows in
-the window; a failure leaves the prior snapshot visible; rows outside it are
+The market stages atomically replace exactly their strict window using bounded
+staging and one Iceberg snapshot commit. An empty rerun removes old rows in the
+window; a failure leaves the prior snapshot visible; rows outside it are
 preserved. Partition-scoped keyed merge and whole-hour replacement do not
 implement this contract for partial-hour windows.
 
-`build_dbt` runs the dbt project under `data/dbt`. dbt owns the SQL a product
-is written in and nothing else: `rekep.dbt` is the one seam, a source is one
-`IcebergDataset` read and a model is one commit through the same dataset, and
-the DuckDB database is `:memory:` because Iceberg holds the state. A model's
-`config()` block is its Iceberg declaration -- table, key, partition, sort
-order and the storage types SQL cannot spell -- so no second Field, catalog or
-warehouse is declared anywhere under `data/dbt`. A product reads `fix.refined`
-and never `fix.raw`, because a product needs the chain and `fix.raw` carries
-none; a market fact is FIX's own field, and the staging model restates the
-products' reading of it off those fields.
+dbt builds the project under `data/dbt` with its own CLI, from the repository
+root: `dbt build --project-dir data/dbt --profiles-dir data/dbt`, with
+`REKEP_DBT_CATALOG` naming the catalog as the JSON `IcebergCatalog.from_dict`
+reads. dbt owns the SQL a product is written in and nothing else: `rekep.dbt`
+is the one seam, a source is one `IcebergDataset` read and a model is one
+commit through the same dataset, and the DuckDB database is `:memory:` because
+Iceberg holds the state. A model's `config()` block is its Iceberg declaration
+-- table, key, partition, sort order and the storage types SQL cannot spell --
+so no second Field, catalog or warehouse is declared anywhere under `data/dbt`.
+A product reads `fix.refined` and never `fix.raw`, because a product needs the
+chain and `fix.raw` carries none; a market fact is FIX's own field, and the
+staging model restates the products' reading of it off those fields. A caller
+running `dbtRunner` in its own process closes the catalogs the plugin opened
+with `rekep.dbt.released()`.
 
-Airflow's `RekepOperator` (`airflow/rekep_operator.py`) launches
-`rekep tasks <name> run` through the locked `uv` `runner` group, with the
-defaults of the checkout it runs. With `REKEP_EKS_CONFIG` naming a document of
-`EksPodOperator` keywords, `airflow/dispatch.py` makes every node an
-`EksRekepOperator` instead, which runs the same command in a pod of the
-`Dockerfile` image and reads its result back from the XCom sidecar. Both share
-`RekepTask`: one parameter resolution, one result validation. `rekep_ingestion` is the seven streaming
-stages, daily, each run over its data interval unless the run's conf names
-`start` or `end`. The three event stages share the book writer's committed
-snapshot. `rekep_products` remains the optional `build_dbt` DAG, scheduled on
-the `fix.refined` Asset.
-
-Every task result and its closing INFO record use `rekep.logs.Stage` and agree
-on `task`, `read`, `written`, `skipped`, `sources`, `targets`, `window`, and
-`elapsed_ms`. The runner configures the records -- INFO unless `--log-level`
-says otherwise -- and a task module configures them only through a
-`log_level` parameter it declares.
+Every stage answers `Landed`: `read` source rows its window selected,
+`written` target rows, `skipped` answered rows the target's key folded into a
+written one, and `snapshot_id` the `market.books` snapshot `parse_books`
+committed or `parse_events` read. Records go to the `rekep.*` loggers --
+INFO for each completed operation, DEBUG for scans and files -- and the caller
+configures `logging`; nothing here configures it.
 
 ## Tests and benchmarks
 
@@ -349,16 +356,18 @@ says otherwise -- and a task module configures them only through a
 python/src/rekep/
   fields/       native Field metadata helpers
   iceberg/      catalog, dataset, schema bridge, and PyIceberg FileIO
-  tasks/        the bundled tasks: a module and the JSON of its defaults each
   text/         the text Message declaration
+  pipeline.py   the stages: one function per table the graph writes, and Landed
+  deploy.py     the tables the graph writes, created ahead of a first run
   fix.py        the bundled registry and the two FIX stages over two tables
+  market.py     the book fold and the event flattening over its snapshot
   times.py      instant readings, the run window and the ULBridge row header
   resources.py  Yggdryl binding and required byte reads
   dbt.py        the dbt-duckdb plugin: a source is a read, a model is a commit
-airflow/        the DAGs, where their nodes run (dispatch.py), and the two operators
-Dockerfile      the task image an EKS pod runs
-.claude/skills/rekep/SKILL.md  how an agent runs, deploys and extends all of it
+.claude/skills/rekep/SKILL.md  how an agent uses, tests and extends the library
+data/capture/   the ULBridge capture every documented count reads
 data/dbt/       the dbt project: models, schemas, macros and its one profile
+tools/          fix_registry_dump.py, which regenerates docs/assets/fix-*.json
 schemas/rekep/message.json
 schemas/rekep/fixmsg.json
 schemas/rekep/book.json

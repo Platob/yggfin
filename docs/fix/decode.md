@@ -5,9 +5,10 @@ adapters only produce ordered key/value pairs; one builder performs registry
 resolution, code translation, typing, group construction, arrival recording,
 derived stamps, and schema projection.
 
-Parsing is the first of two stages over that one codec, two tasks over two
-tables -- parse into `fix.raw`, lifecycle into `fix.refined` -- and each
-stage has two doors that answer the same messages from the same bytes:
+Parsing is the first of two stages over that one codec, each landing one
+table -- [`parse_fix_raw`](../pipeline/parse-fix-raw.md) into `fix.raw`,
+[`parse_fix_refined`](../pipeline/parse-fix-refined.md) into `fix.refined` --
+and each stage has two doors that answer the same messages from the same bytes:
 `fix_parse_lines` and `fix_lifecycle_messages` read messages one at a time,
 `fix_parse_arrow_reader` and `fix_lifecycle_arrow_reader` read a stored table
 in batches.
@@ -272,7 +273,7 @@ available CPU count and zero means one.
 Prefix stripping belongs to `TextOptions.lstrip`, which accepts a list of
 anchored regular expressions such as `[r"^\s*-->\s*"]`; it changes the
 retained `body`, and with it the line's code and identity. It is not a codec
-option and the FIX tasks do not enable it. Native FIX already locates frames
+option and neither FIX stage enables it. Native FIX already locates frames
 after whitespace or `-->`; preserving header captures behind any earlier
 prefix requires a supplied `rowheader` pattern that includes that prefix.
 

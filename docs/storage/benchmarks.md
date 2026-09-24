@@ -2,9 +2,8 @@
 
 Reference host, fastest of two warmed runs. Not portable service-level
 guarantees: they include local PyIceberg transaction work and fresh Python
-startup. The fresh-process and end-to-end figures were taken while each task
-ran as a notebook application, whose startup they include; they have not been
-measured again under `rekep tasks <name> run`.
+startup. The fresh-process and end-to-end figures were taken while each stage
+ran as a notebook application, whose startup they include.
 
 ## Message parsing
 
@@ -42,7 +41,7 @@ record reader bypasses, so a remote source stays streamed directly.
 ## Message to Iceberg
 
 Three 100,000-row gzip objects in consecutive UTC hours, each parsed by a fresh
-task process into one local table: 300,000 rows, three hourly data files, three
+process into one local table: 300,000 rows, three hourly data files, three
 snapshots.
 
 | interval | stage rows/s | fresh-process wall rows/s |
@@ -81,9 +80,9 @@ chains, spread evenly over ten hourly partitions.
 Each later refined job read its previous hour plus its own and published only
 its own 22,000 rows. Final counts were 220,000 in `logs.messages`, `fix.raw`,
 `fix.refined` and `orders.events`, and 110,000 in both `orders.current` and
-`executions.fills`; all 25 dbt checks passed. `stage` is the task's reported
-work time. `job` includes running the task, and `full command` also includes
-interpreter and CLI startup.
+`executions.fills`; all 25 dbt checks passed. `stage` is the stage's reported
+work time. `job` includes running the stage, and `full command` also includes
+interpreter and launcher startup.
 
 A streaming audit checked all 220,000 refined rows rather than a sample: every
 UUIDv7 was unique and its timestamp matched `currunix` to the millisecond,
@@ -100,7 +99,7 @@ the pipeline is not globally memory-bounded.
 
 A wall-time profile found no Python per-row allocation loop: fixed-row
 widening and native lifecycle construction each accounted for about 2.6 s,
-task imports about 2.1 s, table existence/loading about 1.5 s, and the
+module imports about 2.1 s, table existence/loading about 1.5 s, and the
 overwrite commit about 1.2 s. These cumulative timers overlap and are not an
 additive breakdown.
 

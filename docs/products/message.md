@@ -87,7 +87,7 @@ for every such line, so a capture is replayed from where it was read, never
 from a copy. The epoch dates a line only where the handle has no clock at
 all, an in-memory buffer.
 
-## Read with the same parser as the task
+## Read with the same parser as `parse_messages`
 
 ```python
 from rekep import IOBase, Message
@@ -116,7 +116,8 @@ table.
 - Directories and object-store prefixes are traversed recursively in natural
   path order; one leaf is open at a time.
 - gzip and zstd are decompressed while streaming. Concatenated gzip members
-  remain subject to the decoder support documented on the task page.
+  remain subject to the decoder support documented on
+  [`parse_messages`](../pipeline/parse-messages.md#streaming-behavior).
 - `currhashcode` arrives with the read, which states it over every line:
   nothing here computes it, during field application or in a Python row loop.
 - The run's window is pushed into the read as

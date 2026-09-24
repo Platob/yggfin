@@ -1,39 +1,52 @@
 # parse_messages
 
-`parse_messages` recursively reads a local or object-store text source and
-publishes one row per line the window covers to `logs.messages`.
+`parse_messages(source, catalog, window, *, rowheader=None, target=MESSAGES)`
+recursively reads a local or object-store text source and lands one row per
+line the window covers in `logs.messages`.
 
-## Parameters
+```python
+import tempfile
+from pathlib import Path
 
-`python/src/rekep/tasks/parse_messages.py` runs the task, and
-`parse_messages.json` beside it holds its defaults, which
-`rekep tasks parse_messages show` prints under any override:
+from rekep.iceberg import IcebergCatalog
+from rekep.pipeline import Landed, parse_messages
+from rekep.times import window_of
 
-```json
-{
-  "filesystem": "file:data/capture",
-  "rowheader": null,
-  "start": null,
-  "end": null,
-  "catalog": {
-    "name": "rekep",
-    "properties": {
-      "type": "sql",
-      "uri": "sqlite:///data/catalog.db",
-      "warehouse": "data/warehouse"
+root = Path(tempfile.mkdtemp())
+catalog = IcebergCatalog.from_dict(
+    {
+        "name": "rekep",
+        "properties": {
+            "type": "sql",
+            "uri": f"sqlite:///{root}/catalog.db",
+            "warehouse": str(root / "warehouse"),
+        },
     }
-  }
-}
+)
+day = window_of("2026-08-14", "2026-08-14")
+try:
+    assert parse_messages("file:data/capture", catalog, day) == Landed(read=144, written=144)
+    # A replay lands the same rows over the ones it landed: one per line.
+    assert parse_messages("file:data/capture", catalog, day) == Landed(read=144, written=144)
+    # A window the capture falls outside reads none of it.
+    outside = window_of("2026-08-15", "2026-08-15")
+    assert parse_messages("file:data/capture", catalog, outside).read == 0
+    assert catalog.dataset("logs.messages").read_arrow_table().num_rows == 144
+
+    try:
+        parse_messages("file:data/elsewhere", catalog, day)
+    except FileNotFoundError:
+        pass
+    else:
+        raise AssertionError("a capture that does not exist is refused")
+finally:
+    catalog.close()
 ```
 
-| parameter | required | meaning |
-| --- | :---: | --- |
-| `filesystem` | yes | one file, directory, or object-store prefix |
-| `rowheader` | no | the row header to frame each line with; `null` is the bridge's own |
-| `start` | no | the window's inclusive start; `null` is one day before `end` |
-| `end` | no | the window's exclusive end; `null` is the instant the run starts, and a whole day such as `2026-08-14` is the end of that day |
-| `catalog.name` | yes | catalog instance name |
-| `catalog.properties` | yes | PyIceberg catalog and FileIO settings |
+`source` is an `IOBase`, or a URI bound here and closed after. One that does
+not exist is refused: the native read of an absent path answers no rows, which
+would read as a window without lines. `rowheader` names the header of a bridge
+that writes the same facts in [a layout of its own](#a-bridge-that-writes-the-header-its-own-way).
 
 ## Source URI forms
 
@@ -102,9 +115,9 @@ four captures are FixMsg columns a line fills: `msgsessionid` (65032),
 field because the capture is named what the field is named. `crosscode` and
 `seqnum` stand on both shapes and mean the row they sit on: the object a line
 was read from and its row number here, a message's chain identifier and its
-step in the chain on a FIX row. `parse_fix_raw` reads the `body`, emits only
-native FixMsg columns, and records the line's `curruuid` in `srcuuids`; it
-carries no column of the line beside the FIX row.
+step in the chain on a FIX row. [`parse_fix_raw`](parse-fix-raw.md) reads the
+`body`, emits only native FixMsg columns, and records the line's `curruuid` in
+`srcuuids`; it carries no column of the line beside the FIX row.
 
 ## A bridge that writes the header its own way
 
@@ -167,9 +180,11 @@ except ValueError as refusal:
 ```
 
 `Message.captures()` is the set it is checked against, stated by the contract
-rather than beside it.
+rather than beside it. `parse_messages(..., rowheader=widened)` lands the
+lines under such a header, and the same check refuses it there before
+anything is read.
 
-See the [complete 12-column schema](../../products/message.md#complete-schema).
+See the [complete 12-column schema](../products/message.md#complete-schema).
 
 ## Streaming behavior
 
@@ -189,21 +204,20 @@ for a streaming decoder fix.
 
 ## The window
 
-The window is pushed into the read: the task sets `options.filter` to
+The window is pushed into the read: the stage sets `options.filter` to
 `where_within("currunix", window)`, a native `Filter` spelling
 `currunix >= '<start>' and currunix < '<end>'` and nothing else. The decode
 still cuts every line and the record surface answers the clause over the rows
 the lines become, so the read answers only the lines whose `currunix` -- the
 event the read settled over the line, and the column the table is laid out by
--- falls in `[start, end)`. Nothing is filtered after the read, and the
-result's `read` is the lines the window covers; a window the capture falls
-outside reads 0. A line the header did not match is dated by the
-modification time of the object it was read from, so the window of that
-instant covers it and no other does; a line at the epoch -- one read from a
-handle with no clock at all -- is in the window that covers 1970 alone.
-The window is the last day, ending at the instant the run starts, when the
-parameters name neither bound; `start` and `end` read the way every instant
-here does, and `end` naming a whole day means the end of that day.
+-- falls in `[start, end)`. Nothing is filtered after the read, and `read` is
+the lines the window covers; a window the capture falls outside reads 0. A
+line the header did not match is dated by the modification time of the object
+it was read from, so the window of that instant covers it and no other does;
+a line at the epoch -- one read from a handle with no clock at all -- is in
+the window that covers 1970 alone. `window_of` given neither bound is the last
+day, ending at the instant it is read; `start` and `end` read the way every
+instant here does, and `end` naming a whole day means the end of that day.
 
 ```python
 from rekep.times import window_of
@@ -215,12 +229,9 @@ assert (lower.isoformat(), upper.isoformat()) == (
 )
 ```
 
-Under Airflow the operator hands each run its data interval as `start` and
-`end`; a bound the run's own conf names wins over the interval.
-
 ## Write step
 
-The task opens `logs.messages` with `Message.into_field()` and replaces the
+The stage opens `logs.messages` with `Message.into_field()` and replaces the
 reader's rows on `curruuid`, the source-line identity: a stored row
 carrying one of the window's keys is taken out and the window's row lands, in
 one commit per bounded chunk. A missing table is created. If no existing file
@@ -232,50 +243,12 @@ answer 144 distinct codes and 144 identities and land as 144 rows -- distinct
 without a composite key. The same bytes read from two URIs answer two codes
 and two identities.
 
-## Sample rows
-
-The sample is 27 capture lines from `data/capture/ulbridge.log` that the
-FIX walk later joins under business chain `00026877711XOEA0`, as
-`parse_messages` lands them in `logs.messages`. An
-identity is shown by its last eight hex digits behind a leading `…`, and the
-stored value is sixteen bytes. `currhashcode` is shown whole, and a table
-stores it as the signed integer Iceberg has, so half the codes read back
-negative.
-
---8<-- "docs/pipeline/tasks/samples/parse-messages.md"
-
-The generated include is authoritative for row membership and values. This
-stage knows only capture headers and bytes; the business chain is established
-later by [`parse_fix_refined`](parse-fix-refined.md#sample-rows).
-
-`tools/pipeline_samples.py` regenerates the file from a run over the fixture,
-and the integration suite checks it with `--check`.
-
-## Run
-
-```bash
-uv run --project python rekep tasks parse_messages run \
-  --parameter 'filesystem="file:/srv/captures/2026-08-14"' \
-  --parameter 'start="2026-08-14"' --parameter 'end="2026-08-14"'
-```
-
-Without `start` and `end` the run covers the last day, which is what a
-scheduled run over a live capture wants and what a dated capture is outside.
-
-For S3:
-
-```bash
-uv run --project python rekep tasks parse_messages run \
-  --parameters-file /run/rekep/catalog.json \
-  --parameter 'filesystem="s3://market-capture/ulbridge/2026/08/14?region=eu-west-1"'
-```
-
 ## Failures
 
-A missing source, unreadable object, invalid URI, malformed catalog, a bound
-that names no instant, an empty window, or a failed commit fails the task. A
-line the header does not match is data: every capture is null, its whole
-text is its body, and its `currunix` is the modification time of the object
-it was read from -- a file's mtime, an S3 object's `LastModified`. Its
-identity derives from that instant, so replay such a line from where the
-capture was read, never from a copy written at another time.
+A missing source, unreadable object, invalid URI, a header that renames or
+omits a capture, or a failed commit raises. A line the header does not match
+is data: every capture is null, its whole text is its body, and its
+`currunix` is the modification time of the object it was read from -- a
+file's mtime, an S3 object's `LastModified`. Its identity derives from that
+instant, so replay such a line from where the capture was read, never from a
+copy written at another time.

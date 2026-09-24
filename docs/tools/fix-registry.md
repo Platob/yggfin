@@ -6,7 +6,7 @@ The FIX pages embed three widgets -- the
 [encoder](../fix/encode.md#build-a-message) -- which read a projection of the
 bundled dictionary, because a browser cannot open an `IOBase` folder.
 `tools/fix_registry_dump.py` writes that projection. It reads the registry and
-creates no tables, edits no definitions, and runs no pipeline task.
+creates no tables, edits no definitions, and runs no pipeline stage.
 
 ## Regenerate the published assets
 

@@ -54,33 +54,58 @@ groups and unknown fields, without claiming original wire order.
 
 ## Verify a snapshot
 
-```bash
-uv run --project python rekep fields load --target schemas/rekep/message.json
-uv run --project python rekep fields load --target schemas/rekep/fixmsg.json
-uv run --project python rekep fields load --target schemas/rekep/book.json
-uv run --project python rekep fields load --target schemas/rekep/marketevent.json
+A snapshot is read back with `iceberg_contract_field`, under the name its file
+spells -- a contract names no struct, because the catalog owns a table's name
+-- and must build, declare its table, and match what the runtime constructor
+records today:
+
+```python
+from pathlib import Path
+
+from rekep import Message
+from rekep.fix import fix_message_field
+from rekep.iceberg import iceberg_contract, iceberg_contract_field, partition_keys, primary_keys
+from rekep.market import book_field, market_event_field
+
+CONTRACTS = {
+    "message": (Message.into_field, 12),
+    "fixmsg": (fix_message_field, 128),
+    "book": (book_field, 53),
+    "marketevent": (market_event_field, 50),
+}
+for stem, (factory, columns) in CONTRACTS.items():
+    document = Path(f"schemas/rekep/{stem}.json").read_text(encoding="utf-8")
+    field = iceberg_contract_field(document, stem)
+    assert len(field.into_arrow_schema().names) == columns
+    assert primary_keys(field) == ["curruuid"]
+    assert partition_keys(field) == {"currunix": "hour"}
+    assert document == f"{iceberg_contract(factory())}\n", f"{stem}.json has drifted"
 ```
 
 ## Regenerate
 
-```bash
-uv run --project python rekep fields dump \
-  --pyclass rekep.text:Message \
-  --target schemas/rekep/message.json
+From the repository root, after a change to a runtime constructor:
 
-uv run --project python rekep fields dump \
-  --pyclass rekep.fix:fix_message_field \
-  --target schemas/rekep/fixmsg.json
+```python
+from pathlib import Path
 
-uv run --project python rekep fields dump \
-  --pyclass rekep.market:book_field \
-  --target schemas/rekep/book.json
+from rekep import Message
+from rekep.fix import fix_message_field
+from rekep.iceberg import iceberg_contract
+from rekep.market import book_field, market_event_field
 
-uv run --project python rekep fields dump \
-  --pyclass rekep.market:market_event_field \
-  --target schemas/rekep/marketevent.json
+FACTORIES = {
+    "message": Message.into_field,
+    "fixmsg": fix_message_field,
+    "book": book_field,
+    "marketevent": market_event_field,
+}
+for stem, factory in FACTORIES.items():
+    Path(f"schemas/rekep/{stem}.json").write_text(
+        f"{iceberg_contract(factory())}\n", encoding="utf-8", newline="\n"
+    )
 ```
 
-The dump asks the runtime constructors for their fields and then records the
-Iceberg contract. The files are reviewed generated output, not alternate
-implementations.
+The runtime constructors answer their fields and `iceberg_contract` records
+the Iceberg contract. The files are reviewed generated output, not alternate
+implementations; `python/tests/test_schemas.py` fails on any drift.

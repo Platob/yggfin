@@ -71,7 +71,7 @@ fields describe identity but do not enforce uniqueness, so calling blind
 ### Atomic predicate replacement
 
 Pass a SQL or PyIceberg `row_filter` to replace exactly its matching rows in
-one atomic snapshot. The four market tasks use this mode with strict
+one atomic snapshot. `parse_books` and `parse_events` use this mode with strict
 `start <= currunix < end`, without an epoch or null exception:
 
 ```python
@@ -195,7 +195,7 @@ fixes.append_arrow_reader(reader, fix_field)
 ```
 
 Pass the current Field explicitly when its reader may be newer than the stored
-table. This mode is enabled by `parse_fix_raw` and `parse_fix_refined`; the
+table. Every pipeline stage but `parse_messages` enables this mode; the
 `Message` contract remains fixed. It is additive only: existing types,
 nullability, comments, field IDs, identifier fields, partition specs, and sort
 orders do not change. Iceberg assigns IDs to additions. A column added to an
@@ -214,7 +214,7 @@ MarketEvent derives from its execution child. Their reviewed
 `merge_schema=True` cannot retire or rename columns or translate native
 identities. An obsolete schema or identity contract requires rebuilding
 affected source tables and dependent products under the pinned release;
-see [deployment](../pipeline/operations/deploy.md). Exact market-window
+see [migrating a warehouse](catalogs.md#migrating-a-warehouse-written-under-an-earlier-yggdryl). Exact market-window
 replacement removes stale rows inside its predicate but does not repair an
 incompatible table schema.
 
@@ -285,21 +285,19 @@ Configure warehouse S3 behavior with standard catalog properties:
 
 ```json
 {
-  "catalog": {
-    "name": "production",
-    "properties": {
-      "type": "glue",
-      "warehouse": "s3://warehouse-bucket/rekep",
-      "glue.region": "eu-west-1",
-      "s3.region": "eu-west-1",
-      "s3.endpoint": "https://s3.example.net"
-    }
+  "name": "production",
+  "properties": {
+    "type": "glue",
+    "warehouse": "s3://warehouse-bucket/rekep",
+    "glue.region": "eu-west-1",
+    "s3.region": "eu-west-1",
+    "s3.endpoint": "https://s3.example.net"
   }
 }
 ```
 
 Credentials belong in the provider chain or secret-backed `s3.*` properties,
-never in a committed parameters file.
+never in a catalog mapping committed beside the code.
 
 AWS S3 Tables is the one type rekep resolves itself, because a table bucket is
 served by an Iceberg REST catalog AWS hosts -- at two endpoints, which the
@@ -313,12 +311,10 @@ served by an Iceberg REST catalog AWS hosts -- at two endpoints, which the
 
 ```json
 {
-  "catalog": {
-    "name": "production",
-    "properties": {
-      "type": "s3tables",
-      "warehouse": "arn:aws:s3tables:eu-west-1:123456789012:bucket/market-tables"
-    }
+  "name": "production",
+  "properties": {
+    "type": "s3tables",
+    "warehouse": "arn:aws:s3tables:eu-west-1:123456789012:bucket/market-tables"
   }
 }
 ```
@@ -344,7 +340,7 @@ kept exactly as stated.
 looking at and why a drop there purges. The extra is `rekep[s3tables]`:
 pyiceberg signs those REST calls through boto3. Which door to take, and what
 Lake Formation asks for behind the Glue one, is in
-[AWS S3 Tables](../pipeline/operations/deploy.md#aws-s3-tables).
+[AWS S3 Tables](catalogs.md#aws-s3-tables).
 
 The worker's environment is the third way to state a table bucket's endpoint,
 and a default for every S3 Tables catalog the worker runs rather than a
@@ -377,7 +373,7 @@ nothing, is keyed only by `curruuid`, and is laid out by the hour of
 `currunix` alone. A `logs.messages` written under yggdryl 0.1.9 or earlier
 holds other identities under other field ids and is not evolved into this
 shape: the table is dropped, recreated from `Message.into_field()` by
-`rekep tasks parse_messages deploy`, and its captures replayed -- together with both FIX
+`deploy(catalog, tables=["logs.messages"])`, and its captures replayed -- together with both FIX
 tables and dependent market or optional SQL products, whose provenance and keys join to it. rekep
 carries no legacy name, timestamp-type, digest-name, or partition-layout
 compatibility path.
@@ -402,25 +398,59 @@ Under an S3 Tables table bucket it removes nothing: the service writes and
 deletes those files as it compacts, and the bucket behind a table is not one
 the account lists, so no listing here can settle a file's ownership. The sweep
 reports `deleted: 0` and records which bucket keeps its files.
-The bundled maintenance task exposes the same controls, and
-`rekep tasks optimize_iceberg show` prints its defaults:
 
-```bash
-rekep tasks optimize_iceberg run
-rekep tasks optimize_iceberg run --parameter namespace=fix --parameter remove_orphans=false
+A catalog-wide pass is `optimize` over `IcebergCatalog.datasets`, which yields
+one dataset per table of a namespace, or of every namespace recursively when
+it names none:
+
+```python
+import datetime
+import tempfile
+from pathlib import Path
+
+from rekep.iceberg import IcebergCatalog
+from rekep.pipeline import parse_messages
+from rekep.times import window_of
+
+root = Path(tempfile.mkdtemp())
+catalog = IcebergCatalog.from_dict(
+    {
+        "name": "rekep",
+        "properties": {
+            "type": "sql",
+            "uri": f"sqlite:///{root}/catalog.db",
+            "warehouse": str(root / "warehouse"),
+        },
+    }
+)
+try:
+    parse_messages("file:data/capture", catalog, window_of("2026-08-14", "2026-08-14"))
+    reports = {
+        dataset.identifier: dataset.optimize(
+            branch="root",
+            retain=24,
+            older_than=datetime.timedelta(days=7),
+            orphan_age=datetime.timedelta(days=3),
+            remove_orphans=catalog.table_bucket is None,
+        )
+        for dataset in catalog.datasets()
+    }
+    assert set(reports) == {"logs.messages"}
+    assert set(reports["logs.messages"]) >= {"rewritten", "expired", "deleted", "bytes"}
+finally:
+    catalog.close()
 ```
 
-| parameter | meaning |
+| keyword | meaning |
 | --- | --- |
-| `namespace` | `null` visits every namespace recursively |
-| `min_files` | compaction threshold |
-| `retain`, `snapshot_age_days` | how much time travel is preserved |
-| `orphan_age_days` | protects files from active or recently failed writers |
+| `min_files` | compaction threshold, 2 by default |
+| `retain`, `older_than` | how much time travel is preserved: the last `retain` snapshots and every one newer than `older_than` survive, beside every ref's own |
+| `orphan_age` | protects files from active or recently failed writers, three days by default |
 | `remove_orphans`, `metadata` | enable the orphan sweep, and include the metadata directory in it |
 | `branch` | `root`, `main` and `master` all select the Iceberg root branch |
-| `log_level` | `DEBUG` for file and plan details |
 
-Each table reports under its full identifier -- `logs.messages`,
-`fix.refined` -- so equal table names in different namespaces cannot collide.
+`retain=0` keeps no snapshot but the refs' own heads. Each report is keyed by
+the table's full identifier -- `logs.messages`, `fix.refined` -- so equal table
+names in different namespaces cannot collide.
 
 Run long transaction checks explicitly with `pytest -m integration`.

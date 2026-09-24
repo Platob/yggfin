@@ -20,10 +20,10 @@ flowchart LR
 | [`logs.messages`](message.md) | physical source line | `curruuid` | Message |
 | [`fix.raw`](fixmsg.md) | parsed event | `curruuid` | FixMsg |
 | [`fix.refined`](fixmsg.md) | lifecycle event | `curruuid` | FixMsg |
-| [`market.books`](../pipeline/tasks/parse-books.md) | symbol and effective book instant | `curruuid` | Book |
-| [`market.orders`](../pipeline/tasks/parse-orders.md) | order mutation in book deltas | `curruuid` | MarketEvent |
-| [`market.quotes`](../pipeline/tasks/parse-quotes.md) | quote mutation in book deltas | `curruuid` | MarketEvent |
-| [`market.executions`](../pipeline/tasks/parse-executions.md) | execution leaf | `curruuid` | MarketEvent |
+| [`market.books`](../pipeline/parse-books.md) | symbol and effective book instant | `curruuid` | Book |
+| [`market.orders`](../pipeline/parse-events.md#orders-and-quotes) | order mutation in book deltas | `curruuid` | MarketEvent |
+| [`market.quotes`](../pipeline/parse-events.md#orders-and-quotes) | quote mutation in book deltas | `curruuid` | MarketEvent |
+| [`market.executions`](../pipeline/parse-events.md#executions) | execution leaf | `curruuid` | MarketEvent |
 
 All are partitioned by the hour of `currunix`. The four [portable contracts](../contracts/index.md)
 record their native-derived Iceberg declarations. Price and quantity remain
@@ -42,7 +42,7 @@ it survive. Native `curruuid` stays the event key even when a rerun changes
 which events belong in the window.
 
 Only `logs.messages` keeps `body`. FIX provenance follows `srcuuids` back to
-those lines. The [optional dbt build](../pipeline/tasks/build-dbt.md) retains
+those lines. The [optional dbt build](../pipeline/dbt.md) retains
 its existing model-owned contracts for `orders.events`, `orders.current` and
 `executions.fills`; these are separate from the native `market.*` products.
 

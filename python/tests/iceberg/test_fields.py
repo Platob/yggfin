@@ -1,5 +1,6 @@
 """Projecting a field onto Iceberg, and reading one back."""
 
+import dataclasses
 import datetime
 import json
 from typing import Annotated
@@ -547,6 +548,29 @@ def test_a_contract_round_trip_is_a_fixed_point() -> None:
     assert primary_keys(rebuilt) == ["mic"]
 
 
+def test_an_undecorated_dataclass_is_a_contract_too() -> None:
+    """`field_of` projects a plain dataclass through the adapter a scalar takes:
+    a default of None is what makes a member optional."""
+    document = iceberg_contract(field_of(Listing))
+    rebuilt = iceberg_contract_field(document, "Listing")
+
+    assert json.loads(document)["schema"]["fields"] == [
+        {"id": 1, "name": "mic", "type": "string", "required": True},
+        {"id": 2, "name": "country", "type": "string", "required": False},
+    ]
+    assert [member.name for member in rebuilt] == ["mic", "country"]
+    assert rebuilt.field("country").nullable
+    assert iceberg_contract(rebuilt) == document
+
+
+def test_an_arrow_schema_comes_back_type_for_type() -> None:
+    shape = field_of(pyarrow.schema([("a", pyarrow.int32())]), "Shape")
+    rebuilt = iceberg_contract_field(iceberg_contract(shape), "Shape")
+
+    assert rebuilt.into_arrow_schema().equals(shape.into_arrow_schema())
+    assert iceberg_contract(rebuilt) == iceberg_contract(shape)
+
+
 def test_a_sorted_contract_comes_back_sorted() -> None:
     """The read side of `sort-order`: both published shapes are unsorted."""
     document = iceberg_contract(Venue.into_field(), sort_by=["mic"])
@@ -614,6 +638,30 @@ def test_a_document_that_is_not_a_contract_names_what_it_lacks() -> None:
         iceberg_contract_field("[]")
 
 
+def test_a_document_that_does_not_build_is_refused() -> None:
+    """Parsing is not the check -- building is: an identifier no column
+    carries and a type Iceberg has not got are each refused by name."""
+    unlaid = {
+        "partition-spec": {"spec-id": 0, "fields": []},
+        "sort-order": {"order-id": 0, "fields": []},
+    }
+    column = {"id": 1, "name": "x", "type": "string", "required": True}
+    dangling = {
+        "schema": {
+            "type": "struct",
+            "fields": [column],
+            "schema-id": 0,
+            "identifier-field-ids": [99],
+        },
+        **unlaid,
+    }
+    with pytest.raises(ValueError, match="Could not find field with id: 99"):
+        iceberg_contract_field(json.dumps(dangling))
+    unknown = {"schema": {"type": "struct", "fields": [{**column, "type": "int65"}]}, **unlaid}
+    with pytest.raises(ValueError, match="int65"):
+        iceberg_contract_field(json.dumps(unknown))
+
+
 @scalar
 class Venue(Convertible):
     """A shape with an identifier column and an hour-partitioned clock."""
@@ -623,3 +671,11 @@ class Venue(Convertible):
 
     at: Annotated[datetime.datetime, partition_key("hour")]
     """When it traded."""
+
+
+@dataclasses.dataclass
+class Listing:
+    """A venue, declared without the decorator."""
+
+    mic: str
+    country: str | None = None
