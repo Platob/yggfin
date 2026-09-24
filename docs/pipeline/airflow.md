@@ -73,14 +73,15 @@ scheduler's own directory.
 | `upstream_task_id` | no | validated parent result that pins a child's window, snapshot and source table |
 
 `task_name`, `repository`, `parameters`, `environment` and `upstream_task_id`
-are template fields.
+are template fields. `environment` is the supported way to give one task a
+credential-bearing variable without putting it in Params.
 
 `EksRekepOperator` takes the same `task_name`, `repository` (only the source of
 defaults there), `parameters`, `outlets` and `upstream_task_id`, plus
-`EksPodOperator`'s keywords: `cluster_name` and `image` are required, and
-`cmds`, `arguments` and `do_xcom_push` are the operator's own and refused.
-`environment` is the supported way to give one task a credential-bearing
-variable without putting it in Params.
+`EksPodOperator`'s keywords: `cluster_name` and `image` are required, `cmds`,
+`arguments` and `do_xcom_push` are the operator's own and refused, and the
+pod's name is `pod_name`. It takes no `environment`: a pod's variables are
+`env_vars`.
 
 Parameters merge in one order, later winning: the task's shipped defaults,
 then the operator's `parameters`, then the DAG run's Params, then the data
@@ -369,8 +370,9 @@ Set `REKEP_EKS_CONFIG` to a JSON document in the environment of the DAG
 processor and the workers, and every node becomes an `EksRekepOperator`: an
 [`EksPodOperator`](https://airflow.apache.org/docs/apache-airflow-providers-amazon/stable/operators/eks.html)
 that runs its task in a pod on an EKS cluster. The document is the operator's
-keywords -- anything `EksPodOperator` and `KubernetesPodOperator` take -- for
-every task, and under `tasks` the ones a single task replaces whole:
+keywords -- `EksPodOperator`'s and `KubernetesPodOperator`'s whose values JSON
+spells -- for every task, and under `tasks` the ones a single task replaces
+whole:
 
 ```json
 {
@@ -392,8 +394,9 @@ every task, and under `tasks` the ones a single task replaces whole:
 ```
 
 `container_resources` is spelled as the Kubernetes object's `requests` and
-`limits`; nested pod settings the operator takes no keyword for go in
-`pod_template_dict`. The DAG processor reads the document when it parses the
+`limits`. Kubernetes objects the operator takes only as objects -- `volumes`,
+`volume_mounts`, `env_from` -- go in `pod_template_dict`, a pod manifest merged
+under what the operator sets, whose task container is named `base`. The DAG processor reads the document when it parses the
 DAGs, so a change to it is a change to the DAGs, and a task name under `tasks`
 that ships no defaults fails the parse.
 
@@ -432,12 +435,53 @@ REKEP_IMAGE=rekep:dev uv run --project python pytest -q -m integration \
   python/tests/test_eks_rekep_operator.py -k image
 ```
 
-**Access.** The operator's `aws_conn_id` (or the worker's AWS environment)
-reaches the EKS API to create the pod; the pod reaches S3, Glue and S3 Tables
-as its `service_account_name`'s IAM role (IRSA), so no credential is a
-parameter. The XCom sidecar image is `alpine` from Docker Hub unless the
-`kubernetes_default` connection's extras name `xcom_sidecar_container_image`,
-which a private cluster sets to a mirror it can pull.
+**Access.** Three identities are involved:
+
+- *Airflow's*, to create and watch the pod: the operator's `aws_conn_id` (or
+  the worker's AWS environment) signs the EKS API calls. Map that principal to
+  the cluster with an EKS access entry, and grant it, in the pod's namespace,
+  `pods` create/get/list/watch/patch/delete, `pods/log` get and `pods/exec`
+  create/get -- the operator reads the result by executing in the XCom
+  sidecar, so a role that can only create pods fails every task after its
+  pod has already committed. With `deferrable=True` the triggerer watches the
+  pod, so it needs the Amazon provider and the same AWS access.
+- *The pod's*, to read captures and write the warehouse: its
+  `service_account_name`, bound to an IAM role through IRSA or EKS Pod
+  Identity. No credential is a parameter.
+- *The worker's own `rekep`*: the operator resolves parameters and validates
+  the result on the worker, so the worker needs the `airflow` group, `rekep`
+  included, though it runs no task.
+
+**Catalog.** Every task's `catalog` must be a shared one -- Glue, S3 Tables or
+a SQL service with an `s3://` warehouse -- named in the DAG's Params or the
+run's conf. The image's `data/` is not the task's to write, so a pod left on
+the shipped local SQLite default fails rather than committing into a
+filesystem it discards. A catalog property that is a credential, such as a
+SQL catalog's `uri` with its password, stays out of Params, which the pod
+receives as arguments: pyiceberg reads `PYICEBERG_CATALOG__<NAME>__<PROPERTY>`
+from the environment, so give the pod that variable from a Kubernetes Secret
+and leave the property out of `catalog`:
+
+```json
+{
+  "pod_template_dict": {
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {},
+    "spec": {"containers": [{"name": "base", "envFrom": [{"secretRef": {"name": "rekep-catalog"}}]}]}
+  }
+}
+```
+
+**The sidecar.** The XCom sidecar image is `alpine` from Docker Hub unless
+the `kubernetes_default` connection's extras name
+`xcom_sidecar_container_image`, which a private cluster sets to a mirror it
+can pull.
+
+**Building elsewhere.** The image is built for the machine building it: from
+an ARM workstation for x86 nodes, add `--platform linux/amd64`. `PYTHON_IMAGE`
+names another Python base, and behind a TLS-intercepting proxy
+`--secret id=ca-bundle,src=<ca.pem>` hands the build its CA.
 
 ## Production checklist
 

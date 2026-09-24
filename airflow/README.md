@@ -38,8 +38,9 @@ fix.refined -> build_dbt -> orders.events, orders.current, executions.fills
 
 Its schedule is the `fix.refined` Asset; it can start independently of market
 processing. An Asset trigger does not inherit the ingestion run's conf, so give
-`build_dbt` the ingestion catalog as `REKEP_DBT_CATALOG` in the worker's
-environment.
+`build_dbt` the ingestion catalog as `REKEP_DBT_CATALOG`: in the worker's
+environment, or under EKS dispatch in the pod's, as
+`tasks.build_dbt.env_vars`.
 
 `dispatch.py` builds every node and decides where it runs. With
 `REKEP_EKS_CONFIG` unset, each node is a `RekepOperator` (`rekep_operator.py`),

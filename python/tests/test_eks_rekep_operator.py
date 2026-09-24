@@ -11,6 +11,7 @@ import datetime
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -80,9 +81,15 @@ def eks(**held: Any) -> Any:
     return EksRekepOperator(**held)
 
 
+def expanded(argument: str) -> str:
+    """One container argument as Kubernetes hands it over: `$(NAME)` expanded
+    from the container's environment, which is empty here, and `$$` read as `$`."""
+    return re.sub(r"\$\$|\$\((\w+)\)", lambda found: "" if found.group(1) else "$", argument)
+
+
 def read_back(arguments: list[str]) -> dict[str, Any]:
     """The parameters the pod's own `rekep` reads its arguments as."""
-    parsed = cli._parser().parse_args(arguments)
+    parsed = cli._parser().parse_args([expanded(argument) for argument in arguments])
     assert parsed.action == "run"
     assert parsed.result_file == EKS.RESULT
     return cli._overrides(parsed)
@@ -110,8 +117,8 @@ def test_the_pod_runs_the_bundled_task_and_publishes_where_the_sidecar_reads() -
 def test_every_argument_reads_back_as_the_parameter_it_spells() -> None:
     """Each value is its JSON, so text that parses as something else stays text."""
     awkward = {
-        "filesystem": "2026",
-        "rowheader": 'a=b "quoted" \\ é',
+        "filesystem": "s3://capture/$(HOME)/$$day",
+        "rowheader": 'a=b "quoted" \\ é 2026',
         "catalog": {"name": "rekep", "properties": {"type": "glue", "glue.region": "eu-west-1"}},
     }
     eks(parameters=awkward).execute(context(**INTERVAL))
@@ -221,6 +228,45 @@ def test_a_deferred_pod_publishes_when_the_triggerer_hands_it_back() -> None:
     Pod.result = {"task": "parse_messages"}
     with pytest.raises(ValueError, match="missing"):
         deferred.trigger_reentry(context(**INTERVAL), {"status": "success"})
+
+
+def test_a_deferring_pod_already_done_publishes_from_execute(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The provider re-enters inline when the pod finished before it could
+    defer, and drops what re-entry returned: `execute` hands it back instead."""
+
+    def done_before_deferring(self: Any, context: Any) -> None:
+        self.trigger_reentry(context, {"status": "success"})
+
+    monkeypatch.setattr(EKS.EksPodOperator, "execute", done_before_deferring)
+
+    assert eks(deferrable=True).execute(context(**INTERVAL)) == RESULT
+
+
+def test_the_pod_fields_render_as_text_under_a_native_dag() -> None:
+    """Kubernetes takes strings; the task's own fields keep the DAG's native
+    rendering, so a templated parameter can still be a list."""
+    from airflow.sdk import DAG
+    from kubernetes.client import models as k8s
+
+    with DAG("native", schedule=None, render_template_as_native_obj=True):
+        built = eks(
+            env_vars={"THREADS": "8", "REKEP_DBT_CATALOG": '{"name": "rekep"}'},
+            labels={"team": "1"},
+            container_resources=k8s.V1ResourceRequirements(requests={"cpu": "2"}),
+            parameters={"rowheader": "{{ params.header }}"},
+        )
+
+    built.render_template_fields({"params": {"header": ["[", "]"]}})
+
+    assert [(env.name, env.value) for env in built.env_vars] == [
+        ("THREADS", "8"),
+        ("REKEP_DBT_CATALOG", '{"name": "rekep"}'),
+    ]
+    assert built.labels == {"team": "1"}
+    assert built.container_resources.requests == {"cpu": "2"}
+    assert built.parameters == {"rowheader": ["[", "]"]}
 
 
 @pytest.mark.parametrize("owned", ["cmds", "arguments", "do_xcom_push"])
@@ -386,44 +432,43 @@ def test_a_dispatched_dag_serializes_with_its_pods(
 #: A built task image (`docker build -t <name> .` at the repository root).
 IMAGE = os.environ.get("REKEP_IMAGE")
 
-#: The stages the bridge fixture runs through, and what each reads and writes.
+#: The ingestion stages the bridge fixture runs through, and what each reads,
+#: writes and skips.
 STAGES = (
-    ("parse_messages", {"filesystem": "file:///capture/ulbridge.log"}, (144, 144, 0)),
-    ("parse_fix_raw", {}, (144, 49, 30)),
-    ("parse_fix_refined", {}, (49, 19, 0)),
-    ("build_dbt", {}, (29, 31, 0)),
+    ("parse_messages", (144, 144, 0)),
+    ("parse_fix_raw", (144, 49, 30)),
+    ("parse_fix_refined", (49, 19, 0)),
+    ("build_dbt", (29, 31, 0)),
 )
 
 
-@pytest.mark.integration
-@pytest.mark.skipif(
-    not IMAGE or shutil.which("docker") is None, reason="REKEP_IMAGE names no built task image"
-)
-def test_the_image_runs_what_each_pod_is_handed(tmp_path: Path) -> None:
-    """Each stage's pod, but for the cluster: the image run with exactly the
-    command and arguments the operator builds, its result read back from the
-    directory the sidecar reads, and every stage sharing one catalog."""
-    capture, warehouse = tmp_path / "capture", tmp_path / "catalog"
-    for directory in (capture, warehouse):
-        directory.mkdir()
-        directory.chmod(0o777)
-    shutil.copy(ROOT / "python" / "tests" / "data" / "ulbridge.log", capture / "ulbridge.log")
-    catalog = {
-        "name": "rekep",
-        "properties": {
-            "type": "sql",
-            "uri": "sqlite:////catalog/catalog.db",
-            "warehouse": "file:///catalog/warehouse",
-        },
-    }
-    held = context(**INTERVAL)
-    for name, overrides, counts in STAGES:
-        xcom = tmp_path / f"xcom-{name}"
-        xcom.mkdir()
-        xcom.chmod(0o777)
-        pod = eks(task_id=name, parameters={**overrides, "catalog": catalog})
-        arguments = pod._arguments(pod._resolved(held))
-        subprocess.run(  # noqa: S603
+class Image:
+    """The task image run as each pod runs it, over one shared directory.
+
+    The directory is mounted at its own path, so the catalog's absolute
+    locations mean the same file inside the container and out of it; it is
+    everyone's to write, since the container runs as its own user.
+    """
+
+    def __init__(self, image: str, root: Path) -> None:
+        self.image, self.root = image, root
+        self.catalog = {
+            "name": "rekep",
+            "properties": {
+                "type": "sql",
+                "uri": f"sqlite:///{root / 'catalog.db'}",
+                "warehouse": (root / "warehouse").as_uri(),
+            },
+        }
+
+    def run(self, name: str, held: dict[str, Any], **options: Any) -> dict[str, Any]:
+        """One stage's pod: the operator's own command and arguments, as
+        Kubernetes hands them over, with its result read where the sidecar reads."""
+        xcom = self.root / f"xcom-{name}"
+        xcom.mkdir(mode=0o777)
+        pod = eks(task_id=name, **options)
+        arguments = [expanded(argument) for argument in pod._arguments(pod._resolved(held))]
+        ran = subprocess.run(  # noqa: S603
             [
                 "docker",
                 "run",
@@ -431,16 +476,87 @@ def test_the_image_runs_what_each_pod_is_handed(tmp_path: Path) -> None:
                 "--entrypoint",
                 *pod.cmds,
                 "--volume",
-                f"{capture}:/capture:ro",
-                "--volume",
-                f"{warehouse}:/catalog",
+                f"{self.root}:{self.root}",
                 "--volume",
                 f"{xcom}:{Path(EKS.RESULT).parent}",
-                IMAGE,
+                self.image,
                 *arguments,
             ],
-            check=True,
             capture_output=True,
+            text=True,
+            check=False,
         )
-        result = pod._published(held, json.loads((xcom / "return.json").read_text()))
-        assert (result["read"], result["written"], result["skipped"]) == counts, name
+        assert ran.returncode == 0, ran.stderr[-2000:]
+        return pod._published(held, json.loads((xcom / "return.json").read_text()))
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(
+    not IMAGE or shutil.which("docker") is None, reason="REKEP_IMAGE names no built task image"
+)
+def test_the_image_runs_what_each_pod_is_handed(tmp_path: Path) -> None:
+    """Every task's pod, but for the cluster: the ingestion stages over the
+    bridge fixture, the market stages over the market frames with each event
+    pod pinned to the book pod's snapshot, and maintenance over all of it."""
+    from .test_market import FRAMES
+    from .test_market_pipeline import COUNTS, refined
+    from .test_market_pipeline import WINDOW as MARKET
+
+    # Everything the pods and this process write is everyone's to write.
+    previous = os.umask(0)
+    try:
+        root = tmp_path / "pods"
+        root.mkdir(mode=0o777)
+        shutil.copy(ROOT / "python" / "tests" / "data" / "ulbridge.log", root / "ulbridge.log")
+        image = Image(str(IMAGE), root)
+        day = context(**INTERVAL)
+
+        for name, counts in STAGES:
+            overrides: dict[str, Any] = {"catalog": image.catalog}
+            if name == "parse_messages":
+                overrides["filesystem"] = (root / "ulbridge.log").as_uri()
+            result = image.run(name, day, parameters=overrides)
+            assert (result["read"], result["written"], result["skipped"]) == counts, name
+
+        refined(image, FRAMES)
+        market = context(params=MARKET, dag_run=SimpleNamespace(conf=MARKET))
+        books = image.run("parse_books", market, parameters={"catalog": image.catalog})
+        assert (books["read"], books["written"]) == (5, 4)
+        pinned = context(
+            params=MARKET,
+            dag_run=SimpleNamespace(conf=MARKET),
+            task_instance=SimpleNamespace(xcom_pull=lambda **_: books),
+        )
+        for kind, written in COUNTS.items():
+            events = image.run(
+                f"parse_{kind}",
+                pinned,
+                parameters={"catalog": image.catalog},
+                upstream_task_id="parse_books",
+            )
+            assert events["source_snapshot_id"] == books["snapshot_id"], kind
+            assert (events["read"], events["written"]) == (4, written), kind
+
+        maintained = image.run(
+            "optimize_iceberg", day, parameters={"catalog": image.catalog, "remove_orphans": False}
+        )
+        assert maintained["tables"] == 10
+    finally:
+        os.umask(previous)
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(
+    not IMAGE or shutil.which("docker") is None, reason="REKEP_IMAGE names no built task image"
+)
+def test_the_image_fails_a_pod_left_on_the_local_default_catalog(tmp_path: Path) -> None:
+    """The image's `data/` is not the task's to write: a run that names no
+    shared catalog fails rather than landing in a filesystem the pod discards."""
+    ran = subprocess.run(  # noqa: S603
+        ["docker", "run", "--rm", str(IMAGE), "tasks", "parse_messages", "deploy"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert ran.returncode == 1
+    assert "unable to open database file" in ran.stderr

@@ -388,8 +388,8 @@ uv run --project python --group airflow airflow dags trigger rekep_ingestion \
 rekep tasks <name> run --parameters-file <attempt>/parameters.json
 --result-file <attempt>/result.json` with the checkout as working directory.
 
-**On EKS** (`REKEP_EKS_CONFIG=/path/eks.json` in the scheduler's and workers'
-environment): `EksRekepOperator`, an `EksPodOperator`, runs the pod command
+**On EKS** (`REKEP_EKS_CONFIG=/path/eks.json` in the DAG processor's and the
+workers' environment): `EksRekepOperator`, an `EksPodOperator`, runs the pod command
 `rekep tasks <name> run --parameter NAME=<json> ... --result-file
 /airflow/xcom/return.json`; the XCom sidecar hands the result back. The
 document is `EksPodOperator` keywords, shared, with per-task replacements:
@@ -409,14 +409,28 @@ document is `EksPodOperator` keywords, shared, with per-task replacements:
 - Build the image from the same commit the DAGs ship from (`docker build -t
   <registry>/rekep:<commit> .` at the repo root) and push it where the cluster
   pulls from; the pod receives every parameter the checkout declares.
-- The pod's AWS access is its service account's IAM role (IRSA); the catalog
-  goes in DAG Params/conf like on the worker, never credentials.
+- The pod's AWS access is its service account's IAM role (IRSA or EKS Pod
+  Identity). Airflow's `aws_conn_id` needs an EKS access entry and, in the
+  namespace, pods create/get/list/watch/patch/delete, `pods/log` get and
+  `pods/exec` create/get (the result is read by exec into the sidecar); with
+  `deferrable=True` the triggerer needs the same. The worker still needs
+  `rekep` installed: it resolves parameters and validates results.
+- Every task's `catalog` must be shared (Glue, S3 Tables, a SQL service with
+  an `s3://` warehouse); the image's `data/` is read-only, so the local
+  default fails in a pod. Parameters reach the pod as arguments: keep a
+  credential-bearing property (a SQL `uri` with a password) out of them and
+  give the pod `PYICEBERG_CATALOG__<NAME>__<PROPERTY>` from a Secret through
+  `pod_template_dict` (container `base`, `envFrom`).
 - The sidecar image defaults to `alpine` from Docker Hub; a private cluster
   sets `xcom_sidecar_container_image` in the `kubernetes_default` connection's
   extras.
 - `rekep_products` does not inherit ingestion's conf: set its catalog with
   `REKEP_DBT_CATALOG` in the worker environment, or under
   `tasks.build_dbt.env_vars` on EKS.
+- Objects the operator takes only as Kubernetes objects (`volumes`,
+  `volume_mounts`, `env_from`) go in `pod_template_dict`; `cmds`,
+  `arguments` and `do_xcom_push` are the operator's own; name a pod with
+  `pod_name`.
 
 Worker setup, the dispatch document and the image: `docs/pipeline/airflow.md`,
 `airflow/README.md`.

@@ -59,6 +59,25 @@ class EksRekepOperator(RekepTask, EksPodOperator):
         self.repository = repository
         self.parameters = dict(parameters or {})
         self.upstream_task_id = upstream_task_id
+        #: What `trigger_reentry` published when it ran inside `execute`.
+        self.reentered: dict[str, Any] | None = None
+
+    def render_template_fields(self, context: Context, jinja_env: Any = None) -> None:
+        """Render the task's fields as the DAG does, and the pod's as text.
+
+        Kubernetes takes strings, and a DAG rendering native objects would
+        read an environment variable of `8`, or one holding a JSON document,
+        as a number or a mapping.
+        """
+        jinja_env = jinja_env or self.get_template_env()
+        self._do_render_template_fields(self, RekepTask.TEMPLATE_FIELDS, context, jinja_env, set())
+        pod = [name for name in self.template_fields if name not in RekepTask.TEMPLATE_FIELDS]
+        # The operator's own switch outranks the DAG's, for this pass alone.
+        native, self.render_template_as_native_obj = self.render_template_as_native_obj, False
+        try:
+            self._do_render_template_fields(self, pod, context, jinja_env, set())
+        finally:
+            self.render_template_as_native_obj = native
 
     def execute(self, context: Context) -> dict[str, Any] | None:
         """Run the task in its pod and return the result it published."""
@@ -66,16 +85,26 @@ class EksRekepOperator(RekepTask, EksPodOperator):
         # is never read as a template.
         self.arguments = self._arguments(self._resolved(context))
         result = super().execute(context)
-        # A deferred run publishes from `trigger_reentry` instead.
-        return result if self.deferrable else self._published(context, result)
+        if not self.deferrable:
+            return self._published(context, result)
+        # A deferring pod publishes from `trigger_reentry` once it is done;
+        # one already done when it would defer was published there already.
+        return self.reentered
 
     def trigger_reentry(self, context: Context, event: dict[str, Any]) -> dict[str, Any]:
         """Publish the result of a pod the triggerer watched to completion."""
-        return self._published(context, super().trigger_reentry(context, event))
+        self.reentered = self._published(context, super().trigger_reentry(context, event))
+        return self.reentered
 
     def _arguments(self, parameters: dict[str, Any]) -> list[str]:
-        """`rekep tasks <name> run`, every parameter spelled as the JSON it is."""
+        """`rekep tasks <name> run`, every parameter spelled as the JSON it is.
+
+        Kubernetes expands `$(NAME)` in a container's arguments and reads `$$`
+        as `$`, so every `$` is doubled and the container reads the value as
+        it was resolved.
+        """
         arguments = ["tasks", self.task_name, "run"]
         for name, value in parameters.items():
-            arguments += ["--parameter", f"{name}={json.dumps(value, ensure_ascii=False)}"]
+            spelled = json.dumps(value, ensure_ascii=False).replace("$", "$$")
+            arguments += ["--parameter", f"{name}={spelled}"]
         return [*arguments, "--result-file", RESULT]

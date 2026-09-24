@@ -2,6 +2,7 @@
 
 import dataclasses
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -640,3 +641,53 @@ def test_a_task_declaring_its_level_takes_the_command_line_one(
     assert run(*options, "tasks", "optimize_iceberg", "run", *parameters) == 0
     capsys.readouterr()
     assert seen == [level]
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="SIGTERM is a POSIX signal")
+def test_sigterm_ends_a_run_as_an_exit_and_closes_what_it_opened(tmp_path: Path) -> None:
+    """A pod's container runs `rekep` as its first process, which the kernel
+    does not stop for a signal it has no handler for."""
+    import signal
+    import subprocess
+    import time
+
+    started, closed = tmp_path / "started", tmp_path / "closed"
+    script = f"""
+import time
+from rekep import cli
+from rekep.tasks import Task
+
+def run(**_):
+    try:
+        open({str(started)!r}, "w").close()
+        time.sleep(60)
+    finally:
+        open({str(closed)!r}, "w").close()
+
+Task("parse_messages").module.run = run
+raise SystemExit(cli.main(["tasks", "parse_messages", "run"]))
+"""
+    child = subprocess.Popen(  # noqa: S603
+        [sys.executable, "-c", script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
+    deadline = time.monotonic() + 30
+    while not started.exists() and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert started.exists(), "the run never started"
+    began = time.monotonic()
+    child.send_signal(signal.SIGTERM)
+
+    assert child.wait(timeout=20) == 128 + signal.SIGTERM
+    assert time.monotonic() - began < 10
+    assert closed.exists(), "the run unwound rather than being killed"
+
+
+def test_a_command_leaves_the_callers_sigterm_handler_as_it_found_it(
+    capsys: pytest.CaptureFixture,
+) -> None:
+    import signal
+
+    before = signal.getsignal(signal.SIGTERM)
+    assert run("tasks", "list") == 0
+    capsys.readouterr()
+    assert signal.getsignal(signal.SIGTERM) is before

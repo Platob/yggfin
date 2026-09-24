@@ -9,10 +9,12 @@ import inspect
 import json
 import os
 import pathlib
+import signal
 import sys
+import threading
 import traceback
 import urllib.parse
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from typing import Any
 
 from rekep import __version__
@@ -62,18 +64,42 @@ def main(argv: list[str] | None = None) -> int:
     parser = _parser()
     arguments = parser.parse_args(argv)
     configure(arguments.log_level or COMMAND_LEVEL)
+    with _terminable():
+        try:
+            return arguments.run(arguments)
+        except (
+            AttributeError,
+            ImportError,
+            KeyError,
+            OSError,
+            TypeError,
+            ValueError,
+        ) as error:
+            CONSOLE.fail(f"{type(error).__name__}: {error}")
+            return 1
+
+
+@contextlib.contextmanager
+def _terminable() -> Iterator[None]:
+    """SIGTERM ends the command as an exit, so what it opened is closed.
+
+    A pod's container runs the command as its first process, which a signal
+    it installs no handler for does not stop: deleting the pod would wait out
+    its grace period and kill it. Scoped to the command, so a caller of `main`
+    keeps its own handler.
+    """
+    if threading.current_thread() is not threading.main_thread():
+        yield
+        return
+    previous = signal.signal(signal.SIGTERM, _terminated)
     try:
-        return arguments.run(arguments)
-    except (
-        AttributeError,
-        ImportError,
-        KeyError,
-        OSError,
-        TypeError,
-        ValueError,
-    ) as error:
-        CONSOLE.fail(f"{type(error).__name__}: {error}")
-        return 1
+        yield
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+
+
+def _terminated(signum: int, frame: Any) -> None:
+    raise SystemExit(128 + signum)
 
 
 def dump(arguments: argparse.Namespace) -> int:

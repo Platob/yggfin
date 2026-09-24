@@ -26,7 +26,9 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_DOWNLOADS=never \
     UV_PROJECT_ENVIRONMENT=/opt/rekep/.venv
 WORKDIR /opt/rekep
-# The locked dependencies alone first, so a change to the source reuses them.
+# The locked dependencies alone, then the package as a wheel beside them: the
+# environment changes only with the lock, and a change to the source rebuilds
+# one small layer rather than the whole environment.
 COPY python/pyproject.toml python/uv.lock python/
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=secret,id=ca-bundle \
@@ -36,17 +38,19 @@ COPY python/src python/src
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=secret,id=ca-bundle \
     if [ -f /run/secrets/ca-bundle ]; then export SSL_CERT_FILE=/run/secrets/ca-bundle; fi; \
-    uv sync --project python --locked --no-default-groups --group runner --no-editable
+    uv build --project python --wheel --out-dir /opt/rekep/dist
 
 FROM ${PYTHON_IMAGE}
-# A task runs as this user and never as root. `data/` is its own, so the
-# relative defaults -- dbt's staging and log under `data/dbt`, the local
-# catalog -- resolve somewhere it can write.
-RUN useradd --uid 10001 --create-home rekep \
-    && mkdir -p /opt/rekep/data \
-    && chown rekep /opt/rekep/data
+# A task runs as this user and never as root. `data/dbt` is its own, for dbt's
+# staging and log; `data/` itself is not, so a run left on the local default
+# catalog fails in a pod rather than landing in a filesystem the pod discards.
+# `data/` is made here, as root: a `COPY --chown` would give it to the user.
+RUN useradd --uid 10001 --create-home rekep && mkdir -p /opt/rekep/data
 WORKDIR /opt/rekep
 COPY --from=build /opt/rekep/.venv .venv
+RUN --mount=from=uv,source=/uv,target=/usr/local/bin/uv \
+    --mount=from=build,source=/opt/rekep/dist,target=/tmp/dist \
+    uv pip install --python .venv/bin/python --no-deps --no-cache --compile-bytecode /tmp/dist/*.whl
 COPY --chown=rekep data/dbt data/dbt
 ENV PATH=/opt/rekep/.venv/bin:$PATH
 USER 10001
