@@ -595,3 +595,48 @@ def test_a_run_records_at_info_unless_the_command_line_says_otherwise(
 
     err = capsys.readouterr().err
     assert ("INFO rekep.logs parse_messages finished" in err) is recorded
+
+
+@pytest.mark.parametrize("command", [("show",), ("deploy", "--dry-run")], ids=["show", "deploy"])
+def test_a_command_that_runs_nothing_records_at_warning(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture, command: tuple[str, ...]
+) -> None:
+    """Only a run is read afterwards at INFO; a person at a terminal reads the
+    console, so every other command keeps the package's records to WARNING."""
+    import logging
+
+    assert run("tasks", "build_dbt", *command) == 0
+    capsys.readouterr()
+
+    assert logging.getLogger("rekep").level == logging.WARNING
+
+
+@pytest.mark.parametrize(
+    ("options", "parameters", "level"),
+    [
+        ((), (), "INFO"),
+        (("--log-level", "ERROR"), (), "ERROR"),
+        (("--log-level", "ERROR"), ("--parameter", "log_level=DEBUG"), "DEBUG"),
+    ],
+    ids=["shipped", "command-line", "parameter"],
+)
+def test_a_task_declaring_its_level_takes_the_command_line_one(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture,
+    options: tuple[str, ...],
+    parameters: tuple[str, ...],
+    level: str,
+) -> None:
+    """An explicit `--log-level` beats the shipped `log_level`; the parameter,
+    named itself, beats both."""
+    seen: list[str] = []
+
+    def stand_in(**taken: Any) -> dict[str, Any]:
+        seen.append(taken["log_level"])
+        return Stage("optimize_iceberg").finished(read=0, written=0)
+
+    monkeypatch.setattr(Task("optimize_iceberg").module, "run", stand_in)
+
+    assert run(*options, "tasks", "optimize_iceberg", "run", *parameters) == 0
+    capsys.readouterr()
+    assert seen == [level]

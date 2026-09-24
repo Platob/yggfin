@@ -362,20 +362,19 @@ Two things differ, and both because the service owns the files:
   its files with a 400, so `drop_table` purges on a table bucket whether or
   not it was asked to.
 
-## Table properties and branches
+## Table properties
 
 ```bash
 uv run --project python rekep tasks parse_fix_raw deploy \
   --parameters-file /run/rekep/aws.json \
   --table-property write.format.default=parquet \
-  --table-property write.parquet.compression-codec=zstd \
-  --branch production
+  --table-property write.parquet.compression-codec=zstd
 ```
 
-`--table-property` is repeatable, and `--branch` names the branch the table
-is created on. Properties are applied only when a table is created: deployment
-deliberately does not mutate an existing table; use maintenance or a reviewed
-migration for that.
+`--table-property` is repeatable. Properties are applied only when a table is
+created: deployment deliberately does not mutate an existing table; use
+maintenance or a reviewed migration for that. A table is created on `main`,
+the branch every task commits to.
 
 A newly deployed FIX table has exactly the 128 native FixMsg columns, and a
 newly deployed `logs.messages` the 12 columns of the `Message` contract. A

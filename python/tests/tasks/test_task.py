@@ -304,11 +304,23 @@ def test_a_malformed_result_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
         Task("parse_messages").run()
 
 
-def test_a_result_naming_another_task_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
-    replaced(monkeypatch, task="parse_fix_raw")
+@pytest.mark.parametrize("named", ["parse_fix_raw", "parse_messages_replay"])
+def test_a_result_naming_another_task_is_refused(
+    monkeypatch: pytest.MonkeyPatch, named: str
+) -> None:
+    """A result names exactly the task that returned it, not a variant of it."""
+    replaced(monkeypatch, task=named)
 
-    with pytest.raises(ValueError, match="returned 'parse_fix_raw', not a parse_messages run"):
+    with pytest.raises(ValueError, match=f"returned '{named}', not a parse_messages run"):
         Task("parse_messages").run()
+
+
+@pytest.mark.parametrize("flag", ["remove_orphans", "metadata"])
+@pytest.mark.parametrize("spelled", ["False", "false", 0, None])
+def test_maintenance_refuses_a_flag_that_is_not_a_boolean(flag: str, spelled: Any) -> None:
+    """`--parameter remove_orphans=False` is the text "False", which is true."""
+    with pytest.raises(TypeError, match=f"{flag} must be true or false"):
+        Task("optimize_iceberg").run({flag: spelled})
 
 
 @pytest.mark.parametrize("name", ["build_dbt", "optimize_iceberg"])

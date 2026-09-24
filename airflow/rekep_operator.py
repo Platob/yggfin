@@ -1,4 +1,9 @@
-"""The one Airflow operator this repository's bundled tasks run under."""
+"""The Airflow operator a bundled task runs under on the worker, and what every one shares.
+
+`RekepTask` is what an operator running a bundled task resolves and publishes,
+wherever the task runs: `RekepOperator` runs it in a child on the worker, and
+`eks_rekep_operator.EksRekepOperator` in a pod on an EKS cluster.
+"""
 
 from __future__ import annotations
 
@@ -40,88 +45,52 @@ INTERVAL = (("start", "data_interval_start"), ("end", "data_interval_end"))
 UNSAFE = re.compile(r"[^A-Za-z0-9._-]+")
 
 
-class RekepOperator(BaseOperator):
-    """Run one bundled task as `rekep tasks <name> run` in an isolated child.
+class RekepTask:
+    """The parameters a run of one bundled task takes, and the result it publishes.
 
-    Airflow supplies what only a scheduler knows -- declared Params and the data
-    interval -- and gets back the one small result mapping the task returned.
+    Mixed into an operator ahead of the Airflow class it runs through. The
+    operator sets `task_name`, `repository`, `parameters` and
+    `upstream_task_id`; `repository` is the checkout the DAG ships from, whose
+    `python/src/rekep/tasks/<name>.json` are the defaults the DAG's Params are
+    read from too.
     """
 
-    template_fields: ClassVar[tuple[str, ...]] = (
+    #: What every such operator templates, besides its own Airflow class's.
+    TEMPLATE_FIELDS: ClassVar[tuple[str, ...]] = (
         "task_name",
         "repository",
         "parameters",
-        "environment",
         "upstream_task_id",
     )
-    template_fields_renderers: ClassVar[dict[str, str]] = {
-        "parameters": "json",
-        "environment": "json",
-    }
 
-    def __init__(
-        self,
-        *,
-        task_name: str,
-        repository: str,
-        parameters: dict[str, Any] | None = None,
-        environment: dict[str, str] | None = None,
-        cache_dir: str | None = None,
-        upstream_task_id: str | None = None,
-        outlets: list[Asset] | None = None,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(outlets=outlets or [], **kwargs)
-        self.task_name = task_name
-        self.repository = repository
-        self.parameters = dict(parameters or {})
-        self.environment = dict(environment or {})
-        self.cache_dir = cache_dir
-        self.upstream_task_id = upstream_task_id
-        #: The running child, for `on_kill`. Never a constructor argument and
-        #: never a template field, so nothing live reaches the serialized DAG.
-        self.hook: SubprocessHook | None = None
+    task_name: str
+    repository: str
+    parameters: dict[str, Any]
+    upstream_task_id: str | None
+    outlets: Any
 
-    # -- running ------------------------------------------------------------
-
-    def execute(self, context: Context) -> dict[str, Any]:
-        """Run the task and return the result it published."""
-        from rekep.logs import Stage
-
-        repository = self._rooted()
-        parameters = self._merged(self._defaults(repository), context)
+    def _resolved(self, context: Context) -> dict[str, Any]:
+        """Every parameter the run takes: defaults, overrides, interval, then the pin."""
+        parameters = self._merged(self._defaults(self._checkout()), context)
         if self.upstream_task_id is not None:
             parameters = self._pinned(parameters, context)
-        attempt = Path(tempfile.mkdtemp(prefix=f"{self._attempt(context)}-"))
-        try:
-            written = attempt / "parameters.json"
-            published = attempt / "result.json"
-            _secured(written, json.dumps(parameters, ensure_ascii=False))
-            self.hook = SubprocessHook()
-            outcome = self.hook.run_command(
-                self._argv(repository, self.task_name, written, published),
-                env=self._environment(),
-                cwd=str(repository),
-            )
-            if outcome.exit_code != 0:
-                raise AirflowException(f"{self.task_name} exited with {outcome.exit_code}")
-            if not published.is_file():
-                raise AirflowException(f"{self.task_name} published no result")
-            result = Stage.validated(json.loads(published.read_text(encoding="utf-8")))
-            self._recorded(context, result)
-            return result
-        finally:
-            # The parameter document may hold a credential, so it goes whether
-            # the task landed or raised.
-            shutil.rmtree(attempt, ignore_errors=True)
-            self.hook = None
+        return parameters
 
-    def on_kill(self) -> None:
-        """Stop the child process group running the task."""
-        if self.hook is not None:
-            self.hook.send_sigterm()
+    def _published(self, context: Context, result: Any) -> dict[str, Any]:
+        """The run's result, validated before it reaches XCom and the outlets."""
+        from rekep.logs import Stage
 
-    # -- what the child is handed -------------------------------------------
+        validated = Stage.validated(result)
+        self._recorded(context, validated)
+        return validated
+
+    # -- what every run is handed -------------------------------------------
+
+    def _checkout(self) -> Path:
+        """The absolute checkout the defaults are read from."""
+        if not self.repository:
+            raise AirflowException("a task's defaults are a checkout's; name its repository")
+        return Path(self.repository).resolve()
 
     def _defaults(self, repository: Path) -> dict[str, Any]:
         """The defaults the checkout ships for `task_name`, refused before a process starts.
@@ -202,6 +171,96 @@ class RekepOperator(BaseOperator):
             "snapshot_id": snapshot,
         }
 
+    def _recorded(self, context: Context, result: dict[str, Any]) -> None:
+        """Attach this run's counts to every outlet the task says it wrote."""
+        events = context.get("outlet_events")
+        if events is None:
+            return
+        written = set(result["targets"].values())
+        for asset in self.outlets:
+            if getattr(asset, "name", None) in written:
+                events[asset].extra.update(
+                    {
+                        "task": result["task"],
+                        "read": result["read"],
+                        "written": result["written"],
+                        "skipped": result["skipped"],
+                    }
+                )
+
+
+class RekepOperator(RekepTask, BaseOperator):
+    """Run one bundled task as `rekep tasks <name> run` in an isolated child.
+
+    Airflow supplies what only a scheduler knows -- declared Params and the data
+    interval -- and gets back the one small result mapping the task returned.
+    The child runs in the checkout's locked environment, from its root.
+    """
+
+    template_fields: ClassVar[tuple[str, ...]] = (*RekepTask.TEMPLATE_FIELDS, "environment")
+    template_fields_renderers: ClassVar[dict[str, str]] = {
+        "parameters": "json",
+        "environment": "json",
+    }
+
+    def __init__(
+        self,
+        *,
+        task_name: str,
+        repository: str,
+        parameters: dict[str, Any] | None = None,
+        environment: dict[str, str] | None = None,
+        cache_dir: str | None = None,
+        upstream_task_id: str | None = None,
+        outlets: list[Asset] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(outlets=outlets or [], **kwargs)
+        self.task_name = task_name
+        self.repository = repository
+        self.parameters = dict(parameters or {})
+        self.environment = dict(environment or {})
+        self.cache_dir = cache_dir
+        self.upstream_task_id = upstream_task_id
+        #: The running child, for `on_kill`. Never a constructor argument and
+        #: never a template field, so nothing live reaches the serialized DAG.
+        self.hook: SubprocessHook | None = None
+
+    # -- running ------------------------------------------------------------
+
+    def execute(self, context: Context) -> dict[str, Any]:
+        """Run the task and return the result it published."""
+        repository = self._rooted()
+        parameters = self._resolved(context)
+        attempt = Path(tempfile.mkdtemp(prefix=f"{self._attempt(context)}-"))
+        try:
+            written = attempt / "parameters.json"
+            published = attempt / "result.json"
+            _secured(written, json.dumps(parameters, ensure_ascii=False))
+            self.hook = SubprocessHook()
+            outcome = self.hook.run_command(
+                self._argv(repository, self.task_name, written, published),
+                env=self._environment(),
+                cwd=str(repository),
+            )
+            if outcome.exit_code != 0:
+                raise AirflowException(f"{self.task_name} exited with {outcome.exit_code}")
+            if not published.is_file():
+                raise AirflowException(f"{self.task_name} published no result")
+            return self._published(context, json.loads(published.read_text(encoding="utf-8")))
+        finally:
+            # The parameter document may hold a credential, so it goes whether
+            # the task landed or raised.
+            shutil.rmtree(attempt, ignore_errors=True)
+            self.hook = None
+
+    def on_kill(self) -> None:
+        """Stop the child process group running the task."""
+        if self.hook is not None:
+            self.hook.send_sigterm()
+
+    # -- what the child is handed -------------------------------------------
+
     def _argv(self, repository: Path, name: str, parameters: Path, result: Path) -> list[str]:
         """The locked offline task command, as a list: nothing reaches a shell."""
         return [
@@ -238,9 +297,7 @@ class RekepOperator(BaseOperator):
 
     def _rooted(self) -> Path:
         """The absolute checkout root holding `python/pyproject.toml`."""
-        if not self.repository:
-            raise AirflowException("a task runs out of a checkout; name its repository")
-        repository = Path(self.repository).resolve()
+        repository = self._checkout()
         if not (repository / "python" / "pyproject.toml").is_file():
             raise AirflowException(f"{repository} is not a rekep checkout")
         return repository
@@ -256,25 +313,6 @@ class RekepOperator(BaseOperator):
             str(getattr(instance, "try_number", 0)),
         )
         return UNSAFE.sub("_", "-".join(parts))[:120]
-
-    # -- what it publishes --------------------------------------------------
-
-    def _recorded(self, context: Context, result: dict[str, Any]) -> None:
-        """Attach this run's counts to every outlet the task says it wrote."""
-        events = context.get("outlet_events")
-        if events is None:
-            return
-        written = set(result["targets"].values())
-        for asset in self.outlets:
-            if getattr(asset, "name", None) in written:
-                events[asset].extra.update(
-                    {
-                        "task": result["task"],
-                        "read": result["read"],
-                        "written": result["written"],
-                        "skipped": result["skipped"],
-                    }
-                )
 
 
 def _secured(path: Path, payload: str) -> None:

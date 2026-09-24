@@ -1,0 +1,54 @@
+# syntax=docker/dockerfile:1
+#
+# The image a pod runs one bundled task in: `rekep` on the PATH with the
+# locked `runner` group (dbt, the Glue and S3 Tables catalogs), and the dbt
+# project `build_dbt` builds, at the working directory its defaults name.
+#
+# Build it from the commit the DAGs ship from. `EksRekepOperator` hands the pod
+# every parameter that checkout declares, so the image's tasks must take them:
+#
+#   docker build -t rekep:$(git rev-parse --short HEAD) .
+#
+# Behind a TLS-intercepting proxy, hand its CA bundle in as a build secret;
+# nothing of it stays in the image:
+#
+#   docker build --secret id=ca-bundle,src=/path/to/ca.pem -t rekep .
+
+ARG PYTHON_IMAGE=public.ecr.aws/docker/library/python:3.13-slim-bookworm
+ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.8.17
+
+FROM ${UV_IMAGE} AS uv
+
+FROM ${PYTHON_IMAGE} AS build
+COPY --from=uv /uv /usr/local/bin/uv
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_PROJECT_ENVIRONMENT=/opt/rekep/.venv
+WORKDIR /opt/rekep
+# The locked dependencies alone first, so a change to the source reuses them.
+COPY python/pyproject.toml python/uv.lock python/
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=secret,id=ca-bundle \
+    if [ -f /run/secrets/ca-bundle ]; then export SSL_CERT_FILE=/run/secrets/ca-bundle; fi; \
+    uv sync --project python --locked --no-default-groups --group runner --no-install-project
+COPY python/src python/src
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=secret,id=ca-bundle \
+    if [ -f /run/secrets/ca-bundle ]; then export SSL_CERT_FILE=/run/secrets/ca-bundle; fi; \
+    uv sync --project python --locked --no-default-groups --group runner --no-editable
+
+FROM ${PYTHON_IMAGE}
+# A task runs as this user and never as root. `data/` is its own, so the
+# relative defaults -- dbt's staging and log under `data/dbt`, the local
+# catalog -- resolve somewhere it can write.
+RUN useradd --uid 10001 --create-home rekep \
+    && mkdir -p /opt/rekep/data \
+    && chown rekep /opt/rekep/data
+WORKDIR /opt/rekep
+COPY --from=build /opt/rekep/.venv .venv
+COPY --chown=rekep data/dbt data/dbt
+ENV PATH=/opt/rekep/.venv/bin:$PATH
+USER 10001
+ENTRYPOINT ["rekep"]
+CMD ["tasks", "list"]

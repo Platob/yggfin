@@ -164,7 +164,13 @@ def test_the_scheduling_dependencies_are_installed_wherever_they_can_be() -> Non
     if sys.platform == "win32":  # pragma: no cover - Airflow is POSIX-only
         pytest.skip("Airflow does not run on Windows")
 
-    for name in ("airflow", "airflow.providers.standard.hooks.subprocess", "dbt.cli.main"):
+    for name in (
+        "airflow",
+        "airflow.providers.standard.hooks.subprocess",
+        "airflow.providers.amazon.aws.operators.eks",
+        "airflow.providers.cncf.kubernetes.operators.pod",
+        "dbt.cli.main",
+    ):
         assert importlib.util.find_spec(name) is not None, (
             f"{name} is missing: the operator and DAG tests would silently skip. "
             "Sync the default groups (dev, runner, airflow)."

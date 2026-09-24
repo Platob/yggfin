@@ -12,7 +12,7 @@ from pathlib import Path
 import yaml
 
 from rekep import Field, Message
-from rekep.cli import _parser
+from rekep.cli import _overrides, _parser, _settings
 from rekep.tasks import Task
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -26,6 +26,7 @@ LOOP = re.compile(r"^\s*for (\w+) in ([^;]+); do\s*$")
 #: Every page a reader copies a command from.
 PAGES = [
     ROOT / "README.md",
+    ROOT / ".claude" / "skills" / "rekep" / "SKILL.md",
     ROOT / "airflow" / "README.md",
     ROOT / "config" / "README.md",
     ROOT / "data" / "README.md",
@@ -263,7 +264,12 @@ def test_documented_commands_parse() -> None:
             continue
         if getattr(arguments, "command", None) != "tasks" or arguments.task == "list":
             continue
-        declared = Task(arguments.task).parameters
-        for spelled in arguments.parameter or ():
-            name = spelled.partition("=")[0]
-            assert name in declared, f"{where} sets {name}, which the task does not take"
+        # What `main` does after parsing, but for reading a parameters file,
+        # which a page names without shipping: every `--parameter` is a pair
+        # the task declares, and every `--table-property` a pair.
+        arguments.parameters_file = None
+        try:
+            Task(arguments.task).resolved(_overrides(arguments))
+            _settings(getattr(arguments, "table_property", None))
+        except (TypeError, ValueError) as refused:
+            raise AssertionError(f"{where}: {refused}") from refused

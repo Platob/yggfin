@@ -5,9 +5,10 @@ human-readable lifecycle records go to stderr; one machine-readable result goes
 to stdout and, under `--result-file`, an atomic result file.
 
 The records are written at INFO: one per completed operation. The global
-option turns them, and `DEBUG` adds the scans, projections and files under
-each one; `build_dbt` and `optimize_iceberg` take a `log_level` parameter
-instead:
+`--log-level` option sets another level, and `DEBUG` adds the scans,
+projections and files under each operation. `build_dbt` and
+`optimize_iceberg` configure their records from a `log_level` parameter, which
+`--log-level` sets unless the parameter is given itself:
 
 ```bash
 uv run --project python rekep --log-level DEBUG tasks parse_fix_raw run
@@ -35,9 +36,13 @@ lines. `parse_fix_refined` reports derived events and those outside the output
 window beside its source-row count. `parse_books` publishes its committed
 `snapshot_id`; downstream market tasks report `source_snapshot_id`, the exact source snapshot used.
 This ID, rather than a fresh head lookup, is the fan-out handoff. Zero means
-the source had no committed head. `build_dbt` returns `models`, `tests` and
-`rows`, because its unit of work is a dbt node: `read` and `skipped` count
-nodes there, and `written` and `rows` count the rows its models committed.
+the source had no committed head. `build_dbt` returns `models`, `tests`,
+`warned` and `rows`, because its unit of work is a dbt node: `read` and
+`skipped` count nodes there, `warned` names the tests that only warned, and
+`written` and `rows` count the rows its models committed. `optimize_iceberg`
+returns `tables`, `expired`, `deleted`, `byte_size` and one report per table
+under `reports`: `read` counts the tables it visited and `written` the parts
+it compacted.
 
 The closing INFO record and returned JSON agree on every field. A result is
 small enough for Airflow XCom because it contains no rows or schemas.

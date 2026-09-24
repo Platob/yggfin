@@ -318,7 +318,11 @@ products' reading of it off those fields.
 
 Airflow's `RekepOperator` (`airflow/rekep_operator.py`) launches
 `rekep tasks <name> run` through the locked `uv` `runner` group, with the
-defaults of the checkout it runs. `rekep_ingestion` is the seven streaming
+defaults of the checkout it runs. With `REKEP_EKS_CONFIG` naming a document of
+`EksPodOperator` keywords, `airflow/dispatch.py` makes every node an
+`EksRekepOperator` instead, which runs the same command in a pod of the
+`Dockerfile` image and reads its result back from the XCom sidecar. Both share
+`RekepTask`: one parameter resolution, one result validation. `rekep_ingestion` is the seven streaming
 stages, daily, each run over its data interval unless the run's conf names
 `start` or `end`. The three event stages share the book writer's committed
 snapshot. `rekep_products` remains the optional `build_dbt` DAG, scheduled on
@@ -351,7 +355,8 @@ python/src/rekep/
   times.py      instant readings, the run window and the ULBridge row header
   resources.py  Yggdryl binding and required byte reads
   dbt.py        the dbt-duckdb plugin: a source is a read, a model is a commit
-airflow/        the DAGs and the operator that runs a bundled task
+airflow/        the DAGs, where their nodes run (dispatch.py), and the two operators
+Dockerfile      the task image an EKS pod runs
 .claude/skills/rekep/SKILL.md  how an agent runs, deploys and extends all of it
 data/dbt/       the dbt project: models, schemas, macros and its one profile
 schemas/rekep/message.json

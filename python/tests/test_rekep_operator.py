@@ -47,6 +47,7 @@ def _module(name: str) -> ModuleType:
 
 OPERATOR = _module("rekep_operator")
 RekepOperator = OPERATOR.RekepOperator
+DISPATCH = _module("dispatch")
 PIPELINE = _module("pipeline")
 PRODUCTS = _module("products")
 
@@ -208,9 +209,9 @@ def test_the_dags_read_the_defaults_the_package_ships() -> None:
     `Task.parameters` answers, so parsing a DAG never imports `rekep`."""
     from rekep.tasks import Task
 
-    for name in PIPELINE.ingestion.task_dict:
-        assert PIPELINE._defaults(name) == Task(name).parameters
-    assert PRODUCTS.DEFAULTS == Task("build_dbt").parameters
+    for name in (*PIPELINE.ingestion.task_dict, *PRODUCTS.products.task_dict):
+        assert DISPATCH.defaults(name) == Task(name).parameters
+    assert PRODUCTS.products.params.dump() == Task("build_dbt").parameters
     parsed = subprocess.run(  # noqa: S603
         [
             sys.executable,
@@ -358,7 +359,16 @@ def test_the_defaults_are_the_checkout_the_child_runs(kept: Held, tmp_path: Path
     assert parameters["added"] == 2
 
 
-@pytest.mark.parametrize("name", ["../parse_messages", "parse_messages.json", "Parse_Messages"])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "../parse_messages",
+        "parse_messages.json",
+        "Parse_Messages",
+        # A path to a file that is there: only the name's own shape refuses it.
+        "../tasks/parse_messages",
+    ],
+)
 def test_a_task_name_that_is_not_a_module_name_is_refused(name: str) -> None:
     from airflow.sdk.exceptions import AirflowException
 

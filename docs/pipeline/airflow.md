@@ -38,8 +38,12 @@ start independently of native book processing.
 
 ## How a task runs
 
-Each node is `RekepOperator`. It runs the task through the `rekep` CLI, from
-the same checkout and locked environment:
+`airflow/dispatch.py` builds every node. By default each is `RekepOperator`,
+which runs the task on the worker; with `REKEP_EKS_CONFIG` set each is
+`EksRekepOperator`, which runs it in a pod ([Dispatch on EKS](#dispatch-on-eks)).
+Both resolve parameters and validate the result the same way.
+`RekepOperator` runs the task through the `rekep` CLI, from the same checkout
+and locked environment:
 
 ```text
 uv run --project <repo>/python --group runner --no-sync --offline \
@@ -70,6 +74,11 @@ scheduler's own directory.
 
 `task_name`, `repository`, `parameters`, `environment` and `upstream_task_id`
 are template fields.
+
+`EksRekepOperator` takes the same `task_name`, `repository` (only the source of
+defaults there), `parameters`, `outlets` and `upstream_task_id`, plus
+`EksPodOperator`'s keywords: `cluster_name` and `image` are required, and
+`cmds`, `arguments` and `do_xcom_push` are the operator's own and refused.
 `environment` is the supported way to give one task a credential-bearing
 variable without putting it in Params.
 
@@ -241,10 +250,15 @@ even if the book table head changes after the parent finishes.
 `airflow assets list` names the seven ingestion/market Assets and, when the
 optional products DAG is loaded, its three SQL product Assets. A scheduler
 can trigger `rekep_products` from the refined Asset; `dags test` does not
-simulate that separate scheduler-triggered run. Configure its catalog to match
-ingestion in the checkout's `python/src/rekep/tasks/build_dbt.json`, the
-defaults its Params are read from, since an Asset-triggered run has no
-ingestion run conf to inherit.
+simulate that separate scheduler-triggered run. An Asset-triggered run has no
+ingestion run conf to inherit, so give `build_dbt` the ingestion catalog in
+the worker's environment: its `catalog` parameter is null by default, and then
+`REKEP_DBT_CATALOG`, the same mapping as JSON, is what the build commits
+through (on EKS, set it under `tasks.build_dbt.env_vars`):
+
+```bash
+export REKEP_DBT_CATALOG='{"name":"rekep","properties":{"type":"sql","uri":"sqlite:////var/lib/rekep/catalog.db","warehouse":"/var/lib/rekep/warehouse"}}'
+```
 
 ## S3 capture with SQL catalog
 
@@ -346,8 +360,84 @@ uv run --project "$REKEP_ROOT/python" --group airflow airflow dags trigger \
 Behind the Glue endpoint the conf is
 `"warehouse":"123456789012:s3tablescatalog/market-tables"` with
 `"rest.signing-region":"eu-west-1"`, and the worker's role needs its Lake
-Formation grants. `rekep_products` takes its catalog from the `build_dbt`
-defaults in the checkout, so both DAGs name one table bucket or neither does.
+Formation grants. `rekep_products` takes its catalog from `REKEP_DBT_CATALOG`
+in the worker's environment, so set it to this same table bucket.
+
+## Dispatch on EKS
+
+Set `REKEP_EKS_CONFIG` to a JSON document in the environment of the DAG
+processor and the workers, and every node becomes an `EksRekepOperator`: an
+[`EksPodOperator`](https://airflow.apache.org/docs/apache-airflow-providers-amazon/stable/operators/eks.html)
+that runs its task in a pod on an EKS cluster. The document is the operator's
+keywords -- anything `EksPodOperator` and `KubernetesPodOperator` take -- for
+every task, and under `tasks` the ones a single task replaces whole:
+
+```json
+{
+  "cluster_name": "market-data",
+  "image": "123456789012.dkr.ecr.eu-west-1.amazonaws.com/rekep:abc1234",
+  "namespace": "rekep",
+  "service_account_name": "rekep",
+  "region": "eu-west-1",
+  "aws_conn_id": "aws_default",
+  "env_vars": {"AWS_REGION": "eu-west-1"},
+  "container_resources": {"requests": {"cpu": "2", "memory": "8Gi"}},
+  "tasks": {
+    "build_dbt": {
+      "container_resources": {"requests": {"memory": "16Gi"}},
+      "env_vars": {"AWS_REGION": "eu-west-1", "REKEP_DBT_CATALOG": "{\"name\": \"rekep\", \"properties\": {\"type\": \"glue\", \"warehouse\": \"s3://market-warehouse/rekep\"}}"}
+    }
+  }
+}
+```
+
+`container_resources` is spelled as the Kubernetes object's `requests` and
+`limits`; nested pod settings the operator takes no keyword for go in
+`pod_template_dict`. The DAG processor reads the document when it parses the
+DAGs, so a change to it is a change to the DAGs, and a task name under `tasks`
+that ships no defaults fails the parse.
+
+The worker resolves each run's parameters exactly as it does for
+`RekepOperator` -- the checkout's defaults, the operator's, the DAG's Params,
+the interval, the upstream snapshot -- and the pod's container runs
+
+```text
+rekep tasks <name> run --parameter NAME=<json> ... --result-file /airflow/xcom/return.json
+```
+
+one `--parameter` per resolved parameter, each value spelled as its JSON, so
+the pod runs exactly what the worker resolved. The pod's XCom sidecar hands
+the result back; the operator validates it and attaches its counts to the
+outlet Assets, and the three event pods read the book pod's snapshot from it.
+A pod that fails fails the task; `deferrable=True` waits for it in the
+triggerer instead of a worker slot.
+
+**The image.** `Dockerfile` at the repository root builds the image a pod
+runs: `rekep` on the PATH with the locked `runner` group, and the dbt project
+at the working directory its defaults name, as a non-root user. Build it from
+the commit the DAGs are deployed from and push it where the cluster pulls:
+
+```bash
+docker build -t 123456789012.dkr.ecr.eu-west-1.amazonaws.com/rekep:$(git rev-parse --short HEAD) .
+docker push 123456789012.dkr.ecr.eu-west-1.amazonaws.com/rekep:$(git rev-parse --short HEAD)
+```
+
+The pod is handed every parameter the checkout declares, so an image from
+another revision refuses a parameter it does not take, and the run fails
+rather than running something else. Every stage can be run in a built image
+exactly as its pod runs it:
+
+```bash
+REKEP_IMAGE=rekep:dev uv run --project python pytest -q -m integration \
+  python/tests/test_eks_rekep_operator.py -k image
+```
+
+**Access.** The operator's `aws_conn_id` (or the worker's AWS environment)
+reaches the EKS API to create the pod; the pod reaches S3, Glue and S3 Tables
+as its `service_account_name`'s IAM role (IRSA), so no credential is a
+parameter. The XCom sidecar image is `alpine` from Docker Hub unless the
+`kubernetes_default` connection's extras name `xcom_sidecar_container_image`,
+which a private cluster sets to a mirror it can pull.
 
 ## Production checklist
 
@@ -367,3 +457,5 @@ defaults in the checkout, so both DAGs name one table bucket or neither does.
    designed for concurrent commits.
 9. Set `retries` and `retry_delay`; the default is no retry, and a retried
    attempt is idempotent.
+10. On EKS, tag the image with the commit the DAGs ship from, and run one day
+    through a pod of each task before enabling the schedule.

@@ -37,6 +37,11 @@ def run(
         raise ValueError("snapshot_age_days must be non-negative or null")
     if orphan_age_days < 0:
         raise ValueError("orphan_age_days must be non-negative")
+    # A flag spelled `False` on a command line is the text "False", which is
+    # true: refused, so a sweep is never run by a spelling that meant no.
+    for name, flag in (("remove_orphans", remove_orphans), ("metadata", metadata)):
+        if type(flag) is not bool:
+            raise TypeError(f"{name} must be true or false, not {flag!r}")
     snapshot_age = None if snapshot_age_days is None else datetime.timedelta(days=snapshot_age_days)
     orphan_age = datetime.timedelta(days=orphan_age_days)
     store = IcebergCatalog.from_dict(catalog)

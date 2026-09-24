@@ -66,6 +66,23 @@ def test_the_scheduled_pipeline_step_selects_the_real_dag_run() -> None:
     assert re.search(rf"^def test_\w*{selected}\w*\(", source, re.MULTILINE), selected
 
 
+def test_the_image_job_runs_every_stage_in_the_image_it_built() -> None:
+    """The step names the image it built and a `-k` that selects a real test."""
+    job = _workflow("ci.yml")["jobs"]["image"]
+    build = next(step for step in job["steps"] if step.get("name") == "Build")
+    assert build["run"].split()[:4] == ["docker", "build", "-t", "rekep:ci"]
+    assert build["working-directory"] == ".", "the build context is the repository root"
+    pods = next(step for step in job["steps"] if step.get("name") == "Pods")
+    assert pods["env"]["REKEP_IMAGE"] == "rekep:ci"
+    command = pods["run"].split()
+    assert "-m integration" in pods["run"]
+    (path,) = [argument for argument in command if argument.endswith(".py")]
+    selected = command[command.index("-k") + 1]
+    source = (ROOT / "python" / path).read_text(encoding="utf-8")
+    assert re.search(rf"^def test_\w*{selected}\w*\(", source, re.MULTILINE), selected
+    assert (ROOT / "Dockerfile").is_file()
+
+
 def test_the_integration_workflow_runs_only_trusted_code_paths() -> None:
     workflow = _workflow("integration.yml")
     assert workflow["permissions"] == {"contents": "read"}

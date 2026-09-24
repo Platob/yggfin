@@ -37,11 +37,14 @@ fix.refined -> build_dbt -> orders.events, orders.current, executions.fills
 ```
 
 Its schedule is the `fix.refined` Asset; it can start independently of market
-processing. Configure its own catalog to match ingestion because an Asset
-trigger does not inherit the ingestion run's conf.
+processing. An Asset trigger does not inherit the ingestion run's conf, so give
+`build_dbt` the ingestion catalog as `REKEP_DBT_CATALOG` in the worker's
+environment.
 
-Each node is a `RekepOperator`. It runs `rekep tasks <task_name> run` in the
-repository's locked environment:
+`dispatch.py` builds every node and decides where it runs. With
+`REKEP_EKS_CONFIG` unset, each node is a `RekepOperator` (`rekep_operator.py`),
+which runs `rekep tasks <task_name> run` on the worker, in the repository's
+locked environment:
 
 ```text
 uv run --project <repository>/python --group runner --no-sync --offline \
@@ -74,7 +77,31 @@ The CLI publishes validated JSON atomically; the operator attaches the result
 to outlet events and XCom. Attempt files live in a private directory and are
 removed on success or failure. `on_kill` terminates the process group.
 
-Use the [Airflow guide](../docs/pipeline/airflow.md) for worker setup and
-catalog deployment. SQLite is appropriate for one-host smoke runs; production
+With `REKEP_EKS_CONFIG` naming a JSON document of `EksPodOperator` keywords,
+each node is an `EksRekepOperator` (`eks_rekep_operator.py`), which runs the
+same task in a pod on an EKS cluster, from the image the repository's
+`Dockerfile` builds:
+
+```json
+{
+  "cluster_name": "market-data",
+  "image": "123456789012.dkr.ecr.eu-west-1.amazonaws.com/rekep:abc1234",
+  "namespace": "rekep",
+  "service_account_name": "rekep",
+  "region": "eu-west-1",
+  "tasks": {"build_dbt": {"container_resources": {"requests": {"memory": "16Gi"}}}}
+}
+```
+
+Keywords at the top apply to every task; `tasks.<name>` replaces them whole
+for one. The operator resolves parameters on the worker exactly as
+`RekepOperator` does, hands the pod `rekep tasks <name> run` with each
+parameter as `--parameter NAME=<json>` and `--result-file
+/airflow/xcom/return.json`, and validates the result the XCom sidecar hands
+back. Unknown tasks, undeclared parameters and a malformed result fail as
+they do on the worker, and before any pod exists when they can.
+
+Use the [Airflow guide](../docs/pipeline/airflow.md) for worker setup,
+catalog deployment and [EKS dispatch](../docs/pipeline/airflow.md#dispatch-on-eks). SQLite is appropriate for one-host smoke runs; production
 settings belong in DAG Params or worker configuration. Optional dbt writes
 under `data/dbt` unless `DBT_TARGET_PATH` and `DBT_LOG_PATH` override it.

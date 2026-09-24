@@ -36,6 +36,24 @@ jobs:
         if: runner.os == 'Linux' && matrix.python == '3.13'
         run: uv run pytest -q -m integration tests/test_rekep_operator.py -k real_dag_run
 
+  # The image an EKS pod runs, built as a deployment builds it, then every
+  # stage run in it with exactly the command and arguments the operator hands
+  # its pod.
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Build
+        run: docker build -t rekep:ci .
+        working-directory: .
+      - name: Sync
+        run: uv sync
+      - name: Pods
+        run: uv run pytest -q -m integration tests/test_eks_rekep_operator.py -k image
+        env:
+          REKEP_IMAGE: rekep:ci
+
   docs:
     runs-on: ubuntu-latest
     steps:

@@ -187,9 +187,13 @@ def run_task(arguments: argparse.Namespace) -> int:
     overrides = _overrides(arguments)
     # A name the task does not take is a mistake in the command, said in one
     # line before anything runs rather than as a traceback out of the run.
-    task.resolved(overrides)
+    declared = task.resolved(overrides)
     # A task log is read after the fact, so a run records at INFO unless the
-    # command line said otherwise; a task declaring `log_level` sets its own.
+    # command line said otherwise. A task declaring `log_level` configures its
+    # own records, so a level the command line names reaches it as that
+    # parameter, unless the parameter itself was named.
+    if arguments.log_level and "log_level" in declared and "log_level" not in overrides:
+        overrides["log_level"] = arguments.log_level
     configure(arguments.log_level or TASK_LEVEL)
     CONSOLE.note(f"{task.name} {CONSOLE.glyph('arrow')} {', '.join(task.targets) or 'catalog'}")
     try:
@@ -217,10 +221,7 @@ def deploy_task(arguments: argparse.Namespace) -> int:
     table_properties = _settings(arguments.table_property)
     try:
         document = task.deploy(
-            overrides,
-            table_properties=table_properties,
-            branch=arguments.branch,
-            dry_run=arguments.dry_run,
+            overrides, table_properties=table_properties, dry_run=arguments.dry_run
         )
     except Exception as error:
         # A catalog that cannot be reached fails in its own driver's terms,
@@ -329,7 +330,8 @@ def _parser() -> argparse.ArgumentParser:
         choices=("DEBUG", "INFO", "WARNING", "ERROR"),
         help=(
             f"records this package writes to stderr; default {COMMAND_LEVEL}, "
-            f"and {TASK_LEVEL} for `tasks <name> run`"
+            f"and {TASK_LEVEL} for `tasks <name> run`, where it also sets a task's "
+            "own `log_level` parameter"
         ),
     )
     commands = parser.add_subparsers(
@@ -374,7 +376,6 @@ def _parser() -> argparse.ArgumentParser:
         deploying.add_argument(
             "--table-property", action="append", default=None, metavar="NAME=VALUE"
         )
-        deploying.add_argument("--branch", default=None, help="branch tables are created on")
         deploying.add_argument(
             "--dry-run", action="store_true", help="report what is missing, create nothing"
         )

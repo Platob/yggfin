@@ -79,9 +79,8 @@ class Task:
         from rekep.logs import Stage
 
         result = Stage.validated(self.module.run(**self.resolved(overrides)))
-        named = result["task"]
-        if named != self.name and not named.startswith(f"{self.name}_"):
-            raise ValueError(f"{self.name} returned {named!r}, not a {self.name} run")
+        if result["task"] != self.name:
+            raise ValueError(f"{self.name} returned {result['task']!r}, not a {self.name} run")
         return result
 
     def deploy(
@@ -89,7 +88,6 @@ class Task:
         overrides: Mapping[str, Any] | None = None,
         *,
         table_properties: Mapping[str, str] | None = None,
-        branch: str | None = None,
         dry_run: bool = False,
     ) -> dict[str, Any]:
         """Create each table this task writes that its catalog lacks.
@@ -130,7 +128,6 @@ class Task:
             done = deploy(
                 catalog,
                 table_properties=dict(table_properties or {}),
-                branch=branch,
                 tables=tables,
                 dry_run=dry_run,
                 codec=codec,

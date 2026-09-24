@@ -270,3 +270,20 @@ def test_a_registry_the_run_refuses_is_refused_before_any_table(
         assert store.tables() == []
     finally:
         store.close()
+
+
+def test_a_codec_option_the_run_refuses_is_refused_before_any_table(
+    tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    """`codec_options` reach the codec that types the table, which validates
+    every keyword before a catalog is opened."""
+    properties = catalog_properties(tmp_path)
+
+    assert (
+        deployed("parse_fix_raw", properties, "--parameter", 'codec_options={"nonsense_option": 1}')
+        == 1
+    )
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "nonsense_option" in captured.err
+    assert not (tmp_path / "warehouse.db").exists(), "the catalog was never opened"

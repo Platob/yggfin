@@ -6,8 +6,11 @@ FIX codec, and a complete FIX registry; applications and examples import only
 `rekep`.
 
 ```bash
-pip install "rekep[iceberg]"
+pip install "rekep[iceberg] @ git+https://github.com/Platob/yggfin#subdirectory=python"
 ```
+
+`rekep` is installed from this repository rather than from PyPI: from a
+checkout, `pip install "./python[iceberg]"`.
 
 Market tasks require Yggdryl 0.1.11, pinned in `python/pyproject.toml` and
 `python/uv.lock`.

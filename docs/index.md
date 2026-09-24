@@ -18,8 +18,11 @@
 ## Install
 
 ```bash
-pip install "rekep[iceberg]"
+pip install "rekep[iceberg] @ git+https://github.com/Platob/yggfin#subdirectory=python"
 ```
+
+`rekep` is installed from this repository rather than from PyPI: from a
+checkout, `pip install "./python[iceberg]"`.
 
 Market tasks require Yggdryl 0.1.11. See the [pipeline guide](pipeline/index.md)
 for installing and running the pinned environment.

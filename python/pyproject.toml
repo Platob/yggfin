@@ -107,8 +107,14 @@ runner = [
 # `AirflowException` out of `airflow.sdk.exceptions`, which the task SDK grew
 # in 1.1.0. Airflow 3.0.x pins `apache-airflow-task-sdk<1.1.0`, so resolving to
 # it makes the operator -- and with it the whole DAG -- fail to import.
+#
+# The Amazon provider carries `EksPodOperator`, which `EksRekepOperator`
+# dispatches a task through onto an EKS cluster; its `cncf-kubernetes` extra is
+# the `KubernetesPodOperator` that one is built on. 9.36 is the release this
+# lock resolved and the operator is tested against.
 airflow = [
     "apache-airflow>=3.1,<4; sys_platform != 'win32'",
+    "apache-airflow-providers-amazon[cncf-kubernetes]>=9.36,<10; sys_platform != 'win32'",
     "apache-airflow-providers-standard>=1.0,<2; sys_platform != 'win32'",
     "rekep",
 ]
