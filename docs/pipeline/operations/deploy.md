@@ -386,7 +386,7 @@ replayed from capture, as the next section says.
 An existing table with an obsolete native schema or identity contract must
 be rebuilt from its source under the pinned release. Deployment reports an
 existing table as `present`; it does not validate or rewrite its schema.
-There is no second identity spelling or translation layer in Yggfin.
+There is no second identity spelling or translation layer in Rekep.
 
 Recreate affected source tables and dependent products together, deploy their
 current declarations, and replay capture through `parse_messages`,

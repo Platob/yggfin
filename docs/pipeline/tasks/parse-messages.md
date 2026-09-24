@@ -64,7 +64,7 @@ The row header is the bridge's own `ULBRIDGE_ROWHEADER`, spelled once in
 `rekep.times` and pinned against the native `yggdryl.fix.ULBRIDGE_ROWHEADER`
 by `python/tests/test_times.py`: the same bracket part for part, under the
 names the read fills from. The native constant names its clock `timestamp`
-and its level `level` and therefore dates nothing; yggfin's spells `mtime`
+and its level `level` and therefore dates nothing; rekep's spells `mtime`
 and `loglevel`, with a wider, optional fraction. It captures `mtime`,
 `msgthreadid`, `msgsessionid`, `msgctxid`, `msgseqnum`, `msgpluginid` and
 `loglevel`, each named for what the native read fills from it. `mtime` fills

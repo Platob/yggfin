@@ -1,6 +1,6 @@
 ---
 name: rekep
-description: Operate and extend the yggfin `rekep` pipeline, which turns ULBridge text captures into FIX and market Iceberg tables. Use for any work in this repository or with the `rekep` package - running, deploying or inspecting the bundled tasks through `rekep tasks <name> run|deploy|show`, choosing windows and catalogs (local SQLite, S3, AWS Glue, S3 Tables), pinning the market fan-out to one book snapshot, reading landed tables from Python, the FIX codec and registry, table contracts (`rekep fields`), dbt products, Airflow scheduling on the worker or in pods on Amazon EKS (`EksRekepOperator`, the task image), and changing, testing or documenting the code.
+description: Operate and extend the `rekep` pipeline, which turns ULBridge text captures into FIX and market Iceberg tables. Use for any work in this repository or with the `rekep` package - running, deploying or inspecting the bundled tasks through `rekep tasks <name> run|deploy|show`, choosing windows and catalogs (local SQLite, S3, AWS Glue, S3 Tables), pinning the market fan-out to one book snapshot, reading landed tables from Python, the FIX codec and registry, table contracts (`rekep fields`), dbt products, Airflow scheduling on the worker or in pods on Amazon EKS (`EksRekepOperator`, the task image), and changing, testing or documenting the code.
 ---
 
 # rekep
@@ -439,7 +439,7 @@ Worker setup, the dispatch document and the image: `docs/pipeline/airflow.md`,
 
 Ownership (from AGENTS.md): Yggdryl owns `Field`, text reading, codecs, FIX
 parsing and lifecycle; Arrow owns shape kernels; PyIceberg owns tables and
-commits; yggfin owns the text `Message` contract and the thin seams. Never add
+commits; rekep owns the text `Message` contract and the thin seams. Never add
 a second Field class, filesystem layer, text reader, codec or registry here;
 no Python row loops over Arrow data; prefer deleting to compatibility layers.
 

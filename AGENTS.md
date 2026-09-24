@@ -1,7 +1,7 @@
 # Coding patterns
 
 Optimize Rust core behavior in Yggdryl first, then Python and JavaScript
-bindings, then yggfin documentation. Keep one obvious implementation per
+bindings, then rekep documentation. Keep one obvious implementation per
 behavior.
 
 ## Writing
@@ -23,9 +23,9 @@ behavior.
   parsing, the fixed `fixmsg` row, and the lifecycle stage after the parse.
 - Arrow owns columnar shape conversions and kernels.
 - PyIceberg owns table conversion, ids, snapshots, scan planning, and commits.
-- Yggfin owns the text `Message` contract and its narrow PyArrow/PyIceberg seam.
+- Rekep owns the text `Message` contract and its narrow PyArrow/PyIceberg seam.
 - Never add a second Field class, filesystem/path layer, text reader, codec, or
-  registry in yggfin.
+  registry in rekep.
 
 The deleted Rekep FIX and market implementation is not a compatibility target.
 
@@ -115,7 +115,7 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   the `warehouse` is what picks one: a bucket ARN is the S3 Tables endpoint
   signed for `s3tables`, and `<account>:s3tablescatalog/<name>` is the Glue
   endpoint signed for `glue`, under Lake Formation. The warehouse is read as
-  the `yggdryl.Uri` it is, never by a regular expression of yggfin's: an ARN
+  the `yggdryl.Uri` it is, never by a regular expression of rekep's: an ARN
   redirects through `Arn.locator()` to the `s3tables:` URL it names, and that
   locator is the second spelling of the S3 Tables door -- `s3tables://<name>`
   with `region`, `account` and, outside `aws`, `partition` in its query --
@@ -189,7 +189,7 @@ every other line its event was logged on; each joins to a text row's
 identity means.
 
 Every `curruuid` and `currhashcode` is the installed native revision's value.
-Yggfin never reimplements identity derivation or translates old identities.
+Rekep never reimplements identity derivation or translates old identities.
 An identity contract change requires rebuilding affected products from their
 source under one native revision; mixing old and new keys leaves duplicate
 logical events. Market window replacement removes superseded keys inside its
@@ -227,7 +227,7 @@ the walk folds every copy of one message into one row naming every line it
 was logged on.
 
 Both tables use the native `fix_message_field(codec)` field directly,
-without a yggfin FIX model. Parse, storage, reconstruction,
+without a rekep FIX model. Parse, storage, reconstruction,
 and lifecycle all use the same 128-column **FixMsg** contract. `msgthreadid`,
 `loglevel` and `body` remain only in `logs.messages`, and `crosscode` and
 `seqnum` stand on both shapes meaning the row they sit on -- the object a
