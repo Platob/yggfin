@@ -36,7 +36,7 @@ from rekep.tasks import Task
 
 ROOT = Path(__file__).resolve().parents[2]
 PROJECT = ROOT / "data" / "dbt"
-FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
+FIXTURE = ROOT / "data" / "capture" / "ulbridge.log"
 
 #: The tables ingestion publishes, by name: what a source may read and what no
 #: model may write.

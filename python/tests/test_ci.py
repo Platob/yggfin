@@ -44,6 +44,20 @@ def _trusted_push_branch(workflow: dict) -> str:
     return branch
 
 
+def test_every_workflow_runs_one_pinned_commit_of_each_action() -> None:
+    """A tag moves, and an old one runs on a runtime the runners retired:
+    every step names a commit, and every workflow the same one."""
+    pinned: dict[str, set[str]] = {}
+    for path in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        for job in _workflow(path.name)["jobs"].values():
+            for step in job.get("steps", []):
+                if "uses" in step:
+                    action, _, commit = step["uses"].partition("@")
+                    assert re.fullmatch(r"[0-9a-f]{40}", commit), f"{path.name}: {step['uses']}"
+                    pinned.setdefault(action, set()).add(commit)
+    assert pinned and all(len(commits) == 1 for commits in pinned.values()), pinned
+
+
 def test_pull_request_ci_selects_the_fast_suite() -> None:
     workflow = _workflow("ci.yml")
     assert set(workflow["on"]) == {"pull_request"}

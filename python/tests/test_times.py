@@ -363,7 +363,7 @@ def test_within_covers_the_half_open_interval_and_every_row_with_no_clock() -> N
 
 
 #: The bundled capture, every line of which the shipped header dates.
-FIXTURE = Path(__file__).resolve().parent / "data" / "ulbridge.log"
+FIXTURE = Path(__file__).resolve().parents[2] / "data" / "capture" / "ulbridge.log"
 
 
 def test_the_window_is_the_reads_own_where_and_not_a_mask_over_its_answer() -> None:

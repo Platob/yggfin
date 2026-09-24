@@ -7,6 +7,7 @@ arguments the operator hands it when `REKEP_IMAGE` names one.
 
 from __future__ import annotations
 
+import contextlib
 import datetime
 import importlib.util
 import json
@@ -15,6 +16,7 @@ import re
 import shutil
 import subprocess
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -432,6 +434,9 @@ def test_a_dispatched_dag_serializes_with_its_pods(
 #: A built task image (`docker build -t <name> .` at the repository root).
 IMAGE = os.environ.get("REKEP_IMAGE")
 
+#: The bridge capture the ingestion stages read.
+FIXTURE = ROOT / "data" / "capture" / "ulbridge.log"
+
 #: The ingestion stages the bridge fixture runs through, and what each reads,
 #: writes and skips.
 STAGES = (
@@ -446,12 +451,17 @@ class Image:
     """The task image run as each pod runs it, over one shared directory.
 
     The directory is mounted at its own path, so the catalog's absolute
-    locations mean the same file inside the container and out of it; it is
-    everyone's to write, since the container runs as its own user.
+    locations mean the same file inside the container and out of it. A pod
+    writes as the image's own user and this process as its own, and a bind
+    mount keeps each file's owner where the object store a real pod writes
+    keeps none: `shared` hands the directory over around a write of this
+    process's own.
     """
 
     def __init__(self, image: str, root: Path) -> None:
         self.image, self.root = image, root
+        root.mkdir()
+        root.chmod(0o777)
         self.catalog = {
             "name": "rekep",
             "properties": {
@@ -465,7 +475,8 @@ class Image:
         """One stage's pod: the operator's own command and arguments, as
         Kubernetes hands them over, with its result read where the sidecar reads."""
         xcom = self.root / f"xcom-{name}"
-        xcom.mkdir(mode=0o777)
+        xcom.mkdir()
+        xcom.chmod(0o777)
         pod = eks(task_id=name, **options)
         arguments = [expanded(argument) for argument in pod._arguments(pod._resolved(held))]
         ran = subprocess.run(  # noqa: S603
@@ -489,6 +500,38 @@ class Image:
         assert ran.returncode == 0, ran.stderr[-2000:]
         return pod._published(held, json.loads((xcom / "return.json").read_text()))
 
+    @contextlib.contextmanager
+    def shared(self) -> Iterator[None]:
+        """This process writing between pods: everything under the directory
+        is made everyone's to write before the write and after it -- the
+        catalog's SQLite file included, which SQLite creates owner-writable
+        whatever the umask. Only an owner or root may change a mode, so the
+        image's root does it."""
+        self._chmod()
+        yield
+        self._chmod()
+
+    def _chmod(self) -> None:
+        subprocess.run(  # noqa: S603
+            [
+                "docker",
+                "run",
+                "--rm",
+                "--user",
+                "0",
+                "--entrypoint",
+                "chmod",
+                "--volume",
+                f"{self.root}:{self.root}",
+                self.image,
+                "-R",
+                "a+rwX",
+                str(self.root),
+            ],
+            capture_output=True,
+            check=True,
+        )
+
 
 @pytest.mark.integration
 @pytest.mark.skipif(
@@ -502,47 +545,41 @@ def test_the_image_runs_what_each_pod_is_handed(tmp_path: Path) -> None:
     from .test_market_pipeline import COUNTS, refined
     from .test_market_pipeline import WINDOW as MARKET
 
-    # Everything the pods and this process write is everyone's to write.
-    previous = os.umask(0)
-    try:
-        root = tmp_path / "pods"
-        root.mkdir(mode=0o777)
-        shutil.copy(ROOT / "python" / "tests" / "data" / "ulbridge.log", root / "ulbridge.log")
-        image = Image(str(IMAGE), root)
-        day = context(**INTERVAL)
+    image = Image(str(IMAGE), tmp_path / "pods")
+    shutil.copy(FIXTURE, image.root / FIXTURE.name)
+    day = context(**INTERVAL)
 
-        for name, counts in STAGES:
-            overrides: dict[str, Any] = {"catalog": image.catalog}
-            if name == "parse_messages":
-                overrides["filesystem"] = (root / "ulbridge.log").as_uri()
-            result = image.run(name, day, parameters=overrides)
-            assert (result["read"], result["written"], result["skipped"]) == counts, name
+    for name, counts in STAGES:
+        overrides: dict[str, Any] = {"catalog": image.catalog}
+        if name == "parse_messages":
+            overrides["filesystem"] = (image.root / FIXTURE.name).as_uri()
+        result = image.run(name, day, parameters=overrides)
+        assert (result["read"], result["written"], result["skipped"]) == counts, name
 
+    with image.shared():
         refined(image, FRAMES)
-        market = context(params=MARKET, dag_run=SimpleNamespace(conf=MARKET))
-        books = image.run("parse_books", market, parameters={"catalog": image.catalog})
-        assert (books["read"], books["written"]) == (5, 4)
-        pinned = context(
-            params=MARKET,
-            dag_run=SimpleNamespace(conf=MARKET),
-            task_instance=SimpleNamespace(xcom_pull=lambda **_: books),
+    market = context(params=MARKET, dag_run=SimpleNamespace(conf=MARKET))
+    books = image.run("parse_books", market, parameters={"catalog": image.catalog})
+    assert (books["read"], books["written"]) == (5, 4)
+    pinned = context(
+        params=MARKET,
+        dag_run=SimpleNamespace(conf=MARKET),
+        task_instance=SimpleNamespace(xcom_pull=lambda **_: books),
+    )
+    for kind, written in COUNTS.items():
+        events = image.run(
+            f"parse_{kind}",
+            pinned,
+            parameters={"catalog": image.catalog},
+            upstream_task_id="parse_books",
         )
-        for kind, written in COUNTS.items():
-            events = image.run(
-                f"parse_{kind}",
-                pinned,
-                parameters={"catalog": image.catalog},
-                upstream_task_id="parse_books",
-            )
-            assert events["source_snapshot_id"] == books["snapshot_id"], kind
-            assert (events["read"], events["written"]) == (4, written), kind
+        assert events["source_snapshot_id"] == books["snapshot_id"], kind
+        assert (events["read"], events["written"]) == (4, written), kind
 
-        maintained = image.run(
-            "optimize_iceberg", day, parameters={"catalog": image.catalog, "remove_orphans": False}
-        )
-        assert maintained["tables"] == 10
-    finally:
-        os.umask(previous)
+    maintained = image.run(
+        "optimize_iceberg", day, parameters={"catalog": image.catalog, "remove_orphans": False}
+    )
+    assert maintained["tables"] == 10
 
 
 @pytest.mark.integration

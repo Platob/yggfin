@@ -32,7 +32,7 @@ UTC = datetime.timezone.utc
 pytestmark = pytest.mark.integration
 
 ROOT = Path(__file__).resolve().parents[2]
-FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
+FIXTURE = ROOT / "data" / "capture" / "ulbridge.log"
 FIX_CONTRACT = ROOT / "schemas" / "rekep" / "fixmsg.json"
 WORKFLOW = (("parse_messages", {}), ("parse_fix_raw", {}), ("parse_fix_refined", {}))
 EPOCH = datetime.datetime(1970, 1, 1, tzinfo=UTC)

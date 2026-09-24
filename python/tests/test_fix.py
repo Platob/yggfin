@@ -40,7 +40,7 @@ from rekep.iceberg import partition_keys, primary_keys, sort_keys
 from rekep.text import Message
 
 ROOT = Path(__file__).resolve().parents[2]
-FIXTURE = ROOT / "python" / "tests" / "data" / "ulbridge.log"
+FIXTURE = ROOT / "data" / "capture" / "ulbridge.log"
 
 #: What the bundled capture states, read through the pins this package sets.
 #: The same numbers `cargo run --example fix_capture` prints in a core
