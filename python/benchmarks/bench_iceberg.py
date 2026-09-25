@@ -367,90 +367,6 @@ def sweep_stream(rows: int, repeat: int) -> None:
     )
 
 
-def _store_quotes(table: pyarrow.Table) -> tuple[dict[str, int], pyarrow.Table]:
-    """Write one converted result and report the storage a reader inherits."""
-    root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-polars-"))
-    try:
-        target = catalog(root).dataset("bench.quotes", field=Quote.into_field()).create_with()
-        target.append_arrow_table(table, commit_row_size=1_000_000)
-        plan = target.scan_plan("day = '2026-08-14'")
-        report = {
-            "rows": target.records or 0,
-            **stats(target),
-            "planned": plan["files"],
-            "skipped": plan["skipped"],
-        }
-        return report, target.read_arrow_table(Quote.into_field()).sort_by("symbol")
-    finally:
-        shutil.rmtree(root, ignore_errors=True)
-
-
-def sweep_polars(rows: int, repeat: int) -> None:
-    """Polars export selected for the declared Arrow layout versus forced newest."""
-    import polars
-
-    from rekep.dataset import _polars_table
-
-    rows = min(rows, 100_000)
-    day = datetime.date(2026, 8, 14)
-    source = polars.DataFrame(
-        {
-            "symbol": [f"S{i}" for i in range(rows)],
-            "day": [day + datetime.timedelta(days=i % 4) for i in range(rows)],
-            "size": list(range(rows)),
-            "venue": ["XPAR"] * rows,
-        }
-    )
-    target = Quote.into_field()
-
-    def compatible() -> pyarrow.Table:
-        return _polars_table(source, target, polars)
-
-    def newest() -> pyarrow.Table:
-        reader = source.to_arrow(compat_level=polars.CompatLevel.newest()).to_reader()
-        return target.apply_arrow_reader(
-            reader,
-            safe=False,
-            nullability="strict",
-        ).read_all()
-
-    compatible()
-    newest()
-    runs: dict[str, list[tuple[float, pyarrow.Table]]] = {
-        "compatible": [],
-        "forced newest": [],
-    }
-    calls = {"compatible": compatible, "forced newest": newest}
-    for trial in range(max(repeat, 2)):
-        order = ("compatible", "forced newest")
-        if trial % 2:
-            order = tuple(reversed(order))
-        for name in order:
-            runs[name].append(timed(calls[name]))
-
-    best = {name: min(values, key=lambda value: value[0]) for name, values in runs.items()}
-    assert best["compatible"][1].equals(best["forced newest"][1])
-    assert best["compatible"][1].schema.equals(target.into_arrow_schema())
-    stored = {name: _store_quotes(result) for name, (_, result) in best.items()}
-    baseline = stored["forced newest"]
-    assert stored["compatible"][0] == baseline[0]
-    assert stored["compatible"][1].equals(baseline[1])
-
-    print(f"\n== Polars -> declared Arrow: {rows:,} rows ==")
-    header(
-        ("case", "best sec", "rows/s", "files", "manif", "snaps", "planned", "skipped"),
-        (14, 10, 12, 7, 6, 6, 8, 8),
-    )
-    for name in ("forced newest", "compatible"):
-        seconds, _ = best[name]
-        report = stored[name][0]
-        print(
-            f"{name:>14} {seconds:>10.4f} {rows / seconds:>12,.0f} "
-            f"{report['files']:>7} {report['manifests']:>6} {report['snapshots']:>6} "
-            f"{report['planned']:>8} {report['skipped']:>8}"
-        )
-
-
 def sweep_read(rows: int, days: int, repeat: int = 3) -> None:
     """Reading it back: what prunes, what does not, and what a projection saves."""
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-read-"))
@@ -856,7 +772,6 @@ def main() -> int:
         choices=[
             "write",
             "stream",
-            "polars",
             "read",
             "maintain",
             "update",
@@ -873,8 +788,6 @@ def main() -> int:
         shutil.rmtree(sweep_write(rows, days, arguments.quick), ignore_errors=True)
     if arguments.only in (None, "stream"):
         sweep_stream(rows, 1 if arguments.quick else arguments.repeat)
-    if arguments.only in (None, "polars"):
-        sweep_polars(rows, 1 if arguments.quick else arguments.repeat)
     if arguments.only in (None, "read"):
         sweep_read(rows, days, 1 if arguments.quick else arguments.repeat)
     if arguments.only in (None, "maintain"):

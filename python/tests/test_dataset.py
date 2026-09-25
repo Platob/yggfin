@@ -10,8 +10,6 @@ import pytest
 
 from rekep import Convertible, Dataset, Field, scalar
 from rekep.dataset import (
-    _needs_compatible_polars_arrow,
-    _polars_table,
     anti_join,
     arrow_chunks,
     first_rows,
@@ -301,128 +299,6 @@ def test_a_read_casts_only_when_asked(dataset: MemoryDataset) -> None:
     assert dataset.read_arrow_reader(narrow).schema.field("symbol").type == pyarrow.large_string()
 
 
-def test_polars_batches_stream_from_the_arrow_reader(
-    dataset: MemoryDataset, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    polars = pytest.importorskip("polars")
-    dataset.append_arrow_reader(reader_of(rows(1), rows(1)), commit_row_size=1)
-    monkeypatch.setattr(
-        MemoryDataset,
-        "read_arrow_table",
-        lambda *_args, **_kwargs: pytest.fail("read_polars_batches materialised the dataset"),
-    )
-    frames = list(dataset.read_polars_batches())
-    assert [frame.height for frame in frames] == [1, 1]
-    assert polars.concat(frames).columns == [member.name for member in Quote.into_field()]
-
-
-def test_read_polars_is_the_explicit_in_memory_form(dataset: MemoryDataset) -> None:
-    pytest.importorskip("polars")
-    dataset.overwrite_arrow_table(pyarrow.Table.from_batches([rows(3)]))
-    frame = dataset.read_polars()
-    assert frame.shape == (3, 3)
-    assert frame["size"].to_list() == [0, 1, 2]
-
-
-def test_a_polars_frame_is_cast_onto_the_datasets_shape(dataset: MemoryDataset) -> None:
-    polars = pytest.importorskip("polars")
-    source = polars.DataFrame(
-        {
-            "day": [datetime.date(2026, 8, 14)],
-            "noise": [9],
-            "symbol": ["A"],
-        }
-    )
-    dataset.overwrite_polars(source)
-    stored = dataset.commits[0]
-    assert stored.schema.equals(Quote.into_field().into_arrow_schema())
-    assert stored.to_pydict() == {
-        "symbol": ["A"],
-        "day": [datetime.date(2026, 8, 14)],
-        "size": [None],
-    }
-
-
-def test_a_lazy_polars_frame_stays_streamed(
-    dataset: MemoryDataset, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    polars = pytest.importorskip("polars")
-    source = polars.DataFrame(
-        {
-            "symbol": [f"S{i}" for i in range(5)],
-            "day": [datetime.date(2026, 8, 14)] * 5,
-            "size": list(range(5)),
-        }
-    ).lazy()
-    monkeypatch.setattr(
-        polars.LazyFrame,
-        "collect",
-        lambda *_args, **_kwargs: pytest.fail("overwrite_polars materialised the LazyFrame"),
-    )
-    dataset.overwrite_polars(source, batch_row_size=2, commit_row_size=2)
-    assert [commit.num_rows for commit in dataset.commits] == [2, 2, 1]
-    assert dataset.read_arrow_table().column("size").to_pylist() == list(range(5))
-
-
-def test_polars_export_preserves_a_compatible_text_layout() -> None:
-    polars = pytest.importorskip("polars")
-
-    class Frame:
-        options: dict[str, object]
-
-        def to_arrow(self, **options: object) -> pyarrow.Table:
-            self.options = options
-            return pyarrow.table({"symbol": ["A"]})
-
-    target = field_of(pyarrow.schema([("symbol", pyarrow.string())]))
-    frame = Frame()
-    stored = _polars_table(frame, target, polars)
-    assert frame.options == {}, "newest would turn text into a view that storage casts back"
-    assert stored.schema.equals(target.into_arrow_schema())
-
-
-def test_polars_export_uses_the_newest_layout_when_the_contract_keeps_it() -> None:
-    polars = pytest.importorskip("polars")
-
-    class Frame:
-        options: dict[str, object]
-
-        def to_arrow(self, **options: object) -> pyarrow.Table:
-            self.options = options
-            return pyarrow.table({"symbol": pyarrow.array(["A"], type=pyarrow.string_view())})
-
-    target = field_of(pyarrow.schema([("symbol", pyarrow.string_view())]))
-    frame = Frame()
-    stored = _polars_table(frame, target, polars)
-    assert frame.options == {"compat_level": polars.CompatLevel.newest()}
-    assert stored.schema.equals(target.into_arrow_schema())
-
-
-@pytest.mark.parametrize(
-    ("dtype", "compatible"),
-    [
-        (pyarrow.int64(), False),
-        (pyarrow.list_(pyarrow.int64()), False),
-        (pyarrow.string_view(), False),
-        (pyarrow.string(), True),
-        (pyarrow.list_(pyarrow.large_binary()), True),
-        (pyarrow.struct([("nested", pyarrow.string())]), True),
-        (pyarrow.dictionary(pyarrow.int32(), pyarrow.string()), True),
-    ],
-)
-def test_polars_compatibility_follows_nested_arrow_types(
-    dtype: pyarrow.DataType, compatible: bool
-) -> None:
-    assert _needs_compatible_polars_arrow(dtype) is compatible
-
-
-def test_polars_cannot_fill_a_missing_required_column(dataset: MemoryDataset) -> None:
-    polars = pytest.importorskip("polars")
-    with pytest.raises(ValueError, match="symbol"):
-        dataset.overwrite_polars(polars.DataFrame({"day": [datetime.date(2026, 8, 14)]}))
-    assert dataset.commits == []
-
-
 # -- appending --------------------------------------------------------------
 
 
@@ -461,18 +337,6 @@ def test_overwrite_replaces_stored_keys_and_adds_the_rest(keyed: MemoryDataset) 
     keyed.overwrite_arrow(keyed_batch(["A", "B"], [1, 2]))
     assert keyed.overwrite_arrow(keyed_batch(["B", "C"], [20, 3]), merge_by=True) == 2
     assert stored_rows(keyed) == {"A": 1, "B": 20, "C": 3}, "B carries the value it was handed"
-
-
-def test_overwrite_polars_replaces_a_stored_key(keyed: MemoryDataset) -> None:
-    polars = pytest.importorskip("polars")
-    keyed.overwrite_arrow(keyed_batch(["A"], [1]))
-    assert (
-        keyed.overwrite_polars(
-            polars.DataFrame({"symbol": ["A", "B"], "size": [9, 2]}), merge_by=True
-        )
-        == 2
-    )
-    assert stored_rows(keyed) == {"A": 9, "B": 2}
 
 
 def test_replaying_a_stream_leaves_the_same_rows(keyed: MemoryDataset) -> None:

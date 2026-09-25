@@ -123,31 +123,6 @@ def test_a_write_creates_the_table_from_the_declared_shape(dataset: IcebergDatas
     assert [f.name for f in dataset.iceberg_table.spec().fields] == ["day"]
 
 
-def test_a_streamed_polars_write_matches_arrow_and_keeps_partition_pruning(
-    dataset: IcebergDataset,
-) -> None:
-    polars = pytest.importorskip("polars")
-    first = datetime.date(2026, 8, 14)
-    second = first + datetime.timedelta(days=1)
-    expected = pyarrow.Table.from_pydict(
-        {
-            "symbol": ["A", "B", "C", "D"],
-            "day": [first, first, second, second],
-            "size": [1, 2, 3, 4],
-            "venue": [None, "XPAR", None, "XAMS"],
-        },
-        schema=Quote.into_field().into_arrow_schema(),
-    )
-    source = polars.DataFrame(expected.to_pydict()).lazy()
-    dataset.append_polars(source, batch_row_size=2, commit_row_size=2)
-
-    stored = dataset.read_arrow_table(Quote.into_field()).sort_by("symbol")
-    assert stored.schema.equals(Quote.into_field().into_arrow_schema())
-    assert stored.equals(expected)
-    plan = dataset.scan_plan("day = '2026-08-14'")
-    assert plan["files"] == 1 and plan["total_files"] == 2 and plan["skipped"] == 1
-
-
 def test_the_columns_a_reader_filters_on_are_declared_and_bounded(
     dataset: IcebergDataset,
 ) -> None:

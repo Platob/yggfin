@@ -22,9 +22,6 @@ from rekep.fields import Field, field_of
 SOURCE_INDEX = "__source_index"
 TARGET_INDEX = "__target_index"
 
-#: Default bounded Polars-to-Arrow handoff; commit size remains independent.
-POLARS_BATCH_ROW_SIZE = 65_536
-
 # Implementations register here from `__init_subclass__`; lazy modules make
 # the shipped kinds available without importing optional dependencies eagerly.
 _KINDS: dict[str, type[Dataset]] = {}
@@ -208,21 +205,6 @@ class Dataset(Convertible, abc.ABC):
         """Read the whole dataset into one table. Needs it to fit in memory."""
         return self.read_arrow_reader(schema, **kwargs).read_all()
 
-    def read_polars_batches(self, schema: Any = None, **kwargs: Any) -> Iterator[Any]:
-        """Yield one Polars frame per Arrow batch without materialising the dataset."""
-        from rekep.require import require
-
-        polars = require("polars", "polars")
-        for batch in self.read_arrow_reader(schema, **kwargs):
-            yield polars.from_arrow(batch, rechunk=False)
-
-    def read_polars(self, schema: Any = None, **kwargs: Any) -> Any:
-        """Read the whole dataset into one Polars frame. Needs it to fit in memory."""
-        from rekep.require import require
-
-        polars = require("polars", "polars")
-        return polars.from_arrow(self.read_arrow_table(schema, **kwargs), rechunk=False)
-
     # -- writing ------------------------------------------------------------
 
     @abc.abstractmethod
@@ -289,24 +271,6 @@ class Dataset(Convertible, abc.ABC):
             table.to_reader(), schema, merge_by, commit_row_size, **kwargs
         )
 
-    def overwrite_polars(
-        self,
-        source: Any,
-        schema: Any = None,
-        merge_by: bool | Sequence[str] | None = True,
-        commit_row_size: int | None = None,
-        *,
-        batch_row_size: int = POLARS_BATCH_ROW_SIZE,
-        **kwargs: Any,
-    ) -> int:
-        """`overwrite_arrow_reader` for a Polars frame.
-
-        Streamed through bounded, schema-checked Arrow batches.
-        """
-        target = self.target_field(schema)
-        reader = _polars_reader(source, target, batch_row_size)
-        return self.overwrite_arrow_reader(reader, target, merge_by, commit_row_size, **kwargs)
-
     # -- appending -----------------------------------------------------------
 
     @abc.abstractmethod
@@ -349,75 +313,6 @@ class Dataset(Convertible, abc.ABC):
     ) -> int:
         """`append_arrow_reader` for a table already in memory."""
         return self.append_arrow_reader(table.to_reader(), schema, commit_row_size, **kwargs)
-
-    def append_polars(
-        self,
-        source: Any,
-        schema: Any = None,
-        commit_row_size: int | None = None,
-        *,
-        batch_row_size: int = POLARS_BATCH_ROW_SIZE,
-        **kwargs: Any,
-    ) -> int:
-        """Append a Polars frame through bounded, schema-checked Arrow batches."""
-        target = self.target_field(schema)
-        reader = _polars_reader(source, target, batch_row_size)
-        return self.append_arrow_reader(reader, target, commit_row_size, **kwargs)
-
-
-def _polars_reader(source: Any, target: Field, batch_row_size: int) -> pyarrow.RecordBatchReader:
-    """A DataFrame or streaming LazyFrame cast onto `target` batch by batch."""
-    if batch_row_size <= 0:
-        raise ValueError("batch_row_size must be positive")
-    from rekep.require import require
-
-    polars = require("polars", "polars")
-    if isinstance(source, polars.DataFrame):
-        frames = iter((source,))
-    elif isinstance(source, polars.LazyFrame):
-        frames = source.collect_batches(
-            chunk_size=batch_row_size,
-            maintain_order=True,
-            engine="streaming",
-        )
-    else:
-        raise TypeError(f"Polars input needs a DataFrame or LazyFrame, got {type(source).__name__}")
-
-    def batches() -> Iterator[pyarrow.RecordBatch]:
-        for frame in frames:
-            table = _polars_table(frame, target, polars)
-            yield from table.to_batches(max_chunksize=batch_row_size)
-
-    return pyarrow.RecordBatchReader.from_batches(target.into_arrow_schema(), batches())
-
-
-def _polars_table(frame: Any, target: Field, polars: Any) -> pyarrow.Table:
-    """Export at the newest compatible level, then enforce the Arrow contract."""
-    options = {}
-    if not _needs_compatible_polars_arrow(target.dtype.into_arrow()):
-        options["compat_level"] = polars.CompatLevel.newest()
-    source = frame.to_arrow(**options).to_reader()
-    return target.apply_arrow_reader(source, safe=False, nullability="strict").read_all()
-
-
-def _needs_compatible_polars_arrow(dtype: pyarrow.DataType) -> bool:
-    """Whether newest Polars export would replace a declared text buffer with a view."""
-    types = pyarrow.types
-    if (
-        types.is_string(dtype)
-        or types.is_large_string(dtype)
-        or types.is_binary(dtype)
-        or types.is_large_binary(dtype)
-    ):
-        return True
-    if types.is_dictionary(dtype):
-        return _needs_compatible_polars_arrow(dtype.value_type)
-    storage = getattr(dtype, "storage_type", None)
-    if storage is not None:
-        return _needs_compatible_polars_arrow(storage)
-    return any(
-        _needs_compatible_polars_arrow(dtype.field(index).type) for index in range(dtype.num_fields)
-    )
 
 
 def arrow_chunks(
