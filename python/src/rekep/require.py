@@ -9,7 +9,7 @@ from typing import Any
 def require(module: str, extra: str) -> Any:
     """Import an optional dependency, or name the extra that provides it.
 
-    Importing optional storage or dataframe packages at module load would make
+    Importing optional storage packages at module load would make
     the base package unusable without them. This names the install at the call
     that needs it.
     """

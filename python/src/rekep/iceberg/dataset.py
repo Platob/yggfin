@@ -287,8 +287,7 @@ class IcebergDataset(Dataset):
                 SNAPSHOT_MAX_AGE: str(duration // datetime.timedelta(milliseconds=1)),
             }
             self.__dict__["_snapshot_expiry"] = duration
-            # Relative retention is an Iceberg table declaration. Keeping its
-            # one canonical spelling also makes dataset documents round-trip.
+            # Relative retention is an Iceberg table declaration.
             self.snapshot_expiry = None
         elif self.snapshot_expiry is None and configured_expiry is not None:
             self.__dict__["_snapshot_expiry"] = _expiry_delta(configured_expiry)

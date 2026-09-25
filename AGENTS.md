@@ -346,7 +346,6 @@ python/src/rekep/
   fix.py        the bundled registry and the two FIX stages over two tables
   market.py     the book fold and the event flattening over its snapshot
   times.py      instant readings, the run window and the ULBridge row header
-  resources.py  Yggdryl binding and required byte reads
 .claude/skills/rekep/SKILL.md  how an agent uses, tests and extends the library
 data/capture/   the ULBridge capture every documented count reads
 tools/          fix_registry_dump.py, which regenerates docs/assets/fix-*.json
