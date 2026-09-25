@@ -23,7 +23,6 @@ from pyiceberg.expressions import EqualTo
 from pyiceberg.transforms import BucketTransform, IdentityTransform
 
 from rekep import (
-    Convertible,
     Field,
     Message,
     scalar,
@@ -58,7 +57,7 @@ pytestmark = pytest.mark.integration
 
 
 @scalar
-class Quote(Convertible):
+class Quote:
     """One quote."""
 
     symbol: Annotated[str, primary_key()]
@@ -253,7 +252,7 @@ def test_a_limit_is_pushed_down_to_the_scan(dataset: IcebergDataset) -> None:
 
 
 @scalar
-class Timed(Convertible):
+class Timed:
     """One row ordered by its event clock."""
 
     unix: Annotated[int, primary_key(), sort_key()]
@@ -264,14 +263,14 @@ class Timed(Convertible):
 
 
 @scalar
-class DescendingTimed(Convertible):
+class DescendingTimed:
     """One row ordered newest first."""
 
     unix: Annotated[int, primary_key(), sort_key("desc")]
 
 
 @scalar
-class RepeatedTimed(Convertible):
+class RepeatedTimed:
     """One event whose sort clock may be shared by several identities."""
 
     seq: Annotated[int, primary_key()]
@@ -282,7 +281,7 @@ class RepeatedTimed(Convertible):
 
 
 @scalar
-class PartitionedTimed(Convertible):
+class PartitionedTimed:
     """One event in a dated, time-sorted stream."""
 
     day: Annotated[datetime.date, primary_key(), partition_key()]
@@ -296,7 +295,7 @@ class PartitionedTimed(Convertible):
 
 
 @scalar
-class HourlyTimed(Convertible):
+class HourlyTimed:
     """One identified event partitioned and ordered by its UTC hour."""
 
     identity: Annotated[int, primary_key()]
@@ -484,7 +483,7 @@ def test_hour_partition_paths_are_chronological_across_day_and_month(
 
 
 @scalar
-class Sequenced(Convertible):
+class Sequenced:
     """One event ordered by clock and its source sequence."""
 
     unix: Annotated[int, primary_key(), sort_key()]
@@ -498,7 +497,7 @@ class Sequenced(Convertible):
 
 
 @scalar
-class NullableSequence(Convertible):
+class NullableSequence:
     """One event whose source may not provide a sequence."""
 
     unix: Annotated[int, primary_key()]
@@ -1072,7 +1071,7 @@ def test_a_refused_unpartitioned_merge_removes_rewrites_and_avro(
     from pyiceberg.table import Transaction
 
     @scalar
-    class FlatQuote(Convertible):
+    class FlatQuote:
         symbol: Annotated[str, primary_key()]
         size: int
 
@@ -1170,7 +1169,7 @@ def test_a_snapshot_construction_failure_removes_direct_writer_outputs(
     from pyiceberg.table.update.snapshot import _FastAppendFiles
 
     @scalar
-    class FlatQuote(Convertible):
+    class FlatQuote:
         symbol: Annotated[str, primary_key()]
         size: int
 
@@ -1778,7 +1777,7 @@ def test_a_failed_source_keeps_the_chunks_committed_before_it(dataset: IcebergDa
 
 def test_a_falsy_merge_by_is_still_refused_without_partitions(tmp_path: Path) -> None:
     @scalar
-    class Flat(Convertible):
+    class Flat:
         symbol: Annotated[str, primary_key()]
 
     flat = IcebergDataset(
@@ -1798,7 +1797,7 @@ def test_a_falsy_merge_by_is_still_refused_without_partitions(tmp_path: Path) ->
 
 def test_a_nan_identity_partition_is_refused_before_pyiceberg(tmp_path: Path) -> None:
     @scalar
-    class FloatPartition(Convertible):
+    class FloatPartition:
         symbol: Annotated[str, primary_key()]
         partition: Annotated[float, partition_key()]
 
@@ -1872,7 +1871,7 @@ def test_a_key_is_scoped_to_its_transformed_partition(
     tmp_path: Path,
 ) -> None:
     @scalar
-    class Daily(Convertible):
+    class Daily:
         symbol: Annotated[str, primary_key()]
         at: Annotated[datetime.datetime, partition_key("day")]
         value: int
@@ -1924,7 +1923,7 @@ def test_a_key_is_scoped_to_its_transformed_partition(
 
 def test_a_keyed_replace_on_a_bucketed_table_lands_its_rows(tmp_path: Path) -> None:
     @scalar
-    class Bucketed(Convertible):
+    class Bucketed:
         ident: Annotated[int, primary_key()]
         code: Annotated[str, partition_key("bucket[3]")]
         value: int
@@ -1980,7 +1979,7 @@ def test_a_partition_derived_from_the_primary_key_merges_and_overwrites_exactly(
     tmp_path: Path,
 ) -> None:
     @scalar
-    class Tick(Convertible):
+    class Tick:
         unix: Annotated[int, primary_key()]
         timepartition: Annotated[int, partition_key(), derived_from("unix")]
         venue: str
@@ -2034,7 +2033,7 @@ def test_staged_partition_overwrite_honours_branch_and_properties(
 
 def test_dynamic_overwrite_requires_source_partition_columns(tmp_path: Path) -> None:
     @scalar
-    class OptionalPartition(Convertible):
+    class OptionalPartition:
         symbol: Annotated[str, primary_key()]
         venue: Annotated[str | None, partition_key()] = None
 
@@ -2057,7 +2056,7 @@ def test_dynamic_overwrite_requires_source_partition_columns(tmp_path: Path) -> 
 
 def test_a_null_partition_is_replaced_without_touching_the_others(tmp_path: Path) -> None:
     @scalar
-    class OptionalPartition(Convertible):
+    class OptionalPartition:
         symbol: Annotated[str, primary_key()]
         venue: Annotated[str | None, partition_key()] = None
 
@@ -2091,7 +2090,7 @@ def test_a_null_partition_is_replaced_without_touching_the_others(tmp_path: Path
 
 def test_a_day_partition_is_staged_and_replaced_as_one_unit(tmp_path: Path) -> None:
     @scalar
-    class Daily(Convertible):
+    class Daily:
         """One value partitioned by the day containing its timestamp."""
 
         code: str
@@ -2180,7 +2179,7 @@ def test_partition_replacement_prunes_manifests_before_reading_entries(
 
 def test_a_bucket_partition_is_staged_without_inverting_its_hash(tmp_path: Path) -> None:
     @scalar
-    class Bucketed(Convertible):
+    class Bucketed:
         """One value partitioned by its four-bucket Murmur3 hash."""
 
         code: Annotated[str, partition_key("bucket[4]")]
@@ -2223,7 +2222,7 @@ def test_a_bucket_partition_is_staged_without_inverting_its_hash(tmp_path: Path)
 
 def test_a_truncated_partition_is_staged_and_replaced_as_one_unit(tmp_path: Path) -> None:
     @scalar
-    class Truncated(Convertible):
+    class Truncated:
         """One value partitioned by its first two characters."""
 
         code: Annotated[str, partition_key("truncate[2]")]
@@ -2279,7 +2278,7 @@ def test_an_empty_partition_overwrite_commits_nothing(dataset: IcebergDataset) -
 
 def test_a_dynamic_partition_merge_refuses_a_null_key(tmp_path: Path) -> None:
     @scalar
-    class MaybeKeyed(Convertible):
+    class MaybeKeyed:
         day: Annotated[datetime.date, partition_key()]
         symbol: str | None = None
 
@@ -2307,7 +2306,7 @@ def test_an_append_adds_every_row_it_is_handed(dataset: IcebergDataset) -> None:
 
 def test_merging_on_a_key_nothing_declares_is_refused_before_writing(tmp_path: Path) -> None:
     @scalar
-    class Loose(Convertible):
+    class Loose:
         symbol: str
 
     keyless = IcebergDataset(
@@ -2329,39 +2328,7 @@ def test_merge_columns_are_the_declared_key_or_the_names_given(
     assert dataset.merge_columns(None) == [] == dataset.merge_columns(False)
 
 
-# -- the dataset is also a document ---------------------------------------
-
-
-def test_a_dataset_round_trips_through_json(dataset: IcebergDataset) -> None:
-    """Its configuration -- the declared shape included -- is a file."""
-    dataset.merge_schema = True
-    document = dataset.into_dict()
-    assert document["name"] == "quotes"
-    assert document["namespace"] == "trading"
-    assert document["field"]["name"] == "quotes"
-    assert document["catalog_name"] == dataset.catalog_name
-    assert document["catalog_properties"] == dataset.catalog_properties
-    assert document["merge_schema"] is True
-    rebuilt = IcebergDataset.from_json(dataset.into_json())
-    assert (
-        rebuilt.name,
-        rebuilt.namespace,
-        rebuilt.catalog_name,
-        rebuilt.catalog_properties,
-    ) == (
-        dataset.name,
-        dataset.namespace,
-        dataset.catalog_name,
-        dataset.catalog_properties,
-    )
-    assert rebuilt.identifier == dataset.identifier
-    assert isinstance(rebuilt.field, Field)
-    assert rebuilt.field == dataset.field
-    assert rebuilt.merge_schema is True
-    assert "store" not in rebuilt.__dict__, "reading configuration stays lazy"
-
-
-def test_relative_snapshot_expiry_round_trips_as_the_iceberg_property(
+def test_relative_snapshot_expiry_is_the_iceberg_property(
     tmp_path: Path,
 ) -> None:
     retained = IcebergDataset(
@@ -2373,12 +2340,9 @@ def test_relative_snapshot_expiry_round_trips_as_the_iceberg_property(
         snapshot_expiry=datetime.timedelta(days=7),
     )
 
-    rebuilt = IcebergDataset.from_json(retained.into_json())
-
     assert retained.snapshot_expiry is None
     assert retained.table_properties["history.expire.max-snapshot-age-ms"] == "604800000"
-    assert rebuilt.table_properties == retained.table_properties
-    assert rebuilt.__dict__["_snapshot_expiry"] == datetime.timedelta(days=7)
+    assert retained.__dict__["_snapshot_expiry"] == datetime.timedelta(days=7)
 
 
 def test_snapshot_expiry_rounds_up_to_icebergs_millisecond_precision(
@@ -2393,11 +2357,8 @@ def test_snapshot_expiry_rounds_up_to_icebergs_millisecond_precision(
         snapshot_expiry=datetime.timedelta(microseconds=500),
     )
 
-    rebuilt = IcebergDataset.from_json(retained.into_json())
-
     assert retained.table_properties["history.expire.max-snapshot-age-ms"] == "1"
     assert retained.__dict__["_snapshot_expiry"] == datetime.timedelta(milliseconds=1)
-    assert rebuilt.__dict__["_snapshot_expiry"] == datetime.timedelta(milliseconds=1)
 
 
 # -- replacing, chunk by chunk ----------------------------------------------
@@ -2588,7 +2549,7 @@ def test_a_replace_refuses_a_null_or_nan_key(dataset: IcebergDataset) -> None:
         dataset.overwrite_arrow_table(nulled, merge_by=["venue"])
 
     @scalar
-    class Level(Convertible):
+    class Level:
         price: float
         size: int
 
@@ -3202,7 +3163,7 @@ def test_an_unpartitioned_table_compacts(tmp_path: Path) -> None:
     """The most ordinary table shape there is, and every verb raised on it."""
 
     @scalar
-    class Flat(Convertible):
+    class Flat:
         """A row with nothing to partition on."""
 
         symbol: str
@@ -3239,7 +3200,7 @@ def test_a_transformed_partition_settles(tmp_path: Path) -> None:
     """
 
     @scalar
-    class Event(Convertible):
+    class Event:
         """One event, partitioned by a transform of its timestamp."""
 
         symbol: str
@@ -3290,7 +3251,7 @@ def test_a_partition_value_a_filter_string_cannot_hold(tmp_path: Path, value: st
     """
 
     @scalar
-    class Part(Convertible):
+    class Part:
         """A row partitioned by a string that may be awkward."""
 
         part: Annotated[str | None, partition_key()]
@@ -3391,14 +3352,14 @@ def test_a_member_added_inside_a_struct_is_added(tmp_path: Path) -> None:
     """The direct leaf update finds additions below an existing parent."""
 
     @scalar
-    class Venue(Convertible):
+    class Venue:
         """Where it traded."""
 
         mic: str | None = None
         """Market identifier."""
 
     @scalar
-    class Narrow(Convertible):
+    class Narrow:
         """A quote whose venue knows only its mic."""
 
         symbol: str
@@ -3408,7 +3369,7 @@ def test_a_member_added_inside_a_struct_is_added(tmp_path: Path) -> None:
         """Where."""
 
     @scalar
-    class Wide(Convertible):
+    class Wide:
         """The same quote, whose venue has grown a country."""
 
         symbol: str
@@ -4470,7 +4431,7 @@ def test_a_limited_read_over_a_null_partition_returns_its_rows(tmp_path: Path) -
     """
 
     @scalar
-    class Trade(Convertible):
+    class Trade:
         """A trade whose venue may be unknown."""
 
         venue: Annotated[str | None, partition_key()]
@@ -4846,7 +4807,7 @@ def _covers(expression: object, table: pyarrow.Table, field: object) -> bool:
 
 
 @scalar
-class Tick(Convertible):
+class Tick:
     """A row under a wide integer key."""
 
     at: Annotated[int, primary_key()]
@@ -5289,7 +5250,7 @@ def test_a_filtered_read_is_the_same_either_way(tmp_path: Path) -> None:
 
 def test_a_digest_projection_keeps_its_native_input_dependencies() -> None:
     @scalar
-    class Digested(Convertible):
+    class Digested:
         venue: str
         payload: str
         digest: Annotated[
@@ -5306,7 +5267,7 @@ def test_a_partition_derived_from_a_digest_keeps_transitive_read_dependencies(
     tmp_path: Path,
 ) -> None:
     @scalar
-    class PartitionedDigest(Convertible):
+    class PartitionedDigest:
         venue: str
         digest: Annotated[
             int | None,
@@ -5350,7 +5311,7 @@ def test_a_partition_derived_from_a_digest_keeps_transitive_read_dependencies(
 
 
 @scalar
-class Ticked(Convertible):
+class Ticked:
     """A row the shape says is laid out in time order."""
 
     at: Annotated[int, primary_key(), sort_key()]
@@ -5364,7 +5325,7 @@ class Ticked(Convertible):
 
 
 @scalar
-class DescendingTick(Convertible):
+class DescendingTick:
     """A nullable clock physically ordered newest first."""
 
     day: Annotated[datetime.date, partition_key()]
@@ -5373,7 +5334,7 @@ class DescendingTick(Convertible):
 
 
 @scalar
-class FloatingTick(Convertible):
+class FloatingTick:
     """A nullable floating-point sort key."""
 
     value: Annotated[float | None, sort_key()]
@@ -5587,7 +5548,7 @@ def test_a_shuffled_write_lands_in_the_declared_order(tmp_path: Path) -> None:
 
 
 @scalar
-class Bounded(Convertible):
+class Bounded:
     """A wide row under a clock key, spread over transformed partitions."""
 
     unix: Annotated[int, primary_key(), sort_key()]
@@ -5768,7 +5729,7 @@ def test_no_row_is_lost_splitting_a_chunk_into_its_partitions(tmp_path: Path) ->
     whose partition column is null."""
 
     @scalar
-    class Loose(Convertible):
+    class Loose:
         ident: Annotated[int, primary_key()]
         part: Annotated[int | None, partition_key()] = None
 
@@ -5805,7 +5766,7 @@ def test_a_partition_is_packed_into_files_by_its_own_row_width(tmp_path: Path) -
     partition of wide rows past it."""
 
     @scalar
-    class Wide(Convertible):
+    class Wide:
         ident: Annotated[int, primary_key()]
         part: Annotated[int, partition_key()]
         body: str
@@ -5842,7 +5803,7 @@ def test_every_verb_writes_a_table_partitioned_by_void(tmp_path: Path) -> None:
     from pyiceberg.transforms import VoidTransform
 
     @scalar
-    class Loose(Convertible):
+    class Loose:
         symbol: str | None = None
         size: int | None = None
 

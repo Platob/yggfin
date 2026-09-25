@@ -22,7 +22,7 @@ from pyiceberg.io.pyarrow import expression_to_pyarrow
 from pyiceberg.schema import Schema
 from pyiceberg.types import NestedField, TimestamptzType
 
-from rekep import Convertible, IOBase, scalar
+from rekep import IOBase, scalar
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.fields import partition_key
 from rekep.iceberg import IcebergCatalog, window_filter
@@ -250,7 +250,7 @@ def test_window_filter_is_the_arrow_window_as_a_scan_predicate() -> None:
 
 
 @scalar
-class Stamped(Convertible):
+class Stamped:
     """A row laid out by the hour of its instant."""
 
     name: str

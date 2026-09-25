@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import abc
-import functools
-import importlib
 from collections.abc import Iterator, Mapping, Sequence
 from types import MappingProxyType
 from typing import Any
@@ -13,7 +11,6 @@ import pyarrow
 import pyarrow.compute
 
 from rekep.annotations import Self
-from rekep.convert import Convertible
 from rekep.fields import Field, field_of
 
 #: Marker columns the key joins below carry, named like pyiceberg's reserved
@@ -22,14 +19,6 @@ from rekep.fields import Field, field_of
 SOURCE_INDEX = "__source_index"
 TARGET_INDEX = "__target_index"
 
-# Implementations register here from `__init_subclass__`; lazy modules make
-# the shipped kinds available without importing optional dependencies eagerly.
-_KINDS: dict[str, type[Dataset]] = {}
-_MODULES = MappingProxyType(
-    {
-        "iceberg": "rekep.iceberg.dataset",
-    }
-)
 _READS = MappingProxyType(
     {
         pyarrow.Table: "arrow_table",
@@ -45,57 +34,16 @@ _OVERWRITES = MappingProxyType(
 )
 
 
-class Dataset(Convertible, abc.ABC):
+def _stem_of(value: Any, stems: Mapping[type, str]) -> str:
+    """The method stem for `value`, a requested Arrow type or an Arrow value."""
+    for kind, stem in stems.items():
+        if issubclass(value, kind) if isinstance(value, type) else isinstance(value, kind):
+            return stem
+    raise TypeError(f"no Arrow method for {value!r}")
+
+
+class Dataset(abc.ABC):
     """A stored data product, read and written as Arrow, whatever stores it."""
-
-    @classmethod
-    @functools.cache
-    def into_kind(cls) -> str:
-        """Document kind this implementation claims; empty on the base."""
-        return ""
-
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        kind = cls.into_kind()
-        if kind:
-            _KINDS[kind] = cls
-
-    @classmethod
-    def from_dict(cls, mapping: Mapping[str, Any]) -> Self:
-        """Build the dataset a document declares, dispatching on its `kind`.
-
-        Called on `Dataset` it picks the implementation; called on one of them
-        it builds that one, and refuses a document naming a different kind
-        rather than quietly building the wrong store from the right fields.
-        A document with no `kind` read through a concrete class is just that
-        class, which is what keeps `IcebergDataset.from_json(...)` working
-        unchanged.
-        """
-        kind = str(mapping.get("kind", "") or "")
-        if cls is Dataset:
-            if not kind:
-                raise ValueError(
-                    "a dataset document says which store it is: add a `kind`, one of "
-                    f"{sorted(set(_KINDS) | set(_MODULES))}"
-                )
-            built = _KINDS.get(kind) or Dataset._imported(kind)
-            if built is None:
-                known = sorted(set(_KINDS) | set(_MODULES))
-                raise ValueError(f"no dataset of kind {kind!r}; there is {known}")
-            return built.from_dict(mapping)  # type: ignore[return-value]
-        claimed = cls.into_kind()
-        if kind and kind != claimed:
-            raise ValueError(f"{cls.__name__} is {claimed!r}, and the document says {kind!r}")
-        return super().from_dict({key: value for key, value in mapping.items() if key != "kind"})
-
-    @staticmethod
-    def _imported(kind: str) -> type[Dataset] | None:
-        """The implementation for `kind`, imported if this package ships one."""
-        module = _MODULES.get(kind)
-        if module is None:
-            return None
-        importlib.import_module(module)
-        return _KINDS.get(kind)
 
     # -- what it holds ------------------------------------------------------
 
@@ -195,7 +143,7 @@ class Dataset(Convertible, abc.ABC):
         `read_arrow(pyarrow.Table)` materialises, `read_arrow(RecordBatchReader)`
         streams; the keywords go through to whichever it is.
         """
-        return getattr(self, f"read_{self.redirect_of(target, _READS)}")(**kwargs)
+        return getattr(self, f"read_{_stem_of(target, _READS)}")(**kwargs)
 
     @abc.abstractmethod
     def read_arrow_reader(self, schema: Any = None, **kwargs: Any) -> pyarrow.RecordBatchReader:
@@ -237,9 +185,7 @@ class Dataset(Convertible, abc.ABC):
         `overwrite_arrow_*`; this redirects to the one that fits rather than
         making every call site branch.
         """
-        return getattr(self, f"overwrite_{self.redirect_of(source, _OVERWRITES)}")(
-            source, *args, **kwargs
-        )
+        return getattr(self, f"overwrite_{_stem_of(source, _OVERWRITES)}")(source, *args, **kwargs)
 
     def overwrite_arrow_batch(
         self,
@@ -289,9 +235,7 @@ class Dataset(Convertible, abc.ABC):
 
     def append_arrow(self, source: Any, *args: Any, **kwargs: Any) -> int:
         """Append the inferred Arrow shape and return rows added."""
-        return getattr(self, f"append_{self.redirect_of(source, _OVERWRITES)}")(
-            source, *args, **kwargs
-        )
+        return getattr(self, f"append_{_stem_of(source, _OVERWRITES)}")(source, *args, **kwargs)
 
     def append_arrow_batch(
         self,

@@ -7,7 +7,7 @@ from typing import Annotated
 import pyarrow.fs
 import pytest
 
-from rekep import Convertible, scalar
+from rekep import scalar
 from rekep.fields import primary_key
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 from rekep.iceberg.catalog import PYARROW_FILE_IO
@@ -15,7 +15,7 @@ from rekep.iceberg.file_io import IcebergFileIO
 
 
 @scalar
-class Quote(Convertible):
+class Quote:
     """One quote."""
 
     symbol: Annotated[str, primary_key()]
@@ -959,13 +959,9 @@ def test_every_table_comes_back_as_a_dataset(catalog: IcebergCatalog) -> None:
         assert [member.name for member in dataset.into_struct_field()] == ["symbol", "size"]
 
 
-def test_the_catalog_is_a_document(catalog: IcebergCatalog) -> None:
-    assert set(catalog.into_dict()) == {"name", "properties"}
-    rebuilt = IcebergCatalog.from_json(catalog.into_json())
-    assert (rebuilt.name, rebuilt.properties) == (
-        catalog.name,
-        catalog.properties,
-    )
+def test_a_catalog_is_built_from_its_mapping(catalog: IcebergCatalog) -> None:
+    rebuilt = IcebergCatalog.from_dict({"name": catalog.name, "properties": catalog.properties})
+    assert (rebuilt.name, rebuilt.properties) == (catalog.name, catalog.properties)
 
 
 def test_a_catalog_name_is_explicit_and_nonempty() -> None:

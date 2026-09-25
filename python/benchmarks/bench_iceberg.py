@@ -21,7 +21,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 from _bench import parser, peak_memory, timed  # noqa: E402
 
-from rekep import Convertible, scalar  # noqa: E402
+from rekep import scalar  # noqa: E402
 from rekep.fields import (  # noqa: E402
     partition_key,
     primary_key,
@@ -33,7 +33,7 @@ from rekep.iceberg.dataset import _key_bounds  # noqa: E402
 
 
 @scalar
-class Quote(Convertible):
+class Quote:
     """One quote, under a composite key whose halves both repeat."""
 
     symbol: Annotated[str, primary_key()]
@@ -50,7 +50,7 @@ class Quote(Convertible):
 
 
 @scalar
-class Tick(Convertible):
+class Tick:
     """A row under a wide composite key, clustered per commit."""
 
     at: Annotated[int, primary_key(), sort_key()]
@@ -64,7 +64,7 @@ class Tick(Convertible):
 
 
 @scalar
-class LogRow(Convertible):
+class LogRow:
     """One benchmark-local stored row with an hourly partition."""
 
     unix: Annotated[int, primary_key(), sort_key()]

@@ -8,7 +8,7 @@ from typing import Annotated, Any
 import pyarrow
 import pytest
 
-from rekep import Convertible, Dataset, Field, scalar
+from rekep import Dataset, Field, scalar
 from rekep.dataset import (
     anti_join,
     arrow_chunks,
@@ -17,11 +17,11 @@ from rekep.dataset import (
     normalised_keys,
     sort_order_fields,
 )
-from rekep.fields import field_of, primary_key, replace_field
+from rekep.fields import field_of, primary_key
 
 
 @scalar
-class Quote(Convertible):
+class Quote:
     """One quote."""
 
     symbol: Annotated[str, primary_key()]
@@ -35,7 +35,7 @@ class Quote(Convertible):
 
 
 @scalar
-class ArrayRow(Convertible):
+class ArrayRow:
     """One nested Arrow cast at the dataset seam."""
 
     values: list[int]
@@ -206,7 +206,7 @@ def test_only_public_reader_methods_are_required_for_writes() -> None:
 
 def test_merge_by_true_means_the_declared_primary_key() -> None:
     @scalar
-    class Keyed(Convertible):
+    class Keyed:
         symbol: Annotated[str, primary_key()]
         """Instrument."""
 
@@ -232,7 +232,7 @@ def test_a_falsy_merge_by_names_nothing_to_match_on(
 
 def test_merging_on_a_key_nothing_declares_is_refused() -> None:
     @scalar
-    class Loose(Convertible):
+    class Loose:
         symbol: str
         """Instrument, and nothing says it identifies one."""
 
@@ -303,7 +303,7 @@ def test_a_read_casts_only_when_asked(dataset: MemoryDataset) -> None:
 
 
 @scalar
-class Keyed(Convertible):
+class Keyed:
     """One keyed row."""
 
     symbol: Annotated[str, primary_key()]
@@ -489,52 +489,8 @@ def test_read_arrow_picks_the_method_by_the_type_asked_for(dataset: MemoryDatase
 
 
 def test_an_overwrite_of_something_unwritable_is_refused(dataset: MemoryDataset) -> None:
-    with pytest.raises(TypeError, match="cannot infer"):
+    with pytest.raises(TypeError, match="no Arrow method"):
         dataset.overwrite_arrow("not arrow data")
-
-
-# -- reading one out of a document -------------------------------------------
-
-
-def test_an_implementation_behind_an_optional_dependency_is_imported_by_the_document() -> None:
-    """And by nothing else, which is what keeps the dependency optional."""
-    pytest.importorskip("pyiceberg")
-    from rekep.iceberg import IcebergDataset
-
-    field = Quote.into_field()
-    built = Dataset.from_dict(
-        {
-            "kind": "iceberg",
-            "name": "b",
-            "namespace": "a",
-            "field": field.into_dict(),
-            "catalog_name": "c",
-        }
-    )
-    assert isinstance(built, IcebergDataset)
-    assert (built.name, built.namespace, built.field, built.catalog_name) == (
-        "b",
-        "a",
-        replace_field(field, name="b"),
-        "c",
-    )
-
-
-def test_a_document_with_no_kind_says_what_it_could_have_said() -> None:
-    with pytest.raises(ValueError, match="add a `kind`"):
-        Dataset.from_dict({"url": "a.log"})
-
-
-def test_a_kind_nothing_implements_lists_what_does() -> None:
-    with pytest.raises(ValueError, match="no dataset of kind 'parquet'"):
-        Dataset.from_dict({"kind": "parquet"})
-
-
-def test_every_shipped_kind_is_reachable_from_a_document() -> None:
-    """Every lazy module registers the kind its document names."""
-    pytest.importorskip("pyiceberg")
-    built = Dataset._imported("iceberg")
-    assert built is not None and built.into_kind() == "iceberg"
 
 
 # -- what a join hands back --------------------------------------------------

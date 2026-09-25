@@ -11,7 +11,7 @@ import pytest
 from pyiceberg.exceptions import CommitFailedException
 from pyiceberg.expressions import And, GreaterThanOrEqual, LessThan
 
-from rekep import Convertible, scalar
+from rekep import scalar
 from rekep.fields import field_of, partition_key, primary_key, sort_key
 from rekep.iceberg import IcebergCatalog, IcebergDataset
 
@@ -22,7 +22,7 @@ START = datetime.datetime(2026, 9, 23, 10, tzinfo=datetime.timezone.utc)
 
 
 @scalar
-class Event(Convertible):
+class Event:
     """An identified event in an hourly partition."""
 
     curruuid: Annotated[str, primary_key()]

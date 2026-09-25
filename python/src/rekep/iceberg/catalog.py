@@ -12,7 +12,6 @@ from urllib.parse import urlsplit
 
 from yggdryl import Arn, Uri, Url
 
-from rekep.convert import Convertible
 from rekep.fields import field_of
 from rekep.require import require
 
@@ -375,11 +374,16 @@ def _file_location(location: str) -> str:
 
 
 @dataclasses.dataclass(eq=False)
-class IcebergCatalog(Convertible):
+class IcebergCatalog:
     """One pyiceberg catalog, with the verbs a stack needs."""
 
     name: str = "default"
     properties: dict[str, str] = dataclasses.field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Any]) -> IcebergCatalog:
+        """Build from `{"name": ..., "properties": {...}}`, both optional."""
+        return cls(**mapping)
 
     def __post_init__(self) -> None:
         """Freeze the warehouse location before this handle is shared."""
@@ -606,7 +610,7 @@ class IcebergCatalog(Convertible):
 
 
 @dataclasses.dataclass(eq=False)
-class IcebergNamespace(Convertible):
+class IcebergNamespace:
     """One namespace in a catalog: its properties, its tables, its datasets."""
 
     catalog: IcebergCatalog

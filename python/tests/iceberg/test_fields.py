@@ -8,7 +8,7 @@ from typing import Annotated
 import pyarrow
 import pytest
 
-from rekep import Convertible, Field, scalar
+from rekep import Field, scalar
 from rekep.fields import (
     field_of,
     partition_key,
@@ -39,7 +39,7 @@ from rekep.iceberg.fields import (
 
 
 @scalar
-class Quote(Convertible):
+class Quote:
     """One quote."""
 
     symbol: Annotated[str, primary_key()]
@@ -107,7 +107,7 @@ def test_the_primary_key_becomes_the_identifier_fields(schema: object) -> None:
 
 def test_a_field_without_a_key_declares_no_identifier() -> None:
     @scalar
-    class Loose(Convertible):
+    class Loose:
         symbol: str
 
     assert iceberg_schema(Loose.into_field()).identifier_field_ids == []
@@ -167,7 +167,7 @@ def test_one_field_projects_on_its_own() -> None:
 
 def test_a_nested_field_projects_too() -> None:
     @scalar
-    class Book(Convertible):
+    class Book:
         """A book."""
 
         venue: Quote
@@ -191,7 +191,7 @@ def test_the_partition_spec_follows_the_declaration(schema: object) -> None:
 
 def test_a_transform_is_parsed_as_iceberg_spells_it() -> None:
     @scalar
-    class Bucketed(Convertible):
+    class Bucketed:
         symbol: Annotated[str, partition_key("bucket[16]")]
         stamp: Annotated[datetime.datetime, partition_key("day")]
 
@@ -229,7 +229,7 @@ def test_a_repeated_partition_source_stays_authoritative_in_iceberg(schema: obje
 
 def test_nothing_declared_is_an_unpartitioned_spec() -> None:
     @scalar
-    class Flat(Convertible):
+    class Flat:
         symbol: str
 
     assert iceberg_partition_spec(Flat.into_field()).fields == ()
@@ -445,7 +445,7 @@ def test_ids_ride_under_the_protocol_prefix() -> None:
 
 
 @scalar
-class Wide(Convertible):
+class Wide:
     """A shape with more leaves than Iceberg infers bounds for."""
 
     day: Annotated[datetime.date, partition_key()]
@@ -663,7 +663,7 @@ def test_a_document_that_does_not_build_is_refused() -> None:
 
 
 @scalar
-class Venue(Convertible):
+class Venue:
     """A shape with an identifier column and an hour-partitioned clock."""
 
     mic: Annotated[str, primary_key()]
