@@ -14,7 +14,7 @@ import pyarrow
 import pyarrow.compute
 import pytest
 
-from rekep import Convertible, scalar
+from rekep import scalar
 from rekep.fields import field_of, partition_key, primary_key
 from rekep.iceberg import IcebergCatalog, IcebergDataset, iceberg_schema, partition_keys
 
@@ -27,7 +27,7 @@ pytestmark = pytest.mark.integration
 
 
 @scalar
-class Quote(Convertible):
+class Quote:
     """One quote."""
 
     symbol: Annotated[str, primary_key()]
@@ -463,7 +463,7 @@ def test_a_replace_of_many_updates_agrees_with_the_library(tmp_path: Path) -> No
 
 
 @scalar
-class Nested(Convertible):
+class Nested:
     """A row with a column Arrow cannot compare."""
 
     key: Annotated[str, primary_key()]
@@ -517,7 +517,7 @@ def test_a_signed_zero_key_matches_the_zero_it_equals(
     """
 
     @scalar
-    class Level(Convertible):
+    class Level:
         """A price level."""
 
         price: float
@@ -547,7 +547,7 @@ def test_signed_zero_source_keys_are_one_key(tmp_path: Path) -> None:
     """Normalisation happens before the first row is kept, because the two zeros compare equal."""
 
     @scalar
-    class Level(Convertible):
+    class Level:
         """A price level."""
 
         price: float
@@ -602,7 +602,7 @@ def test_a_chunk_the_shape_refuses_is_refused_before_anything_is_staged(stored) 
 
 
 @scalar
-class Event(Convertible):
+class Event:
     """One event, partitioned by a *transform* of its timestamp."""
 
     at: Annotated[datetime.datetime, primary_key(), partition_key("day")]
@@ -672,7 +672,7 @@ def test_a_nan_merge_key_is_refused_by_both(tmp_path: Path, keys: int) -> None:
     """
 
     @scalar
-    class Level(Convertible):
+    class Level:
         """A price level."""
 
         price: float

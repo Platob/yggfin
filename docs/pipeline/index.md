@@ -18,8 +18,6 @@ flowchart LR
     K --> O["parse_events orders"] --> OT[("market.orders")]
     K --> Q["parse_events quotes"] --> QT[("market.quotes")]
     K --> E["parse_events executions"] --> ET[("market.executions")]
-    S -.optional.-> D["dbt build"]
-    D --> DT[("orders.events / orders.current / executions.fills")]
 ```
 
 | stage | reads | writes | replaces |
@@ -29,7 +27,6 @@ flowchart LR
 | [`parse_fix_refined`](parse-fix-refined.md) | `fix.raw`, from the hour before the window | `fix.refined` | on `curruuid` within its hour |
 | [`parse_books`](parse-books.md) | `fix.refined` | `market.books` | the exact window, in one snapshot |
 | [`parse_events`](parse-events.md) | one `market.books` snapshot | `market.orders`, `market.quotes`, `market.executions` | the exact window, in one snapshot |
-| [dbt products](dbt.md), optional | `fix.refined` | `orders.events`, `orders.current`, `executions.fills` | on each model's own key |
 
 A stage reads and writes the tables the module's constants name --
 `MESSAGES`, `RAW`, `REFINED`, `BOOKS` and `EVENTS[kind]` -- unless its
@@ -202,7 +199,6 @@ new book snapshot.
 | object-store development | S3 | SQLite | S3 | [S3 with a SQL catalog](../storage/catalogs.md#s3-with-a-sql-catalog) |
 | AWS production | S3 | AWS Glue | S3 | [AWS Glue and S3](../storage/catalogs.md#aws-glue-and-s3) |
 | AWS managed tables | S3 | S3 Tables, at its own or the Glue endpoint | the table bucket | [AWS S3 Tables](../storage/catalogs.md#aws-s3-tables) |
-| derived products | n/a | same catalog | same warehouse | [dbt products](dbt.md) |
 
 Credentials belong to the process environment, workload role, or standard AWS
 configuration -- not a catalog mapping committed beside the code.

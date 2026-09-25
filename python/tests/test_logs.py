@@ -18,7 +18,7 @@ from typing import Annotated
 import pyarrow
 import pytest
 
-from rekep import Convertible, scalar
+from rekep import scalar
 from rekep.fields import partition_key, primary_key
 from rekep.iceberg import IcebergDataset
 
@@ -26,7 +26,7 @@ from .conftest import catalog_properties
 
 
 @scalar
-class Quote(Convertible):
+class Quote:
     """One quote."""
 
     symbol: Annotated[str, primary_key()]

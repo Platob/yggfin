@@ -15,19 +15,14 @@ flowchart LR
 
 | order | product | grain | main consumer | status |
 | ---: | --- | --- | --- | --- |
-| 1 | [`orders.events`](orders.md) | one normalized order event | lifecycle audit and state reconstruction | first cut in dbt |
-| 2 | [`orders.current`](orders.md#orderscurrent) | latest settled state per logical order | operations and exposure views | first cut in dbt |
-| 3 | [`executions.fills`](executions.md) | one economic fill/correction/cancel | trading, allocation, and TCA | first cut in dbt |
+| 1 | [`orders.events`](orders.md) | one normalized order event | lifecycle audit and state reconstruction | planned |
+| 2 | [`orders.current`](orders.md#orderscurrent) | latest settled state per logical order | operations and exposure views | planned |
+| 3 | [`executions.fills`](executions.md) | one economic fill/correction/cancel | trading, allocation, and TCA | planned |
 | 4 | [`book.updates`](order-book.md) | one normalized depth mutation | market-data replay | planned |
 | 5 | [`book.snapshots`](order-book.md#booksnapshots) | one ordered book image at a checkpoint | research and monitoring | planned |
 
-The first three are published today by the
-[dbt project](../pipeline/dbt.md) under `data/dbt`: the grains, keys, identity
-precedence and state rules below are what its models implement, and the page
-lists where the SQL projection of them differs from the schemas here. They are
-a first cut and not the gate: a product passes the gates below when its shape
-is a `Field` declaration with a reviewed snapshot beside it, which is still
-what these pages specify.
+A product passes the gates below when its shape is a `Field` declaration with
+a reviewed snapshot beside it, which is what these pages specify.
 
 ## Rules shared by every product
 

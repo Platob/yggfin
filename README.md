@@ -46,12 +46,7 @@ market.books   -> parse_events("orders")     -> market.orders
 ```
 
 The three event kinds run independently after books commit, reading the same
-pinned book snapshot. The optional dbt products are built from refined FIX by
-dbt itself:
-
-```text
-fix.refined -> dbt build -> orders.events, orders.current, executions.fills
-```
+pinned book snapshot.
 
 The two FIX stages are the two native stages one codec exposes, each over a
 table of its own, in this order and no other:
@@ -94,9 +89,8 @@ decimals survive the Arrow projection; Iceberg v2 stores timestamps at
 microsecond resolution and uint64 codes as signed views of the same bits.
 
 Land the [capture](data/README.md#the-capture) from the repository root, into
-the local catalog the [dbt profile](data/dbt/README.md) reads, then build the
-products over it. `uv sync --project python` installs the default `dev` and
-`dbt` groups; run the Python under `uv run --project python python`:
+a local SQLite catalog. `uv sync --project python` installs the default `dev`
+group; run the Python under `uv run --project python python`:
 
 ```python
 from rekep.iceberg import IcebergCatalog
@@ -120,10 +114,6 @@ try:
     assert parse_fix_refined(catalog, day) == Landed(read=49, written=19)
 finally:
     catalog.close()
-```
-
-```bash
-uv run --project python dbt build --project-dir data/dbt --profiles-dir data/dbt
 ```
 
 Each stage reads the table before it, replaces its window of the table it
@@ -177,11 +167,6 @@ session, context and sequence form the byte-length-prefixed
 `identifiers["msgsesseventid"]`. Default null spellings are empty text,
 `null`, `<null>`, `none`, `n/a`, and `[n/a]`, trimmed and case-insensitive.
 
-`dbt build` runs the [dbt project](data/dbt/README.md) under `data/dbt` and
-reads `fix.refined`: DuckDB owns the SQL, and every read and commit goes through
-the same Iceberg dataset the stages write through, so there is no second
-catalog and no extract.
-
 The reviewed contracts are [Message](schemas/rekep/message.json),
 [FixMsg](schemas/rekep/fixmsg.json), [Book](schemas/rekep/book.json), and
 [MarketEvent](schemas/rekep/marketevent.json). Their runtime constructors own
@@ -206,4 +191,4 @@ uv run --group docs mkdocs build --strict --config-file ../mkdocs.yml
 
 `mkdocs-material` is in the `docs` group, which is not a default group, so the
 documentation build names it; everything above it runs under the default
-`dev` and `dbt` groups.
+`dev` group.

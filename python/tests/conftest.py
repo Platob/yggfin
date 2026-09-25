@@ -26,7 +26,7 @@ def pytest_runtest_makereport(
     item: pytest.Item, call: pytest.CallInfo[None]
 ) -> Generator[None, pytest.TestReport, pytest.TestReport]:
     """Skip a test that failed on a refusal `REFUSED` names, raised or only
-    printed: a subprocess such as a `dbt build` prints its failure and exits
+    printed: a subprocess prints its failure and exits
     nonzero.
 
     Only what the failure said is read -- each exception's message down its

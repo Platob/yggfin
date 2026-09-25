@@ -194,12 +194,6 @@ MAINTENANCE_PROPERTIES = {
 class IcebergDataset(Dataset):
     """An Iceberg table, read and written as Arrow through pyiceberg."""
 
-    @classmethod
-    @functools.cache
-    def into_kind(cls) -> str:
-        """Document kind registered with `Dataset`."""
-        return "iceberg"
-
     #: Table coordinates stay outside the schema so catalog identity cannot
     #: change when a field declaration is reused under another namespace.
     name: str
@@ -258,21 +252,6 @@ class IcebergDataset(Dataset):
     retry_backoff: float = 0.25
     retry_max_backoff: float = 8.0
 
-    @classmethod
-    def from_dict(cls, mapping: Mapping[str, Any]) -> IcebergDataset:
-        """Build a dataset document containing a native field declaration."""
-        declared = dict(mapping)
-        field = declared.get("field")
-        if isinstance(field, Mapping):
-            declared["field"] = Field.from_dict(field)
-        return super().from_dict(declared)
-
-    def into_dict(self) -> dict[str, Any]:
-        """Serialize the native field as its portable mapping."""
-        declared = super().into_dict()
-        declared["field"] = self.field.into_dict()
-        return declared
-
     def __post_init__(self) -> None:
         """Normalize the declaration and public root spellings once."""
         if not self.name or "." in self.name:
@@ -308,8 +287,7 @@ class IcebergDataset(Dataset):
                 SNAPSHOT_MAX_AGE: str(duration // datetime.timedelta(milliseconds=1)),
             }
             self.__dict__["_snapshot_expiry"] = duration
-            # Relative retention is an Iceberg table declaration. Keeping its
-            # one canonical spelling also makes dataset documents round-trip.
+            # Relative retention is an Iceberg table declaration.
             self.snapshot_expiry = None
         elif self.snapshot_expiry is None and configured_expiry is not None:
             self.__dict__["_snapshot_expiry"] = _expiry_delta(configured_expiry)

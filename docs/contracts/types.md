@@ -65,12 +65,12 @@ assert applied.schema.equals(Message.into_field().into_arrow_schema(), check_met
 
 ## Portable forms
 
-There are two, and which one a document uses says what the document is for.
+There are two, and each is for a different reader.
 
 `Field.into_json(indent=2)` is the **runtime declaration** form: deterministic,
-metadata-bearing, and restored in full by `Field.from_json`. `IcebergDataset`
-documents carry it, because `derived_columns()` needs what only Arrow metadata
-states -- a digest's sources, a derived column's sources, a FIX tag.
+metadata-bearing, and restored in full by `Field.from_json`, because
+`derived_columns()` needs what only Arrow metadata states -- a digest's
+sources, a derived column's sources, a FIX tag.
 
 `iceberg_contract(field)` is the **published contract** form: the `schema`,
 `partition-spec` and `sort-order` PyIceberg itself serializes, and what the

@@ -77,7 +77,6 @@ nav:
       - Parse FIX refined: pipeline/parse-fix-refined.md
       - Parse books: pipeline/parse-books.md
       - Market events: pipeline/parse-events.md
-      - dbt products: pipeline/dbt.md
   - Roadmap:
       - Data-product roadmap: roadmap/index.md
       - Orders: roadmap/orders.md

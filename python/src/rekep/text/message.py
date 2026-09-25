@@ -9,7 +9,6 @@ import pyarrow
 from yggdryl import TextOptions, scalar
 
 from rekep.annotations import Self
-from rekep.convert import Convertible
 from rekep.fields import (
     HOUR,
     Field,
@@ -56,7 +55,7 @@ def decoded(raw: bytes) -> str:
 
 
 @scalar(slots=True)
-class Message(Convertible):
+class Message:
     """One ULBridge text line, before the FIX codec reads its body.
 
     Every column is one the native text read already states, under the name

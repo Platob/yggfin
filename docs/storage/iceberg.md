@@ -374,7 +374,7 @@ nothing, is keyed only by `curruuid`, and is laid out by the hour of
 holds other identities under other field ids and is not evolved into this
 shape: the table is dropped, recreated from `Message.into_field()` by
 `deploy(catalog, tables=["logs.messages"])`, and its captures replayed -- together with both FIX
-tables and dependent market or optional SQL products, whose provenance and keys join to it. rekep
+tables and the dependent market products, whose provenance and keys join to it. rekep
 carries no legacy name, timestamp-type, digest-name, or partition-layout
 compatibility path.
 

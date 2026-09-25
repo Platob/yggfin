@@ -5,8 +5,6 @@ Arrow is the one in-memory boundary between text media and Iceberg.
 ![Apache Arrow connects Iceberg tables, DataFrames, compute engines, and SQL databases.](../assets/arrow-hub.svg)
 
 ```python
-import polars
-
 from rekep import Message
 from rekep.iceberg import iceberg_schema
 
@@ -15,7 +13,6 @@ arrow = field.into_arrow_schema()
 
 print(arrow)
 print(iceberg_schema(field))
-print(polars.from_arrow(arrow.empty_table()))
 ```
 
 The text reader emits `RecordBatch` objects. `Field` validates, casts, and

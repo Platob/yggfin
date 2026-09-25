@@ -23,16 +23,14 @@ jobs:
        github.event.comment.author_association))
     strategy:
       fail-fast: false
-      # The floor as well as the newest release: the dbt group is the one
-      # that reaches furthest into the dependency tree, and a transitive pin
-      # that cannot be installed on 3.10 shows up here first.
+      # The floor as well as the newest release.
       matrix:
         os: [ubuntu-latest, windows-latest]
         python: ["3.10", "3.13"]
     runs-on: ${{ matrix.os }}
     # The native dependency is a published wheel on every leg, so nothing is
     # compiled before the suite starts. The room left here is for the full
-    # Iceberg transactions and the dbt builds over them, not a build.
+    # Iceberg transactions, not a build.
     timeout-minutes: 30
     defaults:
       run:

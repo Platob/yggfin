@@ -32,7 +32,7 @@ def test_failed():
 
 
 def test_a_refused_credential_skips_and_any_other_failure_fails(tmp_path: Path) -> None:
-    """Raised or only printed -- a subprocess such as a `dbt build` prints its
+    """Raised or only printed -- a subprocess prints its
     failure and exits nonzero -- a refusal is the environment's, and the skip
     says so. A traceback's source naming one is not a refusal."""
     shutil.copy(Path(__file__).with_name("conftest.py"), tmp_path / "conftest.py")
