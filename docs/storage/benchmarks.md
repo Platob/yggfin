@@ -75,12 +75,10 @@ chains, spread evenly over ten hourly partitions.
 | FIX raw | 220,000 | 220,000 | 26.860 | 29.265 | 35.428 |
 | first refined hour | 22,000 | 22,000 | 5.469 | 8.589 | 17.360 |
 | later refined hour, range | 44,000 | 22,000 | 6.640-7.906 | 9.057-10.706 | 14.807-16.900 |
-| dbt products | -- | 440,000 | 14.234 | 20.488 | 26.969 |
 
 Each later refined job read its previous hour plus its own and published only
-its own 22,000 rows. Final counts were 220,000 in `logs.messages`, `fix.raw`,
-`fix.refined` and `orders.events`, and 110,000 in both `orders.current` and
-`executions.fills`; all 25 dbt checks passed. These figures were measured
+its own 22,000 rows. Final counts were 220,000 in `logs.messages`, `fix.raw` and
+`fix.refined`. These figures were measured
 through the task runner this package no longer ships: `stage` is the work time
 it reported for the stage, `job` includes running the stage, and `full
 command` also includes interpreter and launcher startup.
@@ -91,11 +89,10 @@ every `srcuuids` identity existed in `logs.messages`, all 110,000 predecessor
 links resolved, and the states were exactly 110,000 `20NEW` plus 110,000
 `80FILLED`, with every fill at sequence one.
 
-Sampled steady-state refined jobs held 820.6-836.1 MiB peak resident memory;
-dbt reached 1,117.5 MiB. This is one local scalability observation, not a
+Sampled steady-state refined jobs held 820.6-836.1 MiB peak resident memory. This is one local scalability observation, not a
 throughput guarantee. Hour pruning and bounded Iceberg fan-in avoid a global
 warehouse scan, but the selected finite history is still collected by the
-native lifecycle and dbt still calls `read_all` on its projected source, so
+native lifecycle, so
 the pipeline is not globally memory-bounded.
 
 A wall-time profile found no Python per-row allocation loop: fixed-row

@@ -2,7 +2,7 @@
 
 rekep publishes seven Iceberg tables under four runtime-derived shapes.
 Native market products start from `fix.refined`; they do not reparse captures
-or repeat lifecycle processing. Existing dbt products remain optional.
+or repeat lifecycle processing.
 
 ```mermaid
 flowchart LR
@@ -12,7 +12,6 @@ flowchart LR
     K --> O[("market.orders")]
     K --> Q[("market.quotes")]
     K --> E[("market.executions")]
-    S -.optional dbt.-> D[("orders.events / orders.current / executions.fills")]
 ```
 
 | product | row grain | native key | runtime shape |
@@ -42,9 +41,7 @@ it survive. Native `curruuid` stays the event key even when a rerun changes
 which events belong in the window.
 
 Only `logs.messages` keeps `body`. FIX provenance follows `srcuuids` back to
-those lines. The [optional dbt build](../pipeline/dbt.md) retains
-its existing model-owned contracts for `orders.events`, `orders.current` and
-`executions.fills`; these are separate from the native `market.*` products.
+those lines.
 
 ## Read products
 

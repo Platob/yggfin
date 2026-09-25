@@ -70,15 +70,6 @@ dev = [
     "tomli>=2.0; python_version < '3.11'",
     "rekep[iceberg,polars,s3tables]",
 ]
-# What building the dbt products under `data/dbt` needs. dbt loads
-# `rekep.dbt` by the name the profile gives, and nothing in `src/` imports dbt
-# otherwise, so it is a group rather than an extra; a production build reads a
-# Glue or S3 Tables catalog, which is why it carries those extras too.
-dbt = [
-    "dbt-core>=1.10,<2",
-    "dbt-duckdb>=1.9,<2",
-    "rekep[glue,iceberg,polars,s3tables]",
-]
 # What the benchmarks race the shipped implementations against. `polars` is
 # shipped as an extra and `bench_iceberg` races the export this package selects
 # against a forced one; nothing here is imported by `src/`.
@@ -87,8 +78,7 @@ bench = [
 ]
 
 [tool.uv]
-# `uv run pytest` syncs these, so the dbt plugin's tests find dbt.
-default-groups = ["dev", "dbt"]
+default-groups = ["dev"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rekep"]

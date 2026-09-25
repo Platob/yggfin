@@ -224,9 +224,8 @@ every one of these off.
 ### What the service owns
 
 A table bucket's namespaces are one level deep and spelled in lowercase
-letters, digits and underscores, which `logs`, `fix`, `market`, `orders` and
-`executions` already are. Deployment, the pipeline stages, the dbt build and
-their replays are otherwise exactly what they are on any other catalog.
+letters, digits and underscores, which `logs`, `fix` and `market` already are.
+Deployment, the pipeline stages and their replays are otherwise exactly what they are on any other catalog.
 
 Two things differ, and both because the service owns the files:
 
@@ -314,9 +313,8 @@ Drop affected source tables and dependent products together
 (`catalog.drop_table(name, purge=True)`), deploy their current declarations,
 and replay capture through `parse_messages`, `parse_fix_raw` and
 `parse_fix_refined` in order. Then run `parse_books` and its three event
-kinds from the newly committed book snapshot. Rebuild the optional dbt
-products when they are deployed too. The seven native table shapes come from
-four runtime contracts; the SQL products retain their own model declarations.
+kinds from the newly committed book snapshot. The seven table shapes come from
+four runtime contracts.
 
 Replay captures from their original locations. A line without its own clock
 uses the source object's modification time; copying the object can therefore

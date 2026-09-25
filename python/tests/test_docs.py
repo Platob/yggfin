@@ -29,7 +29,6 @@ PAGES = [
     ROOT / ".claude" / "skills" / "rekep" / "SKILL.md",
     ROOT / "config" / "README.md",
     ROOT / "data" / "README.md",
-    ROOT / "data" / "dbt" / "README.md",
     ROOT / "schemas" / "README.md",
     *sorted(DOCS.rglob("*.md")),
 ]

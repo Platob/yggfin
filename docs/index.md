@@ -90,8 +90,7 @@ Market stages read strict `[start, end)` windows and atomically replace the
 same interval, including empty reruns. Books start without earlier resting
 depth. The [market run example](pipeline/index.md#run-the-graph) folds the
 fixture's midday hour; the afternoon holds an incomplete AE side that book
-projection correctly refuses. Existing [dbt products](pipeline/dbt.md) remain
-optional.
+projection correctly refuses.
 
 The text reader emits the exact `Message` schema: header captures are typed,
 `body` is the line past its header, and the line's own `currunix`, `curruuid`
@@ -122,7 +121,6 @@ print(Message.into_field().into_arrow_schema())
 | the exact stage contracts | [Pipeline](pipeline/index.md) |
 | the two FIX stages | [Parse FIX raw](pipeline/parse-fix-raw.md) · [Parse FIX refined](pipeline/parse-fix-refined.md) |
 | native books and market events | [Parse books](pipeline/parse-books.md) · [Market events](pipeline/parse-events.md) |
-| optional SQL products | [dbt products](pipeline/dbt.md) |
 | the runtime FIX dictionary | [Registry](fix/registry.md) |
 | to decode or encode a frame | [Decode](fix/decode.md) · [Encode](fix/encode.md) |
 | where the tables live | [Catalogs](storage/catalogs.md) |

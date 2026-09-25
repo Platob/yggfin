@@ -219,12 +219,6 @@ site/
 data/catalog.db
 data/warehouse/
 
-# What a dbt build leaves behind: its compiled project, the run artifacts and
-# the Parquet files a model is staged as, and its own log. The project itself
-# -- models, schemas, macros and profile -- is tracked.
-data/dbt/target/
-data/dbt/logs/
-
 # Scratch git worktrees an agent runner checks out inside the repository. The
 # rest of `.claude/` is project configuration and belongs in the history.
 .claude/worktrees/

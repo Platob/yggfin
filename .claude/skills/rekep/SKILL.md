@@ -1,6 +1,6 @@
 ---
 name: rekep
-description: Use and extend `rekep`, the processing library that turns ULBridge text captures into FIX and market Iceberg tables. Use for any work in this repository or with the `rekep` package - landing a window through the `rekep.pipeline` stages (`parse_messages`, `parse_fix_raw`, `parse_fix_refined`, `parse_books`, `parse_events`) over an `IcebergCatalog`, choosing windows and catalogs (local SQLite, S3, AWS Glue, S3 Tables), pinning the market event kinds to one book snapshot, creating tables ahead of a run with `rekep.deploy`, reading landed tables from Python, the FIX codec and registry, table contracts (`iceberg_contract`, `schemas/rekep`), the dbt products built with `dbt build`, and changing, testing or documenting the code.
+description: Use and extend `rekep`, the processing library that turns ULBridge text captures into FIX and market Iceberg tables. Use for any work in this repository or with the `rekep` package - landing a window through the `rekep.pipeline` stages (`parse_messages`, `parse_fix_raw`, `parse_fix_refined`, `parse_books`, `parse_events`) over an `IcebergCatalog`, choosing windows and catalogs (local SQLite, S3, AWS Glue, S3 Tables), pinning the market event kinds to one book snapshot, creating tables ahead of a run with `rekep.deploy`, reading landed tables from Python, the FIX codec and registry, table contracts (`iceberg_contract`, `schemas/rekep`), and changing, testing or documenting the code.
 ---
 
 # rekep
@@ -18,7 +18,6 @@ fix.refined    -> parse_books                -> market.books
 market.books   -> parse_events("orders")     -> market.orders      (the three kinds
                -> parse_events("quotes")     -> market.quotes       read one pinned
                -> parse_events("executions") -> market.executions   book snapshot)
-fix.refined    -> dbt build (optional)       -> orders.events, orders.current, executions.fills
 ```
 
 `AGENTS.md` is the binding contract for how code here is written and who owns
@@ -31,10 +30,8 @@ what; read it before changing code. This skill is the operating manual.
 | `python/src/rekep/pipeline.py` | the stages, `Landed`, and the table names they write (`MESSAGES`, `RAW`, `REFINED`, `BOOKS`, `EVENTS`) |
 | `python/src/rekep/deploy.py` | `deploy(catalog)` and `TABLES`: the graph's tables, created ahead of a run |
 | `python/src/rekep/{text,fix,market,times,iceberg,fields}` | the library the stages compose |
-| `python/src/rekep/dbt.py` | the dbt-duckdb plugin `data/dbt/profiles.yml` loads |
 | `python/tests/` | the suite; `-m integration` runs real Iceberg transactions |
 | `data/capture/ulbridge.log` | the 144-line capture every documented count comes from (`data/README.md`) |
-| `data/dbt/` | the dbt project (`data/dbt/README.md`) |
 | `config/` | where an operator's own FIX dictionary goes (`config/README.md`) |
 | `schemas/rekep/*.json` | reviewed Iceberg contracts (Message, FixMsg, Book, MarketEvent) |
 | `docs/` | the mkdocs site; `docs/pipeline/` explains each stage |
@@ -43,18 +40,16 @@ what; read it before changing code. This skill is the operating manual.
 ## Setup
 
 Work from the **repository root**: the examples' relative paths
-(`file:data/capture`, `data/dbt`) resolve against the working directory.
+(`file:data/capture`, `data/catalog.db`) resolve against the working directory.
 
 ```bash
-uv sync --project python          # default groups: dev, dbt
+uv sync --project python          # default group: dev
 ```
 
 `rekep` is not published on PyPI. Outside a checkout install it from one,
 `pip install "./python[iceberg]"` (add `glue` or `s3tables` for those
 catalogs), or from Git with
 `pip install "rekep[iceberg] @ git+https://github.com/Platob/yggfin#subdirectory=python"`.
-The dbt products also need `dbt-core` and `dbt-duckdb` (the `dbt` group) and
-the `data/dbt` project.
 
 ## Land a window
 
@@ -253,30 +248,7 @@ finally:
 `deploy` answers `created`, `present` or, under `dry_run`, `missing` per table,
 and never alters an existing table. `tables` narrows it to some of `TABLES`,
 `table_properties` sets properties on the tables it creates, and `codec` types
-the two FIX tables exactly as the run parsing into them would. The dbt models
-create their tables on first build.
-
-## dbt products
-
-dbt builds the project in `data/dbt` (`data/dbt/README.md`,
-`docs/pipeline/dbt.md`) with its own CLI, from the repository root, once
-`fix.refined` exists. `REKEP_DBT_CATALOG` names the catalog as the JSON of the
-mapping above; without it the profile's local SQLite catalog under `data/` is
-used.
-
-```bash
-REKEP_DBT_CATALOG='{"name": "rekep", "properties": {"type": "sql", "uri": "sqlite:////abs/catalog.db", "warehouse": "/abs/warehouse"}}' \
-  uv run --project python dbt build --project-dir data/dbt --profiles-dir data/dbt
-```
-
-Over the capture's day it commits 16 `orders.events`, 8 `orders.current` and 7
-`executions.fills` rows. The project builds whole: DuckDB is `:memory:` and its
-tests span products, so a partial `--select` fails. A model's `config()` block
-is its Iceberg declaration (`table`, `primary_key`, `partition_by`, `sort_by`,
-`arrow_types`, `mode`), and a source is one Iceberg read through the same
-catalog. Products read `fix.refined`, never `fix.raw`. A caller running
-`dbtRunner` in its own process calls `rekep.dbt.released()` after the build to
-close the catalogs the plugin opened.
+the two FIX tables exactly as the run parsing into them would.
 
 ## Reading tables from Python
 
@@ -391,7 +363,7 @@ uses its own environment so the shared `.venv` keeps its default groups.
 ## Pitfalls
 
 - Relative locations resolve against the working directory: `file:data/capture`
-  and the dbt profile's `sqlite:///data/catalog.db` mean another place from
+  and `sqlite:///data/catalog.db` mean another place from
   another directory. Work from the repo root or spell absolute locations.
 - `window_of()` with no bounds is the last day up to now; the capture is dated
   2026-08-14, so an unbounded run over it reads nothing.

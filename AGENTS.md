@@ -156,7 +156,6 @@ fix.refined    -> parse_books                -> market.books
 market.books   -> parse_events("orders")     -> market.orders
                -> parse_events("quotes")     -> market.quotes
                -> parse_events("executions") -> market.executions
-fix.refined    -> dbt build (optional)       -> orders.events, orders.current, executions.fills
 ```
 
 `raw` and `refined` are the two FIX tables and nothing else here is called
@@ -319,21 +318,6 @@ window; a failure leaves the prior snapshot visible; rows outside it are
 preserved. Partition-scoped keyed merge and whole-hour replacement do not
 implement this contract for partial-hour windows.
 
-dbt builds the project under `data/dbt` with its own CLI, from the repository
-root: `dbt build --project-dir data/dbt --profiles-dir data/dbt`, with
-`REKEP_DBT_CATALOG` naming the catalog as the JSON `IcebergCatalog.from_dict`
-reads. dbt owns the SQL a product is written in and nothing else: `rekep.dbt`
-is the one seam, a source is one `IcebergDataset` read and a model is one
-commit through the same dataset, and the DuckDB database is `:memory:` because
-Iceberg holds the state. A model's `config()` block is its Iceberg declaration
--- table, key, partition, sort order and the storage types SQL cannot spell --
-so no second Field, catalog or warehouse is declared anywhere under `data/dbt`.
-A product reads `fix.refined` and never `fix.raw`, because a product needs the
-chain and `fix.raw` carries none; a market fact is FIX's own field, and the
-staging model restates the products' reading of it off those fields. A caller
-running `dbtRunner` in its own process closes the catalogs the plugin opened
-with `rekep.dbt.released()`.
-
 Every stage answers `Landed`: `read` source rows its window selected,
 `written` target rows, `skipped` answered rows the target's key folded into a
 written one, and `snapshot_id` the `market.books` snapshot `parse_books`
@@ -363,10 +347,8 @@ python/src/rekep/
   market.py     the book fold and the event flattening over its snapshot
   times.py      instant readings, the run window and the ULBridge row header
   resources.py  Yggdryl binding and required byte reads
-  dbt.py        the dbt-duckdb plugin: a source is a read, a model is a commit
 .claude/skills/rekep/SKILL.md  how an agent uses, tests and extends the library
 data/capture/   the ULBridge capture every documented count reads
-data/dbt/       the dbt project: models, schemas, macros and its one profile
 tools/          fix_registry_dump.py, which regenerates docs/assets/fix-*.json
 schemas/rekep/message.json
 schemas/rekep/fixmsg.json

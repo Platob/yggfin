@@ -101,20 +101,13 @@ python/src/rekep/pipeline.py  one function per table the graph writes:
   parse_books                 native book fold
   parse_events                order, quote or execution projection
 python/src/rekep/deploy.py    the seven tables, created ahead of a run
-python/src/rekep/dbt.py       the dbt-duckdb plugin
 schemas/rekep/                reviewed table contracts
 docs/                         contracts, pipeline, products, storage, and roadmap
 tools/                        the FIX registry asset dump
 data/capture/                 the checked ULBridge capture
-data/dbt/                     the dbt project: models, schemas, macros, one profile
 config/                       an operator's own FIX dictionary, when one is used
 ```
 
 Maintenance is not a stage: it rewrites the tables the stages wrote and
 declares none of its own, and it is documented with the storage it settles,
 under [Iceberg maintenance](../storage/iceberg.md#maintenance).
-
-The dbt products are derivation rather than ingestion: dbt owns the SQL they
-are written in, and `rekep.dbt` is the one seam that makes a source an Iceberg
-read and a model an Iceberg commit through the dataset above. `dbt build` runs
-them, under [dbt products](../pipeline/dbt.md).
