@@ -158,10 +158,14 @@ def test_a_window_the_capture_falls_outside_reads_nothing_and_writes_none(
     assert warehouse.run(parse_fix_refined, window=recent) == nothing
     assert warehouse.rows() == {"logs.messages": 0, "fix.raw": 0, "fix.refined": 0}
     # And a line the header could not date is dated by its object's own
-    # modification time, so it is in the window that covers that instant.
+    # modification time, so it is in the window that covers that instant. The
+    # window ends past that instant rather than at `now`: before 3.13, Windows
+    # reads `now` off a clock that ticks every ~16 ms, behind the file's mtime.
     unframed = tmp_path / "unframed.log"
     unframed.write_bytes(b"one physical line\n")
-    written = warehouse.run(parse_messages, unframed.as_uri(), window=window_of())
+    mtime = datetime.datetime.fromtimestamp(unframed.stat().st_mtime, datetime.timezone.utc)
+    covering = window_of(end=mtime + datetime.timedelta(minutes=1))
+    written = warehouse.run(parse_messages, unframed.as_uri(), window=covering)
     assert written == Landed(read=1, written=1)
     assert warehouse.table("logs.messages").column("msgpluginid").to_pylist() == [None]
     assert warehouse.table("logs.messages").column(EVENT_CLOCK).to_pylist() != [EPOCH]
