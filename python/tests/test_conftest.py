@@ -18,7 +18,7 @@ def test_raised():
 
 def test_printed():
     print(
-        "parse_fix_refined: ForbiddenError: RESTError 403: Received unexpected JSON "
+        "parse_fix_messages_refined: ForbiddenError: RESTError 403: Received unexpected JSON "
         'Payload: {"message":"The security token included in the request is invalid."}',
         file=sys.stderr,
     )

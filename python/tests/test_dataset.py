@@ -71,11 +71,7 @@ class MemoryDataset(Dataset):
         return (
             reader
             if schema is None
-            else self.target_field(schema).apply_arrow_reader(
-                reader,
-                safe=False,
-                nullability="strict",
-            )
+            else self.target_field(schema).apply_arrow_reader(reader, safe=False)
         )
 
     def overwrite_arrow_reader(
@@ -89,7 +85,7 @@ class MemoryDataset(Dataset):
         if not join:
             raise ValueError(f"merge_by={merge_by!r} names nothing to match on")
         target = self.target_field(schema)
-        reader = target.apply_arrow_reader(source, safe=False, nullability="strict")
+        reader = target.apply_arrow_reader(source, safe=False)
         self.get_or_create()
         written = 0
         for chunk in arrow_chunks(reader, commit_row_size):
@@ -125,11 +121,7 @@ class MemoryDataset(Dataset):
         commit_row_size: int | None = None,
     ) -> int:
         self.get_or_create()  # a write appends, and appending to nothing is a create
-        reader = self.target_field(schema).apply_arrow_reader(
-            source,
-            safe=False,
-            nullability="strict",
-        )
+        reader = self.target_field(schema).apply_arrow_reader(source, safe=False)
         inserted = 0
         for chunk in arrow_chunks(reader, commit_row_size):
             self.commits.append(chunk)

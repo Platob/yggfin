@@ -503,7 +503,7 @@ class IcebergDataset(Dataset):
         the first interval of a fresh catalog every stage reads an upstream
         that its own upstream has not created yet, and "nothing there" is the
         true answer to that -- so it is answered once here rather than by an
-        `exists` guard at each call site. `rekep.pipeline.parse_messages`
+        `exists` guard at each call site. `rekep.pipeline.parse_log_messages`
         refuses a missing text source instead, because nothing in the
         pipeline creates one.
         """
@@ -574,11 +574,7 @@ class IcebergDataset(Dataset):
             reader = _reader_limit(reader, limit)
         if target is None:
             return reader
-        applied = target.apply_arrow_reader(
-            _renamed(reader, found),
-            safe=False,
-            nullability="strict",
-        )
+        applied = target.apply_arrow_reader(_renamed(reader, found), safe=False)
         return _projected(applied, requested) if requested is not None else applied
 
     def _empty_reader(
@@ -743,11 +739,7 @@ class IcebergDataset(Dataset):
                 source = _requiring_columns(
                     source, [column.source for column in partitions], derived_keys(target)
                 )
-            reader = target.apply_arrow_reader(
-                source,
-                safe=False,
-                nullability="strict",
-            )
+            reader = target.apply_arrow_reader(source, safe=False)
             snapshot = properties or {}
             if row_filter is not None:
                 return self._replace_where(
@@ -1171,11 +1163,7 @@ class IcebergDataset(Dataset):
             self._branch_head(table, reference)
             target = self._write_field(schema, merge_schema)
             table = self.iceberg_table
-            reader = target.apply_arrow_reader(
-                source,
-                safe=False,
-                nullability="strict",
-            )
+            reader = target.apply_arrow_reader(source, safe=False)
             snapshot = properties or {}
             inserted = 0
             for chunk in arrow_chunks(reader, rows, batches):

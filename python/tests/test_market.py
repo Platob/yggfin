@@ -8,9 +8,11 @@ import pytest
 
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.fields import stored_arrow_reader
-from rekep.fix import fix_codec, fix_message_field, fix_parse_field
+from rekep.fix import FixCodec, fix_message_field, fix_parse_field
 from rekep.iceberg import partition_keys, primary_keys
 from rekep.market import (
+    EVENT_KINDS,
+    SIDES,
     book_arrow_reader,
     book_event_arrow_reader,
     book_field,
@@ -34,25 +36,33 @@ FRAMES = (
 
 
 def native_books():
-    codec = fix_codec(batch_row_size=1)
+    """The frames' books, folded from their rows as the silver table holds them."""
+    codec = FixCodec.from_env(batch_row_size=1)
     messages = [codec.parse_fix_line(frame) for frame in FRAMES]
     refined = codec.arrow_reader(fix_parse_field(codec), messages)
-    stored = stored_arrow_reader(refined, fix_message_field(codec))
-    return book_arrow_reader(codec, stored)
+    stored = stored_arrow_reader(refined, fix_message_field(codec)).read_all()
+    return book_arrow_reader(codec, stored.to_reader())
 
 
 def test_books_accept_refined_storage_and_ignore_administration():
     books = native_books().read_all()
     assert books.num_rows == 4
-    assert books.column("symbolticker").to_pylist() == ["AAPL"] * 4
-    assert books.column("bid")[1].as_py()["live"][0]["price"] == Decimal("101")
-    assert books.column("executions")[3].as_py()[0]["quantity"] == Decimal("4")
+    assert books.column("kind").to_pylist() == ["book_event"] * 4
+    assert books.column("ticker").to_pylist() == ["AAPL"] * 4
+    assert books.column("bidside")[1].as_py()["live"][0]["price"] == Decimal("101")
+    # The trade report is decomposed into one execution per side it states,
+    # each keeping the quantity its own side traded.
+    traded = books.column("executions")[3].as_py()
+    assert [(held["side"], held["lastqty"]) for held in traded] == [
+        ("BUY", Decimal("4")),
+        ("SELL", Decimal("6")),
+    ]
 
 
 @pytest.mark.parametrize(("kind", "expected"), [("orders", 1), ("quotes", 3), ("executions", 3)])
 def test_flatten_preserves_each_native_event_once(kind, expected):
     books = stored_arrow_reader(native_books(), book_field()).read_all()
-    columns = ["executions"] if kind == "executions" else ["bid", "ask"]
+    columns = ["executions"] if kind == "executions" else list(SIDES)
     events = book_event_arrow_reader(books.select(columns).to_reader(), kind).read_all()
     assert events.num_rows == expected
     assert events.schema.equals(market_event_field().into_arrow_schema(), check_metadata=False)
@@ -64,9 +74,9 @@ def test_flatten_preserves_each_native_event_once(kind, expected):
         else:
             reference.extend(
                 {name: value[name] for name in events.schema.names}
-                for side in ("bid", "ask")
+                for side in SIDES
                 for value in book[side]["deltas"]
-                if value["operationkind"] == kind[:-1]
+                if value["kind"] == EVENT_KINDS[kind]
             )
     assert events.to_pylist() == reference
     assert len(set(events.column("curruuid").to_pylist())) == expected
@@ -107,7 +117,7 @@ def test_readers_release_sources_on_early_close(operation, pull):
     released = []
     table = stored_arrow_reader(native_books(), book_field()).read_all()
     if operation == "books":
-        codec = fix_codec()
+        codec = FixCodec.from_env()
         table = codec.arrow_reader(
             fix_parse_field(codec), [codec.parse_fix_line(FRAMES[1])]
         ).read_all()
@@ -124,6 +134,12 @@ def test_readers_release_sources_on_early_close(operation, pull):
     if pull:
         reader.read_next_batch()
     reader.close()
+    if operation == "books":
+        # The codec took the source through its C stream, so the native reader
+        # owns it, and a native reader dropped without the interpreter's lock
+        # releases the Python objects it held at the next call into the
+        # extension rather than at the drop.
+        _ = codec.threads
     assert released == [1]
 
 
@@ -144,7 +160,7 @@ def test_window_is_strict_at_both_bounds_and_excludes_undated_rows():
 
 
 def test_admitted_errors_are_not_dropped():
-    codec = fix_codec()
+    codec = FixCodec.from_env()
     bad = codec.parse_fix_line(b"8=FIX.4.4|35=AE|52=20260921-10:00:00|571=T1|150=H|55=AAPL|10=0|")
     source = codec.arrow_reader(fix_parse_field(codec), [bad])
     with pytest.raises(Exception, match=r"MsgType\(35\).*AE"):

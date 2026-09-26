@@ -1,4 +1,4 @@
-"""Benchmark plain and gzip text objects into stored `Message` batches."""
+"""Benchmark plain and gzip text objects into stored `log_messages` batches."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 
 import pyarrow
-from yggdryl import IOBase, TextOptions
+from yggdryl import IOBase, State, TextOptions
 
 # `src` for the package under measurement, and this folder for `_bench`,
 # so a benchmark imports the same whether it is run or imported.
@@ -20,17 +20,17 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from _bench import best_of, parser  # noqa: E402
 
 from rekep.fields import stored_arrow_reader  # noqa: E402
-from rekep.text import Message  # noqa: E402
+from rekep.text import log_message_field, text_options  # noqa: E402
 from rekep.times import datetime_of  # noqa: E402
 
 # Yggdryl's own default, read off the options this package reads with rather
 # than spelled again: the bound is the core's to choose, and a number copied
 # here is a number that goes quietly wrong the release it changes.
-BATCH_ROW_SIZE = Message.text_options().batch_row_size
-# The table's own shape: what `parse_messages` hands the write, after the
+BATCH_ROW_SIZE = text_options().batch_row_size
+# The table's own shape: what `parse_log_messages` hands the write, after the
 # storage boundary views the read's two unsigned columns into the signed
 # integer Iceberg has and casts the rest in the field's native order.
-FIELD = Message.into_field()
+FIELD = log_message_field()
 SCHEMA = FIELD.into_arrow_schema()
 
 
@@ -69,11 +69,7 @@ def corpus(rows: int) -> bytes:
     return bytes(decoded)
 
 
-def text_options() -> TextOptions:
-    """The complete native read used by `parse_messages`."""
-    return Message.text_options()
-
-
+#: The complete native read `parse_log_messages` runs.
 OPTIONS = text_options()
 RAW_OPTIONS = TextOptions()
 RAW_OPTIONS.start_rownum = OPTIONS.start_rownum
@@ -91,7 +87,7 @@ class Case:
 
 
 def message_batches(source: IOBase) -> Iterator[pyarrow.RecordBatch]:
-    """The exact path `parse_messages` runs: the projected native read, then
+    """The exact path `parse_log_messages` runs: the projected native read, then
     the storage boundary that types its rows as the table holds them."""
     reader = stored_arrow_reader(source.read_arrow_reader(options=OPTIONS), FIELD)
     try:
@@ -102,7 +98,7 @@ def message_batches(source: IOBase) -> Iterator[pyarrow.RecordBatch]:
 
 
 def raw_drain(case: Case) -> int:
-    """Drain yggdryl batches before the Message boundary."""
+    """Drain yggdryl batches before the storage boundary."""
     source = case.source()
     reader = source.read_arrow_reader(options=RAW_OPTIONS)
     try:
@@ -127,10 +123,18 @@ def first_batch(case: Case) -> int:
         batches.close()
 
 
+#: The event columns a read leaves to a walk: empty on every line.
+UNWALKED = ("creaunix", "execunix", "recdunix", "exprunix", "prevunix", "snapunix")
+
+
 def expected(index: int) -> dict[str, object]:
     """The endpoint values independent of the resource's diagnostic URL."""
     return {
         "currunix": datetime_of(mtime(index)),
+        **dict.fromkeys(UNWALKED),
+        "prevuuid": None,
+        "srcuuids": None,
+        "state": int(State.UNKNOWN),
         "seqnum": index + 1,
         "msgthreadid": index % 16 + 1,
         "msgsessionid": f"{index % 2**32:08x}",
@@ -154,11 +158,12 @@ def verify(case: Case, rows: int) -> pyarrow.Table:
     first, last = table.slice(0, 1).to_pylist()[0], table.slice(rows - 1, 1).to_pylist()[0]
     for row, index in ((first, 0), (last, rows - 1)):
         url = row.pop("crosscode")
-        code = row.pop("currhashcode")
-        identity = row.pop("curruuid")
         assert isinstance(url, str) and url.endswith(case.filename)
-        assert isinstance(code, int)
-        assert isinstance(identity, bytes) and len(identity) == 16
+        for name in ("currhashcode", "crosshashcode"):
+            assert isinstance(row.pop(name), int)
+        for name in ("curruuid", "crossuuid"):
+            identity = row.pop(name)
+            assert isinstance(identity, bytes) and len(identity) == 16
         # The body is the line past its row header, so it is the payload
         # written for the row and nothing else.
         assert row == expected(index)
@@ -166,7 +171,7 @@ def verify(case: Case, rows: int) -> pyarrow.Table:
 
 
 def cases(root: pathlib.Path, decoded: bytes) -> tuple[tuple[Case, ...], int]:
-    """The plain and compressed URI paths `parse_messages` runs."""
+    """The plain and compressed URI paths `parse_log_messages` runs."""
     plain = root / "messages.log"
     coded = root / "messages.log.gz"
     encoded = gzip.compress(decoded, compresslevel=6, mtime=0)
@@ -191,19 +196,20 @@ def cases(root: pathlib.Path, decoded: bytes) -> tuple[tuple[Case, ...], int]:
 
 
 def sweep(rows: int, repeat: int) -> None:
-    """Measure native text, exact Message batches, and first-batch latency."""
+    """Measure native text, exact stored batches, and first-batch latency."""
     decoded = corpus(rows)
     with tempfile.TemporaryDirectory(prefix="rekep-message-bench-") as directory:
         selected, encoded_size = cases(pathlib.Path(directory), decoded)
         verified = [verify(case, rows) for case in selected]
-        # Three columns are the line's place and not its content: `crosscode`
-        # is the object it was read from, `currhashcode` digests that object,
-        # the header's captures and the line's row number ahead of its body,
-        # and `curruuid` packs the microsecond of `currunix` and that code --
-        # so the same line under two URIs is two events, on purpose.
+        # Five columns are the line's place and not its content: `crosscode`
+        # is the object it was read from and `crosshashcode` and `crossuuid`
+        # derive from it, `currhashcode` digests that object, the header's
+        # captures and the line's row number ahead of its body, and
+        # `curruuid` packs the microsecond of `currunix` and that code -- so
+        # the same line under two URIs is two events, on purpose.
         # Everything else, `body` included, has to be the same or the gzip
         # leg is not reading what the plain one read.
-        placed = ("crosscode", "currhashcode", "curruuid")
+        placed = ("crosscode", "crosshashcode", "crossuuid", "currhashcode", "curruuid")
         comparable = [
             table.select([name for name in table.schema.names if name not in placed])
             for table in verified
@@ -217,7 +223,7 @@ def sweep(rows: int, repeat: int) -> None:
             f"{BATCH_ROW_SIZE:,} rows/batch, best of {repeat}"
         )
         print(
-            f"  {'case':<20} {'yggdryl rows/s':>15} {'Message rows/s':>15} "
+            f"  {'case':<20} {'yggdryl rows/s':>15} {'stored rows/s':>15} "
             f"{'decoded MiB/s':>15} {'first batch ms':>15}"
         )
         for case in selected:

@@ -1,13 +1,13 @@
 <section class="rkp-hero" aria-labelledby="rkp-home-title">
   <div class="rkp-hero__copy">
-    <p class="rkp-hero__eyebrow">RKP / Arrow-native ingestion</p>
+    <p class="rkp-hero__eyebrow">RKP / Arrow-native record keeping</p>
     <h1 id="rkp-home-title">rekep</h1>
-    <p class="rkp-hero__lead">Stream ULBridge text records through Arrow into Iceberg.</p>
-    <p class="rkp-hero__flow" aria-label="Text to Arrow to Iceberg">TEXT → MESSAGE → FIX → ICEBERG</p>
+    <p class="rkp-hero__lead">Land ULBridge text captures as bronze and silver Iceberg tables.</p>
+    <p class="rkp-hero__flow" aria-label="Capture to bronze to silver to gold">CAPTURE → BRONZE → SILVER → GOLD</p>
     <nav class="rkp-hero__actions" aria-label="Start with rekep">
-      <a href="pipeline/">Run the pipeline</a>
-      <a href="products/message/">Inspect Message</a>
-      <a href="fix/">Explore FIX</a>
+      <a href="tasks/">Read the tasks</a>
+      <a href="dags/">Run the graph</a>
+      <a href="samples/">See the rows</a>
     </nav>
   </div>
   <figure class="rkp-hero__mark">
@@ -15,112 +15,127 @@
   </figure>
 </section>
 
-## Install
+## What rekep is
+
+`rekep` is a processing library. It reads the text a ULBridge FIX bridge logs,
+parses every FIX frame the lines carry, walks the frames into the lifecycle
+events they are, folds those into order books and flattens the books into
+order, quote and execution events -- one Iceberg table per step. Each step is
+one function of `rekep.pipeline`, a **task**, over one window of time; where,
+when and over which window a task runs is its caller's: a scheduler's or a
+script's.
 
 ```bash
 pip install "rekep[iceberg] @ git+https://github.com/Platob/yggfin#subdirectory=python"
 ```
 
 `rekep` is installed from this repository rather than from PyPI: from a
-checkout, `pip install "./python[iceberg]"`.
+checkout, `pip install "./python[iceberg]"`, with `glue` or `s3tables` added
+for those catalogs. Applications import `rekep` and nothing beneath it.
 
-The market stages require Yggdryl 0.1.11, which the package pins.
+## Three layers
 
-## Run
+Tables live in three Iceberg catalogs, one per layer of the medallion layout,
+and a table is named `<layer>.<namespace>.<table>`: the layer is the catalog
+holding it. [`Storages`](storages/index.md) holds the three catalogs.
 
-`rekep.pipeline` holds one function per table. From the repository root, over
-the checked ULBridge fixture and the day it was captured on, into a SQLite
-catalog in a scratch directory:
+| layer | holds | tables |
+| --- | --- | --- |
+| **bronze** | what was read, as it was read: the captured lines, and every FIX frame parsed out of them | `record_keeping.log_messages`, `record_keeping.fix_messages` |
+| **silver** | what a walk settled: one row per FIX event with its lifecycle, the books folded from them, and the events flattened out of the books | `record_keeping.fix_messages`, `.books`, `.orders`, `.quotes`, `.executions` |
+| **gold** | the consumers' layer: aggregates and products built from silver | none written here |
 
-```python
-import tempfile
-from pathlib import Path
+Gold is where a consumer's own models land -- dbt models over the silver
+sources [`schemas/`](tables/index.md#dbt-sources) declares, for instance.
 
-from rekep.iceberg import IcebergCatalog
-from rekep.pipeline import Landed, parse_fix_raw, parse_fix_refined, parse_messages
-from rekep.times import window_of
-
-root = Path(tempfile.mkdtemp())
-catalog = IcebergCatalog.from_dict(
-    {
-        "name": "rekep",
-        "properties": {
-            "type": "sql",
-            "uri": f"sqlite:///{root}/catalog.db",
-            "warehouse": str(root / "warehouse"),
-        },
-    }
-)
-day = window_of("2026-08-14", "2026-08-14")
-try:
-    capture = "file:data/capture/ulbridge.log"
-    assert parse_messages(capture, catalog, day) == Landed(read=144, written=144)
-    assert parse_fix_raw(catalog, day) == Landed(read=144, written=49, skipped=30)
-    assert parse_fix_refined(catalog, day) == Landed(read=49, written=19)
-finally:
-    catalog.close()
-```
-
-Each stage answers what it read and wrote: 144 lines land in
-`logs.messages`, their 79 messages settle as 49 `fix.raw` events once the key
-folds the 30 that restate another hop's, and the walk lands 19 `fix.refined`
-rows.
+## The table graph
 
 ```mermaid
 flowchart LR
-    S["capture URI<br/>file · directory · s3://"] --> T["native text reader<br/>Message field"]
-    T --> M[("logs.messages<br/>12 columns")]
-    M --> F["native FIX codec<br/>parse"]
-    F --> B[("fix.raw<br/>128 columns")]
-    B --> L["native FIX codec<br/>lifecycle"]
-    L --> O[("fix.refined<br/>128 columns")]
-    O --> K["parse_books"] --> BK[("market.books")]
-    BK --> PO["parse_events orders"] --> OT[("market.orders")]
-    BK --> PQ["parse_events quotes"] --> QT[("market.quotes")]
-    BK --> PE["parse_events executions"] --> ET[("market.executions")]
+    C["capture<br/>file · folder · s3://"] --> T1["parse_log_messages"]
+    T1 --> L[("bronze<br/>log_messages")]
+    L --> T2["parse_fix_messages_raw"]
+    T2 --> R[("bronze<br/>fix_messages")]
+    R --> T3["parse_fix_messages_refined"]
+    T3 --> S[("silver<br/>fix_messages")]
+    S --> T4["parse_books"]
+    T4 --> B[("silver<br/>books")]
+    B --> T5["parse_orders"] --> O[("silver<br/>orders")]
+    B --> T6["parse_quotes"] --> Q[("silver<br/>quotes")]
+    B --> T7["parse_executions"] --> E[("silver<br/>executions")]
 ```
 
-The seven tables use four [runtime-derived contracts](contracts/index.md):
-Message, FixMsg, Book and MarketEvent. Books derive from the native empty
-reader schema; all three flat market tables share its execution-event shape.
-The event stages run independently against the same committed book snapshot,
-flattening order/quote deltas and already decomposed execution leaves.
+Each task reads the table before it and nothing else, so the order is the
+graph's. The last three read one book snapshot, the one `parse_books`
+committed, and are independent of one another: they may run side by side.
+[Tasks](tasks/index.md) documents each one, [DAGs](dags/index.md) runs them.
 
-Market stages read strict `[start, end)` windows and atomically replace the
-same interval, including empty reruns. Books start without earlier resting
-depth. The [market run example](pipeline/index.md#run-the-graph) folds the
-fixture's midday hour; the afternoon holds an incomplete AE side that book
-projection correctly refuses.
+## Run it
 
-The text reader emits the exact `Message` schema: header captures are typed,
-`body` is the line past its header, and the line's own `currunix`, `curruuid`
-and `currhashcode` arrive with the read rather than being computed after it.
-Nothing in that contract is derived from anything else, and the table is laid
-out by the hour of `currunix` alone, exactly as both FIX tables are laid out
-by the hour of theirs. The FIX codec reads that table back as a reader,
-through two stages over one codec, each landing in a table: parse reads every
-frame a line carried and settles what it implied, and lifecycle names the
-chains it belongs to. A row is a message and not a line, so the fixture's 144
-stored lines settle as 79 messages and 49 `fix.raw` rows: a line carrying
-prose answers none, a line carrying many frames answers one row per frame,
-and the same message logged at every hop it passed is one event. Lifecycle
-adds one expiry row.
+From the repository root, over the shipped capture into three local SQLite
+catalogs under a scratch folder:
 
 ```python
-from rekep import Message
+import tempfile
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
-print(Message.into_field().into_arrow_schema())
+from rekep import Storages
+from rekep.pipeline import (
+    FLATTENERS,
+    Landed,
+    parse_books,
+    parse_fix_messages_raw,
+    parse_fix_messages_refined,
+    parse_log_messages,
+)
+from rekep.times import window_of
+
+root = Path(tempfile.mkdtemp())
+storages = Storages.from_dict(
+    {
+        layer: {
+            "name": layer,
+            "properties": {
+                "type": "sql",
+                "uri": f"sqlite:///{root / layer}.db",
+                "warehouse": str(root / layer),
+            },
+        }
+        for layer in ("bronze", "silver", "gold")
+    }
+)
+window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
+with storages:
+    capture = "file:data/capture/ulbridge.log"
+    assert parse_log_messages(capture, storages, window) == Landed(read=128, written=128)
+    assert parse_fix_messages_raw(storages, window) == Landed(read=128, written=41, skipped=27)
+    assert parse_fix_messages_refined(storages, window) == Landed(read=41, written=14)
+    books = parse_books(storages, window)
+    assert (books.read, books.written) == (14, 6)
+    with ThreadPoolExecutor(max_workers=len(FLATTENERS)) as pool:
+        running = {
+            kind: pool.submit(task, storages, window, snapshot_id=books.snapshot_id)
+            for kind, task in FLATTENERS.items()
+        }
+        written = {kind: future.result().written for kind, future in running.items()}
+    assert written == {"orders": 1, "quotes": 0, "executions": 7}
 ```
+
+The window holds 128 of the capture's 144 lines. They carry 68 FIX messages,
+which the key folds to 41 -- 27 restate a message another hop already logged
+-- and the walk settles those as 14 events, which the book fold makes into 6
+books holding 1 order and 7 executions. [Data samples](samples/index.md) shows
+the rows, and says why the window closes at 16:30.
 
 ## Where to go
 
 | you want | read |
 | --- | --- |
-| what the seven tables hold | [Data products](products/index.md) |
-| how the parts fit | [Architecture](overview/architecture.md) |
-| the exact stage contracts | [Pipeline](pipeline/index.md) |
-| the two FIX stages | [Parse FIX raw](pipeline/parse-fix-raw.md) · [Parse FIX refined](pipeline/parse-fix-refined.md) |
-| native books and market events | [Parse books](pipeline/parse-books.md) · [Market events](pipeline/parse-events.md) |
-| the runtime FIX dictionary | [Registry](fix/registry.md) |
-| to decode or encode a frame | [Decode](fix/decode.md) · [Encode](fix/encode.md) |
-| where the tables live | [Catalogs](storage/catalogs.md) |
+| to configure the three catalogs | [Storages](storages/index.md) |
+| what one task reads, writes and answers | [Tasks](tasks/index.md) |
+| to schedule the graph, with Airflow or without | [DAGs](dags/index.md) |
+| what a column means | [Tables](tables/index.md) |
+| the Iceberg and dbt contracts | [`schemas/`](tables/index.md#contracts) |
+| the FIX dictionary a parse types against | [FIX registry](fix/index.md) |
+| real rows of every table | [Data samples](samples/index.md) |

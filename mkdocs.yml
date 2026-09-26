@@ -1,5 +1,5 @@
 site_name: rekep
-site_description: Stream text records through Arrow into Iceberg
+site_description: Land ULBridge captures as bronze and silver Iceberg tables
 site_url: https://platob.github.io/yggfin/
 repo_url: https://github.com/Platob/yggfin
 repo_name: rekep
@@ -50,38 +50,50 @@ extra_javascript:
 nav:
   - Overview:
       - Start here: index.md
-      - Architecture: overview/architecture.md
-      - Why Arrow: overview/arrow.md
       - Design rules: overview/design.md
-  - Data products:
-      - Tables: products/index.md
-      - logs.messages: products/message.md
-      - fix.raw and fix.refined: products/fixmsg.md
-      - Field contract: contracts/types.md
-      - Portable contracts: contracts/index.md
-  - FIX:
-      - Overview: fix/index.md
-      - Registry: fix/registry.md
+      - Why Arrow: overview/arrow.md
+  - Storages:
+      - Three catalogs: storages/index.md
+      - Catalog types: storages/catalogs.md
+      - Iceberg datasets: storages/iceberg.md
+      - Benchmarks: storages/benchmarks.md
+  - Tasks:
+      - Overview: tasks/index.md
+      - parse_log_messages: tasks/parse-log-messages.md
+      - parse_fix_messages_raw: tasks/parse-fix-messages-raw.md
+      - parse_fix_messages_refined: tasks/parse-fix-messages-refined.md
+      - parse_books: tasks/parse-books.md
+      - parse_orders, parse_quotes, parse_executions: tasks/parse-orders-quotes-executions.md
+  - DAGs:
+      - Run the graph: dags/index.md
+      - Airflow: dags/airflow.md
+  - Tables:
+      - Overview: tables/index.md
+      - Field contract: tables/fields.md
+      - bronze.record_keeping.log_messages: tables/bronze/log_messages.md
+      - bronze.record_keeping.fix_messages: tables/bronze/fix_messages.md
+      - silver.record_keeping.fix_messages: tables/silver/fix_messages.md
+      - silver.record_keeping.books: tables/silver/books.md
+      - silver.record_keeping.orders: tables/silver/orders.md
+      - silver.record_keeping.quotes: tables/silver/quotes.md
+      - silver.record_keeping.executions: tables/silver/executions.md
+      - States: tables/states.md
+  - FIX registry:
+      - The bundled registry: fix/index.md
+      - Definitions and lookups: fix/registry.md
       - Decode: fix/decode.md
       - Encode: fix/encode.md
       - Quality: fix/quality.md
-      - Registry assets (tool): tools/fix-registry.md
-  - Storage:
-      - Iceberg: storage/iceberg.md
-      - Catalogs: storage/catalogs.md
-      - Benchmarks: storage/benchmarks.md
-  - Pipeline:
-      - Overview: pipeline/index.md
-      - Parse messages: pipeline/parse-messages.md
-      - Parse FIX raw: pipeline/parse-fix-raw.md
-      - Parse FIX refined: pipeline/parse-fix-refined.md
-      - Parse books: pipeline/parse-books.md
-      - Market events: pipeline/parse-events.md
-  - Roadmap:
-      - Data-product roadmap: roadmap/index.md
-      - Orders: roadmap/orders.md
-      - Executions: roadmap/executions.md
-      - Order book: roadmap/order-book.md
+      - Registry assets: fix/assets.md
+  - Data samples:
+      - Overview: samples/index.md
+      - bronze.record_keeping.log_messages: samples/bronze/log_messages.md
+      - bronze.record_keeping.fix_messages: samples/bronze/fix_messages.md
+      - silver.record_keeping.fix_messages: samples/silver/fix_messages.md
+      - silver.record_keeping.books: samples/silver/books.md
+      - silver.record_keeping.orders: samples/silver/orders.md
+      - silver.record_keeping.quotes: samples/silver/quotes.md
+      - silver.record_keeping.executions: samples/silver/executions.md
 
 validation:
   links:

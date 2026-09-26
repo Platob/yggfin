@@ -1,63 +1,10 @@
-# FIX registry
+# Definitions and lookups
 
 The registry is a collection of ordinary `rekep.Field` definitions. FIX
 identity and behavior live in each field's `fix` view; nested datatypes express
-components and repeating groups without another model.
-
-## Loaded inventory
-
-| source | count | dialect |
-| --- | ---: | --- |
-| crate definitions | 32 | standard, tags 65003-65064 |
-| bundled specification and the crate's own | 6,271 scalar fields | standard |
-| definitions in all | 7,781 | no named dialect |
-| central code sets | 736 | field references use `FIX:codeset` |
-
-Every registry holds the crate's own columns and the two standard clocks from
-construction, so a bundled dictionary is those definitions and the
-specification's, in one namespace.
-
-```python
-from rekep.fix import fix_crate_fields, fix_registry
-
-registry = fix_registry()
-
-assert len(registry) == 7781
-assert registry.dialects() == []
-assert len(fix_crate_fields()) == 32
-```
-
-Scalar fields are one shape of definition among four. Components and repeating
-groups are declarations the same dictionary holds; a message type is what a
-`MsgType(35)` value names. `MsgCat` is the central message-category vocabulary
-derived beside it as the native `int32` code from `msgcatcodeset`. Market
-operations retain this category in `marketoperationid`; it is distinct from
-the order/quote discriminator in a book delta:
-
-| shape | count | read by |
-| --- | ---: | --- |
-| scalar fields | 6,271 | iterating the registry |
-| components | 928 | the `components` array of `registry.into_json()` |
-| repeating groups | 582 | the `groups` array of the same document |
-| message types | 181 | the components carrying `FIX:msgtype` |
-
-Iteration walks the scalars; the dictionary's own document is what enumerates
-the other two, and a component or a group is reached directly by
-`registry.field_by_name` or `registry.field_by_path` once its name is known.
-
-```python
-import json
-
-from rekep.fix import fix_registry
-
-registry = fix_registry()
-document = json.loads(registry.into_json())
-
-assert sum(1 for _ in registry) == 6271
-assert len(document["components"]) == 928
-assert len(document["groups"]) == 582
-assert registry.msgtype("D").name == "newordersingle"
-```
+components and repeating groups without another model. Scalar fields,
+components and repeating groups share one namespace, and a message type is
+what a `MsgType(35)` value names. [The bundled registry](index.md) counts them.
 
 ## What a field carries
 
@@ -75,9 +22,9 @@ assert registry.msgtype("D").name == "newordersingle"
 | code set | `field.fix.codeset` | name of the centrally owned `FIX:codeset` vocabulary |
 
 ```python
-from rekep.fix import fix_registry
+from rekep import FixRegistry
 
-registry = fix_registry()
+registry = FixRegistry.from_env()
 side = registry.field_by_tag(54)
 codes = registry.get_codeset(side.fix.codeset)
 
@@ -102,12 +49,12 @@ methods return `None` for exploratory code.
 | `field_by_tag(tag)` | `get_field_by_tag(tag)` | canonical or alternate tag |
 | `field_by_name(name)` | `get_field_by_name(name)` | canonical name or alias |
 | `field_by_path(path)` | `get_field_by_path(path)` | nested component/group path |
-| `group_by_tag(tag)` | `get_group_by_tag(tag)` | the list a counter tag declares |
+| `field_by_counter(tag)` | `get_field_by_counter(tag)` | the group a counter tag counts |
 
 ```python
-from rekep.fix import fix_registry
+from rekep import FixRegistry
 
-registry = fix_registry()
+registry = FixRegistry.from_env()
 
 assert registry[54] == registry.field_by_tag(54)
 assert registry["SIDE"] == registry.field_by_name("side")
@@ -136,9 +83,9 @@ standard whatever dialect claims a field beside them; a named dialect may
 claim only its own user-tag range.
 
 ```python
-from rekep.fix import fix_registry
+from rekep import FixRegistry
 
-registry = fix_registry()
+registry = FixRegistry.from_env()
 standard = registry.field_by_name("MsgType")
 
 assert standard.fix.tag == 35
@@ -149,13 +96,13 @@ assert registry.field_by_name("side") == registry["SIDE"]
 ## Repeating groups and paths
 
 A counter field counts; the group it counts is a list whose item is a struct,
-and `group_by_tag` answers it under the same tag. Inspect the declaration
+and `field_by_counter` answers it by the counter's tag. Inspect the declaration
 instead of reconstructing members from names:
 
 ```python
-from rekep.fix import fix_registry
+from rekep import FixRegistry
 
-registry = fix_registry()
+registry = FixRegistry.from_env()
 counter = registry.field_by_tag(453)
 parties = registry.field_by_counter(453)
 members = [
@@ -188,9 +135,9 @@ registry mutation invalidates the typed lookup cache. Lineage separately
 explains how one field evolved while preserving one current identity:
 
 ```python
-from rekep.fix import fix_registry
+from rekep import FixRegistry
 
-registry = fix_registry()
+registry = FixRegistry.from_env()
 msgtype = registry.field_by_tag(35)
 codes = registry.get_codeset(msgtype.fix.codeset)
 
@@ -200,60 +147,62 @@ assert {"value": "D", "name": "NewOrderSingle"}.items() <= codes[
 ].items()
 ```
 
-## Runtime fields
+## Crate fields
 
-Every registry starts with 32 crate definitions: 28 scalar columns and four
-nested ones. They cover event clocks and identities, lifecycle state, capture
-context, metadata, residual entries, and the seven normalized instrument-code
-columns. The code fields use `ISINCode`, `CFICode`, `CUSIPCode`, `SEDOLCode`,
-`BloombergCode`, `FIGICode`, and `MICCode`; CFI remains standard FIX tag 461.
-They are derived runtime facts rather than copies of dictionary shards.
+Every registry starts with 40 crate definitions, 38 scalar and two nested --
+`metadata` and `srcuuids` -- at tags 65003 to 65077. They cover the event
+clocks and identities, the lifecycle `state` and `msgcat`, the capture
+context a bridge's row header fills, the residual entry count, the
+normalized instrument codes `isincode`, `bloombergcode`, `figicode` and
+`miccode`, and the bridge's own order and instrument identifiers. They are
+derived facts rather than copies of dictionary shards.
 
 ```python
 from rekep.fix import fix_crate_fields
 
-tags = [field.fix.tag for field in fix_crate_fields()]
+fields = fix_crate_fields()
+tags = [field.fix.tag for field in fields]
 
-assert len(tags) == 32
-assert min(tags) == 65003 and max(tags) == 65064
-assert 65017 in tags and 65039 in tags
+assert len(tags) == 40
+assert min(tags) == 65003 and max(tags) == 65077
+assert [field.name for field in fields if field.dtype.is_nested] == ["metadata", "srcuuids"]
 ```
 
 ## Iterate, filter, and export
 
 ```python
+import tempfile
 from pathlib import Path
 
-from rekep.fix import fix_registry
+from rekep import FixRegistry
 
-registry = fix_registry()
+registry = FixRegistry.from_env()
 priced = [
     field
     for field in registry
     if "price" in (field.fix.description or "").casefold()
 ]
 
-registry.write_into(Path("build/fix-registry-copy"))
+registry.write_into(Path(tempfile.mkdtemp()) / "fix")
 assert priced
 assert registry.field_by_name("parties").dtype.is_nested
 ```
 
 Iterating the registry itself walks its scalar fields; a component, a group or
 a message type is reached by name, by path or by counter, and enumerated
-through the dictionary's own document. An explicit registry loaded with
-`fix_registry(path_or_uri)` holds the same crate columns. A
-location containing no specification fields is rejected, preventing a pipeline
-from silently creating a narrow table.
+through the dictionary's own document. A registry read back with
+`FixRegistry.from_handle(folder)` holds the same crate columns, and a folder
+holding no specification field is refused wherever a table's shape is built,
+so a task never creates a narrow table.
 
 ## Browser
 
-Search the same 7,781 definitions here, by tag, name, spelling or description:
+Search the same 7,789 definitions here, by tag, name, spelling or description:
 
 <div data-fix="registry"></div>
 
 An opened entry shows its members, code set and lineage. The search reads
 generated assets, read-only projections of this same bundled registry, and
-[Registry assets](../tools/fix-registry.md) regenerates them. The complete
-field metadata, Field JSON and the complete `FixMsg` schema are the Python
-API's: `fix_registry()` above, and `fix_message_field()` for the row a codec
-lands.
+[Registry assets](assets.md) regenerates them. The complete field metadata,
+Field JSON and the fixed FIX row are the Python API's: `FixRegistry.from_env()`
+above, and `rekep.fix.fix_message_field()` for the row a codec lands.

@@ -632,6 +632,23 @@
     },
     "nullable": true,
     "metadata": {
+      "FIX:idmap": [
+        {
+          "map": "accountids",
+          "key": "CUSTOMERACCOUNT",
+          "role": "24"
+        },
+        {
+          "map": "userids",
+          "key": "ENTERINGTRADER",
+          "role": "36"
+        },
+        {
+          "map": "userids",
+          "key": "EXECUTINGTRADER",
+          "role": "12"
+        }
+      ],
       "FIX:tag": "448",
       "description": "Party identifier/code. See PartyIDSource (447) and PartyRole (452).",
       "display": "PartyID"
@@ -1020,7 +1037,7 @@
   {
     "name": "cashdistribcurr",
     "dtype": {
-      "type": "currency"
+      "type": "ccy"
     },
     "nullable": true,
     "metadata": {
@@ -1032,7 +1049,7 @@
   {
     "name": "commcurrency",
     "dtype": {
-      "type": "currency"
+      "type": "ccy"
     },
     "nullable": true,
     "metadata": {

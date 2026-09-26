@@ -28,10 +28,9 @@ class ApplyBoundary:
         return self.schema
 
     def apply_arrow_reader(
-        self, source: pyarrow.RecordBatchReader, *, safe: bool, nullability: str
+        self, source: pyarrow.RecordBatchReader, *, safe: bool
     ) -> pyarrow.RecordBatchReader:
         assert safe is False
-        assert nullability == "strict"
         return source
 
 
@@ -147,7 +146,7 @@ def test_empty_reader_keeps_the_declared_nested_storage_schema() -> None:
 
 def test_semantic_child_metadata_is_removed_at_every_nested_field() -> None:
     metadata = {
-        b"ARROW:extension:name": b"yggdryl.currency",
+        b"ARROW:extension:name": b"yggdryl.ccy",
         b"ARROW:extension:metadata": b"{}",
         b"description": b"kept",
     }

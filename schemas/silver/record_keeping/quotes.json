@@ -1,0 +1,475 @@
+{
+  "schema": {
+    "type": "struct",
+    "fields": [
+      {
+        "id": 1,
+        "name": "kind",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 2,
+        "name": "currunix",
+        "type": "timestamptz",
+        "required": true,
+        "doc": "When the event happened: the settled instant, UTC."
+      },
+      {
+        "id": 3,
+        "name": "creaunix",
+        "type": "timestamptz",
+        "required": false,
+        "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
+      },
+      {
+        "id": 4,
+        "name": "execunix",
+        "type": "timestamptz",
+        "required": false,
+        "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
+      },
+      {
+        "id": 5,
+        "name": "recdunix",
+        "type": "timestamptz",
+        "required": false,
+        "doc": "When this event was recorded, where that is known; the earliest its statements know."
+      },
+      {
+        "id": 6,
+        "name": "exprunix",
+        "type": "timestamptz",
+        "required": false,
+        "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
+      },
+      {
+        "id": 7,
+        "name": "prevunix",
+        "type": "timestamptz",
+        "required": false,
+        "doc": "When the event this one follows happened, where it follows one."
+      },
+      {
+        "id": 8,
+        "name": "snapunix",
+        "type": "timestamptz",
+        "required": false,
+        "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
+      },
+      {
+        "id": 9,
+        "name": "curruuid",
+        "type": "fixed[16]",
+        "required": true,
+        "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
+      },
+      {
+        "id": 10,
+        "name": "crossuuid",
+        "type": "fixed[16]",
+        "required": true,
+        "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
+      },
+      {
+        "id": 11,
+        "name": "crosscode",
+        "type": "string",
+        "required": false,
+        "doc": "The code every event of one chain shares, as the event spells it; empty where none."
+      },
+      {
+        "id": 12,
+        "name": "currhashcode",
+        "type": "long",
+        "required": true,
+        "doc": "The XXH3-64 of what the event states."
+      },
+      {
+        "id": 13,
+        "name": "crosshashcode",
+        "type": "long",
+        "required": true,
+        "doc": "The XXH3-64 of the cross code; zero where the event names none."
+      },
+      {
+        "id": 14,
+        "name": "prevuuid",
+        "type": "fixed[16]",
+        "required": false,
+        "doc": "The identity of the event this one follows, where it follows one."
+      },
+      {
+        "id": 15,
+        "name": "seqnum",
+        "type": "long",
+        "required": false,
+        "doc": "The event's place in its chain: how many came before it."
+      },
+      {
+        "id": 16,
+        "name": "srcuuids",
+        "type": {
+          "type": "list",
+          "element-id": 50,
+          "element": "fixed[16]",
+          "element-required": true
+        },
+        "required": false,
+        "doc": "The sorted unique identities of the elements this event was read from: provenance, never its chain - no walk moves it."
+      },
+      {
+        "id": 17,
+        "name": "state",
+        "type": "int",
+        "required": false,
+        "doc": "The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where nothing states one, the furthest its chain knows once followed."
+      },
+      {
+        "id": 18,
+        "name": "price",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 19,
+        "name": "currency",
+        "type": "string",
+        "required": true
+      },
+      {
+        "id": 20,
+        "name": "quantity",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 21,
+        "name": "unit",
+        "type": "string",
+        "required": true
+      },
+      {
+        "id": 22,
+        "name": "side",
+        "type": "string",
+        "required": true
+      },
+      {
+        "id": 23,
+        "name": "securityids",
+        "type": {
+          "type": "map",
+          "key-id": 51,
+          "key": "string",
+          "value-id": 52,
+          "value": "string",
+          "value-required": true
+        },
+        "required": false
+      },
+      {
+        "id": 24,
+        "name": "cficode",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 25,
+        "name": "miccode",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 26,
+        "name": "lastpx",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 27,
+        "name": "lastqty",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 28,
+        "name": "avgpx",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 29,
+        "name": "cumqty",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 30,
+        "name": "leavesqty",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 31,
+        "name": "prevpx",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 32,
+        "name": "prevqty",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 33,
+        "name": "spotrate",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 34,
+        "name": "forwardpoints",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 35,
+        "name": "ticker",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 36,
+        "name": "metadata",
+        "type": {
+          "type": "map",
+          "key-id": 53,
+          "key": "string",
+          "value-id": 54,
+          "value": "string",
+          "value-required": false
+        },
+        "required": false
+      },
+      {
+        "id": 37,
+        "name": "marketoperationid",
+        "type": "int",
+        "required": false
+      },
+      {
+        "id": 38,
+        "name": "tif",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 39,
+        "name": "tradable",
+        "type": "boolean",
+        "required": false
+      },
+      {
+        "id": 40,
+        "name": "accountids",
+        "type": {
+          "type": "map",
+          "key-id": 55,
+          "key": "string",
+          "value-id": 56,
+          "value": "string",
+          "value-required": true
+        },
+        "required": false
+      },
+      {
+        "id": 41,
+        "name": "userids",
+        "type": {
+          "type": "map",
+          "key-id": 57,
+          "key": "string",
+          "value-id": 58,
+          "value": "string",
+          "value-required": true
+        },
+        "required": false
+      },
+      {
+        "id": 42,
+        "name": "altids",
+        "type": {
+          "type": "map",
+          "key-id": 59,
+          "key": "string",
+          "value-id": 60,
+          "value": "string",
+          "value-required": true
+        },
+        "required": false
+      },
+      {
+        "id": 43,
+        "name": "bid",
+        "type": {
+          "type": "struct",
+          "fields": [
+            {
+              "id": 61,
+              "name": "price",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 62,
+              "name": "spotrate",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 63,
+              "name": "forwardpoints",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 64,
+              "name": "currency",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 65,
+              "name": "quantity",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 66,
+              "name": "unit",
+              "type": "string",
+              "required": false
+            }
+          ]
+        },
+        "required": false
+      },
+      {
+        "id": 44,
+        "name": "ask",
+        "type": {
+          "type": "struct",
+          "fields": [
+            {
+              "id": 67,
+              "name": "price",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 68,
+              "name": "spotrate",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 69,
+              "name": "forwardpoints",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 70,
+              "name": "currency",
+              "type": "string",
+              "required": false
+            },
+            {
+              "id": 71,
+              "name": "quantity",
+              "type": "decimal(38, 18)",
+              "required": false
+            },
+            {
+              "id": 72,
+              "name": "unit",
+              "type": "string",
+              "required": false
+            }
+          ]
+        },
+        "required": false
+      },
+      {
+        "id": 45,
+        "name": "mdupdateaction",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 46,
+        "name": "bookscope",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 47,
+        "name": "mdentrypositionno",
+        "type": "long",
+        "required": false
+      },
+      {
+        "id": 48,
+        "name": "mdentrypx",
+        "type": "decimal(38, 18)",
+        "required": false
+      },
+      {
+        "id": 49,
+        "name": "mdentrysize",
+        "type": "decimal(38, 18)",
+        "required": false
+      }
+    ],
+    "schema-id": 0,
+    "identifier-field-ids": [
+      9
+    ]
+  },
+  "partition-spec": {
+    "spec-id": 0,
+    "fields": [
+      {
+        "source-id": 2,
+        "field-id": 1000,
+        "transform": "hour",
+        "name": "currunix_hour"
+      }
+    ]
+  },
+  "sort-order": {
+    "order-id": 1,
+    "fields": [
+      {
+        "source-id": 2,
+        "transform": "identity",
+        "direction": "asc",
+        "null-order": "nulls-last"
+      },
+      {
+        "source-id": 15,
+        "transform": "identity",
+        "direction": "asc",
+        "null-order": "nulls-last"
+      },
+      {
+        "source-id": 9,
+        "transform": "identity",
+        "direction": "asc",
+        "null-order": "nulls-last"
+      }
+    ]
+  }
+}

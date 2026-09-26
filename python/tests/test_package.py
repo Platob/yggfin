@@ -25,7 +25,7 @@ from rekep.fields import (
     primary_key,
     sort_key,
 )
-from rekep.fix import fix_crate_fields, fix_registry, global_registry, registry_path
+from rekep.fix import _REGISTRY, FixCodec, FixRegistry, fix_crate_fields
 
 PYPROJECT = pathlib.Path(__file__).parent.parent / "pyproject.toml"
 
@@ -36,6 +36,7 @@ PACKAGES = (
     "rekep.iceberg",
     "rekep.market",
     "rekep.pipeline",
+    "rekep.storages",
     "rekep.text",
 )
 
@@ -103,11 +104,14 @@ def test_rekep_reexports_the_native_yggdryl_field() -> None:
 
 
 def test_rekep_installs_its_bundled_registry_as_the_process_default() -> None:
-    bundled = fix_registry()
+    """Importing the package makes the bundle what `from_env` answers, and so
+    what every codec built over the process default reads with."""
+    bundled = FixRegistry.from_handle(_REGISTRY)
 
-    assert registry_path().is_dir()
-    assert len(bundled) == 7781
-    assert global_registry() == bundled
+    assert _REGISTRY.is_dir()
+    assert len(bundled) == 7789
+    assert FixRegistry.from_env() == bundled
+    assert FixCodec.from_env().registry == bundled
     assert IOBase.__module__.startswith("yggdryl")
     assert TextOptions.__module__.startswith("yggdryl")
 
@@ -125,7 +129,7 @@ def test_the_bundled_dictionary_is_the_crates_own_where_it_restates_the_crate() 
     import json
 
     owned = {member.name: member for member in fix_crate_fields()}
-    root = registry_path()
+    root = _REGISTRY
     held: list[str] = []
     for category in ("fields", "components", "groups"):
         folder = root / category
@@ -151,4 +155,4 @@ def test_the_bundled_dictionary_is_the_crates_own_where_it_restates_the_crate() 
     assert sorted(held) == sorted(owned)
     # And the registry is the same one with them or without: the core seeds
     # what they restate, so nothing is added and nothing is lost.
-    assert len(fix_registry()) == 7781
+    assert len(FixRegistry.from_env()) == 7789

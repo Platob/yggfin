@@ -33,8 +33,8 @@ IDENTITY_PARTITION = "FIELD:partition"
 #: The transform every table here is laid out by, named once.
 #:
 #: Every published table takes it over `currunix`, the instant its own read
-#: settled: the hour a line was printed in on `logs.messages`, the hour its
-#: message happened in on `fix.raw` and `fix.refined`. One hour of a busy
+#: settled: the hour a line was printed in on `log_messages`, the hour its
+#: message happened in on both `fix_messages` tables. One hour of a busy
 #: bridge is a file a scan can skip whole, and a run's window is a whole
 #: number of them, so a replay replaces exactly the partitions it covers.
 #: What tells the three apart is the key, not the layout.
@@ -182,8 +182,8 @@ def stored_arrow_reader(
     """Any stage's rows as a table stores them, ready for the write.
 
     The one storage boundary every stage crosses: the text read's rows on
-    their way into `logs.messages`, the parse's into `fix.raw`, the walk's
-    into `fix.refined`. Projecting onto `field` is most of it, and the field
+    their way into `log_messages`, the parse's into bronze `fix_messages`,
+    the walk's into silver. Projecting onto `field` is most of it, and the field
     apply does that for free -- a column the stage carried and the table does
     not declare is dropped here rather than written.
 
@@ -215,7 +215,7 @@ def stored_arrow_reader(
         if not dtype.equals(source.schema.field(index).type)
     }
     if not projected:
-        return field.apply_arrow_reader(source, safe=False, nullability="strict")
+        return field.apply_arrow_reader(source, safe=False)
     viewed = pyarrow.schema(
         [
             member.with_type(projected[index]) if index in projected else member
@@ -235,9 +235,7 @@ def stored_arrow_reader(
             yield pyarrow.RecordBatch.from_arrays(columns, schema=viewed)
 
     return field.apply_arrow_reader(
-        pyarrow.RecordBatchReader.from_batches(viewed, _viewed()),
-        safe=False,
-        nullability="strict",
+        pyarrow.RecordBatchReader.from_batches(viewed, _viewed()), safe=False
     )
 
 

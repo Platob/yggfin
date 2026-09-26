@@ -14,19 +14,23 @@ behavior.
 
 ## Ownership
 
-- The native dependency is the exact Yggdryl 0.1.11 release declared in
+- The native dependency is the exact Yggdryl 0.1.14 release declared in
   `python/pyproject.toml` and locked in `python/uv.lock`. Public applications
-  and documentation import only `rekep`.
-
+  and documentation import only `rekep`, and documentation never names the
+  dependency: a capability a reader needs is re-exported through `rekep`.
 - Yggdryl owns `Field`, scalar compilation, resource binding, filesystems,
-  streams, codecs, decompression, text media, FIX registries, FIX batch
-  parsing, the fixed `fixmsg` row, and the lifecycle stage after the parse.
+  streams, codecs, decompression, text media and the text row's event
+  columns, FIX registries and their process default, FIX batch parsing, the
+  fixed `fixmsg` row, the lifecycle stage after the parse, the `State`
+  lifecycle enum, and the book fold.
 - Arrow owns columnar shape conversions and kernels.
 - PyIceberg owns table conversion, ids, snapshots, scan planning, and commits.
-- Rekep owns the text `Message` contract, its narrow PyArrow/PyIceberg seam,
-  and the `rekep.pipeline` stages that compose them into tables.
+- Rekep owns `Storages` (one catalog per layer), the bridge read's options and
+  capture contract in `rekep.text`, the narrow PyArrow/PyIceberg seam, and the
+  `rekep.pipeline` tasks that compose them into tables.
 - Never add a second Field class, filesystem/path layer, text reader, codec, or
-  registry in rekep.
+  registry in rekep, and never declare a table column the native read, the
+  registry or the book fold already states.
 
 The deleted Rekep FIX and market implementation is not a compatibility target.
 
@@ -40,7 +44,9 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   order can.
 - Use Yggdryl `Field.apply_arrow_*` at producer and consumer boundaries so
   cast, derived partitions, and digests run in their native order.
-- Use Yggdryl's strict nullability policy directly at every Arrow boundary.
+- Absence is the target field's own nullability at every Arrow boundary: a
+  column may be absent or null only where the field declares it nullable, and
+  a table's key column is required even where a native row states it nullable.
 - Do not use Python row loops for Arrow shape conversion.
 
 ## Resources and text
@@ -63,7 +69,7 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   for a whole day of lines, with no error anywhere.
 - `ULBRIDGE_ROWHEADER` is the default and the only one spelled here. A bridge
   writing the same facts in a layout of its own is read by naming its header
-  as the `rowheader` that `parse_messages` and `Message.text_options` take,
+  as the `rowheader` that `parse_log_messages` and `rekep.text.text_options` take,
   never by a second constant: the layout is a parameter and the capture names
   are the contract.
 - The shipped clock reads every fraction this bridge writes: three digits
@@ -77,10 +83,18 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   lines a header matches moves the count of events a walk answers. `_` groups
   a fraction's digits in the core and never opens one, so a bracket spelling
   `01_147` is left unmatched rather than matched into a located refusal that
-  fails the batch. `Message.text_options` refuses a header that renames or
+  fails the batch. `rekep.text.text_options` refuses a header that renames or
   omits a capture, because the read drops a capture it fills nothing from in
   silence -- a table that lands complete, keyed and empty down one column, or
   one whose clock settled nothing.
+- The header's clock states no offset, so `text_options` and
+  `parse_log_messages` read it in `timezone`, the zone the bridge prints in,
+  UTC unless stated. A bridge printing local time read as UTC dates each line
+  hours away from its message: one delivery's observations stop folding and
+  hourly silver windows drop the messages dated across the offset. The
+  shipped capture's bridge prints two hours ahead of its frames' UTC, a
+  Central European summer clock; the suites read it as documented, UTC, and
+  one test pins its reading as `Europe/Zurich`.
 - Streams open one leaf at a time with bounded transport read-ahead and
   row-bounded batches. One record is unbounded until Yggdryl provides an
   error-on-overflow byte limit that preserves exact bodies.
@@ -144,151 +158,141 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
 ## Pipeline
 
 Rekep is a processing library. Commands, schedules, catalogs and run windows
-belong to its callers; the package holds only the table names its stages
-write. The supported graph is one function of `rekep.pipeline` per table,
-each over one `IcebergCatalog` and one window:
+belong to its callers; the package holds only the table names its tasks
+write. The supported graph is one function of `rekep.pipeline` per table --
+a task -- each over one `Storages` and one window:
 
 ```text
-filesystem URI -> parse_messages             -> logs.messages
-logs.messages  -> parse_fix_raw              -> fix.raw
-fix.raw        -> parse_fix_refined          -> fix.refined
-fix.refined    -> parse_books                -> market.books
-market.books   -> parse_events("orders")     -> market.orders
-               -> parse_events("quotes")     -> market.quotes
-               -> parse_events("executions") -> market.executions
+capture URI                         -> parse_log_messages         -> bronze.record_keeping.log_messages
+bronze.record_keeping.log_messages  -> parse_fix_messages_raw     -> bronze.record_keeping.fix_messages
+bronze.record_keeping.fix_messages  -> parse_fix_messages_refined -> silver.record_keeping.fix_messages
+silver.record_keeping.fix_messages  -> parse_books                -> silver.record_keeping.books
+silver.record_keeping.books         -> parse_orders               -> silver.record_keeping.orders
+                                    -> parse_quotes               -> silver.record_keeping.quotes
+                                    -> parse_executions           -> silver.record_keeping.executions
 ```
 
-`raw` and `refined` are the two FIX tables and nothing else here is called
-either: a `logs.messages` row is a line, or a text row.
+A table is named `<layer>.<namespace>.<table>`. `rekep.storages.Storages`
+holds one `IcebergCatalog` per layer -- `bronze`, `silver`, `gold` -- built by
+`Storages.from_dict` from one `IcebergCatalog.from_dict` mapping each, and the
+layer is the catalog that holds the table. Bronze holds what was read: the
+lines and every FIX frame parsed out of them. Silver holds what a walk
+settled: one row per FIX event, the books folded from them and the events
+flattened out of the books. Gold is the consumers' layer and no task writes
+it. Bronze and silver both hold `record_keeping.fix_messages`, so two layers
+never share a catalog.
 
-A stage writes its `target`, and every stage after `parse_messages` reads a
-`source` table, both defaulted to the module's constants (`MESSAGES`, `RAW`,
-`REFINED`, `BOOKS`, `EVENTS[kind]`); it creates a missing target, never closes the catalog it is
-handed, and answers `Landed`. `rekep.deploy.deploy(catalog)` creates the
-tables the graph writes ahead of a first run, for a catalog the caller may
-not create tables in; `TABLES` is that layout.
-`parse_messages` binds a URI `source` with `IOBase.from_uri` or reads the
-`IOBase` it is handed, frames each line under its `rowheader`, hands the read
-the window as its `where` -- the decode cuts every line and the record
-surface answers the clause over the rows they become, so nothing is filtered
-after the read -- applies `Message.into_field()` at the storage boundary, and
-writes one schema-bearing reader directly to Iceberg. The window is
-`[start, end)` as `rekep.times.window_of` answers it -- given neither bound,
-the last day up to now -- and a run over a window replaces what an earlier
-run of it landed. `currunix` is the
-instant the read settles over the line, read off the header's `mtime` capture;
-a line the header could not date takes the modification time of the object it
-was read from, the one clock the read has left for it, and `EPOCH` only where
-a handle has none -- so a header that matched nothing loses no line, and the
-table is laid out by the hour of that instant and nothing beside it. The
-`where` names the two bounds and nothing else: a line is in the window its
-instant falls in, and a line at `EPOCH` is in the window that covers 1970. An
-identity is derived from that instant, so a copy of a capture written at
-another time states another identity for every line its header did not match;
-the capture is replayed from where it was read, never from a copy. `logs.messages` is
-keyed on `curruuid` alone, the line identity the native read states;
-`currhashcode` remains its exact-content code and is not a second key. Nothing
-here computes a digest beside it. A text row names its source through the
-read's own `crosscode` and `seqnum`, and itself through `curruuid`, the line's
-own identity the native read states. A message parsed out of a stored
-line records that identity in `srcuuids`, and the walk adds the identity of
-every other line its event was logged on; each joins to a text row's
-`curruuid`, is provenance, never lineage, and no walk changes what the
-identity means.
+A task writes its `target`, and every task after `parse_log_messages` reads a
+`source` table, both defaulted to the module's constants (`LOG_MESSAGES`,
+`FIX_MESSAGES_RAW`, `FIX_MESSAGES`, `BOOKS`, `ORDERS`, `QUOTES`,
+`EXECUTIONS`; `EVENTS` and `FLATTENERS` by kind). It opens and closes its
+datasets through the `Storages` it is handed, never closes a catalog, creates
+a missing target, and answers `Landed`. `rekep.deploy.deploy(storages)`
+creates the tables ahead of a first run, for catalogs the runner may not
+create tables in; `TABLES` is that layout.
+
+Every task takes the window `[start, end)` over `currunix`, as
+`rekep.times.window_of` answers it -- given neither bound, the last day up to
+now -- and every scan hands it to Iceberg as a predicate on that column, so a
+task plans only the hour partitions of its window. A run over a window
+replaces what an earlier run of it landed.
+
+`parse_log_messages(source, storages, window)` takes the capture first: it
+binds a URI with `IOBase.from_uri` or reads the `IOBase` it is handed, frames
+each line under `rekep.text.text_options(rowheader)`, hands the read the
+window as its `where` -- the decode cuts every line and the record surface
+answers the clause over the rows they become, so nothing is filtered after
+the read -- and writes one schema-bearing reader directly to Iceberg under
+`rekep.text.log_message_field()`, the read's own field narrowed for Iceberg:
+the sixteen event columns the read settles over every line, `body`, and one
+column per capture. Nothing there is hand-declared. `currunix` is the instant
+the read settles over the line, read off the header's `mtime` capture; a
+line the header could not date takes the modification time of the object it
+was read from, and `EPOCH` only where a handle has none -- so a header that
+matched nothing loses no line. An identity is derived from that instant and
+the object the line was read from, so a capture is replayed from where it was
+read, never from a copy. The table is keyed on `curruuid` alone, the line
+identity the read states; `currhashcode` is its exact-content code and not a
+second key. A text row names its source through the read's own `crosscode`
+and `seqnum`, and its `state` is `UNKNOWN`.
 
 Every `curruuid` and `currhashcode` is the installed native revision's value.
 Rekep never reimplements identity derivation or translates old identities.
-An identity contract change requires rebuilding affected products from their
+An identity contract change requires rebuilding affected tables from their
 source under one native revision; mixing old and new keys leaves duplicate
 logical events. Market window replacement removes superseded keys inside its
-exact predicate, but it cannot repair earlier input tables or obsolete schemas.
-The same rule covers a contract change: `logs.messages` lost `sourceurl`
-and `rownum` for `crosscode` and `seqnum`, which renumbers every Iceberg field
-id, so it is recreated rather than evolved in place.
+exact predicate, but it cannot repair earlier input tables or obsolete
+schemas. A table whose shape changed incompatibly is dropped with every table
+after it and replayed, never evolved in place.
 
-The two FIX stages one codec exposes are two functions over two tables, in
-this order and no other:
+The two FIX tasks are the two native stages one codec exposes, in this order
+and no other:
 
 ```text
-parse -> fix.raw, lifecycle -> fix.refined
+parse -> bronze.record_keeping.fix_messages, lifecycle -> silver.record_keeping.fix_messages
 ```
 
-`parse_fix_raw` reads the stored rows of the same window off `currunix`,
-the event the read settled over each line -- projected to `PARSE_COLUMNS`,
-the seven a parse consumes, so the scan opens no other -- and parses them,
-and only that: a `fix.raw` row is what the message implied about itself, and
-`seqnum`, `prevuuid` and `parentuuids` are empty on every one because nothing
-has walked yet. Its recording clock is the line's own instant, in `recdunix`
-and `refrecdunix` alike.
-`parse_fix_refined` reads the previous
-hour and the run's window from `fix.raw`, including undated epoch rows, in
-`currunix, seqnum, curruuid` order. The previous hour is context only: it lands
-the run's window plus still-undated rows and excludes future expiry events. This
-bounded history does not claim arbitrary old-chain completeness. It reads each
-row back as the message that wrote it, walks the chains, and lands the walked
-rows. The walk reads the fixed row alone. A `fix.refined` row differs from the
-`fix.raw` rows it merges in what the walk filled -- its place, its lineage,
-the merged `srcuuids`, the earliest recording in `recdunix` and the reference
-it merged on in `refrecdunix`, the folded `creaunix`, `exprtime` and `state`
--- and in the identity those re-settle to; a duplicate is not a successor, and
-the walk folds every copy of one message into one row naming every line it
-was logged on.
+`parse_fix_messages_raw` reads the stored lines of the window off `currunix`,
+with the epoch-pinned lines beside them, projected to `PARSE_COLUMNS`, the
+seven a parse consumes, and parses them, and only that: a bronze row is what
+the message implied about itself, and `seqnum`, `prevuuid` and `prevunix` are
+empty on every one because nothing has walked yet. The parse dates a message
+by the transaction clock standing within `official_time_delay_ms` of the
+`SendingTime` it states, else by that `SendingTime`, else by the line it was
+read off; a frame read off no line takes the codec's `default_sending_time`,
+which the tasks pin at `UNDATED`. A message logged again at every hop is
+restated under one identity, so the key folds the copies, and `skipped`
+counts them. `parse_fix_messages_refined` reads `[start - HISTORY, end)` of
+bronze -- `HISTORY` is one hour -- with `fix_window_filter`, which adds the
+`UNDATED` rows whose `TransactTime` the window holds, in `SORT_COLUMNS`
+order, walks the chains, and lands the events it places in the window. The
+hour before is context only, and an expiry past `end` waits for its own
+window. A silver row differs from the bronze rows it merges in what the walk
+filled -- its place, its predecessor, the merged `srcuuids`, the earliest
+`recdunix`, the folded `creaunix`, `exprunix` and `state` -- and in the
+identity those re-settle to, so silver is written from bronze and never in
+place. An event lands only in a refined window holding both its bronze row
+and the instant the walk dates it at: where a bridge prints local time, its
+lines run ahead of the messages they carry by the zone's offset.
 
-Both tables use the native `fix_message_field(codec)` field directly,
-without a rekep FIX model. Parse, storage, reconstruction,
-and lifecycle all use the same 128-column **FixMsg** contract. `msgthreadid`,
-`loglevel` and `body` remain only in `logs.messages`, and `crosscode` and
-`seqnum` stand on both shapes meaning the row they sit on -- the object a
-line was read from and its row number there, the chain a message belongs to
-and its step in it here; the bridge's `msgsessionid`, `msgctxid`, `msgseqnum` and `msgpluginid` are
-native FixMsg fields a text line fills, so they stand on both shapes under
-one spelling and nothing translates between them. `srcuuids` joins a FIX row
-to the `curruuid` of every line its event was logged on -- one on `fix.raw`,
-all of them on `fix.refined`.
-The native row contains 32 crate fields; code vocabularies live centrally and
-fields reference them through `FIX:codeset`. `fixentries` is residual and does
-not duplicate successfully lifted scalars or complete groups. A reconstructed
+Both FIX tables use `rekep.fix.fix_message_field(codec)` -- the dictionary's
+fixed row, 132 columns, 40 of them crate fields -- directly, without a rekep
+FIX model. Parse, storage, reconstruction and lifecycle all use that one row.
+`msgthreadid`, `loglevel` and `body` remain only in `log_messages`;
+`msgsessionid`, `msgctxid`, `msgseqnum` and `msgpluginid` are FIX fields a
+line fills, under one spelling; `srcuuids` joins a FIX row to the `curruuid`
+of the lines its event was logged on. `exprunix` (65053) is the deadline a
+chain folds forward. `state` (65052) is an `int32` code of the intrinsic
+`statecodeset`, which `rekep.State` enumerates -- code = rank * 100 + place,
+`UNKNOWN` 0 -- set by the first of tags 39, 150, 1036, 939, 297, 87, 665, 940,
+1375 and 531 a message states, else by what its message type asks for, else
+`UNKNOWN`. `crosscode` takes the first non-empty `OrderID`, `ClOrdID`,
+`OrigClOrdID`, `QuoteID`, `QuoteReqID` or `MDReqID`; `msgsesseventid` joins
+the message type, the capture session, context and sequence. Default absence
+spellings are empty text, `null`, `<null>`, `none`, `n/a` and `[n/a]`,
+trimmed and compared case-insensitively. `fixentries` is residual and does
+not duplicate successfully lifted scalars or complete groups; a reconstructed
 row promises canonical message semantics, not arrival pair order or bytes.
-A FIX row is a message and not a line -- a line carrying two frames
-answers two and a line carrying none answers none -- and a message logged
-again at every hop it passes is one event, so both tables are keyed on
-`curruuid` alone, laid out by the hour of `currunix` alone, and sorted within a
-partition by `currunix, seqnum, curruuid`. Each is declared once, on the field,
-and nothing else carries either mark. A replay of a window lands the same
-rows under the same key.
 
-`crosscode` takes the first non-empty `OrderID`, `ClOrdID`, `OrigClOrdID`,
-`QuoteID`, `QuoteReqID`, or `MDReqID`. Capture session and context instead form
-`identifiers["msgsesseventid"]` with the message type and sequence when all
-four exist, each text part byte-length-prefixed as
-`<len>:<msgtype>|<len>:<session>|<len>:<context>|<msgseqnum>`. Default absence
-spellings are empty text, `null`, `<null>`, `none`, `n/a`, and `[n/a]`, trimmed
-and compared case-insensitively.
+The FIX registry is the process default: importing `rekep.fix` installs the
+bundled dictionary under `rekep/_data/fix` with `FixRegistry.install_env`,
+unless the environment variable `REGISTRY_VARIABLE` names
+(`YGGDRYL_FIX_REGISTRY`) points at another folder, and
+`FixRegistry.from_env()` and `FixCodec.from_env(**pins)` answer it. The
+default is resolved once per process. `parse_fix_messages_raw`,
+`parse_fix_messages_refined` and `parse_books` take the `codec` a caller
+pinned, `FixCodec.from_env(default_sending_time=UNDATED)` when None, and it is
+one codec for all three, because each task after the parse reads a row back
+as the message the same dictionary wrote. Parsing and local enrichment are
+independent per event and may use `threads`; only lifecycle enrichment owns
+cross-event state and order. Native construction validates every pin.
 
-The codec is the whole parse surface: the dictionary and the instant an undated
-message takes are pinned on it once, and each stage after it is a call rather
-than another pin. Parsing and local enrichment are independent per event and
-may use `threads`; the default is the available CPU count and zero becomes one.
-Only lifecycle enrichment owns cross-event state and order. `snapshot_ns`
-defaults to zero (off), and a positive value emits owned lifecycle snapshots
-on that nanosecond grid. A capture order is pinned only where a door resolves one by
-position, which is the line door. A version is not among the pins -- what a message was
-read at is what its own `beginstring` said. Native construction validates
-every keyword `fix_codec` forwards. `parse_fix_raw`, `parse_fix_refined` and
-`parse_books` take the `codec` a caller pinned, `fix_codec()` when None, and
-it is one codec for all three, because each stage after the parse reads a row
-back as the message the same dictionary wrote. Useful pins include
-`batch_row_size`, `include_msgtypes`, `exclude_msgtypes`, `threads`,
-`official_time_delay_ms`, and `snapshot_ns`. The doors are named for
-their stage: `fix_parse_*` and `fix_lifecycle_*`, a line door and a batch door each.
+The refined Iceberg scan merges at most 16 overlapping file streams at once
+and forms no Python `read_all` union. Native lifecycle processing still
+collects and stable-sorts its finite scan result, so it is not
+batch-memory-bounded.
 
-The refined Iceberg scan prunes with `fix_window_filter`, requests
-`SORT_COLUMNS`, and merges at most 16 overlapping file streams at once. It
-does not form a Python `read_all` union. Native lifecycle processing
-still collects and stable-sorts its finite scan result. Undated rows read from
-the epoch partition may accumulate, so this path is not batch-memory-bounded.
-
-`parse_books` reads only refined rows in strict `[start, end)`, ordered by
+`parse_books` reads only silver events in strict `[start, end)`, ordered by
 `SORT_COLUMNS`, restores them through `fix_row_messages`, and delegates to
 native `FixCodec.book_arrow_reader`. Lifecycle is not repeated. Native code
 owns admission, operation kinds, continuation, matching, expiration and book
@@ -296,38 +300,63 @@ identity; invalid admitted messages remain errors. Books start with no depth
 before `start`; this is a window-local fold, not checkpoint reconstruction.
 Filter generated book times to the same strict window, including expirations.
 
-`parse_events` runs once per kind -- `orders`, `quotes`, `executions` -- after
-books commit, every kind against the one book snapshot `parse_books` answered
-in `Landed.snapshot_id`, and projects only the book columns its kind flattens
-(`FLATTENED`); the kinds are independent and may run in parallel. Arrow
-kernels flatten bid/ask deltas by `operationkind` or the root execution list.
-Never flatten `live` into event history, derive child identities, decompose AE
-trades again, or perform a Python loop over rows. Preserve each child's own
-facts.
+`parse_orders`, `parse_quotes` and `parse_executions` (`FLATTENERS`) run after
+books commit, every one against the book snapshot `parse_books` answered in
+`Landed.snapshot_id`, and project only the book columns their kind flattens
+(`FLATTENED`: `bidside.deltas` and `askside.deltas`, or `executions`); they
+are independent and may run in parallel. Arrow kernels select deltas by
+`kind` (`order_event`, `quote_event`) or flatten the root execution list.
+Never flatten `live` into event history, derive child identities, decompose
+trade reports again, or perform a Python loop over rows. Preserve each
+child's own facts.
 
 `book_field()` derives from the native empty book reader's schema;
-`market_event_field()` derives from its execution child. Their Iceberg
-narrowing is recursive: timestamp ns to us, UUID to fixed bytes, semantic
-extensions to storage, uint64 to signed bit views. The four reviewed contract
-snapshots are Message, FixMsg, Book and MarketEvent; the latter serves all
-three event tables.
+`market_event_field()` derives from its execution child. `iceberg_event_field`
+narrows every shape recursively: timestamp ns to us, UUID to fixed bytes,
+semantic extensions to storage, uint64 to signed bit views; and declares the
+layout once: key `curruuid`, partition `hour(currunix)`, sort
+`currunix, seqnum, curruuid`. The four fields -- the text read's row, the
+fixed FIX row, the book, the market event -- make the seven tables.
 
-The market stages atomically replace exactly their strict window using bounded
-staging and one Iceberg snapshot commit. An empty rerun removes old rows in the
-window; a failure leaves the prior snapshot visible; rows outside it are
+The market tasks atomically replace exactly their strict window using bounded
+staging and one Iceberg snapshot commit. An empty rerun removes old rows in
+the window; a failure leaves the prior snapshot visible; rows outside it are
 preserved. Partition-scoped keyed merge and whole-hour replacement do not
 implement this contract for partial-hour windows.
 
-Every stage answers `Landed`: `read` source rows its window selected,
+Every task answers `Landed`: `read` source rows its window selected,
 `written` target rows, `skipped` answered rows the target's key folded into a
-written one, and `snapshot_id` the `market.books` snapshot `parse_books`
-committed or `parse_events` read. Records go to the `rekep.*` loggers --
-INFO for each completed operation, DEBUG for scans and files -- and the caller
-configures `logging`; nothing here configures it.
+written one, and `snapshot_id` the books snapshot `parse_books` committed or
+a flattener read. Records go to the `rekep.*` loggers -- INFO for each
+completed operation, DEBUG for scans and files -- and the caller configures
+`logging`; nothing here configures it.
+
+## Schemas and documentation
+
+- `schemas/<layer>/<namespace>/<table>.json` is each table's Iceberg contract
+  as PyIceberg's own model JSON -- `schema` with `identifier-field-ids`,
+  `partition-spec`, `sort-order` -- and `schemas/<layer>/schema.yml` the layer
+  as dbt sources, version 2. `tools/schemas_dump.py` writes both, the column
+  pages under `docs/tables/` and `docs/tables/states.md` from the fields the
+  tasks declare; `python/tests/test_schemas.py` fails on drift.
+- `docs/samples/` is a real landing of the capture: `tools/samples_dump.py`
+  writes it, and `python/tests/test_docs.py` fails on drift under
+  `-m integration`, where it also runs every documentation example that
+  asserts.
+- `docs/assets/fix-*.json` is `tools/fix_registry_dump.py`'s projection of the
+  process registry, regenerated by hand when the registry changes.
+- Documentation -- `docs/`, `README.md`, `schemas/`, the skill -- names
+  capabilities through `rekep` and never names the native dependency.
 
 ## Tests and benchmarks
 
-- Test reusable internals; pin the application contract once as integration.
+- A test file mirrors the source it pins: `python/tests/test_<module>.py` for
+  `rekep/<module>.py`, `python/tests/<package>/test_<module>.py` for a
+  package's module. Test reusable internals there.
+- Pin the application contract once as integration, in `python/tests/storages/`:
+  the shipped capture through every task, over three local catalogs.
+- `python/tests/test_docs.py` pins the documentation and
+  `python/tests/test_schemas.py` the published contracts.
 - Mark long Iceberg transactions `integration`; default CI excludes them.
 - Cross zero/one rows, batch bounds, nulls, retries, and alternate Arrow types.
 - Compare optimized code with a reference before timing it.
@@ -340,17 +369,17 @@ configures `logging`; nothing here configures it.
 python/src/rekep/
   fields/       native Field metadata helpers
   iceberg/      catalog, dataset, schema bridge, and PyIceberg FileIO
-  text/         the text Message declaration
-  pipeline.py   the stages: one function per table the graph writes, and Landed
+  storages.py   Storages: one Iceberg catalog per layer, tables named across them
+  text.py       the bridge read: its options, its capture contract, its row
+  pipeline.py   the tasks: one function per table the graph writes, and Landed
   deploy.py     the tables the graph writes, created ahead of a first run
   fix.py        the bundled registry and the two FIX stages over two tables
   market.py     the book fold and the event flattening over its snapshot
   times.py      instant readings, the run window and the ULBridge row header
+python/tests/   unit tests mirroring the modules; storages/ for the integration contract
 .claude/skills/rekep/SKILL.md  how an agent uses, tests and extends the library
 data/capture/   the ULBridge capture every documented count reads
-tools/          fix_registry_dump.py, which regenerates docs/assets/fix-*.json
-schemas/rekep/message.json
-schemas/rekep/fixmsg.json
-schemas/rekep/book.json
-schemas/rekep/marketevent.json
+docs/           the mkdocs site; tables/ and samples/ are generated
+schemas/        generated: <layer>/<namespace>/<table>.json and <layer>/schema.yml
+tools/          schemas_dump.py, samples_dump.py and fix_registry_dump.py
 ```

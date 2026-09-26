@@ -17,24 +17,24 @@ import pyarrow.compute as pc
 
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.fields import Field
-from rekep.fix import EVENT_CLOCK, FixCodec, fix_codec, fix_row_messages, iceberg_fix_field
+from rekep.fix import EVENT_CLOCK, FixCodec, fix_row_messages, iceberg_event_field
 
 
 @functools.lru_cache(maxsize=1)
 def _book_schema() -> pa.Schema:
-    with fix_codec().book_arrow_reader(()) as reader:
+    with FixCodec.from_env().book_arrow_reader(()) as reader:
         return reader.schema
 
 
 def book_field() -> Field:
     """The native book schema under Iceberg's storage types and hour layout."""
-    return iceberg_fix_field(_book_schema(), "Book")
+    return iceberg_event_field(_book_schema(), "Book")
 
 
 def market_event_field() -> Field:
     """The native event payload shared by orders, quotes and executions."""
     events = _book_schema().field("executions").type.value_type
-    return iceberg_fix_field(pa.schema(events), "MarketEvent")
+    return iceberg_event_field(pa.schema(events), "MarketEvent")
 
 
 def book_arrow_reader(
@@ -55,23 +55,30 @@ def book_arrow_reader(
     return OwnedRecordBatchReader.from_reader(reader, source.close)
 
 
+#: The book sides whose deltas the order and quote tables flatten.
+SIDES = ("bidside", "askside")
+
+#: The native leaf each event table holds, by the table's kind.
+EVENT_KINDS = {"orders": "order_event", "quotes": "quote_event", "executions": "execution_event"}
+
+
 def book_event_arrow_reader(source: pa.RecordBatchReader, kind: str) -> pa.RecordBatchReader:
     """Flatten one event kind using Arrow kernels, preserving native facts.
 
+    Orders and quotes are the deltas of both book sides, selected by their
+    native `kind`; executions are the book's own execution list. All three
+    are the one native operation event, so every kind answers one schema.
     Live depth is intentionally not expanded on every continuation: doing so
     would manufacture repeated events for unchanged resting entries.
     """
-    if kind not in ("orders", "quotes", "executions"):
+    if kind not in EVENT_KINDS:
         raise ValueError(f"expected orders, quotes or executions; got {kind!r}")
     if kind == "executions":
-        schema = pa.schema(source.schema.field("executions").type.value_type)
-        indices = tuple(range(len(schema)))
+        listed = source.schema.field("executions").type
     else:
-        operations = source.schema.field("bid").type.field("deltas").type.value_type
-        schema = pa.schema(
-            member for member in operations if member.name not in ("operationkind", "executions")
-        )
-        indices = tuple(operations.get_field_index(name) for name in schema.names)
+        listed = source.schema.field(SIDES[0]).type.field("deltas").type
+    schema = pa.schema(listed.value_type)
+    leaf = EVENT_KINDS[kind]
 
     def batches() -> Iterator[pa.RecordBatch]:
         try:
@@ -81,18 +88,13 @@ def book_event_arrow_reader(source: pa.RecordBatchReader, kind: str) -> pa.Recor
                 else:
                     arrays = (
                         pc.list_flatten(pc.struct_field(batch.column(side), "deltas"))
-                        for side in ("bid", "ask")
+                        for side in SIDES
                     )
                 for events in arrays:
                     if kind != "executions":
-                        events = pc.filter(
-                            events, pc.equal(pc.struct_field(events, "operationkind"), kind[:-1])
-                        )
+                        events = pc.filter(events, pc.equal(pc.struct_field(events, "kind"), leaf))
                     if len(events):
-                        children = events.flatten()
-                        yield pa.RecordBatch.from_arrays(
-                            [children[index] for index in indices], schema=schema
-                        )
+                        yield pa.RecordBatch.from_arrays(events.flatten(), schema=schema)
         finally:
             source.close()
 
@@ -127,6 +129,8 @@ def market_window_reader(
 
 
 __all__ = [
+    "EVENT_KINDS",
+    "SIDES",
     "book_arrow_reader",
     "book_event_arrow_reader",
     "book_field",

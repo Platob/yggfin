@@ -1,15 +1,19 @@
-"""Publish the FIX section's two browser assets from rekep's registry.
+"""Publish the FIX section's two browser assets from the process registry.
 
 The pages under `docs/fix/` read a projection of the dictionary rather than
 the dictionary itself, because a browser cannot open an `IOBase` folder. Two
-files, because six thousand definitions carry five megabytes of code sets and
-a page load does not owe a reader that:
+files, because the members, code sets and lineage of seven thousand
+definitions are a megabyte a page load does not owe a reader:
 
 - `fix-registry.json` is the index every widget needs to resolve a key;
 - `fix-details.json` is the members, code sets and lineage one entry needs
   only when somebody opens it.
 
-Run from the repository root whenever the bundled registry changes:
+`docs/fix/assets.md` documents both.
+
+The process registry is the one rekep ships unless the variable
+`rekep.fix.REGISTRY_VARIABLE` holds names another. Run from the repository
+root whenever the bundled registry changes:
 
     uv run --project python python tools/fix_registry_dump.py
 """
@@ -21,7 +25,7 @@ import pathlib
 from typing import Any
 
 from rekep import Field
-from rekep.fix import FixRegistry, fix_registry
+from rekep.fix import FixRegistry
 
 ASSETS = pathlib.Path("docs/assets")
 CATEGORIES = ("fields", "components", "groups")
@@ -79,7 +83,7 @@ def members(field: Field) -> list[dict[str, Any]]:
 
 def main() -> int:
     """Write both assets, and report what each cost."""
-    registry = fix_registry()
+    registry = FixRegistry.from_env()
 
     index: list[dict[str, Any]] = []
     fields: dict[str, dict[str, Any]] = {}

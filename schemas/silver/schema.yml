@@ -1,0 +1,1586 @@
+version: 2
+sources:
+- name: silver
+  description: 'What a walk settled: one row per FIX event with its lifecycle, the books folded from them,
+    and the order, quote and execution events flattened out of the books.'
+  database: silver
+  schema: record_keeping
+  tables:
+  - name: fix_messages
+    description: 'One row per FIX event, walked: the chain it belongs to, the step it stands at, the lines
+      it was logged on, and the state, creation and expiry its chain folded forward.'
+    meta:
+      written_by: parse_fix_messages_refined
+      primary_key:
+      - curruuid
+      partitioned_by:
+      - hour(currunix)
+      sorted_by:
+      - currunix
+      - seqnum
+      - curruuid
+    columns:
+    - name: currunix
+      data_type: timestamptz
+      description: 'When the event happened: the settled instant, UTC.'
+      data_tests:
+      - not_null
+    - name: execunix
+      data_type: timestamptz
+      description: 'When the message''s execution happened: ExecutionTimestamp, an execution TrdRegTimestamp,
+        a proprietary EventTimestamp, or a trade''s TransactTime, the first one stated; an execution report
+        stating none executed at its currunix; the latest its chain reached once followed.'
+    - name: recdunix
+      data_type: timestamptz
+      description: When the message was recorded by its carrier, where the carrier states one; the earliest
+        its statements know.
+    - name: creaunix
+      data_type: timestamptz
+      description: 'When the message was created: what it states, else when the original was sent, else
+        when it happened; the earliest its chain knows once followed.'
+      data_tests:
+      - not_null
+    - name: prevunix
+      data_type: timestamptz
+      description: When the event this one follows happened, where it follows one.
+    - name: snapunix
+      data_type: timestamptz
+      description: The grid instant a walk read this event as the snapshot of; empty on every row no snapshot
+        was taken of.
+    - name: exprunix
+      data_type: timestamptz
+      description: 'When the message stops being good: ExpireTime, else ValidUntilTime, ExpireDate or
+        MaturityDate; a newer explicit deadline replaces the one its chain carried.'
+    - name: sendingtime
+      data_type: timestamptz
+      description: Time of message transmission (always expressed in UTC (Universal Time Coordinated,
+        also known as "GMT")
+    - name: origsendingtime
+      data_type: timestamptz
+      description: Original time of message transmission (always expressed in UTC (Universal Time Coordinated,
+        also known as "GMT") when transmitting orders as the result of a resend request.
+    - name: transacttime
+      data_type: timestamptz
+      description: Timestamp when the business transaction represented by the message occurred.
+    - name: settldate
+      data_type: timestamp
+      description: Specific date of trade settlement (SettlementDate) in YYYYMMDD format.
+    - name: tradedate
+      data_type: timestamp
+      description: Indicates date of trading day. Absence of this field indicates current day (expressed
+        in local time at place of trade).
+    - name: expiretime
+      data_type: timestamptz
+      description: Time/Date of order expiration (always expressed in UTC (Universal Time Coordinated,
+        also known as "GMT")
+    - name: validuntiltime
+      data_type: timestamptz
+      description: Indicates expiration time of indication message (always expressed in UTC (Universal
+        Time Coordinated, also known as "GMT")
+    - name: expiredate
+      data_type: timestamp
+      description: Date of order expiration (last day the order can trade), always expressed in terms
+        of the local market date. The time at which the order expires is determined by the local market's
+        business practices
+    - name: curruuid
+      data_type: fixed[16]
+      description: 'The event''s identity: UUIDv7 ordered by millisecond and sequence, with a content
+        payload seeded by its cross hash.'
+      data_tests:
+      - not_null
+      - unique
+    - name: crossuuid
+      data_type: fixed[16]
+      description: The identity every event of one chain shares, derived from the code they share; the
+        event's own where it names none.
+      data_tests:
+      - not_null
+    - name: crosscode
+      data_type: string
+      description: 'The identifier every message of one lifecycle shares: OrderID, else ClOrdID, OrigClOrdID,
+        QuoteID, QuoteReqID or MDReqID, the first stated.'
+    - name: currhashcode
+      data_type: long
+      description: The XXH3-64 of what the event states and the named FIX content behind it.
+      data_tests:
+      - not_null
+    - name: crosshashcode
+      data_type: long
+      description: The XXH3-64 of the cross code; zero where the event names none.
+      data_tests:
+      - not_null
+    - name: prevuuid
+      data_type: fixed[16]
+      description: The identity of the event this one follows, where it follows one.
+    - name: seqnum
+      data_type: long
+      description: 'The event''s place in its chain: how many came before it.'
+    - name: srcuuids
+      data_type: list<fixed[16]>
+      description: 'The identities of the elements this message was read from: the text line it was parsed
+        out of, and none for one parsed from raw bytes. Provenance, never lineage: no walk moves it.'
+    - name: beginstring
+      data_type: string
+      description: Identifies beginning of new message and session protocol version by means of a session
+        profile identifier (see FIX Session Layer for details). ALWAYS FIRST FIELD IN MESSAGE. (Always
+        unencrypted).
+      data_tests:
+      - not_null
+    - name: msgtype
+      data_type: string
+      description: Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted)
+    - name: msgcat
+      data_type: int
+      description: The stable integer code for the message type's business category.
+    - name: msgseqnum
+      data_type: long
+      description: Integer message sequence number.
+    - name: sendercompid
+      data_type: string
+      description: Assigned value used to identify firm sending message.
+    - name: targetcompid
+      data_type: string
+      description: Assigned value used to identify receiving firm.
+    - name: possdupflag
+      data_type: boolean
+      description: Indicates possible retransmission of message with this sequence number
+    - name: msgdirection
+      data_type: string
+      description: Specifies the direction of the message.
+    - name: msgpluginid
+      data_type: string
+      description: 'The plugin that logged the line inside a bridge, as the bridge names it: the row''s
+        own msgpluginid column, never derived.'
+    - name: msgoriginator
+      data_type: string
+      description: 'The plugin a message came into a bridge through, as the bridge''s own log line names
+        it: a message received from (X as ...), an execution report from X, or the plugin that logged
+        a Receiving line. Provenance, never content.'
+    - name: msgctxid
+      data_type: string
+      description: The message context a bridge handled the message in, as its own log names it.
+    - name: msgsessionid
+      data_type: string
+      description: The session instance a bridge handled a line on, as its own row header brackets it
+        - never what the message states about itself.
+    - name: msgsesseventid
+      data_type: string
+      description: 'The session event a bridge delivered the message as: MsgType, the session instance,
+        the message context and MsgSeqNum joined by `:`, where all four are stated. Derived and never
+        content: the key two observations of one delivery merge on.'
+    - name: conversationid
+      data_type: string
+      description: 'The conversation a bridge filed the message under, as stated: a CONVERSATIONID field,
+        else the {conversationId: ...} of the log line. Provenance, never content.'
+    - name: symbol
+      data_type: string
+      description: Ticker symbol. Common, "human understood" representation of the security. SecurityID
+        (48) value can be specified if no symbol exists (e.g. non-exchange traded Collective Investment
+        Vehicles)
+    - name: securityid
+      data_type: string
+      description: Security identifier value of SecurityIDSource (22) type (e.g. CUSIP, SEDOL, ISIN, etc).
+        Requires SecurityIDSource.
+    - name: securityidsource
+      data_type: string
+      description: Identifies class or source of the SecurityID(48) value.
+    - name: isincode
+      data_type: string
+      description: The normalized ISIN the message identifies.
+    - name: bloombergcode
+      data_type: string
+      description: The normalized Bloomberg identifier the message identifies.
+    - name: figicode
+      data_type: string
+      description: The normalized FIGI the message identifies.
+    - name: miccode
+      data_type: string
+      description: 'The normalized market MIC the message identifies: LastMkt, else ExDestination, the
+        market a bridge''s instrument key names or SecurityExchange, the first an ISO 10383 MIC or a Reuters
+        mnemonic resolving to one; a bridge''s INSTRUMENT[EXCHANGE] states it.'
+    - name: securitytype
+      data_type: string
+      description: 'Indicates type of security. Security type enumerations are grouped by Product(460)
+        field value. NOTE: Additional values may be used by mutual agreement of the counterparties.'
+    - name: securitysubtype
+      data_type: string
+      description: Sub-type qualification/identification of the SecurityType. As an example for SecurityType(167)="REPO",
+        the SecuritySubType="General Collateral" can be used to further specify the type of REPO.
+    - name: securityexchange
+      data_type: string
+      description: Market used to help identify a security.
+    - name: exdestination
+      data_type: string
+      description: Execution destination as defined by institution when order is entered.
+    - name: lastmkt
+      data_type: string
+      description: Market of execution for last fill, or an indication of the market where an order was
+        routed
+    - name: cficode
+      data_type: string
+      description: Indicates the type of security using ISO 10962 standard, Classification of Financial
+        Instruments (CFI code) values. ISO 10962 is maintained by ANNA (Association of National Numbering
+        Agencies) acting as Registration Authority. See "Appendix 6-B FIX Fields Based Upon Other Standards".
+        See also the Product (460) and SecurityType (167) fields. It is recommended that CFICode be used
+        instead of SecurityType (167) for non-Fixed Income instruments.
+    - name: maturitydate
+      data_type: timestamp
+      description: Date of maturity.
+    - name: product
+      data_type: int
+      description: Indicates the type of product the security is associated with. See also the CFICode
+        (461) and SecurityType (167) fields.
+    - name: securitytradingstatus
+      data_type: int
+      description: Identifies the trading status applicable to the security.
+    - name: tradsesstatus
+      data_type: int
+      description: State of the trading session.
+    - name: securitystatus
+      data_type: string
+      description: Indicates the current state of the instrument.
+    - name: account
+      data_type: string
+      description: Account mnemonic as agreed between buy and sell sides, e.g. broker and institution
+        or investor/intermediary and fund manager.
+    - name: clordid
+      data_type: string
+      description: Unique identifier for Order as assigned by the buy-side (institution, broker, intermediary
+        etc.) (identified by SenderCompID(49) or OnBehalfOfCompID(115) as appropriate). Uniqueness must
+        be guaranteed within a single trading day. Firms, particularly those which electronically submit
+        multi-day orders, trade globally or throughout market close periods, should ensure uniqueness
+        across days, for example by embedding a date within the ClOrdID(11) field.
+    - name: origclordid
+      data_type: string
+      description: ClOrdID (11) of the previous order (NOT the initial order of the day) as assigned by
+        the institution, used to identify the previous order in cancel and cancel/replace requests.
+    - name: secondaryclordid
+      data_type: string
+      description: Assigned by the party which originates the order. Can be used to provide the ClOrdID
+        (11) used by an exchange or executing system.
+    - name: orderid
+      data_type: string
+      description: Unique identifier for Order as assigned by sell-side (broker, exchange, ECN). Uniqueness
+        must be guaranteed within a single trading day. Firms which accept multi-day orders should consider
+        embedding a date within the OrderID field to assure uniqueness across days.
+    - name: secondaryorderid
+      data_type: string
+      description: Assigned by the party which accepts the order. Can be used to provide the OrderID (37)
+        used by an exchange or executing system.
+    - name: execid
+      data_type: string
+      description: Unique identifier of execution message as assigned by sell-side (broker, exchange,
+        ECN) (will be 0 (zero) for ExecType (150)=I (Order Status)).
+    - name: tradeid
+      data_type: string
+      description: The unique ID assigned to the trade entity once it is received or matched by the exchange
+        or central counterparty.
+    - name: quotereqid
+      data_type: string
+      description: Unique identifier for a QuoteRequest(35=R).
+    - name: quoteid
+      data_type: string
+      description: Unique identifier for quote
+    - name: mdreqid
+      data_type: string
+      description: Unique identifier for Market Data Request
+    - name: quoterespid
+      data_type: string
+      description: Message reference for Quote Response
+    - name: side
+      data_type: string
+      description: 'Side of order (see Volume : "Glossary" for value definitions)'
+    - name: price
+      data_type: decimal(38, 18)
+      description: Price per unit of quantity (e.g. per share)
+    - name: prevclosepx
+      data_type: decimal(38, 18)
+      description: Previous closing price of security.
+    - name: lastpx
+      data_type: decimal(38, 18)
+      description: Price of this (last) fill.
+    - name: avgpx
+      data_type: decimal(38, 18)
+      description: Calculated average price of all fills on this order.
+    - name: orderqty
+      data_type: decimal(38, 18)
+      description: Quantity ordered. This represents the number of shares for equities or par, face or
+        nominal value for FI instruments.
+    - name: quantity
+      data_type: decimal(38, 18)
+      description: Overall/total quantity (e.g. number of shares)
+    - name: lastqty
+      data_type: decimal(38, 18)
+      description: Quantity (e.g. shares) bought/sold on this (last) fill.
+    - name: cumqty
+      data_type: decimal(38, 18)
+      description: Total quantity (e.g. number of shares) filled.
+    - name: leavesqty
+      data_type: decimal(38, 18)
+      description: Quantity open for further execution. If the OrdStatus (39) is Canceled, DoneForTheDay,
+        Expired, Calculated, or Rejected (in which case the order is no longer active) then LeavesQty
+        could be 0, otherwise LeavesQty = OrderQty (38) - CumQty (14).
+    - name: unitofmeasure
+      data_type: string
+      description: The unit of measure of the underlying commodity upon which the contract is based. Two
+        groups of units of measure enumerations are supported.
+    - name: currency
+      data_type: string
+      description: Identifies currency used for price or quantity fields, depending on the asset class
+        being traded. CurrencyCodeSource(2897) may be used to disambiguate the code source scheme used,
+        and ISO 4217 is the default scheme if absent.
+    - name: settlcurrency
+      data_type: string
+      description: Currency code of settlement denomination.
+    - name: qtytype
+      data_type: int
+      description: Type of quantity specified in quantity field. ContractMultiplier (tag 231) is required
+        when QtyType = 1 (Contracts). UnitOfMeasure (tag 996) and TimeUnit (tag 997) are required when
+        QtyType = 2 (Units of Measure per Time Unit).
+    - name: ordtype
+      data_type: string
+      description: Order type.
+    - name: timeinforce
+      data_type: string
+      description: Specifies how long the order remains in effect. Absence of this field is interpreted
+        as DAY. NOTE not applicable to CIV Orders.
+    - name: bidpx
+      data_type: decimal(38, 18)
+      description: Bid price/rate
+    - name: bidsize
+      data_type: decimal(38, 18)
+      description: Quantity of bid
+    - name: offerpx
+      data_type: decimal(38, 18)
+      description: Offer price/rate
+    - name: offersize
+      data_type: decimal(38, 18)
+      description: Quantity of offer
+    - name: lastspotrate
+      data_type: decimal(38, 18)
+      description: F/X spot rate.
+    - name: lastforwardpoints
+      data_type: decimal(38, 18)
+      description: F/X forward points added to LastSpotRate(194). May be a negative value. Expressed in
+        decimal form. For example, 61.99 points is expressed and sent as 0.006199.
+    - name: bidspotrate
+      data_type: decimal(38, 18)
+      description: Bid F/X spot rate.
+    - name: bidforwardpoints
+      data_type: decimal(38, 18)
+      description: Bid F/X forward points added to spot rate. May be a negative value.
+    - name: offerspotrate
+      data_type: decimal(38, 18)
+      description: Offer F/X spot rate.
+    - name: offerforwardpoints
+      data_type: decimal(38, 18)
+      description: Offer F/X forward points added to spot rate. May be a negative value.
+    - name: state
+      data_type: int
+      description: 'The state the message reached, as the code of a lifecycle-sorted enum: the first of
+        OrdStatus, ExecType, ExecAckStatus, TrdRptStatus, QuoteStatus, AllocStatus, ConfirmStatus, AffirmStatus,
+        MassActionResponse or MassCancelResponse that states one, else what its message type asks for,
+        UNKNOWN where none does; the furthest its chain knows once followed.'
+      data_tests:
+      - accepted_values:
+          values:
+          - 0
+          - 1000
+          - 1001
+          - 1002
+          - 1003
+          - 1004
+          - 1005
+          - 1006
+          - 2000
+          - 2001
+          - 2002
+          - 2003
+          - 2004
+          - 3000
+          - 3001
+          - 3002
+          - 3003
+          - 4000
+          - 4001
+          - 4002
+          - 4003
+          - 4004
+          - 4005
+          - 5000
+          - 5001
+          - 5002
+          - 5003
+          - 5004
+          - 5005
+          - 6000
+          - 6001
+          - 6002
+          - 7000
+          - 7001
+          - 7002
+          - 7003
+          - 8000
+          - 8001
+          - 8002
+          - 8003
+          - 8004
+          - 8005
+          - 8006
+          - 8007
+          - 8008
+          - 8009
+          - 8010
+          - 8011
+          - 8012
+          - 9000
+          - 9001
+          - 9002
+          - 9003
+          - 9500
+          - 9501
+          - 9502
+          - 9503
+          - 9504
+          - 9505
+          - 9506
+          quote: false
+    - name: ordstatus
+      data_type: string
+      description: 'Identifies current status of order. *** SOME VALUES HAVE BEEN REPLACED - See "Replaced
+        Features and Supported Approach" *** (see Volume : "Glossary" for value definitions)'
+    - name: exectype
+      data_type: string
+      description: Describes the specific ExecutionRpt (e.g. Pending Cancel) while OrdStatus(39) will
+        always identify the current order status (e.g. Partially Filled).
+    - name: quotestatus
+      data_type: int
+      description: Identifies the status of the quote acknowledgement.
+    - name: quoteresponselevel
+      data_type: int
+      description: Level of Response requested from receiver of quote messages. A default value should
+        be bilaterally agreed.
+    - name: quoteentryrejectreason
+      data_type: int
+      description: 'Reason Quote Entry was rejected:'
+    - name: ordrejreason
+      data_type: int
+      description: 'Code to identify reason for order rejection. Note: Values 3, 4, and 5 will be used
+        when rejecting an order due to pre-allocation information errors.'
+    - name: cxlrejreason
+      data_type: int
+      description: Code to identify reason for rejection of cancellation or modification.
+    - name: text
+      data_type: string
+      description: Free format text string
+    - name: nopartyids
+      data_type: int
+      description: Number of PartyID (448), PartyIDSource (447), and PartyRole (452) entries
+    - name: parties
+      data_type: 'list<struct<partyid: string, partyidsource: string, partyrole: int, partyrolequalifier:
+        int, nopartysubids: int, partysubids: list<struct<partysubid: string, partysubidtype: int>>>>'
+      description: Repeating group below should contain unique combinations of PartyID, PartyIDSource,
+        and PartyRole
+    - name: nosecurityaltid
+      data_type: int
+      description: Number of SecurityAltID (455) entries.
+    - name: secaltids
+      data_type: 'list<struct<securityaltid: string, securityaltidsource: string, symbolpositionnumber:
+        int>>'
+    - name: notrdregtimestamps
+      data_type: int
+      description: Number of timestamp entries.
+    - name: trdregtimestamps
+      data_type: 'list<struct<trdregtimestamp: timestamptz, trdregtimestamptype: int, trdregtimestamporigin:
+        string, trdregtimestampmanualindicator: boolean, desktype: string, desktypesource: int, deskorderhandlinginst:
+        string, informationbarrierid: string, nbboentrytype: int, nbboprice: decimal(38, 18), nbboqty:
+        decimal(38, 18), nbbosource: int>>'
+      description: Required if NoTrdRegTimestamps(768) > 0.
+    - name: noregulatorytradeids
+      data_type: int
+      description: Number of regulatory IDs in the repeating group.
+    - name: regulatorytradeids
+      data_type: 'list<struct<regulatorytradeid: string, regulatorytradeidsource: string, regulatorytradeidevent:
+        int, regulatorytradeidtype: int, regulatorylegrefid: string, regulatorytradeidscope: int>>'
+      description: Required if NoRegulatoryTradeIDs(1907) > 0.
+    - name: bodylength
+      data_type: int
+      description: Message length, in bytes, forward to the CheckSum field. ALWAYS SECOND FIELD IN MESSAGE.
+        (Always unencrypted)
+    - name: onbehalfofcompid
+      data_type: string
+      description: Assigned value used to identify firm originating message if the message was delivered
+        by a third party i.e. the third party firm identifier would be delivered in the SenderCompID field
+        and the firm originating the message in this field.
+    - name: delivertocompid
+      data_type: string
+      description: Assigned value used to identify the firm targeted to receive the message if the message
+        is delivered by a third party i.e. the third party firm identifier would be delivered in the TargetCompID
+        (56) field and the ultimate receiver firm ID in this field.
+    - name: securedatalen
+      data_type: int
+      description: Length of encrypted message
+    - name: securedata
+      data_type: binary
+      description: Actual encrypted data stream
+    - name: sendersubid
+      data_type: string
+      description: Assigned value used to identify specific message originator (desk, trader, etc.)
+    - name: senderlocationid
+      data_type: string
+      description: Assigned value used to identify specific message originator's location (i.e. geographic
+        location and/or desk, trader)
+    - name: targetsubid
+      data_type: string
+      description: Assigned value used to identify specific individual or unit intended to receive message.
+        "ADMIN" reserved for administrative messages not intended for a specific user.
+    - name: targetlocationid
+      data_type: string
+      description: Assigned value used to identify specific message destination's location (i.e. geographic
+        location and/or desk, trader)
+    - name: onbehalfofsubid
+      data_type: string
+      description: Assigned value used to identify specific message originator (i.e. trader) if the message
+        was delivered by a third party
+    - name: onbehalfoflocationid
+      data_type: string
+      description: Assigned value used to identify specific message originator's location (i.e. geographic
+        location and/or desk, trader) if the message was delivered by a third party
+    - name: delivertosubid
+      data_type: string
+      description: Assigned value used to identify specific message recipient (i.e. trader) if the message
+        is delivered by a third party
+    - name: delivertolocationid
+      data_type: string
+      description: Assigned value used to identify specific message recipient's location (i.e. geographic
+        location and/or desk, trader) if the message was delivered by a third party
+    - name: possresend
+      data_type: boolean
+      description: Indicates that message may contain information that has been sent under another sequence
+        number.
+    - name: xmldatalen
+      data_type: int
+      description: Length of the XmlData data block.
+    - name: xmldata
+      data_type: binary
+      description: 'Actual XML data stream (e.g. FIXML). See appropriate XML reference (e.g. FIXML). Note:
+        may contain embedded SOH characters.'
+    - name: signaturelength
+      data_type: int
+      description: Number of bytes in signature field
+    - name: signature
+      data_type: binary
+      description: Electronic signature
+    - name: checksum
+      data_type: string
+      description: 'Three byte, simple checksum (see Volume 2: "Checksum Calculation" for description).
+        ALWAYS LAST FIELD IN MESSAGE; i.e. serves, with the trailing <SOH>, as the end-of-message delimiter.
+        Always defined as three characters. (Always unencrypted)'
+    - name: metadata
+      data_type: map<string, string>
+      description: What a bridge stated under its own namespaces - a `TECH.` or an `AMON.` key - each
+        under the key as the bridge spelled it, folded, in sorted order.
+    - name: nofixentries
+      data_type: int
+      description: How many residual entries remain outside the row's projected columns.
+    - name: fixentries
+      data_type: 'list<struct<tag: int, name: string, value: string, fixentries: list<struct<tag: int,
+        name: string, value: string, fixentries: list<struct<tag: int, name: string, value: string, fixentries:
+        string>>>>>>'
+      description: Content not represented by another column, in arrival order, beside what the dictionary
+        made of it.
+  - name: books
+    description: 'One row per book the fold answered over the silver FIX events of a window, from no depth
+      before its start: both sides'' live depth and deltas, and the executions.'
+    meta:
+      written_by: parse_books
+      primary_key:
+      - curruuid
+      partitioned_by:
+      - hour(currunix)
+      sorted_by:
+      - currunix
+      - seqnum
+      - curruuid
+    columns:
+    - name: kind
+      data_type: string
+      data_tests:
+      - not_null
+    - name: currunix
+      data_type: timestamptz
+      description: 'When the event happened: the settled instant, UTC.'
+    - name: creaunix
+      data_type: timestamptz
+      description: When the event was created, where that is known; the earliest its chain knows once
+        followed.
+    - name: execunix
+      data_type: timestamptz
+      description: The latest execution clock this lifecycle reached as of this event; an execution dates
+        itself, following carries it, and duplicate statements keep their earliest observation.
+    - name: recdunix
+      data_type: timestamptz
+      description: When this event was recorded, where that is known; the earliest its statements know.
+    - name: exprunix
+      data_type: timestamptz
+      description: When the event stops being good, where it does; the latest its chain knows once followed.
+    - name: prevunix
+      data_type: timestamptz
+      description: When the event this one follows happened, where it follows one.
+    - name: snapunix
+      data_type: timestamptz
+      description: The grid instant a walk read this event as the snapshot of; empty on every row no snapshot
+        was taken of.
+    - name: curruuid
+      data_type: fixed[16]
+      description: 'The event''s identity: UUIDv7 ordered by millisecond and sequence, with a content
+        payload seeded by its cross hash.'
+      data_tests:
+      - not_null
+      - unique
+    - name: crossuuid
+      data_type: fixed[16]
+      description: The identity every event of one chain shares, derived from the code they share; the
+        event's own where it names none.
+    - name: crosscode
+      data_type: string
+      description: The code every event of one chain shares, as the event spells it; empty where none.
+    - name: currhashcode
+      data_type: long
+      description: The XXH3-64 of what the event states.
+    - name: crosshashcode
+      data_type: long
+      description: The XXH3-64 of the cross code; zero where the event names none.
+    - name: prevuuid
+      data_type: fixed[16]
+      description: The identity of the event this one follows, where it follows one.
+    - name: seqnum
+      data_type: long
+      description: 'The event''s place in its chain: how many came before it.'
+    - name: srcuuids
+      data_type: list<fixed[16]>
+      description: 'The sorted unique identities of the elements this event was read from: provenance,
+        never its chain - no walk moves it.'
+    - name: state
+      data_type: int
+      description: The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where
+        nothing states one, the furthest its chain knows once followed.
+      data_tests:
+      - accepted_values:
+          values:
+          - 0
+          - 1000
+          - 1001
+          - 1002
+          - 1003
+          - 1004
+          - 1005
+          - 1006
+          - 2000
+          - 2001
+          - 2002
+          - 2003
+          - 2004
+          - 3000
+          - 3001
+          - 3002
+          - 3003
+          - 4000
+          - 4001
+          - 4002
+          - 4003
+          - 4004
+          - 4005
+          - 5000
+          - 5001
+          - 5002
+          - 5003
+          - 5004
+          - 5005
+          - 6000
+          - 6001
+          - 6002
+          - 7000
+          - 7001
+          - 7002
+          - 7003
+          - 8000
+          - 8001
+          - 8002
+          - 8003
+          - 8004
+          - 8005
+          - 8006
+          - 8007
+          - 8008
+          - 8009
+          - 8010
+          - 8011
+          - 8012
+          - 9000
+          - 9001
+          - 9002
+          - 9003
+          - 9500
+          - 9501
+          - 9502
+          - 9503
+          - 9504
+          - 9505
+          - 9506
+          quote: false
+    - name: price
+      data_type: decimal(38, 18)
+    - name: currency
+      data_type: string
+      data_tests:
+      - not_null
+    - name: quantity
+      data_type: decimal(38, 18)
+    - name: unit
+      data_type: string
+      data_tests:
+      - not_null
+    - name: side
+      data_type: string
+      data_tests:
+      - not_null
+    - name: securityids
+      data_type: map<string, string>
+    - name: cficode
+      data_type: string
+    - name: miccode
+      data_type: string
+    - name: lastpx
+      data_type: decimal(38, 18)
+    - name: lastqty
+      data_type: decimal(38, 18)
+    - name: avgpx
+      data_type: decimal(38, 18)
+    - name: cumqty
+      data_type: decimal(38, 18)
+    - name: leavesqty
+      data_type: decimal(38, 18)
+    - name: prevpx
+      data_type: decimal(38, 18)
+    - name: prevqty
+      data_type: decimal(38, 18)
+    - name: spotrate
+      data_type: decimal(38, 18)
+    - name: forwardpoints
+      data_type: decimal(38, 18)
+    - name: ticker
+      data_type: string
+    - name: metadata
+      data_type: map<string, string>
+    - name: marketoperationid
+      data_type: int
+    - name: tif
+      data_type: string
+    - name: tradable
+      data_type: boolean
+    - name: accountids
+      data_type: map<string, string>
+    - name: userids
+      data_type: map<string, string>
+    - name: altids
+      data_type: map<string, string>
+    - name: bid
+      data_type: 'struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
+        18), currency: string, quantity: decimal(38, 18), unit: string>'
+    - name: ask
+      data_type: 'struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
+        18), currency: string, quantity: decimal(38, 18), unit: string>'
+    - name: mdupdateaction
+      data_type: string
+    - name: bookscope
+      data_type: string
+    - name: mdentrypositionno
+      data_type: long
+    - name: mdentrypx
+      data_type: decimal(38, 18)
+    - name: mdentrysize
+      data_type: decimal(38, 18)
+    - name: spread
+      data_type: decimal(38, 18)
+    - name: crossed
+      data_type: boolean
+    - name: locked
+      data_type: boolean
+    - name: executions
+      data_type: 'list<struct<kind: string, currunix: timestamptz, creaunix: timestamptz, execunix: timestamptz,
+        recdunix: timestamptz, exprunix: timestamptz, prevunix: timestamptz, snapunix: timestamptz, curruuid:
+        fixed[16], crossuuid: fixed[16], crosscode: string, currhashcode: long, crosshashcode: long, prevuuid:
+        fixed[16], seqnum: long, srcuuids: list<fixed[16]>, state: int, price: decimal(38, 18), currency:
+        string, quantity: decimal(38, 18), unit: string, side: string, securityids: map<string, string>,
+        cficode: string, miccode: string, lastpx: decimal(38, 18), lastqty: decimal(38, 18), avgpx: decimal(38,
+        18), cumqty: decimal(38, 18), leavesqty: decimal(38, 18), prevpx: decimal(38, 18), prevqty: decimal(38,
+        18), spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), ticker: string, metadata: map<string,
+        string>, marketoperationid: int, tif: string, tradable: boolean, accountids: map<string, string>,
+        userids: map<string, string>, altids: map<string, string>, bid: struct<price: decimal(38, 18),
+        spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), currency: string, quantity: decimal(38,
+        18), unit: string>, ask: struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints:
+        decimal(38, 18), currency: string, quantity: decimal(38, 18), unit: string>, mdupdateaction: string,
+        bookscope: string, mdentrypositionno: long, mdentrypx: decimal(38, 18), mdentrysize: decimal(38,
+        18)>>'
+    - name: bidside
+      data_type: 'struct<curruuid: fixed[16], crossuuid: fixed[16], crosscode: string, currhashcode: long,
+        crosshashcode: long, srcuuids: list<fixed[16]>, price: decimal(38, 18), currency: string, quantity:
+        decimal(38, 18), unit: string, side: string, securityids: map<string, string>, cficode: string,
+        miccode: string, lastpx: decimal(38, 18), lastqty: decimal(38, 18), avgpx: decimal(38, 18), cumqty:
+        decimal(38, 18), leavesqty: decimal(38, 18), prevpx: decimal(38, 18), prevqty: decimal(38, 18),
+        spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), ticker: string, metadata: map<string,
+        string>, live: list<struct<kind: string, currunix: timestamptz, creaunix: timestamptz, execunix:
+        timestamptz, recdunix: timestamptz, exprunix: timestamptz, prevunix: timestamptz, snapunix: timestamptz,
+        curruuid: fixed[16], crossuuid: fixed[16], crosscode: string, currhashcode: long, crosshashcode:
+        long, prevuuid: fixed[16], seqnum: long, srcuuids: list<fixed[16]>, state: int, price: decimal(38,
+        18), currency: string, quantity: decimal(38, 18), unit: string, side: string, securityids: map<string,
+        string>, cficode: string, miccode: string, lastpx: decimal(38, 18), lastqty: decimal(38, 18),
+        avgpx: decimal(38, 18), cumqty: decimal(38, 18), leavesqty: decimal(38, 18), prevpx: decimal(38,
+        18), prevqty: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), ticker:
+        string, metadata: map<string, string>, marketoperationid: int, tif: string, tradable: boolean,
+        accountids: map<string, string>, userids: map<string, string>, altids: map<string, string>, bid:
+        struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), currency:
+        string, quantity: decimal(38, 18), unit: string>, ask: struct<price: decimal(38, 18), spotrate:
+        decimal(38, 18), forwardpoints: decimal(38, 18), currency: string, quantity: decimal(38, 18),
+        unit: string>, mdupdateaction: string, bookscope: string, mdentrypositionno: long, mdentrypx:
+        decimal(38, 18), mdentrysize: decimal(38, 18)>>, deltas: list<struct<kind: string, currunix: timestamptz,
+        creaunix: timestamptz, execunix: timestamptz, recdunix: timestamptz, exprunix: timestamptz, prevunix:
+        timestamptz, snapunix: timestamptz, curruuid: fixed[16], crossuuid: fixed[16], crosscode: string,
+        currhashcode: long, crosshashcode: long, prevuuid: fixed[16], seqnum: long, srcuuids: list<fixed[16]>,
+        state: int, price: decimal(38, 18), currency: string, quantity: decimal(38, 18), unit: string,
+        side: string, securityids: map<string, string>, cficode: string, miccode: string, lastpx: decimal(38,
+        18), lastqty: decimal(38, 18), avgpx: decimal(38, 18), cumqty: decimal(38, 18), leavesqty: decimal(38,
+        18), prevpx: decimal(38, 18), prevqty: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints:
+        decimal(38, 18), ticker: string, metadata: map<string, string>, marketoperationid: int, tif: string,
+        tradable: boolean, accountids: map<string, string>, userids: map<string, string>, altids: map<string,
+        string>, bid: struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
+        18), currency: string, quantity: decimal(38, 18), unit: string>, ask: struct<price: decimal(38,
+        18), spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), currency: string, quantity: decimal(38,
+        18), unit: string>, mdupdateaction: string, bookscope: string, mdentrypositionno: long, mdentrypx:
+        decimal(38, 18), mdentrysize: decimal(38, 18)>>, limits: list<struct<price: decimal(38, 18), quantity:
+        decimal(38, 18), uuids: list<fixed[16]>>>>'
+    - name: askside
+      data_type: 'struct<curruuid: fixed[16], crossuuid: fixed[16], crosscode: string, currhashcode: long,
+        crosshashcode: long, srcuuids: list<fixed[16]>, price: decimal(38, 18), currency: string, quantity:
+        decimal(38, 18), unit: string, side: string, securityids: map<string, string>, cficode: string,
+        miccode: string, lastpx: decimal(38, 18), lastqty: decimal(38, 18), avgpx: decimal(38, 18), cumqty:
+        decimal(38, 18), leavesqty: decimal(38, 18), prevpx: decimal(38, 18), prevqty: decimal(38, 18),
+        spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), ticker: string, metadata: map<string,
+        string>, live: list<struct<kind: string, currunix: timestamptz, creaunix: timestamptz, execunix:
+        timestamptz, recdunix: timestamptz, exprunix: timestamptz, prevunix: timestamptz, snapunix: timestamptz,
+        curruuid: fixed[16], crossuuid: fixed[16], crosscode: string, currhashcode: long, crosshashcode:
+        long, prevuuid: fixed[16], seqnum: long, srcuuids: list<fixed[16]>, state: int, price: decimal(38,
+        18), currency: string, quantity: decimal(38, 18), unit: string, side: string, securityids: map<string,
+        string>, cficode: string, miccode: string, lastpx: decimal(38, 18), lastqty: decimal(38, 18),
+        avgpx: decimal(38, 18), cumqty: decimal(38, 18), leavesqty: decimal(38, 18), prevpx: decimal(38,
+        18), prevqty: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), ticker:
+        string, metadata: map<string, string>, marketoperationid: int, tif: string, tradable: boolean,
+        accountids: map<string, string>, userids: map<string, string>, altids: map<string, string>, bid:
+        struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), currency:
+        string, quantity: decimal(38, 18), unit: string>, ask: struct<price: decimal(38, 18), spotrate:
+        decimal(38, 18), forwardpoints: decimal(38, 18), currency: string, quantity: decimal(38, 18),
+        unit: string>, mdupdateaction: string, bookscope: string, mdentrypositionno: long, mdentrypx:
+        decimal(38, 18), mdentrysize: decimal(38, 18)>>, deltas: list<struct<kind: string, currunix: timestamptz,
+        creaunix: timestamptz, execunix: timestamptz, recdunix: timestamptz, exprunix: timestamptz, prevunix:
+        timestamptz, snapunix: timestamptz, curruuid: fixed[16], crossuuid: fixed[16], crosscode: string,
+        currhashcode: long, crosshashcode: long, prevuuid: fixed[16], seqnum: long, srcuuids: list<fixed[16]>,
+        state: int, price: decimal(38, 18), currency: string, quantity: decimal(38, 18), unit: string,
+        side: string, securityids: map<string, string>, cficode: string, miccode: string, lastpx: decimal(38,
+        18), lastqty: decimal(38, 18), avgpx: decimal(38, 18), cumqty: decimal(38, 18), leavesqty: decimal(38,
+        18), prevpx: decimal(38, 18), prevqty: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints:
+        decimal(38, 18), ticker: string, metadata: map<string, string>, marketoperationid: int, tif: string,
+        tradable: boolean, accountids: map<string, string>, userids: map<string, string>, altids: map<string,
+        string>, bid: struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
+        18), currency: string, quantity: decimal(38, 18), unit: string>, ask: struct<price: decimal(38,
+        18), spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), currency: string, quantity: decimal(38,
+        18), unit: string>, mdupdateaction: string, bookscope: string, mdentrypositionno: long, mdentrypx:
+        decimal(38, 18), mdentrysize: decimal(38, 18)>>, limits: list<struct<price: decimal(38, 18), quantity:
+        decimal(38, 18), uuids: list<fixed[16]>>>>'
+    - name: snapshotpartitions
+      data_type: 'list<struct<symbol: string, scope: string>>'
+    - name: live
+      data_type: 'list<struct<kind: string, currunix: timestamptz, creaunix: timestamptz, execunix: timestamptz,
+        recdunix: timestamptz, exprunix: timestamptz, prevunix: timestamptz, snapunix: timestamptz, curruuid:
+        fixed[16], crossuuid: fixed[16], crosscode: string, currhashcode: long, crosshashcode: long, prevuuid:
+        fixed[16], seqnum: long, srcuuids: list<fixed[16]>, state: int, price: decimal(38, 18), currency:
+        string, quantity: decimal(38, 18), unit: string, side: string, securityids: map<string, string>,
+        cficode: string, miccode: string, lastpx: decimal(38, 18), lastqty: decimal(38, 18), avgpx: decimal(38,
+        18), cumqty: decimal(38, 18), leavesqty: decimal(38, 18), prevpx: decimal(38, 18), prevqty: decimal(38,
+        18), spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), ticker: string, metadata: map<string,
+        string>, marketoperationid: int, tif: string, tradable: boolean, accountids: map<string, string>,
+        userids: map<string, string>, altids: map<string, string>, bid: struct<price: decimal(38, 18),
+        spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), currency: string, quantity: decimal(38,
+        18), unit: string>, ask: struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints:
+        decimal(38, 18), currency: string, quantity: decimal(38, 18), unit: string>, mdupdateaction: string,
+        bookscope: string, mdentrypositionno: long, mdentrypx: decimal(38, 18), mdentrysize: decimal(38,
+        18)>>'
+    - name: deltas
+      data_type: 'list<struct<kind: string, currunix: timestamptz, creaunix: timestamptz, execunix: timestamptz,
+        recdunix: timestamptz, exprunix: timestamptz, prevunix: timestamptz, snapunix: timestamptz, curruuid:
+        fixed[16], crossuuid: fixed[16], crosscode: string, currhashcode: long, crosshashcode: long, prevuuid:
+        fixed[16], seqnum: long, srcuuids: list<fixed[16]>, state: int, price: decimal(38, 18), currency:
+        string, quantity: decimal(38, 18), unit: string, side: string, securityids: map<string, string>,
+        cficode: string, miccode: string, lastpx: decimal(38, 18), lastqty: decimal(38, 18), avgpx: decimal(38,
+        18), cumqty: decimal(38, 18), leavesqty: decimal(38, 18), prevpx: decimal(38, 18), prevqty: decimal(38,
+        18), spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), ticker: string, metadata: map<string,
+        string>, marketoperationid: int, tif: string, tradable: boolean, accountids: map<string, string>,
+        userids: map<string, string>, altids: map<string, string>, bid: struct<price: decimal(38, 18),
+        spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), currency: string, quantity: decimal(38,
+        18), unit: string>, ask: struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints:
+        decimal(38, 18), currency: string, quantity: decimal(38, 18), unit: string>, mdupdateaction: string,
+        bookscope: string, mdentrypositionno: long, mdentrypx: decimal(38, 18), mdentrysize: decimal(38,
+        18)>>'
+    - name: limits
+      data_type: 'list<struct<price: decimal(38, 18), quantity: decimal(38, 18), uuids: list<fixed[16]>>>'
+  - name: orders
+    description: The order deltas of the books, one row per order event.
+    meta:
+      written_by: parse_orders
+      primary_key:
+      - curruuid
+      partitioned_by:
+      - hour(currunix)
+      sorted_by:
+      - currunix
+      - seqnum
+      - curruuid
+    columns:
+    - name: kind
+      data_type: string
+    - name: currunix
+      data_type: timestamptz
+      description: 'When the event happened: the settled instant, UTC.'
+      data_tests:
+      - not_null
+    - name: creaunix
+      data_type: timestamptz
+      description: When the event was created, where that is known; the earliest its chain knows once
+        followed.
+    - name: execunix
+      data_type: timestamptz
+      description: The latest execution clock this lifecycle reached as of this event; an execution dates
+        itself, following carries it, and duplicate statements keep their earliest observation.
+    - name: recdunix
+      data_type: timestamptz
+      description: When this event was recorded, where that is known; the earliest its statements know.
+    - name: exprunix
+      data_type: timestamptz
+      description: When the event stops being good, where it does; the latest its chain knows once followed.
+    - name: prevunix
+      data_type: timestamptz
+      description: When the event this one follows happened, where it follows one.
+    - name: snapunix
+      data_type: timestamptz
+      description: The grid instant a walk read this event as the snapshot of; empty on every row no snapshot
+        was taken of.
+    - name: curruuid
+      data_type: fixed[16]
+      description: 'The event''s identity: UUIDv7 ordered by millisecond and sequence, with a content
+        payload seeded by its cross hash.'
+      data_tests:
+      - not_null
+      - unique
+    - name: crossuuid
+      data_type: fixed[16]
+      description: The identity every event of one chain shares, derived from the code they share; the
+        event's own where it names none.
+      data_tests:
+      - not_null
+    - name: crosscode
+      data_type: string
+      description: The code every event of one chain shares, as the event spells it; empty where none.
+    - name: currhashcode
+      data_type: long
+      description: The XXH3-64 of what the event states.
+      data_tests:
+      - not_null
+    - name: crosshashcode
+      data_type: long
+      description: The XXH3-64 of the cross code; zero where the event names none.
+      data_tests:
+      - not_null
+    - name: prevuuid
+      data_type: fixed[16]
+      description: The identity of the event this one follows, where it follows one.
+    - name: seqnum
+      data_type: long
+      description: 'The event''s place in its chain: how many came before it.'
+    - name: srcuuids
+      data_type: list<fixed[16]>
+      description: 'The sorted unique identities of the elements this event was read from: provenance,
+        never its chain - no walk moves it.'
+    - name: state
+      data_type: int
+      description: The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where
+        nothing states one, the furthest its chain knows once followed.
+      data_tests:
+      - accepted_values:
+          values:
+          - 0
+          - 1000
+          - 1001
+          - 1002
+          - 1003
+          - 1004
+          - 1005
+          - 1006
+          - 2000
+          - 2001
+          - 2002
+          - 2003
+          - 2004
+          - 3000
+          - 3001
+          - 3002
+          - 3003
+          - 4000
+          - 4001
+          - 4002
+          - 4003
+          - 4004
+          - 4005
+          - 5000
+          - 5001
+          - 5002
+          - 5003
+          - 5004
+          - 5005
+          - 6000
+          - 6001
+          - 6002
+          - 7000
+          - 7001
+          - 7002
+          - 7003
+          - 8000
+          - 8001
+          - 8002
+          - 8003
+          - 8004
+          - 8005
+          - 8006
+          - 8007
+          - 8008
+          - 8009
+          - 8010
+          - 8011
+          - 8012
+          - 9000
+          - 9001
+          - 9002
+          - 9003
+          - 9500
+          - 9501
+          - 9502
+          - 9503
+          - 9504
+          - 9505
+          - 9506
+          quote: false
+    - name: price
+      data_type: decimal(38, 18)
+    - name: currency
+      data_type: string
+      data_tests:
+      - not_null
+    - name: quantity
+      data_type: decimal(38, 18)
+    - name: unit
+      data_type: string
+      data_tests:
+      - not_null
+    - name: side
+      data_type: string
+      data_tests:
+      - not_null
+    - name: securityids
+      data_type: map<string, string>
+    - name: cficode
+      data_type: string
+    - name: miccode
+      data_type: string
+    - name: lastpx
+      data_type: decimal(38, 18)
+    - name: lastqty
+      data_type: decimal(38, 18)
+    - name: avgpx
+      data_type: decimal(38, 18)
+    - name: cumqty
+      data_type: decimal(38, 18)
+    - name: leavesqty
+      data_type: decimal(38, 18)
+    - name: prevpx
+      data_type: decimal(38, 18)
+    - name: prevqty
+      data_type: decimal(38, 18)
+    - name: spotrate
+      data_type: decimal(38, 18)
+    - name: forwardpoints
+      data_type: decimal(38, 18)
+    - name: ticker
+      data_type: string
+    - name: metadata
+      data_type: map<string, string>
+    - name: marketoperationid
+      data_type: int
+    - name: tif
+      data_type: string
+    - name: tradable
+      data_type: boolean
+    - name: accountids
+      data_type: map<string, string>
+    - name: userids
+      data_type: map<string, string>
+    - name: altids
+      data_type: map<string, string>
+    - name: bid
+      data_type: 'struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
+        18), currency: string, quantity: decimal(38, 18), unit: string>'
+    - name: ask
+      data_type: 'struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
+        18), currency: string, quantity: decimal(38, 18), unit: string>'
+    - name: mdupdateaction
+      data_type: string
+    - name: bookscope
+      data_type: string
+    - name: mdentrypositionno
+      data_type: long
+    - name: mdentrypx
+      data_type: decimal(38, 18)
+    - name: mdentrysize
+      data_type: decimal(38, 18)
+  - name: quotes
+    description: The quote deltas of the books, one row per quote event.
+    meta:
+      written_by: parse_quotes
+      primary_key:
+      - curruuid
+      partitioned_by:
+      - hour(currunix)
+      sorted_by:
+      - currunix
+      - seqnum
+      - curruuid
+    columns:
+    - name: kind
+      data_type: string
+    - name: currunix
+      data_type: timestamptz
+      description: 'When the event happened: the settled instant, UTC.'
+      data_tests:
+      - not_null
+    - name: creaunix
+      data_type: timestamptz
+      description: When the event was created, where that is known; the earliest its chain knows once
+        followed.
+    - name: execunix
+      data_type: timestamptz
+      description: The latest execution clock this lifecycle reached as of this event; an execution dates
+        itself, following carries it, and duplicate statements keep their earliest observation.
+    - name: recdunix
+      data_type: timestamptz
+      description: When this event was recorded, where that is known; the earliest its statements know.
+    - name: exprunix
+      data_type: timestamptz
+      description: When the event stops being good, where it does; the latest its chain knows once followed.
+    - name: prevunix
+      data_type: timestamptz
+      description: When the event this one follows happened, where it follows one.
+    - name: snapunix
+      data_type: timestamptz
+      description: The grid instant a walk read this event as the snapshot of; empty on every row no snapshot
+        was taken of.
+    - name: curruuid
+      data_type: fixed[16]
+      description: 'The event''s identity: UUIDv7 ordered by millisecond and sequence, with a content
+        payload seeded by its cross hash.'
+      data_tests:
+      - not_null
+      - unique
+    - name: crossuuid
+      data_type: fixed[16]
+      description: The identity every event of one chain shares, derived from the code they share; the
+        event's own where it names none.
+      data_tests:
+      - not_null
+    - name: crosscode
+      data_type: string
+      description: The code every event of one chain shares, as the event spells it; empty where none.
+    - name: currhashcode
+      data_type: long
+      description: The XXH3-64 of what the event states.
+      data_tests:
+      - not_null
+    - name: crosshashcode
+      data_type: long
+      description: The XXH3-64 of the cross code; zero where the event names none.
+      data_tests:
+      - not_null
+    - name: prevuuid
+      data_type: fixed[16]
+      description: The identity of the event this one follows, where it follows one.
+    - name: seqnum
+      data_type: long
+      description: 'The event''s place in its chain: how many came before it.'
+    - name: srcuuids
+      data_type: list<fixed[16]>
+      description: 'The sorted unique identities of the elements this event was read from: provenance,
+        never its chain - no walk moves it.'
+    - name: state
+      data_type: int
+      description: The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where
+        nothing states one, the furthest its chain knows once followed.
+      data_tests:
+      - accepted_values:
+          values:
+          - 0
+          - 1000
+          - 1001
+          - 1002
+          - 1003
+          - 1004
+          - 1005
+          - 1006
+          - 2000
+          - 2001
+          - 2002
+          - 2003
+          - 2004
+          - 3000
+          - 3001
+          - 3002
+          - 3003
+          - 4000
+          - 4001
+          - 4002
+          - 4003
+          - 4004
+          - 4005
+          - 5000
+          - 5001
+          - 5002
+          - 5003
+          - 5004
+          - 5005
+          - 6000
+          - 6001
+          - 6002
+          - 7000
+          - 7001
+          - 7002
+          - 7003
+          - 8000
+          - 8001
+          - 8002
+          - 8003
+          - 8004
+          - 8005
+          - 8006
+          - 8007
+          - 8008
+          - 8009
+          - 8010
+          - 8011
+          - 8012
+          - 9000
+          - 9001
+          - 9002
+          - 9003
+          - 9500
+          - 9501
+          - 9502
+          - 9503
+          - 9504
+          - 9505
+          - 9506
+          quote: false
+    - name: price
+      data_type: decimal(38, 18)
+    - name: currency
+      data_type: string
+      data_tests:
+      - not_null
+    - name: quantity
+      data_type: decimal(38, 18)
+    - name: unit
+      data_type: string
+      data_tests:
+      - not_null
+    - name: side
+      data_type: string
+      data_tests:
+      - not_null
+    - name: securityids
+      data_type: map<string, string>
+    - name: cficode
+      data_type: string
+    - name: miccode
+      data_type: string
+    - name: lastpx
+      data_type: decimal(38, 18)
+    - name: lastqty
+      data_type: decimal(38, 18)
+    - name: avgpx
+      data_type: decimal(38, 18)
+    - name: cumqty
+      data_type: decimal(38, 18)
+    - name: leavesqty
+      data_type: decimal(38, 18)
+    - name: prevpx
+      data_type: decimal(38, 18)
+    - name: prevqty
+      data_type: decimal(38, 18)
+    - name: spotrate
+      data_type: decimal(38, 18)
+    - name: forwardpoints
+      data_type: decimal(38, 18)
+    - name: ticker
+      data_type: string
+    - name: metadata
+      data_type: map<string, string>
+    - name: marketoperationid
+      data_type: int
+    - name: tif
+      data_type: string
+    - name: tradable
+      data_type: boolean
+    - name: accountids
+      data_type: map<string, string>
+    - name: userids
+      data_type: map<string, string>
+    - name: altids
+      data_type: map<string, string>
+    - name: bid
+      data_type: 'struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
+        18), currency: string, quantity: decimal(38, 18), unit: string>'
+    - name: ask
+      data_type: 'struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
+        18), currency: string, quantity: decimal(38, 18), unit: string>'
+    - name: mdupdateaction
+      data_type: string
+    - name: bookscope
+      data_type: string
+    - name: mdentrypositionno
+      data_type: long
+    - name: mdentrypx
+      data_type: decimal(38, 18)
+    - name: mdentrysize
+      data_type: decimal(38, 18)
+  - name: executions
+    description: The executions the books carry, one row per execution.
+    meta:
+      written_by: parse_executions
+      primary_key:
+      - curruuid
+      partitioned_by:
+      - hour(currunix)
+      sorted_by:
+      - currunix
+      - seqnum
+      - curruuid
+    columns:
+    - name: kind
+      data_type: string
+    - name: currunix
+      data_type: timestamptz
+      description: 'When the event happened: the settled instant, UTC.'
+      data_tests:
+      - not_null
+    - name: creaunix
+      data_type: timestamptz
+      description: When the event was created, where that is known; the earliest its chain knows once
+        followed.
+    - name: execunix
+      data_type: timestamptz
+      description: The latest execution clock this lifecycle reached as of this event; an execution dates
+        itself, following carries it, and duplicate statements keep their earliest observation.
+    - name: recdunix
+      data_type: timestamptz
+      description: When this event was recorded, where that is known; the earliest its statements know.
+    - name: exprunix
+      data_type: timestamptz
+      description: When the event stops being good, where it does; the latest its chain knows once followed.
+    - name: prevunix
+      data_type: timestamptz
+      description: When the event this one follows happened, where it follows one.
+    - name: snapunix
+      data_type: timestamptz
+      description: The grid instant a walk read this event as the snapshot of; empty on every row no snapshot
+        was taken of.
+    - name: curruuid
+      data_type: fixed[16]
+      description: 'The event''s identity: UUIDv7 ordered by millisecond and sequence, with a content
+        payload seeded by its cross hash.'
+      data_tests:
+      - not_null
+      - unique
+    - name: crossuuid
+      data_type: fixed[16]
+      description: The identity every event of one chain shares, derived from the code they share; the
+        event's own where it names none.
+      data_tests:
+      - not_null
+    - name: crosscode
+      data_type: string
+      description: The code every event of one chain shares, as the event spells it; empty where none.
+    - name: currhashcode
+      data_type: long
+      description: The XXH3-64 of what the event states.
+      data_tests:
+      - not_null
+    - name: crosshashcode
+      data_type: long
+      description: The XXH3-64 of the cross code; zero where the event names none.
+      data_tests:
+      - not_null
+    - name: prevuuid
+      data_type: fixed[16]
+      description: The identity of the event this one follows, where it follows one.
+    - name: seqnum
+      data_type: long
+      description: 'The event''s place in its chain: how many came before it.'
+    - name: srcuuids
+      data_type: list<fixed[16]>
+      description: 'The sorted unique identities of the elements this event was read from: provenance,
+        never its chain - no walk moves it.'
+    - name: state
+      data_type: int
+      description: The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where
+        nothing states one, the furthest its chain knows once followed.
+      data_tests:
+      - accepted_values:
+          values:
+          - 0
+          - 1000
+          - 1001
+          - 1002
+          - 1003
+          - 1004
+          - 1005
+          - 1006
+          - 2000
+          - 2001
+          - 2002
+          - 2003
+          - 2004
+          - 3000
+          - 3001
+          - 3002
+          - 3003
+          - 4000
+          - 4001
+          - 4002
+          - 4003
+          - 4004
+          - 4005
+          - 5000
+          - 5001
+          - 5002
+          - 5003
+          - 5004
+          - 5005
+          - 6000
+          - 6001
+          - 6002
+          - 7000
+          - 7001
+          - 7002
+          - 7003
+          - 8000
+          - 8001
+          - 8002
+          - 8003
+          - 8004
+          - 8005
+          - 8006
+          - 8007
+          - 8008
+          - 8009
+          - 8010
+          - 8011
+          - 8012
+          - 9000
+          - 9001
+          - 9002
+          - 9003
+          - 9500
+          - 9501
+          - 9502
+          - 9503
+          - 9504
+          - 9505
+          - 9506
+          quote: false
+    - name: price
+      data_type: decimal(38, 18)
+    - name: currency
+      data_type: string
+      data_tests:
+      - not_null
+    - name: quantity
+      data_type: decimal(38, 18)
+    - name: unit
+      data_type: string
+      data_tests:
+      - not_null
+    - name: side
+      data_type: string
+      data_tests:
+      - not_null
+    - name: securityids
+      data_type: map<string, string>
+    - name: cficode
+      data_type: string
+    - name: miccode
+      data_type: string
+    - name: lastpx
+      data_type: decimal(38, 18)
+    - name: lastqty
+      data_type: decimal(38, 18)
+    - name: avgpx
+      data_type: decimal(38, 18)
+    - name: cumqty
+      data_type: decimal(38, 18)
+    - name: leavesqty
+      data_type: decimal(38, 18)
+    - name: prevpx
+      data_type: decimal(38, 18)
+    - name: prevqty
+      data_type: decimal(38, 18)
+    - name: spotrate
+      data_type: decimal(38, 18)
+    - name: forwardpoints
+      data_type: decimal(38, 18)
+    - name: ticker
+      data_type: string
+    - name: metadata
+      data_type: map<string, string>
+    - name: marketoperationid
+      data_type: int
+    - name: tif
+      data_type: string
+    - name: tradable
+      data_type: boolean
+    - name: accountids
+      data_type: map<string, string>
+    - name: userids
+      data_type: map<string, string>
+    - name: altids
+      data_type: map<string, string>
+    - name: bid
+      data_type: 'struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
+        18), currency: string, quantity: decimal(38, 18), unit: string>'
+    - name: ask
+      data_type: 'struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
+        18), currency: string, quantity: decimal(38, 18), unit: string>'
+    - name: mdupdateaction
+      data_type: string
+    - name: bookscope
+      data_type: string
+    - name: mdentrypositionno
+      data_type: long
+    - name: mdentrypx
+      data_type: decimal(38, 18)
+    - name: mdentrysize
+      data_type: decimal(38, 18)

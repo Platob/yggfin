@@ -1,0 +1,8 @@
+version: 2
+sources:
+- name: gold
+  description: 'The consumers'' layer: aggregates built from silver. No task here writes it; it is created
+    empty so a product built on silver has a catalog of its own.'
+  database: gold
+  schema: record_keeping
+  tables: []

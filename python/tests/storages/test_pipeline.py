@@ -1,0 +1,557 @@
+"""The tasks over the shipped capture, in production order across the three layers.
+
+`landing` lands the capture once: its whole day into bronze `log_messages`,
+then every later task over `EARLY` and over the main window `WINDOW`. Pinned
+here: what each task answered, which data files it opened, what the walk
+settled in silver, and that a rerun lands the same rows again. The samples
+print for a reader running with `-s`.
+"""
+
+from __future__ import annotations
+
+import collections
+import dataclasses
+import datetime
+import uuid
+from pathlib import Path
+from typing import Annotated, Any
+
+import pyarrow
+import pytest
+from pyiceberg.expressions import And, EqualTo, GreaterThanOrEqual, IsNull, LessThan, Or
+from pyiceberg.expressions.visitors import bind
+from pyiceberg.io.pyarrow import expression_to_pyarrow
+from pyiceberg.schema import Schema
+from pyiceberg.types import IntegerType, NestedField, TimestamptzType
+
+from rekep import State, scalar
+from rekep.arrow_reader import OwnedRecordBatchReader
+from rekep.fields import partition_key
+from rekep.fix import (
+    EVENT_CLOCK,
+    PARSE_COLUMNS,
+    UNDATED,
+    FixCodec,
+    fix_parse_arrow_reader,
+    fix_window_filter,
+)
+from rekep.iceberg import window_filter
+from rekep.market import market_window_filter
+from rekep.pipeline import (
+    BOOKS,
+    EVENTS,
+    FIX_MESSAGES,
+    FIX_MESSAGES_RAW,
+    FLATTENED,
+    FLATTENERS,
+    HISTORY,
+    LOG_MESSAGES,
+    Landed,
+    _Count,
+    parse_log_messages,
+)
+from rekep.text import log_message_field
+from rekep.times import EPOCH, within
+
+from .conftest import (
+    CAPTURE,
+    DAY,
+    END,
+    START,
+    WINDOW,
+    Landing,
+    graph,
+    hours,
+    planned,
+    read,
+    rows,
+    snapshots,
+)
+
+pytestmark = pytest.mark.integration
+
+UTC = datetime.timezone.utc
+
+#: What `parse_log_messages` answers over the capture's day: every line, once.
+LOG = Landed(read=144, written=144)
+
+#: What every later task answers over `EARLY`: the sixteen lines of 03:00
+#: carry one trade capture logged at three hops -- its receipt, dated by its
+#: own clock, and two restatements dated by their lines' -- which the walk
+#: merges into one event, folded into one book and one execution.
+EARLY_LANDED = {
+    "parse_fix_messages_raw": Landed(read=16, written=3),
+    "parse_fix_messages_refined": Landed(read=3, written=1),
+    "parse_books": Landed(read=1, written=1),
+    "parse_orders": Landed(read=1, written=0),
+    "parse_quotes": Landed(read=1, written=0),
+    "parse_executions": Landed(read=1, written=1),
+}
+
+#: What every later task answers over `WINDOW`. The 112 lines of 14:46 carry
+#: 65 messages; bronze keeps 38 keys and folds 27 restatements; the walk reads
+#: those 38 rows -- the hour before `START` holds none -- and merges the
+#: observations of one event into 12 rows, plus the expiry it emits at 16:25.
+#: The books fold those 13 into 5 books, whose deltas and executions are one
+#: order, no quote and six executions.
+LANDED = {
+    "parse_fix_messages_raw": Landed(read=112, written=38, skipped=27),
+    "parse_fix_messages_refined": Landed(read=38, written=13),
+    "parse_books": Landed(read=13, written=5),
+    "parse_orders": Landed(read=5, written=1),
+    "parse_quotes": Landed(read=5, written=0),
+    "parse_executions": Landed(read=5, written=6),
+}
+
+#: Rows each table holds after both windows. The gold catalog holds no table.
+STORED = {
+    LOG_MESSAGES: 144,
+    FIX_MESSAGES_RAW: 41,
+    FIX_MESSAGES: 14,
+    BOOKS: 6,
+    EVENTS["orders"]: 1,
+    EVENTS["quotes"]: 0,
+    EVENTS["executions"]: 7,
+}
+
+#: The table each task scans, the hours of it that scan plans, and every hour
+#: the table holds -- `EARLY`'s among them. The window's hours are 12 to 16,
+#: and the walk's scan reaches `HISTORY` before them, to 11. `log_messages`
+#: holds a line in hour 16, the 16:52 trade report, which the window's hour
+#: covers and its end does not: the file's bounds prune it.
+READS = {
+    "parse_fix_messages_raw": (LOG_MESSAGES, ["14"], ["03", "14", "16", "23"]),
+    "parse_fix_messages_refined": (FIX_MESSAGES_RAW, ["12", "14"], ["01", "03", "12", "14"]),
+    "parse_books": (FIX_MESSAGES, ["12", "16"], ["01", "12", "16"]),
+    "parse_orders": (BOOKS, ["12"], ["01", "12"]),
+    "parse_quotes": (BOOKS, ["12"], ["01", "12"]),
+    "parse_executions": (BOOKS, ["12"], ["01", "12"]),
+}
+
+#: The identifiers `crosscode` takes the first non-empty one of, in order.
+CROSS_IDENTIFIERS = ("orderid", "clordid", "origclordid", "quoteid", "quotereqid", "mdreqid")
+
+#: The status fields a message's state is read off, first stated first, by
+#: the columns the row states them in; a message stating none takes what its
+#: message type asks for.
+STATUS_FIELDS = ((39, "ordstatus"), (150, "exectype"), (297, "quotestatus"))
+
+
+def counted(landed: dict[str, Landed]) -> dict[str, Landed]:
+    """What each task read, wrote and skipped, without the snapshot it pinned."""
+    return {name: dataclasses.replace(held, snapshot_id=None) for name, held in landed.items()}
+
+
+def short(identity: bytes | None) -> str:
+    """An identity as its last six hex digits: a UUIDv7 opens with its millisecond."""
+    return "-" if identity is None else uuid.UUID(bytes=identity).hex[-6:]
+
+
+def in_window(table: pyarrow.Table, window: tuple[datetime.datetime, datetime.datetime]) -> list:
+    """The rows of `table` whose `currunix` a window covers, as dictionaries."""
+    return table.filter(within(table.column(EVENT_CLOCK), window)).to_pylist()
+
+
+def clock(instant: datetime.datetime | None) -> str:
+    """An instant of the capture's day as its clock, to the microsecond."""
+    return "-" if instant is None else f"{instant:%H:%M:%S.%f}"
+
+
+def settled(state: State) -> bool:
+    """Whether a state ends its chain: done, cancelled or failed."""
+    return state.is_done() or state.is_cancelled() or state.is_failed()
+
+
+def stated(row: dict[str, Any]) -> State:
+    """The state a parsed message implies about itself, by the rule the parse reads."""
+    for tag, column in STATUS_FIELDS:
+        if row[column] is not None:
+            found = State.from_fix_status(tag, row[column])
+            if found is not None:
+                return found
+    return State.from_fix_msgtype(row["msgtype"] or "") or State.UNKNOWN
+
+
+def cross_code(row: dict[str, Any]) -> str | None:
+    """The identifier `crosscode` takes, per the rule it is read by."""
+    return next((row[name] for name in CROSS_IDENTIFIERS if row[name]), None)
+
+
+# -- what each task answered ---------------------------------------------------
+
+
+def test_every_task_lands_its_window_and_the_gold_catalog_stays_empty(landing: Landing) -> None:
+    print(f"\n{'parse_log_messages':<28} DAY    {landing.log}")
+    for label, landed in (("EARLY", landing.early), ("WINDOW", landing.landed)):
+        for task, held in landed.items():
+            print(f"{task:<28} {label:<6} {held}")
+    stored = rows(landing.storages)
+    for table, count in stored.items():
+        print(f"stored {table:<36} {count} rows")
+
+    assert landing.log == LOG
+    assert counted(landing.early) == EARLY_LANDED
+    assert counted(landing.landed) == LANDED
+    for landed in (landing.early, landing.landed):
+        books = landed["parse_books"].snapshot_id
+        assert books is not None and books > 0
+        for task in FLATTENERS.values():
+            assert landed[task.__name__].snapshot_id == books, "every kind reads the one commit"
+    assert stored == STORED
+    assert landing.storages.gold.tables() == []
+    assert landing.storages.gold.namespaces() == []
+
+
+def test_each_task_opens_only_the_hours_its_window_covers(landing: Landing) -> None:
+    """The window is a predicate the scan hands Iceberg, so the plan holds only
+    the hour partitions it covers -- and those are all the task opened."""
+    storages = landing.storages
+    books = landing.landed["parse_books"].snapshot_id
+    predicates = {
+        "parse_fix_messages_raw": window_filter(EVENT_CLOCK, WINDOW),
+        "parse_fix_messages_refined": fix_window_filter((START - HISTORY, END)),
+        "parse_books": market_window_filter(WINDOW),
+        **{task.__name__: market_window_filter(WINDOW) for task in FLATTENERS.values()},
+    }
+    covered = {f"{hour:02d}" for hour in range(START.hour - 1, END.hour + 1)}
+    print()
+    for task, (table, expected, held) in READS.items():
+        snapshot = books if table == BOOKS else None
+        every = planned(storages, table, snapshot_id=snapshot)
+        scanned = planned(storages, table, predicates[task], snapshot_id=snapshot)
+        opened = hours(landing.opened[task], table)
+        print(
+            f"{task:<28} scans {table:<36} plans hours {hours(scanned, table)} "
+            f"of {hours(every, table)} ({len(scanned)} of {len(every)} files), opened {opened}"
+        )
+        assert hours(every, table) == held
+        assert hours(scanned, table) == expected
+        assert set(expected) <= covered, "only the window's hours, and the walk's hour before it"
+        assert set(expected) < set(held), "the table holds hours the window leaves unread"
+        assert opened == expected, "a task opens what its scan planned and nothing else"
+        assert len(scanned) < len(every), "the plan leaves the other hours' files unread"
+        assert landing.opened[task] == set(scanned), "the very files the plan names"
+
+
+# -- what the walk settled -----------------------------------------------------
+
+
+def test_the_walk_links_each_chain_and_expires_the_order_left_open(landing: Landing) -> None:
+    """Every step follows a row this table holds, one place after it, at the
+    instant it states; a step never moves its chain back; creation is carried
+    forward; and the one order still open at its expiry gets the row that
+    ends it, at that instant, recorded by no line."""
+    silver = landing.table(FIX_MESSAGES).to_pylist()
+    held = {row["curruuid"]: row for row in silver}
+    followed = collections.defaultdict(list)
+    for row in silver:
+        if row["prevuuid"] is not None:
+            followed[row["prevuuid"]].append(row)
+
+    links = [row for row in silver if row["prevuuid"] is not None]
+    assert links, "the walk links steps into chains"
+    for row in links:
+        before = held[row["prevuuid"]]
+        assert row["seqnum"] == (before["seqnum"] or 0) + 1
+        assert row["prevunix"] == before[EVENT_CLOCK] <= row[EVENT_CLOCK]
+        assert (row["crossuuid"], row["crosscode"]) == (before["crossuuid"], before["crosscode"])
+        assert State(row["state"]).rank >= State(before["state"]).rank, "the furthest state wins"
+        assert row["creaunix"] <= before["creaunix"], "the earliest creation is carried forward"
+    heads = [row for row in silver if row["prevuuid"] is None]
+    assert all(row["seqnum"] is None and row["prevunix"] is None for row in heads)
+
+    def chain(head: dict[str, Any]) -> list[dict[str, Any]]:
+        steps = [head]
+        while followed[steps[-1]["curruuid"]]:
+            (step,) = followed[steps[-1]["curruuid"]]
+            steps.append(step)
+        return steps
+
+    chains = sorted((chain(head) for head in heads), key=len, reverse=True)
+    for steps in chains[:2]:
+        print(f"\nchain {steps[0]['crosscode']}:")
+        for step in steps:
+            print(
+                f"  seqnum={step['seqnum']} {clock(step[EVENT_CLOCK])} "
+                f"{State(step['state']).name:<16} msgtype={step['msgtype']} "
+                f"curruuid=..{short(step['curruuid'])} prevuuid=..{short(step['prevuuid'])} "
+                f"prevunix={clock(step['prevunix'])} "
+                f"lines={len(step['srcuuids'])}"
+            )
+
+    expired = [row for row in silver if row["state"] == State.EXPIRED]
+    assert len(expired) == 1
+    for row in expired:
+        order = held[row["prevuuid"]]
+        assert (
+            row[EVENT_CLOCK]
+            == order["exprunix"]
+            == datetime.datetime(2026, 8, 14, 16, 25, tzinfo=UTC)
+        )
+        assert State(order["state"]).is_live()
+        assert not followed[row["curruuid"]], "an expiry ends its chain"
+        assert row["recdunix"] is None, "no line recorded it: the walk emitted it"
+        assert row["srcuuids"] == order["srcuuids"], "it names the lines of the order it ends"
+    # And only the order left open expires: every other chain that reached its
+    # expiry inside the window had already settled.
+    for steps in chains:
+        last = steps[-1]
+        if last["exprunix"] is not None and START <= last["exprunix"] < END:
+            assert settled(State(last["state"])), last["crosscode"]
+
+
+def test_a_message_logged_at_every_hop_is_one_silver_row(landing: Landing) -> None:
+    """Every line of the window that carries a message is accounted for once.
+
+    The parse answers one row per message, and bronze keeps one per key -- an
+    identity within its hour -- so a restatement identical to a message it
+    holds is folded there, counted in `skipped`, and named by no row after
+    it. The walk then merges the observations of one event that bronze keeps
+    apart -- the hops that restated it differently -- into one silver row
+    naming each of their lines.
+    """
+    storages = landing.storages
+    lines = {row["curruuid"]: row for row in landing.table(LOG_MESSAGES).to_pylist()}
+    bronze = in_window(landing.table(FIX_MESSAGES_RAW), (START - HISTORY, END))
+    silver = in_window(landing.table(FIX_MESSAGES), WINDOW)
+    recorded = [row for row in silver if row["recdunix"] is not None]
+    assert all(len(row["srcuuids"]) == 1 for row in bronze), "a parsed message names one line"
+    kept = {row["srcuuids"][0] for row in bronze}
+
+    # The window's lines parsed again, as the raw task parsed them.
+    codec = FixCodec.from_env(default_sending_time=UNDATED)
+    dataset = storages.dataset(LOG_MESSAGES)
+    try:
+        scan = dataset.read_arrow_reader(
+            log_message_field(),
+            row_filter=window_filter(EVENT_CLOCK, WINDOW),
+            columns=PARSE_COLUMNS,
+        )
+        parsed = fix_parse_arrow_reader(codec, scan).read_all()
+    finally:
+        dataset.close()
+    keys = collections.defaultdict(list)
+    for identity, instant, sources in zip(
+        parsed.column("curruuid").to_pylist(),
+        parsed.column(EVENT_CLOCK).to_pylist(),
+        parsed.column("srcuuids").to_pylist(),
+        strict=True,
+    ):
+        hour = instant.replace(minute=0, second=0, microsecond=0)
+        keys[(identity.bytes, hour)].append(sources[0].bytes)
+    raw = landing.landed["parse_fix_messages_raw"]
+    assert parsed.num_rows == raw.written + raw.skipped
+    assert len(keys) == raw.written
+    for sources in keys.values():
+        assert len(kept.intersection(sources)) == 1, "bronze keeps one line per key"
+    folded = {line for sources in keys.values() for line in sources} - kept
+    assert len(folded) == raw.skipped
+
+    named = collections.Counter(line for row in recorded for line in row["srcuuids"])
+    assert set(named.values()) == {1}, "a line is named by one event"
+    assert set(named) == kept, "every line bronze keeps is named, and no line it folded"
+
+    widest = max(recorded, key=lambda row: len(row["srcuuids"]))
+    hops = sorted((lines[line] for line in widest["srcuuids"]), key=lambda line: line["seqnum"])
+    restated = sorted(
+        lines[line]["seqnum"]
+        for sources in keys.values()
+        if kept.intersection(sources) <= set(widest["srcuuids"])
+        for line in sources
+        if line in folded
+    )
+    print(
+        f"\nraw: {parsed.num_rows} messages off {raw.read} lines, {len(keys)} keys, "
+        f"{raw.skipped} identical restatements folded"
+        f"\n{widest['crosscode']} execid={widest['execid']} "
+        f"{State(widest['state']).name}: one silver row naming {len(hops)} lines"
+    )
+    for line in hops:
+        print(f"  line {line['seqnum']:>3} {line['msgpluginid']:<36} {line['body'][:60]}")
+    print(f"  and restating one of them identically, folded in bronze: lines {restated}")
+    assert len(hops) > 2
+    assert len({line["msgpluginid"] for line in hops}) > 2, "logged at several hops"
+    observed = [row for row in bronze if row["srcuuids"][0] in set(widest["srcuuids"])]
+    assert {row["execid"] for row in observed} == {widest["execid"]}, "one message, restated"
+
+
+def test_the_walk_folds_state_creation_and_recording(landing: Landing) -> None:
+    """`state` is an `int32` code of the lifecycle-sorted enum: a parse reads it
+    off the first status field a message states, else off its type -- a new
+    order is `PENDING_NEW` -- and the walk keeps the furthest rank its
+    observations reached. `creaunix` folds to the earliest creation,
+    `recdunix` to the earliest line, and `crosscode` is the first identifier
+    stated."""
+    lines = {row["curruuid"]: row for row in landing.table(LOG_MESSAGES).to_pylist()}
+    bronze = landing.table(FIX_MESSAGES_RAW)
+    silver = landing.table(FIX_MESSAGES)
+    for table, held in ((FIX_MESSAGES_RAW, bronze), (FIX_MESSAGES, silver)):
+        assert held.schema.field("state").type == pyarrow.int32()
+        layer, _, name = table.partition(".")
+        stored = landing.storages.catalog(layer).load_table(name).schema().find_field("state")
+        assert stored.field_type == IntegerType()
+        codes = collections.Counter(State(code).name for code in held.column("state").to_pylist())
+        print(f"\n{table} states: {dict(sorted(codes.items()))}")
+
+    observations = collections.defaultdict(list)
+    for row in bronze.to_pylist():
+        assert row["state"] == stated(row), (row["msgtype"], row["ordstatus"], row["exectype"])
+        assert row["crosscode"] == cross_code(row)
+        assert row["recdunix"] == lines[row["srcuuids"][0]][EVENT_CLOCK], "the line's own clock"
+        observations[row["srcuuids"][0]].append(row)
+    orders = [row for row in bronze.to_pylist() if row["msgtype"] == "D"]
+    assert orders and {State(row["state"]) for row in orders} == {State.PENDING_NEW}
+
+    for row in silver.to_pylist():
+        assert row["crosscode"] == cross_code(row)
+        assert row["creaunix"] is not None and row["creaunix"] <= row[EVENT_CLOCK]
+        if row["recdunix"] is None:
+            continue
+        seen = [held for line in row["srcuuids"] for held in observations[line]]
+        assert State(row["state"]).rank == max(State(held["state"]).rank for held in seen)
+        assert row["recdunix"] == min(held["recdunix"] for held in seen)
+        assert row["creaunix"] <= min(held["creaunix"] for held in seen)
+        if row["msgtype"] == "D":
+            assert row["state"] == State.PENDING_NEW
+            print(
+                f"new order {row['crosscode']}: {State(row['state']).name}, created "
+                f"{row['creaunix']:%H:%M:%S.%f} off {len(seen)} observations"
+            )
+
+
+def test_no_parsed_message_sits_at_the_pin(landing: Landing) -> None:
+    """A message stating no sending clock takes its line's, so a text read
+    leaves nothing at `UNDATED` for the walk to place by transaction time."""
+    bronze = landing.table(FIX_MESSAGES_RAW).to_pylist()
+    assert not [row for row in bronze if row[EVENT_CLOCK] == UNDATED]
+    silver = landing.table(FIX_MESSAGES).column(EVENT_CLOCK).to_pylist()
+    assert UNDATED not in silver
+
+
+# -- a rerun -------------------------------------------------------------------
+
+
+def test_a_rerun_of_every_task_over_its_window_lands_identical_rows(landing: Landing) -> None:
+    """Idempotent: the log over its day and every later task over the window
+    land the rows they replace again, in one commit per table, and `EARLY`'s
+    rows are left as they were."""
+    storages = landing.storages
+    before = {table: read(storages, table) for table in storages.tables()}
+    commits = {table: snapshots(storages, table) for table in before}
+
+    log = parse_log_messages(CAPTURE.as_uri(), storages, DAY)
+    again = graph(storages, WINDOW)
+
+    assert log == LOG
+    assert counted(again) == LANDED
+    books = again["parse_books"].snapshot_id
+    assert books != landing.landed["parse_books"].snapshot_id
+    assert all(again[task.__name__].snapshot_id == books for task in FLATTENERS.values())
+    for table, held in before.items():
+        assert read(storages, table).equals(held), f"{table} landed other rows"
+    after = {table: snapshots(storages, table) for table in before}
+    print(f"\nsnapshots before the rerun {commits}\nand after it {after}")
+    assert after == {table: count + 1 for table, count in commits.items()}
+
+
+# -- the task surface ----------------------------------------------------------
+
+
+def test_landed_counts_only_what_a_task_states() -> None:
+    landed = Landed(read=3, written=2)
+
+    assert landed == Landed(read=3, written=2, skipped=0, snapshot_id=None)
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        landed.written = 3  # type: ignore[misc]
+
+
+def test_a_counted_reader_closes_the_reader_it_counts() -> None:
+    """A task registers only the counted reader, so unwinding it -- on an
+    error too -- must release the scan underneath."""
+    released: list[str] = []
+    batch = pyarrow.record_batch({"n": [1, 2, 3]})
+    source = OwnedRecordBatchReader(batch.schema, iter([batch]), lambda: released.append("scan"))
+    count = _Count()
+    counted_reader = count(source)
+
+    assert counted_reader.read_all().num_rows == count.rows == 3
+    counted_reader.close()
+    assert released == ["scan"]
+
+
+def test_every_kind_a_book_flattens_lands_in_a_table_of_its_own() -> None:
+    assert set(EVENTS) == set(FLATTENED) == set(FLATTENERS)
+    assert len(set(EVENTS.values())) == len(EVENTS)
+
+
+@pytest.mark.parametrize("kind", sorted(FLATTENERS))
+@pytest.mark.parametrize("snapshot_id", [True, False, -1, 1.0, "1"])
+def test_a_flattener_refuses_a_snapshot_id_that_is_not_a_nonnegative_int(
+    storages: Any, kind: str, snapshot_id: Any
+) -> None:
+    """A bool is an int to Python and never a snapshot here: `False` is not
+    the pinned absence `0` is."""
+    with pytest.raises(ValueError, match="nonnegative book snapshot_id or None"):
+        FLATTENERS[kind](storages, WINDOW, snapshot_id=snapshot_id)
+    assert list(storages.tables()) == []
+
+
+def test_window_filter_is_the_arrow_window_as_a_scan_predicate() -> None:
+    """`window_filter` states over a stored column what `within` answers over
+    an Arrow one: `[start, end)`, the `EPOCH` pin and a null."""
+    lower = datetime.datetime(2026, 8, 14, tzinfo=UTC)
+    upper = datetime.datetime(2026, 8, 15, tzinfo=UTC)
+    tick = datetime.timedelta(microseconds=1)
+
+    predicate = window_filter(EVENT_CLOCK, (lower, upper))
+
+    assert predicate == Or(
+        And(GreaterThanOrEqual(EVENT_CLOCK, lower), LessThan(EVENT_CLOCK, upper)),
+        Or(EqualTo(EVENT_CLOCK, EPOCH), IsNull(EVENT_CLOCK)),
+    )
+    instants = [lower - tick, lower, lower + (upper - lower) / 2, upper - tick, upper, EPOCH, None]
+    column = pyarrow.array(instants, pyarrow.timestamp("us", tz="UTC"))
+    stamped = pyarrow.table({EVENT_CLOCK: column})
+    schema = Schema(NestedField(1, EVENT_CLOCK, TimestamptzType(), required=False))
+    scanned = stamped.filter(expression_to_pyarrow(bind(schema, predicate, case_sensitive=True)))
+    assert scanned.column(EVENT_CLOCK).to_pylist() == instants[1:4] + [EPOCH, None]
+    assert scanned.equals(stamped.filter(within(column, (lower, upper))))
+
+
+@scalar
+class Stamped:
+    """A row laid out by the hour of its instant."""
+
+    name: str
+    currunix: Annotated[datetime.datetime, partition_key("hour")]
+
+
+def test_window_filter_opens_the_hours_a_window_touches_and_the_pins(
+    storages: Any, tmp_path: Path
+) -> None:
+    hour = datetime.datetime(2026, 8, 14, 10, tzinfo=UTC)
+    minutes = datetime.timedelta(minutes=1)
+    instants = {
+        "before": hour - 30 * minutes,
+        "early": hour + 15 * minutes,
+        "late": hour + 45 * minutes,
+        "end": hour + 60 * minutes,
+        "pinned": EPOCH,
+    }
+    field = Stamped.into_field()
+    stamped = pyarrow.Table.from_pydict(
+        {"name": list(instants), EVENT_CLOCK: list(instants.values())},
+        schema=field.into_arrow_schema(),
+    )
+    dataset = storages.dataset("bronze.logs.stamped", field=field)
+    try:
+        assert dataset.append_arrow_reader(stamped.to_reader(), field) == len(instants)
+        predicate = window_filter(EVENT_CLOCK, (hour, hour + 60 * minutes))
+
+        plan = dataset.scan_plan(predicate)
+        held = dataset.read_arrow_table(row_filter=predicate)
+    finally:
+        dataset.close()
+
+    assert (plan["files"], plan["skipped"]) == (2, 2), "the window's hour and the pin's"
+    assert sorted(held.column("name").to_pylist()) == ["early", "late", "pinned"]

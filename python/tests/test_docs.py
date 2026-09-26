@@ -1,84 +1,78 @@
-"""The small documentation surface matches the supported ingestion path."""
+"""The documentation promises what the package does, in the package's own names.
+
+Pinned here: every page is reachable from the navigation, no page names the
+native dependency beneath `rekep`, every example compiles and imports only
+`rekep`, every task call binds to the task's signature, and every table has
+its column page and its sample page. Under `-m integration`, every example
+that asserts runs from the repository root, and the sample pages are what the
+tasks land today.
+"""
 
 from __future__ import annotations
 
 import ast
+import contextlib
 import hashlib
+import importlib.util
 import inspect
 import json
+import os
 import re
+import sys
 from collections.abc import Iterator
 from pathlib import Path
+from types import ModuleType
 
+import pytest
 import yaml
 
-from rekep import Field, Message, pipeline
-from rekep.deploy import deploy
+from rekep import Storages, pipeline
+from rekep.deploy import TABLES, deploy
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
 FENCE = re.compile(r"^```python\n(.*?)^```", re.MULTILINE | re.DOTALL)
 JSON_FENCE = re.compile(r"^```json\n(.*?)^```", re.MULTILINE | re.DOTALL)
 
-#: A command of the `rekep` console script, which the package does not install.
+#: The dependency beneath `rekep`, which documentation never names: a reader
+#: imports `rekep`, and the package re-exports what they need.
+NATIVE = re.compile(r"yggdryl", re.IGNORECASE)
+
+#: A command of a `rekep` console script, which the package does not install.
 COMMAND = re.compile(r"\brekep\s+(?:tasks|fields)\b")
 
-#: Every page a reader copies a command from.
+#: The skill that teaches an agent the library.
+SKILL = ROOT / ".claude" / "skills" / "rekep"
+
+#: Every page a reader copies an example or a command from.
 PAGES = [
     ROOT / "README.md",
-    ROOT / ".claude" / "skills" / "rekep" / "SKILL.md",
+    SKILL / "SKILL.md",
     ROOT / "config" / "README.md",
     ROOT / "data" / "README.md",
     ROOT / "schemas" / "README.md",
     *sorted(DOCS.rglob("*.md")),
 ]
 
+#: Everything published as documentation, which names nothing beneath `rekep`.
+PUBLISHED = [
+    ROOT / "README.md",
+    *sorted(path for path in DOCS.rglob("*") if path.is_file()),
+    *sorted(path for path in (ROOT / "schemas").rglob("*") if path.is_file()),
+    *sorted(path for path in SKILL.rglob("*") if path.is_file()),
+]
 
-def code_fences(page: Path, pattern: re.Pattern[str]) -> Iterator[str]:
+
+def code_fences(page: Path, pattern: re.Pattern[str] = FENCE) -> Iterator[str]:
     """Read one page's fenced examples."""
     yield from pattern.findall(page.read_text(encoding="utf-8"))
 
 
-def test_python_examples_compile() -> None:
-    examples = [
-        (page, index, source)
-        for page in sorted(DOCS.rglob("*.md"))
-        for index, source in enumerate(code_fences(page, FENCE))
-    ]
-
-    assert len(examples) >= 6
-    for page, index, source in examples:
-        ast.parse(source, filename=f"{page.relative_to(DOCS)}#{index}")
-
-
-def test_json_examples_parse() -> None:
-    examples = [
-        (page, source)
-        for page in sorted(DOCS.rglob("*.md"))
-        for source in code_fences(page, JSON_FENCE)
-    ]
-
-    assert examples
-    for page, source in examples:
-        try:
-            json.loads(source)
-        except json.JSONDecodeError as error:
-            raise AssertionError(f"invalid JSON in {page.relative_to(DOCS)}: {error}") from error
-
-
-def test_the_capture_is_the_bytes_its_page_pins() -> None:
-    """`data/capture/ulbridge.log` is the core's own capture at the pinned
-    release, and the digest its page states is what says so."""
-    page = (ROOT / "data" / "README.md").read_text(encoding="utf-8")
-    (digest,) = re.findall(r"^```text\n([0-9a-f]{64})\n```", page, re.MULTILINE)
-    capture = (ROOT / "data" / "capture" / "ulbridge.log").read_bytes()
-    assert hashlib.sha256(capture).hexdigest() == digest
-
-
-def test_navigation_names_existing_pages() -> None:
+def navigation() -> list[str]:
+    """Every page `mkdocs.yml` navigates to, relative to `docs/`."""
     config = yaml.load((ROOT / "mkdocs.yml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
 
-    def pages(value: object):
+    def pages(value: object) -> Iterator[str]:
         if isinstance(value, str) and value.endswith(".md"):
             yield value
         elif isinstance(value, list):
@@ -88,94 +82,111 @@ def test_navigation_names_existing_pages() -> None:
             for child in value.values():
                 yield from pages(child)
 
-    declared = list(pages(config["nav"]))
+    return list(pages(config["nav"]))
+
+
+def tool(name: str) -> ModuleType:
+    """One script of `tools/`, which is not a package."""
+    spec = importlib.util.spec_from_file_location(name, ROOT / "tools" / f"{name}.py")
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_navigation_names_existing_pages() -> None:
+    declared = navigation()
     assert declared
-    assert all((DOCS / page).is_file() for page in declared)
+    assert [page for page in declared if not (DOCS / page).is_file()] == []
+    assert len(declared) == len(set(declared))
 
 
-def test_docs_publish_the_native_message_and_market_contracts() -> None:
-    message_schema = (ROOT / "schemas" / "rekep" / "message.json").read_text(encoding="utf-8")
-    fix_schema = (ROOT / "schemas" / "rekep" / "fixmsg.json").read_text(encoding="utf-8")
+def test_every_page_is_in_the_navigation() -> None:
+    """A page nobody navigates to is a page nobody reads."""
+    pages = {
+        str(page.relative_to(DOCS)) for page in DOCS.rglob("*.md") if page.parent != DOCS / "assets"
+    }
+    assert pages - set(navigation()) == set()
 
-    assert Field.__name__ == "Field"
-    assert [member.name for member in Message.into_field()] == [
-        "currunix",
-        "curruuid",
-        "currhashcode",
-        "crosscode",
-        "seqnum",
-        "body",
-        "msgthreadid",
-        "msgsessionid",
-        "msgctxid",
-        "msgseqnum",
-        "msgpluginid",
-        "loglevel",
+
+def test_no_documentation_names_the_native_dependency() -> None:
+    named = [
+        f"{path.relative_to(ROOT)}:{number}"
+        for path in PUBLISHED
+        for number, line in enumerate(
+            path.read_text(encoding="utf-8", errors="replace").splitlines(), 1
+        )
+        if NATIVE.search(line)
     ]
-    assert sorted(path.name for path in (ROOT / "schemas" / "rekep").glob("*.json")) == [
-        "book.json",
-        "fixmsg.json",
-        "marketevent.json",
-        "message.json",
+    assert not named, named
+
+
+def test_every_table_has_its_column_page_and_its_samples() -> None:
+    declared = set(navigation())
+    for table in TABLES:
+        short = table.name.split(".", 1)[1]
+        for section in ("tables", "samples"):
+            assert f"{section}/{table.layer}/{short}.md" in declared, (section, table.table)
+    assert "tables/states.md" in declared
+
+
+def test_every_task_has_its_page() -> None:
+    declared = set(navigation())
+    tasks = [name for name in pipeline.__all__ if name.startswith("parse_")]
+    # The three flatteners share one page; every other task has its own.
+    flatteners = {task.__name__ for task in pipeline.FLATTENERS.values()}
+    flattened = "parse-orders-quotes-executions.md"
+    pages = {
+        name: flattened if name in flatteners else f"{name.replace('_', '-')}.md" for name in tasks
+    }
+    assert {f"tasks/{page}" for page in pages.values()} <= declared
+    for name, page in pages.items():
+        assert f"`{name}" in (DOCS / "tasks" / page).read_text(encoding="utf-8"), name
+
+
+def test_python_examples_compile() -> None:
+    examples = [
+        (page, index, source) for page in PAGES for index, source in enumerate(code_fences(page))
     ]
-    # The FIX contract is the native projected event row. A line's text
-    # remains solely in Message, linked by the event row's `srcuuids`.
-    assert '"name": "body"' in message_schema
-    assert '"name": "msgtype"' in fix_schema
-    assert '"name": "srcuuids"' in fix_schema
-    for capture in ("msgthreadid", "loglevel", "body"):
-        assert f'"name": "{capture}"' not in fix_schema
-    book = json.loads((ROOT / "schemas" / "rekep" / "book.json").read_text(encoding="utf-8"))
-    market_event = json.loads(
-        (ROOT / "schemas" / "rekep" / "marketevent.json").read_text(encoding="utf-8")
-    )
-    book_names = [member["name"] for member in book["schema"]["fields"]]
-    event_names = [member["name"] for member in market_event["schema"]["fields"]]
-    assert book_names[-3:] == ["bid", "ask", "executions"]
-    assert event_names == book_names[:-3]
+
+    assert len(examples) >= 30
+    for page, index, source in examples:
+        ast.parse(source, filename=f"{page.relative_to(ROOT)}#{index}")
 
 
-def test_docs_record_the_measured_message_rates() -> None:
-    benchmark = (DOCS / "storage" / "benchmarks.md").read_text(encoding="utf-8")
-    task = (DOCS / "pipeline" / "parse-messages.md").read_text(encoding="utf-8")
+def test_json_examples_parse() -> None:
+    examples = [(page, source) for page in PAGES for source in code_fences(page, JSON_FENCE)]
 
-    assert "70,000" in benchmark
-    assert "timestamp[us, UTC]" in benchmark
-    assert "fastest of two warmed runs" in benchmark
-    assert "buffered()" in benchmark
-    assert "300,000 rows" in benchmark
-    # The decoder limit stays documented where a reader meets it, and the
-    # staging answer stays beside it: both were removed from the docs once.
-    assert "concatenated gzip members" in task
-    assert "staging locally is not a substitute" in task
+    assert examples
+    for page, source in examples:
+        try:
+            json.loads(source)
+        except json.JSONDecodeError as error:
+            raise AssertionError(f"invalid JSON in {page.relative_to(ROOT)}: {error}") from error
 
 
-def test_fix_schema_stays_owned_by_the_runtime_registry() -> None:
-    raw = (DOCS / "pipeline" / "parse-fix-raw.md").read_text(encoding="utf-8")
-    refined = (DOCS / "pipeline" / "parse-fix-refined.md").read_text(encoding="utf-8")
-    schemas = (ROOT / "schemas" / "README.md").read_text(encoding="utf-8")
+def test_a_storages_example_names_every_layer() -> None:
+    """A JSON example keyed by layer is a whole `Storages.from_dict` mapping."""
+    for page in PAGES:
+        for source in code_fences(page, JSON_FENCE):
+            held = json.loads(source)
+            if "bronze" in held:
+                assert set(held) == {"bronze", "silver", "gold"}, page
 
-    assert "parse_text_arrow_reader" in raw
-    assert "128-column" in raw
-    assert "FixMsg" in raw and "FixMsg" in refined
-    assert "fix_schema_carrying" not in raw
-    assert "fix_lifecycle_arrow_reader" in refined
-    assert "fix_window_filter" in refined
-    assert "not alternate implementations" in schemas
-    assert "`fixmsg.json`" in schemas
-    assert "iceberg_contract" in schemas
+
+def test_the_capture_is_the_bytes_its_page_pins() -> None:
+    """`data/capture/ulbridge.log` is the capture every documented count
+    reads, and the digest its page states is what says so."""
+    page = (ROOT / "data" / "README.md").read_text(encoding="utf-8")
+    (digest,) = re.findall(r"^```text\n([0-9a-f]{64})\n```", page, re.MULTILINE)
+    capture = (ROOT / "data" / "capture" / "ulbridge.log").read_bytes()
+    assert hashlib.sha256(capture).hexdigest() == digest
 
 
 def test_public_python_uses_the_rekep_surface() -> None:
-    """Examples and tools import their product, not its runtime."""
-    roots = [ROOT / "README.md", ROOT / "schemas", DOCS, ROOT / "tools"]
-    sources = []
-    for root in roots:
-        for path in [root] if root.is_file() else root.rglob("*"):
-            if path.is_file() and path.suffix == ".py":
-                sources.append((path, path.read_text(encoding="utf-8")))
-            elif path.is_file() and path.suffix == ".md":
-                sources.extend((path, source) for source in code_fences(path, FENCE))
+    """Examples and tools import their product, not what is beneath it."""
+    sources = [(page, source) for page in PAGES for source in code_fences(page)]
+    sources += [(path, path.read_text(encoding="utf-8")) for path in (ROOT / "tools").glob("*.py")]
 
     assert sources
     for path, source in sources:
@@ -186,16 +197,13 @@ def test_public_python_uses_the_rekep_surface() -> None:
             if isinstance(node, ast.Import)
             for alias in node.names
         ] + [node.module or "" for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)]
-        assert not any(
-            module == "yggdryl" or module.startswith("yggdryl.") for module in modules
-        ), path
+        assert not [module for module in modules if NATIVE.match(module)], path
 
 
 def test_no_page_spells_a_rekep_command() -> None:
     """The package is called from Python and installs no console script, so a
-    `rekep tasks` or `rekep fields` line hands its reader a command that is not
-    there: a stage is a `rekep.pipeline` call and a contract an
-    `iceberg_contract` one."""
+    `rekep tasks` or `rekep fields` line hands its reader a command that is
+    not there: a task is a `rekep.pipeline` call."""
     spelled = [
         f"{page.relative_to(ROOT)}:{number}: {line.strip()}"
         for page in PAGES
@@ -210,15 +218,16 @@ def test_no_page_spells_a_rekep_command() -> None:
 CALLED = {
     **{name: getattr(pipeline, name) for name in pipeline.__all__ if name.startswith("parse_")},
     "deploy": deploy,
+    "from_dict": Storages.from_dict,
 }
 
 
-def test_every_documented_stage_call_binds_to_its_signature() -> None:
-    """A page that hands a stage a keyword it does not take compiles, so each
+def test_every_documented_task_call_binds_to_its_signature() -> None:
+    """A page that hands a task a keyword it does not take compiles, so each
     call is bound to the function it names instead."""
     bound = 0
     for page in PAGES:
-        for index, source in enumerate(code_fences(page, FENCE)):
+        for index, source in enumerate(code_fences(page)):
             for node in ast.walk(ast.parse(source)):
                 if not isinstance(node, ast.Call):
                     continue
@@ -239,4 +248,46 @@ def test_every_documented_stage_call_binds_to_its_signature() -> None:
                         f"{page.relative_to(ROOT)}#{index}: {called}: {error}"
                     ) from error
                 bound += 1
-    assert bound, "the pages call the stages"
+    assert bound >= 20, "the pages call the tasks"
+
+
+#: Every example that asserts, which is every example complete enough to run.
+EXAMPLES = [
+    pytest.param(source, id=f"{page.relative_to(ROOT)}#{index}")
+    for page in PAGES
+    for index, source in enumerate(code_fences(page))
+    if re.search(r"^\s*assert\b", source, re.MULTILINE)
+]
+
+
+@contextlib.contextmanager
+def at_the_root() -> Iterator[None]:
+    """Run from the repository root, where every example's relative path resolves."""
+    held = Path.cwd()
+    os.chdir(ROOT)
+    try:
+        yield
+    finally:
+        os.chdir(held)
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("source", EXAMPLES)
+def test_an_asserting_example_runs(source: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    # A module of its own, registered, because a dataclass reads its class's
+    # module back out of `sys.modules`.
+    example = ModuleType("docs_example")
+    monkeypatch.setitem(sys.modules, example.__name__, example)
+    with at_the_root():
+        exec(compile(source, "<example>", "exec"), example.__dict__)
+
+
+@pytest.mark.integration
+def test_the_samples_are_what_the_tasks_land() -> None:
+    """Regenerate with `tools/samples_dump.py` and review the diff when this fails."""
+    drifted = [
+        str(path.relative_to(ROOT))
+        for path, text in tool("samples_dump").published()
+        if not path.is_file() or path.read_text(encoding="utf-8") != text
+    ]
+    assert not drifted, f"stale, run tools/samples_dump.py: {drifted}"

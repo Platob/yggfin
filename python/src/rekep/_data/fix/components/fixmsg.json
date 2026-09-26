@@ -37,17 +37,6 @@
         }
       },
       {
-        "name": "refrecdunix",
-        "dtype": {
-          "type": "null"
-        },
-        "nullable": true,
-        "metadata": {
-          "FIX:field": "refrecdunix",
-          "FIX:tag": "65064"
-        }
-      },
-      {
         "name": "creaunix",
         "dtype": {
           "type": "null"
@@ -81,13 +70,13 @@
         }
       },
       {
-        "name": "exprtime",
+        "name": "exprunix",
         "dtype": {
           "type": "null"
         },
         "nullable": true,
         "metadata": {
-          "FIX:field": "exprtime",
+          "FIX:field": "exprunix",
           "FIX:tag": "65053"
         }
       },
@@ -257,17 +246,6 @@
         }
       },
       {
-        "name": "parentuuids",
-        "dtype": {
-          "type": "null"
-        },
-        "nullable": true,
-        "metadata": {
-          "FIX:field": "parentuuids",
-          "FIX:tag": "65041"
-        }
-      },
-      {
         "name": "srcuuids",
         "dtype": {
           "type": "null"
@@ -276,16 +254,6 @@
         "metadata": {
           "FIX:field": "srcuuids",
           "FIX:tag": "65051"
-        }
-      },
-      {
-        "name": "identifiers",
-        "dtype": {
-          "type": "null"
-        },
-        "nullable": true,
-        "metadata": {
-          "FIX:group": "identifiers"
         }
       },
       {
@@ -388,6 +356,17 @@
         }
       },
       {
+        "name": "msgoriginator",
+        "dtype": {
+          "type": "null"
+        },
+        "nullable": true,
+        "metadata": {
+          "FIX:field": "msgoriginator",
+          "FIX:tag": "65066"
+        }
+      },
+      {
         "name": "msgctxid",
         "dtype": {
           "type": "null"
@@ -407,6 +386,28 @@
         "metadata": {
           "FIX:field": "msgsessionid",
           "FIX:tag": "65032"
+        }
+      },
+      {
+        "name": "msgsesseventid",
+        "dtype": {
+          "type": "null"
+        },
+        "nullable": true,
+        "metadata": {
+          "FIX:field": "msgsesseventid",
+          "FIX:tag": "65065"
+        }
+      },
+      {
+        "name": "conversationid",
+        "dtype": {
+          "type": "null"
+        },
+        "nullable": true,
+        "metadata": {
+          "FIX:field": "conversationid",
+          "FIX:tag": "65067"
         }
       },
       {
@@ -451,28 +452,6 @@
         "metadata": {
           "FIX:field": "isincode",
           "FIX:tag": "65055"
-        }
-      },
-      {
-        "name": "cusipcode",
-        "dtype": {
-          "type": "null"
-        },
-        "nullable": true,
-        "metadata": {
-          "FIX:field": "cusipcode",
-          "FIX:tag": "65057"
-        }
-      },
-      {
-        "name": "sedolcode",
-        "dtype": {
-          "type": "null"
-        },
-        "nullable": true,
-        "metadata": {
-          "FIX:field": "sedolcode",
-          "FIX:tag": "65058"
         }
       },
       {
@@ -982,6 +961,72 @@
         }
       },
       {
+        "name": "lastspotrate",
+        "dtype": {
+          "type": "null"
+        },
+        "nullable": true,
+        "metadata": {
+          "FIX:field": "lastspotrate",
+          "FIX:tag": "194"
+        }
+      },
+      {
+        "name": "lastforwardpoints",
+        "dtype": {
+          "type": "null"
+        },
+        "nullable": true,
+        "metadata": {
+          "FIX:field": "lastforwardpoints",
+          "FIX:tag": "195"
+        }
+      },
+      {
+        "name": "bidspotrate",
+        "dtype": {
+          "type": "null"
+        },
+        "nullable": true,
+        "metadata": {
+          "FIX:field": "bidspotrate",
+          "FIX:tag": "188"
+        }
+      },
+      {
+        "name": "bidforwardpoints",
+        "dtype": {
+          "type": "null"
+        },
+        "nullable": true,
+        "metadata": {
+          "FIX:field": "bidforwardpoints",
+          "FIX:tag": "189"
+        }
+      },
+      {
+        "name": "offerspotrate",
+        "dtype": {
+          "type": "null"
+        },
+        "nullable": true,
+        "metadata": {
+          "FIX:field": "offerspotrate",
+          "FIX:tag": "190"
+        }
+      },
+      {
+        "name": "offerforwardpoints",
+        "dtype": {
+          "type": "null"
+        },
+        "nullable": true,
+        "metadata": {
+          "FIX:field": "offerforwardpoints",
+          "FIX:tag": "191"
+        }
+      },
+      {
         "name": "state",
         "dtype": {
           "type": "null"
@@ -1397,7 +1442,7 @@
       {
         "name": "fixentries",
         "dtype": {
-          "type": "list",
+          "type": "serie",
           "field": {
             "name": "fixentry",
             "dtype": {
@@ -1436,7 +1481,7 @@
                 {
                   "name": "fixentries",
                   "dtype": {
-                    "type": "list",
+                    "type": "serie",
                     "field": {
                       "name": "fixentry",
                       "dtype": {
@@ -1475,7 +1520,7 @@
                           {
                             "name": "fixentries",
                             "dtype": {
-                              "type": "list",
+                              "type": "serie",
                               "field": {
                                 "name": "fixentry",
                                 "dtype": {

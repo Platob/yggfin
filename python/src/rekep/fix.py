@@ -8,9 +8,9 @@ code validation and the row's schema.
 Refined uses the native finite lifecycle: date by transaction time where
 needed, stably order events, suppress repeated deliveries, learn validated
 instrument associations, link predecessors, and emit expirations. It folds
-`creaunix`, `exprtime` and `state`; Python projects the native message row and
+`creaunix`, `exprunix` and `state`; Python projects the native message row and
 narrows the resulting Arrow batches for Iceberg.
-`rekep.pipeline.parse_fix_refined` supplies the preceding hour plus its window
+`rekep.pipeline.parse_fix_messages_refined` supplies the preceding hour plus its window
 and publishes its window's rows.
 """
 
@@ -26,7 +26,7 @@ from typing import Any
 
 import pyarrow
 import pyarrow.compute
-from yggdryl import IOBase, TextLine, TextOptions
+from yggdryl import TextLine, TextOptions
 from yggdryl.fix import (
     FixCodec,
     FixMessages,
@@ -36,8 +36,6 @@ from yggdryl.fix import (
     fix_crate_fields,
     fix_schema,
     fix_schema_tags,
-    global_registry,
-    install_global_registry,
 )
 
 from rekep.fields import (
@@ -48,9 +46,15 @@ from rekep.fields import (
     SORT_ORDER,
     Field,
 )
-from rekep.times import ULBRIDGE_ROWHEADER, UTC
+from rekep.times import UTC
 
-_REGISTRY_PATH = Path(__file__).with_name("_data") / "fix"
+#: The FIX dictionary this package ships, installed as the process default.
+_REGISTRY = Path(__file__).with_name("_data") / "fix"
+
+#: The environment variable naming a dictionary folder the process reads in
+#: place of the one this package ships. The native registry reads it; this
+#: package only leaves its own dictionary uninstalled where it is set.
+REGISTRY_VARIABLE = "YGGDRYL_FIX_REGISTRY"
 
 #: The registry document the fixed row is published as, and the one name
 #: `fix_schema` is asked for. Yggdryl owns the row; this is where yggfin says
@@ -72,27 +76,27 @@ EVENT_CLOCK = "currunix"
 
 #: The clock the walk dates a message by where the parse could not: the
 #: `TransactTime(60)` it states. A parse pins an undated message at `UNDATED`,
-#: so a `fix.raw` row at the pin whose transaction time falls in a window is that
+#: so a bronze `fix_messages` row at the pin whose transaction time falls in a window is that
 #: window's, and `fix_window_filter` reads it there.
 TRANSACTION_CLOCK = "transacttime"
 
 #: The identities a message was read from: provenance, never lineage. A
-#: `fix.raw` row names the one line it was parsed from; a `fix.refined` row
+#: bronze `fix_messages` row names the one line it was parsed from; a silver one
 #: names every line its event was logged on, because the walk merges the
 #: observations of one event. Source location and capture context remain on
-#: `logs.messages`, reached through these identities; no walk reads them as
+#: `log_messages`, reached through these identities; no walk reads them as
 #: lineage.
 SOURCES = "srcuuids"
 
 #: The stored line's column a parse reads its identity off, and puts in
-#: `srcuuids`. `logs.messages` stores it as the sixteen ordered bytes Arrow
+#: `srcuuids`. `log_messages` stores it as the sixteen ordered bytes Arrow
 #: can key, sort and merge on, so the parse is handed it back at the type the
 #: read states before it is asked to read it.
 CAPTURE_KEY = "curruuid"
 
 #: What the lifecycle walk filled for a message's place in its chain. A chain
 #: read in `currunix, seqnum` order is the order the venue described, and the
-#: column is empty on every `fix.raw` row.
+#: column is empty on every bronze `fix_messages` row.
 CHAIN_STEP = "seqnum"
 
 #: The columns of a stored line the parse reads, and the projection the
@@ -130,29 +134,6 @@ UNDATED = datetime.datetime(1970, 1, 1, tzinfo=UTC)
 _EXTENSION_KEYS = (b"ARROW:extension:name", b"ARROW:extension:metadata")
 
 
-def registry_path() -> Path:
-    """The specification dictionary shipped inside this installation."""
-    if not _REGISTRY_PATH.is_dir():
-        raise FileNotFoundError(f"rekep FIX registry is absent: {_REGISTRY_PATH}")
-    return _REGISTRY_PATH
-
-
-def _load_registry(location: Any) -> FixRegistry:
-    """Load one registry location, refusing a store that defined nothing."""
-    owned = None
-    handle = location
-    if not isinstance(location, IOBase):
-        owned = IOBase.from_uri(os.fspath(location))
-        handle = owned
-    try:
-        dictionary = FixRegistry.from_handle(handle)
-    finally:
-        if owned is not None:
-            owned.close()
-    _refuse_bare(dictionary, location)
-    return dictionary
-
-
 def _refuse_bare(registry: FixRegistry, location: Any) -> None:
     """Refuse a registry that defines nothing, which would type a narrow table.
 
@@ -164,70 +145,25 @@ def _refuse_bare(registry: FixRegistry, location: Any) -> None:
         raise ValueError(f"FIX registry contains no specification fields: {location}")
 
 
-_DEFAULT_REGISTRY = _load_registry(registry_path())
-try:
-    install_global_registry(_DEFAULT_REGISTRY)
-except ValueError:
-    # A host may deliberately install its process registry before importing
-    # rekep. Keep that explicit choice; rekep's own default remains available
-    # through ``fix_registry()``, which ``fix_codec()`` takes by default.
-    pass
+def _install_shipped() -> None:
+    """Make the dictionary this package ships the one `FixRegistry.from_env()` answers.
 
-
-def fix_registry(location: str | os.PathLike[str] | None = None) -> FixRegistry:
-    """The bundled registry, or one explicit dictionary."""
-    return _DEFAULT_REGISTRY if location is None else _load_registry(location)
-
-
-def fix_text_options(
-    field: Field | None = None,
-    rowheader: str | None = None,
-) -> TextOptions:
-    """The bridge text read every stage of this pipeline is pinned against.
-
-    Every capture a row header declares is named for what the native read
-    fills from it -- a field for `msgpluginid`, `msgsessionid`, `msgctxid`
-    and `msgseqnum`, the settled `currunix` for `mtime`, which `parse_mtime`
-    consumes at its native default and never lands beside it -- so
-    `capture_names` alone is what tells the codec which bracket part is which
-    and nothing maps a spelling onto a tag. `rowheader` reads a bridge writing those same
-    facts in a layout of its own; the default is the one this package ships.
-    A reader that also stores its rows takes the header through
-    `Message.text_options`, which additionally checks those names against the
-    ones its contract is filled from.
+    Unless the process chose one already: a registry a host installed before
+    importing this package, or a folder the environment names, is kept, so
+    `FixRegistry.from_env()` and `FixCodec.from_env()` answer the caller's
+    choice first and this package's dictionary otherwise.
     """
-    options = TextOptions()
-    options.start_rownum = 1
-    options.rowheader = ULBRIDGE_ROWHEADER if rowheader is None else rowheader
-    options.timezone = "UTC"
-    options.safe = False
-    if field is not None:
-        options.field = field
-    return options
+    if os.environ.get(REGISTRY_VARIABLE):
+        return
+    registry = FixRegistry.from_handle(_REGISTRY)
+    _refuse_bare(registry, _REGISTRY)
+    try:
+        FixRegistry.install_env(registry)
+    except ValueError:
+        pass
 
 
-def fix_codec(
-    registry: FixRegistry | None = None,
-    *,
-    options: TextOptions | None = None,
-    **pinned: Any,
-) -> FixCodec:
-    """One codec over a dictionary, pinned for the whole run it reads.
-
-    The codec is the whole parse surface, so every reader a stage composes is
-    built here rather than configured per call. A dialect is not among the
-    pins and neither is a version: the registry is one namespace, and what a
-    message was read at is what its own `beginstring` said.
-
-    `options` hands over the compiled capture order, so the line door reads
-    every bracket part by position without one name lookup per line. An
-    undated message takes `UNDATED` rather than the instant the parse ran, so
-    a replay of the same bytes answers the same identity.
-    """
-    if options is not None:
-        pinned.setdefault("capture_names", list(options.capture_names))
-    pinned.setdefault("default_sending_time", UNDATED)
-    return FixCodec(fix_registry() if registry is None else registry, **pinned)
+_install_shipped()
 
 
 def fix_parse_lines(codec: FixCodec, lines: Iterable[TextLine]) -> Iterator[FixMsg]:
@@ -252,12 +188,12 @@ def fix_parse_arrow_reader(
     The native parser consumes capture columns to resolve each message and
     puts the stored line's `curruuid` in `srcuuids`. Project its result to the
     dictionary's fixed row: where the line was read from, what it was printed
-    at and the line itself remain on `logs.messages`, reachable through that
+    at and the line itself remain on `log_messages`, reachable through that
     source identity. Projection shares the parsed column buffers and works
     for empty readers too.
 
-    Nothing has walked: `seqnum`, `prevuuid`, `prevunix` and `parentuuids`
-    are empty. One source row answers one row per frame it contains.
+    Nothing has walked: `seqnum`, `prevuuid` and `prevunix` are empty. One
+    source row answers one row per frame it contains.
 
     The parse answers the capture's own columns ahead of the row -- the
     `body` it read the frames out of, and whatever else the source carried
@@ -368,16 +304,14 @@ def _dictionary_rows(
             )
 
     return fix_schema(codec.registry, FIXMSG).apply_arrow_reader(
-        pyarrow.RecordBatchReader.from_batches(viewed, _viewed()),
-        safe=False,
-        nullability="strict",
+        pyarrow.RecordBatchReader.from_batches(viewed, _viewed()), safe=False
     )
 
 
 def _carried_rows(source: pyarrow.RecordBatchReader) -> pyarrow.RecordBatchReader:
     """`source` with the line's identity viewed back to the type the read states.
 
-    The reverse of the narrowing `logs.messages` holds an identity at, and
+    The reverse of the narrowing `log_messages` holds an identity at, and
     the reason that narrowing is safe: a stored `curruuid` is the sixteen
     ordered bytes Iceberg keys and sorts on, and a parse handed those bytes
     reads no identity off them -- it derives one of its own from the line's
@@ -414,9 +348,9 @@ def _capture_key_type() -> pyarrow.DataType:
 
 
 def fix_window_filter(window: tuple[datetime.datetime, datetime.datetime]) -> Any:
-    """The `fix.raw` rows whose event a window covers, as the predicate a scan prunes by.
+    """The bronze `fix_messages` rows whose event a window covers, as a scan predicate.
 
-    Read off the event clock, because a `fix.raw` row is already an event: the
+    Read off the event clock, because a parsed FIX row is already an event: the
     rows whose `currunix` falls in `[start, end)`. And the rows the parse
     could not date -- those at the `UNDATED` pin, which the walk will date by
     the `TransactTime` they state -- where that transaction time falls in the
@@ -448,7 +382,7 @@ def fix_parse_field(
     over a registry that defines nothing is refused here, where every FIX
     table's shape is built, before any table is.
     """
-    registry = codec.registry if codec is not None else fix_registry()
+    registry = codec.registry if codec is not None else FixRegistry.from_env()
     _refuse_bare(registry, "the codec's registry")
     field = fix_schema(registry, FIXMSG)
     field.set_name(name)
@@ -464,12 +398,12 @@ def fix_message_field(
 
     Both FIX tables declare the same columns. The lifecycle fills lineage
     and folded state without adding capture columns. `srcuuids` links back
-    to the lines in `logs.messages`.
+    to the lines in `log_messages`.
     """
-    return iceberg_fix_field(fix_parse_field(codec, name=name).into_arrow_schema(), name)
+    return iceberg_event_field(fix_parse_field(codec, name=name).into_arrow_schema(), name)
 
 
-def iceberg_fix_field(
+def iceberg_event_field(
     schema: pyarrow.Schema,
     name: str = "FixMsg",
 ) -> Field:
@@ -488,7 +422,7 @@ def iceberg_fix_field(
     itself.
 
     The schema contains only native message columns. The source identities
-    in `srcuuids` link to `logs.messages`, which holds the capture facts.
+    in `srcuuids` link to `log_messages`, which holds the capture facts.
 
     Three narrowings make row filters representable in storage.
     A semantic datatype -- a URL, an ISIN, a MIC, a currency, a side -- crosses
@@ -519,6 +453,10 @@ def _declared(member: pyarrow.Field) -> pyarrow.Field:
     """`member` carrying what this table -- and not the row -- says of it."""
     marked: dict[str, str] = {}
     if member.name == MESSAGE_KEY:
+        # A key identifies every row, so it is required even where the
+        # native row -- the book's, a union over every market leaf -- states
+        # it nullable; the write then refuses a row that carries none.
+        member = member.with_nullable(False)
         marked[PRIMARY_KEY] = "true"
     if member.name == EVENT_CLOCK:
         marked[PARTITION_KEY] = HOUR
@@ -569,6 +507,7 @@ __all__ = [
     "FIXMSG",
     "MESSAGE_KEY",
     "PARSE_COLUMNS",
+    "REGISTRY_VARIABLE",
     "SORT_COLUMNS",
     "SOURCES",
     "TRANSACTION_CLOCK",
@@ -578,7 +517,6 @@ __all__ = [
     "FixMsg",
     "FixRegistry",
     "MsgType",
-    "fix_codec",
     "fix_crate_fields",
     "fix_lifecycle_arrow_reader",
     "fix_lifecycle_messages",
@@ -586,14 +524,9 @@ __all__ = [
     "fix_parse_arrow_reader",
     "fix_parse_field",
     "fix_parse_lines",
-    "fix_registry",
     "fix_row_messages",
     "fix_schema",
     "fix_schema_tags",
-    "fix_text_options",
     "fix_window_filter",
-    "global_registry",
-    "iceberg_fix_field",
-    "install_global_registry",
-    "registry_path",
+    "iceberg_event_field",
 ]

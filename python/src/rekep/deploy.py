@@ -1,16 +1,17 @@
 """The tables the pipeline writes, created before it runs.
 
-A `rekep.pipeline` stage creates its own target on the first write, so a run
-against an empty catalog already lands every table it needs. That is not
-enough where the catalog is not the runner's to write to: a Glue catalog over
+A `rekep.pipeline` task creates its own target on the first write, so a run
+against empty catalogs already lands every table it needs. That is not
+enough where a catalog is not the runner's to write to: a Glue catalog over
 an S3 warehouse is deployed once, by whoever owns the account, ahead of the
 jobs that fill it. So the layout is declared here rather than discovered from
 a run -- and both paths still create the same table, because
 `create_with_field` is the one place a table is made.
 
-Declaring it here also gives the layout a single reader: the tables, the shape
-each one carries and the columns each is laid out by, in the order a run
-fills them.
+Declaring it here also gives the layout a single reader: the tables, the
+layer each lives in, the shape each one carries and the columns each is laid
+out by, in the order a run fills them. `schemas/` is this layout written
+down, and `tools/schemas_dump.py` is what writes it.
 """
 
 from __future__ import annotations
@@ -21,17 +22,23 @@ from typing import Any
 
 from rekep.fields import Field, field_of
 from rekep.fix import FixCodec, fix_message_field
-from rekep.iceberg import IcebergCatalog
 from rekep.market import book_field, market_event_field
-from rekep.pipeline import BOOKS, EVENTS, MESSAGES, RAW, REFINED
-from rekep.text import Message
+from rekep.pipeline import (
+    BOOKS,
+    EVENTS,
+    FIX_MESSAGES,
+    FIX_MESSAGES_RAW,
+    LOG_MESSAGES,
+)
+from rekep.storages import Storages, split_identifier
+from rekep.text import log_message_field
 
 
 @dataclasses.dataclass(frozen=True)
 class Deployed:
     """One table ingestion writes: what it is called and what it holds."""
 
-    #: Catalog table identifier, `namespace.table`.
+    #: The table, `<layer>.<namespace>.<table>`.
     table: str
 
     #: The field factory the stage that writes this table declares it with.
@@ -44,25 +51,35 @@ class Deployed:
     #: parses with rather than by nothing but the package.
     typed: bool = False
 
+    @property
+    def layer(self) -> str:
+        """The layer, which is the catalog holding the table."""
+        return split_identifier(self.table)[0]
+
+    @property
+    def name(self) -> str:
+        """The table's name inside its catalog, `<namespace>.<table>`."""
+        return split_identifier(self.table)[1]
+
     def into_field(self, codec: FixCodec | None = None) -> Field:
         """The shape this table carries, named as the table."""
-        return field_of(self.shape(codec) if self.typed else self.shape(), self.table)
+        return field_of(self.shape(codec) if self.typed else self.shape(), self.name)
 
 
 #: The tables the supported ingestion graph writes, in production order. The
 #: two FIX tables are one shape: what the parse answered and what the walk
 #: restated are the same row, and only what the walk filled tells them apart.
 TABLES: tuple[Deployed, ...] = (
-    Deployed(MESSAGES, Message.into_field),
-    Deployed(RAW, fix_message_field, typed=True),
-    Deployed(REFINED, fix_message_field, typed=True),
+    Deployed(LOG_MESSAGES, log_message_field),
+    Deployed(FIX_MESSAGES_RAW, fix_message_field, typed=True),
+    Deployed(FIX_MESSAGES, fix_message_field, typed=True),
     Deployed(BOOKS, book_field),
     *(Deployed(table, market_event_field) for table in EVENTS.values()),
 )
 
 
 def deploy(
-    catalog: IcebergCatalog,
+    storages: Storages,
     *,
     table_properties: dict[str, str] | None = None,
     branch: str | None = None,
@@ -90,21 +107,21 @@ def deploy(
             f"ingestion writes no such table: {', '.join(unknown)}; it writes {', '.join(declared)}"
         )
     return {
-        name: _deployed(catalog, declared[name], table_properties, branch, dry_run, codec)
+        name: _deployed(storages, declared[name], table_properties, branch, dry_run, codec)
         for name in wanted
     }
 
 
 def _deployed(
-    store: IcebergCatalog,
+    storages: Storages,
     shape: Deployed,
     table_properties: dict[str, str] | None,
     branch: str | None,
     dry_run: bool,
     codec: FixCodec | None,
 ) -> str:
-    """One table, through the catalog handle the whole deployment shares."""
-    dataset: Any = store.dataset(
+    """One table, through the catalog of its layer the whole deployment shares."""
+    dataset: Any = storages.dataset(
         shape.table,
         field=shape.into_field(codec),
         table_properties=dict(table_properties or {}),

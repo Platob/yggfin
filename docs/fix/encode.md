@@ -5,10 +5,10 @@ stands. It uses lifted fields plus residual `fixentries`; it does not replay a
 saved arrival byte sequence.
 
 ```python
-from rekep.fix import fix_codec, fix_registry
+from rekep import FixCodec
 
 wire = b"8=FIX.4.4|35=D|11=ORD-1|55=AAPL|54=1|38=12|10=000|"
-message = next(iter(fix_codec(fix_registry()).parse_line(wire)))
+message = next(iter(FixCodec.from_env().parse_line(wire)))
 again = message.into_bytes(ord("|"))
 
 assert again.startswith(b"8=FIX.4.4|")
@@ -33,9 +33,9 @@ the message facts, including residual unknown fields and groups.
 ## Choose a separator
 
 ```python
-from rekep.fix import fix_codec, fix_registry
+from rekep import FixCodec
 
-message = next(iter(fix_codec(fix_registry()).parse_line(b"35=D|11=ORD-1|55=AAPL|")))
+message = next(iter(FixCodec.from_env().parse_line(b"35=D|11=ORD-1|55=AAPL|")))
 
 assert b"35=D|" in message.into_bytes(ord("|"))
 assert b"35=D\x01" in message.into_bytes(1)

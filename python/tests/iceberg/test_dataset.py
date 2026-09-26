@@ -24,7 +24,7 @@ from pyiceberg.transforms import BucketTransform, IdentityTransform
 
 from rekep import (
     Field,
-    Message,
+    IOBase,
     scalar,
 )
 from rekep.arrow_reader import OwnedRecordBatchReader
@@ -36,6 +36,7 @@ from rekep.fields import (
     partition_key,
     primary_key,
     sort_key,
+    stored_arrow_reader,
 )
 from rekep.iceberg import (
     IcebergCatalog,
@@ -47,6 +48,7 @@ from rekep.iceberg import (
 )
 from rekep.iceberg.dataset import _applied_projection, _key_bounds
 from rekep.iceberg.file_io import IcebergFileIO
+from rekep.text import log_message_field, text_options
 
 from ..conftest import catalog_properties
 
@@ -2609,65 +2611,45 @@ def test_a_stale_plan_lands_on_the_retry_unless_the_moved_head_holds_its_rows(
     ], "key 3 landed by the other writer was taken out by the fresh plan"
 
 
-def test_a_raw_message_round_trips_through_iceberg(tmp_path: Path) -> None:
+def test_a_text_row_round_trips_through_iceberg(tmp_path: Path) -> None:
+    """A line as the native read states it, past the storage boundary, is the
+    row the table hands back: nothing is derived on the way in, and the
+    table is laid out by the event the row already carries."""
+    source = tmp_path / "capture.log"
+    source.write_bytes(
+        b"2026-08-14 09:30:00.123 [250-e7256476:9effef3e6a:72504] [ULBridge] (INFO) opaque\n"
+    )
+    field = log_message_field()
+    handle = IOBase.from_uri(source.as_uri())
+    try:
+        stored = stored_arrow_reader(
+            handle.read_arrow_reader(options=text_options()), field
+        ).read_all()
+    finally:
+        handle.close()
     target = IcebergDataset(
-        name="messages",
-        namespace="trading",
-        field=Message.into_field(),
+        name="log_messages",
+        namespace="record_keeping",
+        field=field,
         catalog_name="test",
         catalog_properties=catalog_properties(tmp_path),
     )
-    row = Message(
-        currunix="2026-08-14 09:30:00.123",
-        crosscode="capture.log",
-        seqnum=7,
-        msgthreadid=250,
-        msgsessionid="e7256476",
-        msgctxid="9effef3e6a",
-        msgseqnum=72504,
-        msgpluginid="ULBridge",
-        loglevel="INFO",
-        body="opaque",
-    )
 
-    # Nothing is derived on the way in: the table is laid out by the event
-    # the row already carries, and the line's own code and identity are the
-    # read's to state, so a row made by hand states the defaults.
-    target.append_arrow_table(
-        pyarrow.Table.from_pylist(
-            [dataclasses.asdict(row)],
-            schema=Message.into_field().into_arrow_schema(),
-        )
-    )
+    target.append_arrow_table(stored)
 
     reopened = IcebergCatalog(name="test", properties=catalog_properties(tmp_path)).dataset(
         target.identifier
     )
-    stored = reopened.read_arrow_table(Message.into_field()).to_pylist()
-    assert stored == [
-        {
-            "currunix": datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC),
-            # A row made by hand rather than by the read states neither the
-            # line's identity nor its code: only the native read states them.
-            "curruuid": bytes(16),
-            "currhashcode": 0,
-            "crosscode": "capture.log",
-            "seqnum": 7,
-            "body": "opaque",
-            "msgthreadid": 250,
-            "msgsessionid": "e7256476",
-            "msgctxid": "9effef3e6a",
-            "msgseqnum": 72504,
-            "msgpluginid": "ULBridge",
-            "loglevel": "INFO",
-        }
-    ]
-    projected = reopened.read_arrow_reader(Message.into_field(), columns=["currunix"])
+    held = reopened.read_arrow_table(field)
+    assert held.equals(stored)
+    row = held.to_pylist()[0]
+    assert row["currunix"] == datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC)
+    assert (row["body"], row["msgthreadid"], row["msgpluginid"]) == ("opaque", 250, "ULBridge")
+    assert row["seqnum"] == 1 and row["state"] == 0
+    projected = reopened.read_arrow_reader(field, columns=["currunix"])
     try:
         assert projected.schema.names == ["currunix"]
-        assert projected.read_all().column("currunix").to_pylist() == [
-            datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC)
-        ]
+        assert projected.read_all().column("currunix").to_pylist() == [row["currunix"]]
     finally:
         projected.close()
 
@@ -4352,11 +4334,7 @@ def test_a_replace_onto_a_branch_without_the_key_column_is_all_new(
     dataset.add_fields(wider)
     dataset.field = dataset.table_field
     source = quotes(3).append_column("desk", pyarrow.array(["A", "B", "C"]))
-    incoming = dataset.field.apply_arrow_reader(
-        source.to_reader(),
-        safe=False,
-        nullability="strict",
-    ).read_all()
+    incoming = dataset.field.apply_arrow_reader(source.to_reader(), safe=False).read_all()
 
     assert dataset.overwrite_arrow_table(incoming, merge_by=["desk"], branch="dev") == 3
     assert dataset.read_arrow_table(branch="dev").num_rows == 6
@@ -5283,9 +5261,7 @@ def test_a_partition_derived_from_a_digest_keeps_transitive_read_dependencies(
 
     field = PartitionedDigest.into_field()
     source = pyarrow.table({"venue": ["XPAR"]})
-    complete = field.apply_arrow_reader(
-        source.to_reader(), safe=False, nullability="strict"
-    ).read_all()
+    complete = field.apply_arrow_reader(source.to_reader(), safe=False).read_all()
     complete = complete.set_column(
         complete.schema.get_field_index("part"),
         complete.schema.field("part"),

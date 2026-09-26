@@ -5,34 +5,37 @@ checkout needs it. It is where an operator may keep a FIX dictionary of their
 own, next to the checkout rather than inside the package.
 
 The default dictionary is bundled in the installed package, at
-`python/src/rekep/_data/fix`, and `fix_registry()` returns it with no location
-and no environment variable; `fix_codec()` parses under it when handed no
-registry. The stages that take a `codec` -- `parse_fix_raw`,
-`parse_fix_refined` and `parse_books`, in `rekep.pipeline` -- default to that
-codec, and all three take one because each stage after the parse reads a row
-back as the message the dictionary wrote, so they run under the same one.
+`python/src/rekep/_data/fix`, and importing `rekep` installs it as the
+process default: `FixRegistry.from_env()` answers it, and the three FIX tasks
+-- `parse_fix_messages_raw`, `parse_fix_messages_refined` and `parse_books`
+-- parse under `FixCodec.from_env()` when handed no `codec`.
 
-To parse against another dictionary -- the canonical `fields/`, `components/`
-and `groups/` JSON documents `FixRegistry.write_into` emits, read back by
-`FixRegistry.from_handle` -- write it anywhere, here included, and hand the
-codec over it to each of those stages. From the repository root, with
-`catalog` an open `IcebergCatalog`:
+To parse against another dictionary -- the `fields/`, `components/` and
+`groups/` JSON documents `FixRegistry.write_into` emits and
+`FixRegistry.from_handle` reads back -- write it anywhere, here included,
+and either name its folder in the process environment under the variable
+`rekep.fix.REGISTRY_VARIABLE` holds, before the process imports `rekep`, or
+hand a codec over it to each of the three tasks. From the repository root,
+with `storages` an open `rekep.Storages`:
 
 ```python
-from rekep.fix import fix_codec, fix_registry
-from rekep.pipeline import parse_books, parse_fix_raw, parse_fix_refined
+from rekep import FixCodec, FixRegistry
+from rekep.fix import UNDATED
+from rekep.pipeline import parse_books, parse_fix_messages_raw, parse_fix_messages_refined
 from rekep.times import window_of
 
-codec = fix_codec(fix_registry("file:config/fix"))
-day = window_of("2026-08-14", "2026-08-14")
-parse_fix_raw(catalog, day, codec=codec)
-parse_fix_refined(catalog, day, codec=codec)
-parse_books(catalog, window_of("2026-08-14T12:00:00Z", "2026-08-14T13:00:00Z"), codec=codec)
+codec = FixCodec(FixRegistry.from_handle("config/fix"), default_sending_time=UNDATED)
+window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
+parse_fix_messages_raw(storages, window, codec=codec)
+parse_fix_messages_refined(storages, window, codec=codec)
+parse_books(storages, window, codec=codec)
 ```
 
-The location must hold specification fields, and one that holds none is
-refused; runtime and bridge fields are added for you. See
-[Parse FIX raw](../docs/pipeline/parse-fix-raw.md#registry-override).
+The three share one codec because each task after the parse reads a stored
+row back as the message the dictionary wrote. A folder holding no
+specification field is refused wherever a FIX table's shape is built; the
+crate's own fields are added for you. See
+[the bundled registry](../docs/fix/index.md#another-dictionary).
 
-This is configuration, not a schema contract: `schemas/` publishes the table
-shapes, and a dictionary is what the FIX one is generated from.
+This is configuration, not a table contract: `schemas/` publishes the table
+shapes, and a dictionary is what the FIX ones are generated from.

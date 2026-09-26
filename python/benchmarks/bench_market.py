@@ -13,15 +13,15 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from _bench import best_of, parser, report  # noqa: E402
 
 from rekep.fields import stored_arrow_reader  # noqa: E402
-from rekep.fix import fix_codec  # noqa: E402
-from rekep.market import book_event_arrow_reader, book_field  # noqa: E402
+from rekep.fix import FixCodec  # noqa: E402
+from rekep.market import EVENT_KINDS, SIDES, book_event_arrow_reader, book_field  # noqa: E402
 
 
 def main() -> None:
     options = parser(__doc__, rows=10_000).parse_args()
     count = 64 if options.quick else options.rows
     repeat = 1 if options.quick else options.repeat
-    codec = fix_codec()
+    codec = FixCodec.from_env()
     message = codec.parse_fix_line(
         b"8=FIX.4.4|35=W|52=20260921-10:00:00|55=AAPL|268=3|"
         b"269=0|278=B1|270=100|271=10|269=1|278=A1|270=102|271=12|"
@@ -46,9 +46,9 @@ def main() -> None:
                 else:
                     events.extend(
                         {name: event[name] for name in schema.names}
-                        for side in ("bid", "ask")
+                        for side in SIDES
                         for event in book[side]["deltas"]
-                        if event["operationkind"] == "quote"
+                        if event["kind"] == EVENT_KINDS[kind]
                     )
             return pa.Table.from_pylist(events, schema=schema)
 

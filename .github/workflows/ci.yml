@@ -33,7 +33,7 @@ jobs:
       - name: Test
         run: uv run pytest -q -m "not integration"
       - name: Market pipeline transactions
-        run: uv run pytest -q -m integration tests/test_market_pipeline.py tests/test_market_projection.py tests/iceberg/test_window_overwrite.py
+        run: uv run pytest -q -m integration tests/storages/test_market.py tests/iceberg/test_window_overwrite.py
 
   docs:
     runs-on: ubuntu-latest

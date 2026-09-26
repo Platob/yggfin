@@ -628,8 +628,8 @@ def test_dropping_a_table_in_a_bucket_takes_its_data() -> None:
     elsewhere = IcebergCatalog(properties={"type": "sql"})
     elsewhere.__dict__["catalog"] = (in_sql := Fake())
 
-    bucket.drop_table("logs.messages")
-    elsewhere.drop_table("logs.messages")
+    bucket.drop_table("record_keeping.log_messages")
+    elsewhere.drop_table("record_keeping.log_messages")
 
     assert in_bucket.calls == ["purge"]
     assert in_sql.calls == ["drop"]

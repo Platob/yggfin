@@ -12,7 +12,7 @@ import pytest
 from yggdryl import IOBase
 from yggdryl.fix import ULBRIDGE_ROWHEADER as CORE_ROWHEADER
 
-from rekep.text import Message
+from rekep.text import text_options
 from rekep.times import (
     EPOCH,
     ULBRIDGE_ROWHEADER,
@@ -27,7 +27,7 @@ from rekep.times import (
 
 #: What this package calls two of the bracket's parts that the core's own
 #: expression names after the bracket rather than after the column: the clock
-#: the read consumes into `currunix`, and the level `logs.messages` keeps. A
+#: the read consumes into `currunix`, and the level `log_messages` keeps. A
 #: capture reaches a column by being called what the column is called, so
 #: these two are renames and the rest is the core's text -- the core's own
 #: header dates nothing, because it names its clock `timestamp`.
@@ -235,7 +235,7 @@ def test_the_bridge_clock_reads_every_fraction_the_core_parses(
     source = tmp_path / "bridge.log"
     source.write_bytes(line.encode())
 
-    reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=Message.text_options())
+    reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=text_options())
     try:
         row = reader.read_all().to_pylist()[0]
     finally:
@@ -257,7 +257,7 @@ def test_a_fraction_this_header_does_not_read_leaves_the_line_unmatched(
     a located refusal fails the whole batch the line arrived in, which is
     worse than not reading the clock. A fraction this bridge does not write --
     six digits straight on, a lone point, a stray separator -- is left to a
-    header of its own, which is what `Message.text_options` takes one for.
+    header of its own, which is what `text_options` takes one for.
 
     Unmatched, the line is not lost: it keeps its whole text as its body,
     states every capture null, and is dated by the object it was read from --
@@ -267,7 +267,7 @@ def test_a_fraction_this_header_does_not_read_leaves_the_line_unmatched(
     written = datetime.datetime(2026, 8, 14, 18, 0, tzinfo=UTC)
     os.utime(source, (written.timestamp(), written.timestamp()))
 
-    reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=Message.text_options())
+    reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=text_options())
     try:
         row = reader.read_all().to_pylist()[0]
     finally:
@@ -370,7 +370,7 @@ def test_the_window_is_the_reads_own_where_and_not_a_mask_over_its_answer() -> N
     """The pushdown, shown to have happened rather than assumed: over one
     window, the read handed the clause answers fewer rows than the read
     handed none, and exactly the rows between the two bounds -- so
-    `parse_messages` reads the window's lines and never the rest. The decode itself still
+    `parse_log_messages` reads the window's lines and never the rest. The decode itself still
     cuts every line: the clause is the record surface's."""
     window = window_of("2026-08-14", "2026-08-14T14:46:40")
     clause = where_within("currunix", window)
@@ -379,8 +379,8 @@ def test_the_window_is_the_reads_own_where_and_not_a_mask_over_its_answer() -> N
     )
     handle = IOBase.from_uri(FIXTURE.as_uri())
     try:
-        every = handle.read_arrow_reader(options=Message.text_options()).read_all()
-        pushed = Message.text_options()
+        every = handle.read_arrow_reader(options=text_options()).read_all()
+        pushed = text_options()
         pushed.filter = clause
         answered = handle.read_arrow_reader(options=pushed).read_all()
         cut = sum(1 for _ in handle.read_text_lines(options=pushed))
@@ -404,11 +404,11 @@ def test_a_line_no_clock_dates_is_outside_every_window_but_the_epochs() -> None:
     modification time -- a buffer nothing addressed -- dates a line the
     header did not match at the epoch, and a window that does not cover 1970
     reads it as what it is: a line that happened outside the window."""
-    pushed = Message.text_options()
+    pushed = text_options()
     pushed.filter = where_within("currunix", window_of("2026-08-14", "2026-08-14"))
     handle = IOBase.from_bytes(b"one physical line\n")
     try:
-        every = handle.read_arrow_reader(options=Message.text_options()).read_all()
+        every = handle.read_arrow_reader(options=text_options()).read_all()
         answered = handle.read_arrow_reader(options=pushed).read_all()
     finally:
         handle.close()

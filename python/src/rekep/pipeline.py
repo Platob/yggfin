@@ -1,20 +1,30 @@
-"""The pipeline's stages: each replaces one window of the table it writes.
+"""The pipeline's tasks: each replaces one window of the table it writes.
 
 One function per table the graph writes, in production order. Each opens its
-source and its target through one `IcebergCatalog`, reads its source's
-window and writes its target the way that table is replaced:
+source and its target through the `Storages` it is handed -- a table is named
+`<layer>.<namespace>.<table>`, and the layer is the catalog that holds it --
+reads its source's window and writes its target the way that table is
+replaced:
 
 ```text
-capture       -> parse_messages    -> logs.messages   keyed on curruuid
-logs.messages -> parse_fix_raw     -> fix.raw         keyed on curruuid
-fix.raw       -> parse_fix_refined -> fix.refined     keyed on curruuid
-fix.refined   -> parse_books       -> market.books    the window replaced
-market.books  -> parse_events      -> market.<kind>   the window replaced
+task                        reads                               writes
+parse_log_messages          a capture URI                       bronze.record_keeping.log_messages
+parse_fix_messages_raw      bronze.record_keeping.log_messages  bronze.record_keeping.fix_messages
+parse_fix_messages_refined  bronze.record_keeping.fix_messages  silver.record_keeping.fix_messages
+parse_books                 silver.record_keeping.fix_messages  silver.record_keeping.books
+parse_orders                silver.record_keeping.books         silver.record_keeping.orders
+parse_quotes                silver.record_keeping.books         silver.record_keeping.quotes
+parse_executions            silver.record_keeping.books         silver.record_keeping.executions
 ```
 
-A window is `[start, end)` as `rekep.times.window_of` answers it. Where a
-stage runs, how often and over which window are the caller's, and so is the
-catalog, which a stage never closes. A stage creates a missing target.
+The first three are keyed on `curruuid` and a replay of their window lands
+the same rows again; the books and the three event tables replace exactly
+their window. A window is `[start, end)` over `currunix` as
+`rekep.times.window_of` answers it, and every scan hands it to Iceberg as a
+predicate on that column, so a task opens only the hour partitions its
+window covers. Where a task runs, how often and over which window are the
+caller's, and so are the catalogs, which a task never closes. A task creates
+a missing target.
 """
 
 from __future__ import annotations
@@ -33,14 +43,14 @@ from rekep.fix import (
     EVENT_CLOCK,
     PARSE_COLUMNS,
     SORT_COLUMNS,
+    UNDATED,
     FixCodec,
-    fix_codec,
     fix_lifecycle_arrow_reader,
     fix_message_field,
     fix_parse_arrow_reader,
     fix_window_filter,
 )
-from rekep.iceberg import IcebergCatalog, window_filter
+from rekep.iceberg import window_filter
 from rekep.market import (
     book_arrow_reader,
     book_event_arrow_reader,
@@ -49,20 +59,26 @@ from rekep.market import (
     market_window_filter,
     market_window_reader,
 )
-from rekep.text import Message
+from rekep.storages import Storages
+from rekep.text import log_message_field, text_options
 from rekep.times import where_within, within
 
-#: The tables the graph writes, each under the name its stage writes by default.
-MESSAGES = "logs.messages"
-RAW = "fix.raw"
-REFINED = "fix.refined"
-BOOKS = "market.books"
-EVENTS = {"orders": "market.orders", "quotes": "market.quotes", "executions": "market.executions"}
+#: The tables the graph writes, each under the name its task writes by default.
+LOG_MESSAGES = "bronze.record_keeping.log_messages"
+FIX_MESSAGES_RAW = "bronze.record_keeping.fix_messages"
+FIX_MESSAGES = "silver.record_keeping.fix_messages"
+BOOKS = "silver.record_keeping.books"
+ORDERS = "silver.record_keeping.orders"
+QUOTES = "silver.record_keeping.quotes"
+EXECUTIONS = "silver.record_keeping.executions"
+
+#: The three event tables, by the kind each flattens out of the books.
+EVENTS = {"orders": ORDERS, "quotes": QUOTES, "executions": EXECUTIONS}
 
 #: The book columns each event kind flattens; the scan opens no other.
 FLATTENED = {
-    "orders": ("bid.deltas", "ask.deltas"),
-    "quotes": ("bid.deltas", "ask.deltas"),
+    "orders": ("bidside.deltas", "askside.deltas"),
+    "quotes": ("bidside.deltas", "askside.deltas"),
     "executions": ("executions",),
 }
 
@@ -91,9 +107,16 @@ class Landed:
     #: one: a message logged again at every hop it passed, one row each.
     skipped: int = 0
 
-    #: The `market.books` snapshot the stage committed (`parse_books`) or read
-    #: (`parse_events`, zero for none); None for every other stage.
+    #: The silver `books` snapshot the stage committed (`parse_books`) or read
+    #: (`parse_orders`, `parse_quotes`, `parse_executions`, zero for none);
+    #: None for every other stage.
     snapshot_id: int | None = None
+
+
+def _codec_or_env(codec: FixCodec | None) -> FixCodec:
+    """`codec`, else the process registry's own, pinned so an undated message
+    takes `UNDATED` and a replay of the same bytes answers the same identity."""
+    return FixCodec.from_env(default_sending_time=UNDATED) if codec is None else codec
 
 
 class _Count:
@@ -115,21 +138,24 @@ class _Count:
         return OwnedRecordBatchReader(source.schema, batches(), source.close)
 
 
-def parse_messages(
+def parse_log_messages(
     source: IOBase | str,
-    catalog: IcebergCatalog,
+    storages: Storages,
     window: Window,
     *,
     rowheader: str | None = None,
-    target: str = MESSAGES,
+    timezone: str = "UTC",
+    target: str = LOG_MESSAGES,
 ) -> Landed:
     """Land the lines of `source` whose `currunix` falls in `window`.
 
     `source` is an `IOBase`, or a URI bound here and closed after. One that
-    does not exist is refused: the native read of an absent path answers no
-    rows, which would read as a window without lines. `rowheader` names the
-    header of a bridge writing the same facts in a layout of its own; its
-    capture names are still the ones `Message.text_options` requires.
+    does not exist is refused: the read of an absent path answers no rows,
+    which would read as a window without lines. `rowheader` names the header
+    of a bridge writing the same facts in a layout of its own; its capture
+    names must still be `rekep.text.CAPTURES`. `timezone` is the zone the
+    bridge prints its clock in: a bridge printing local time is read in its
+    zone, so a line lands in the hour of the message it carries.
     """
     with contextlib.ExitStack() as opened:
         if isinstance(source, str):
@@ -137,19 +163,19 @@ def parse_messages(
             opened.callback(source.close)
         if not source.exists():
             raise FileNotFoundError(source.masked_uri or str(source.url))
-        field = Message.into_field()
-        options = Message.text_options(rowheader)
+        options = text_options(rowheader, timezone)
+        field = log_message_field(rowheader)
         # The window is the read's `where`, answered by the record surface
         # over the rows the lines become: the lines whose `currunix` -- off
         # the header, or off the object's own modification time where the
         # header did not match -- falls in `[start, end)`, and no other.
         options.filter = where_within(EVENT_CLOCK, window)
-        messages = catalog.dataset(target, field=field)
+        messages = storages.dataset(target, field=field)
         opened.callback(messages.close)
         read = _Count()
         lines = read(source.read_arrow_reader(options=options))
         opened.callback(lines.close)
-        # The storage boundary: the content code and the row number are read
+        # The storage boundary: the content codes and the row number are read
         # unsigned and Iceberg's only sixty-four-bit integer is signed, so
         # those eight bytes are viewed rather than converted, and the field
         # then casts the rest in its native order.
@@ -161,28 +187,29 @@ def parse_messages(
         return Landed(read=read.rows, written=written)
 
 
-def parse_fix_raw(
-    catalog: IcebergCatalog,
+def parse_fix_messages_raw(
+    storages: Storages,
     window: Window,
     *,
     codec: FixCodec | None = None,
-    source: str = MESSAGES,
-    target: str = RAW,
+    source: str = LOG_MESSAGES,
+    target: str = FIX_MESSAGES_RAW,
 ) -> Landed:
-    """Parse the stored lines of `window` into `fix.raw`: every frame, nothing walked.
+    """Parse the stored lines of `window` into bronze `fix_messages`: every frame, nothing walked.
 
-    `codec` is the whole parse surface, `fix_codec()` when None. A row is a
-    message, so a line carrying two frames answers two and one message
+    `codec` is the whole parse surface, `FixCodec.from_env()` pinned at
+    `UNDATED` when None. A row is a message, so a line carrying two frames
+    answers two and one message
     logged at three hops answers three rows of one identity, which the key
     folds: `skipped` counts them.
     """
-    codec = fix_codec() if codec is None else codec
+    codec = _codec_or_env(codec)
     # Declared from the dictionary alone rather than the first batch, so an
     # empty window creates the same table a full one does.
     field = fix_message_field(codec)
     with contextlib.ExitStack() as opened:
-        carrier = Message.into_field()
-        lines = catalog.dataset(source, field=carrier)
+        carrier = log_message_field()
+        lines = storages.dataset(source, field=carrier)
         opened.callback(lines.close)
         # `[start, end)` over `currunix` with the epoch pin beside it, projected
         # to what the parse consumes, so the scan opens no other column.
@@ -198,7 +225,7 @@ def parse_fix_raw(
         opened.callback(parsed.close)
         stored = stored_arrow_reader(parsed, field)
         opened.callback(stored.close)
-        raw = catalog.dataset(target, field=field, merge_schema=True)
+        raw = storages.dataset(target, field=field, merge_schema=True)
         opened.callback(raw.close)
         # Keyed on `curruuid` within the hour of the event's own instant, so
         # every restatement of one event meets the others and lands once.
@@ -206,28 +233,28 @@ def parse_fix_raw(
         return Landed(read=read.rows, written=written, skipped=answered.rows - written)
 
 
-def parse_fix_refined(
-    catalog: IcebergCatalog,
+def parse_fix_messages_refined(
+    storages: Storages,
     window: Window,
     *,
     codec: FixCodec | None = None,
-    source: str = RAW,
-    target: str = REFINED,
+    source: str = FIX_MESSAGES_RAW,
+    target: str = FIX_MESSAGES,
 ) -> Landed:
-    """Walk the `fix.raw` rows of `window`, warmed by the `HISTORY` before it.
+    """Walk the bronze `fix_messages` rows of `window` into silver, warmed by `HISTORY` before it.
 
     The walk reads the window and the hour before it in `SORT_COLUMNS` order,
     undated rows included, and only the events it places in the window --
     undated ones included -- are written: the hour before warms the chains
     without replacing their history with a truncated replay, and an expiry
     the walk generates past `end` waits for its own window. `codec` must be
-    the one the raw rows were parsed with, `fix_codec()` when None.
+    the one the raw rows were parsed with, `FixCodec.from_env()` when None.
     """
-    codec = fix_codec() if codec is None else codec
+    codec = _codec_or_env(codec)
     history = (window[0] - HISTORY, window[1])
     with contextlib.ExitStack() as opened:
         field = fix_message_field(codec)
-        raw = catalog.dataset(source, field=field)
+        raw = storages.dataset(source, field=field)
         opened.callback(raw.close)
         read = _Count()
         scanned = read(
@@ -252,35 +279,35 @@ def parse_fix_refined(
         opened.callback(events.close)
         stored = stored_arrow_reader(events, field)
         opened.callback(stored.close)
-        refined = catalog.dataset(target, field=field, merge_schema=True)
+        refined = storages.dataset(target, field=field, merge_schema=True)
         opened.callback(refined.close)
         written = refined.overwrite_arrow_reader(stored, field, merge_by=True)
         return Landed(read=read.rows, written=written, skipped=placed.rows - written)
 
 
 def parse_books(
-    catalog: IcebergCatalog,
+    storages: Storages,
     window: Window,
     *,
     codec: FixCodec | None = None,
     snapshot_millis: int = 0,
-    source: str = REFINED,
+    source: str = FIX_MESSAGES,
     target: str = BOOKS,
 ) -> Landed:
-    """Replace `window` of `market.books` and answer the snapshot it committed.
+    """Replace `window` of silver `books` and answer the snapshot it committed.
 
-    The book folds the `fix.refined` rows of the strict window from no depth
+    The book folds the silver `fix_messages` rows of the strict window from no depth
     before `start`, and every book it answers in the window replaces the
     window's rows in one commit -- an empty window too, which removes the
     window's earlier rows. `snapshot_id` is that commit, and is what
-    `parse_events` pins its kinds to.
+    `parse_orders`, `parse_quotes` and `parse_executions` pin their reads to.
     `snapshot_millis` above zero emits owned snapshots on that grid.
     """
-    codec = fix_codec() if codec is None else codec
+    codec = _codec_or_env(codec)
     selected = market_window_filter(window)
     with contextlib.ExitStack() as opened:
         fixed = fix_message_field(codec)
-        refined = catalog.dataset(source, field=fixed)
+        refined = storages.dataset(source, field=fixed)
         opened.callback(refined.close)
         read = _Count()
         scanned = read(refined.read_arrow_reader(fixed, row_filter=selected, order_by=SORT_COLUMNS))
@@ -292,7 +319,7 @@ def parse_books(
         field = book_field()
         stored = stored_arrow_reader(bounded, field)
         opened.callback(stored.close)
-        books = catalog.dataset(target, field=field, merge_schema=True)
+        books = storages.dataset(target, field=field, merge_schema=True)
         opened.callback(books.close)
         run = uuid.uuid4().hex
         written = books.overwrite_arrow_reader(
@@ -311,33 +338,70 @@ def parse_books(
         return Landed(read=read.rows, written=written, snapshot_id=committed[0])
 
 
-def parse_events(
-    kind: str,
-    catalog: IcebergCatalog,
+def parse_orders(
+    storages: Storages,
     window: Window,
     *,
     snapshot_id: int | None = None,
     source: str = BOOKS,
-    target: str | None = None,
+    target: str = ORDERS,
 ) -> Landed:
-    """Replace `window` of `market.<kind>` from one `market.books` snapshot.
+    """Replace `window` of silver `orders` with the order deltas of one books snapshot."""
+    return _flatten("orders", storages, window, snapshot_id, source, target)
 
-    `kind` is `orders`, `quotes` or `executions`. `snapshot_id` None pins the
-    head this call finds; zero is a pinned absence and reads nothing, never
-    permission to follow a newer head, so the window is emptied. A positive
-    snapshot of a missing table is refused before anything is written.
+
+def parse_quotes(
+    storages: Storages,
+    window: Window,
+    *,
+    snapshot_id: int | None = None,
+    source: str = BOOKS,
+    target: str = QUOTES,
+) -> Landed:
+    """Replace `window` of silver `quotes` with the quote deltas of one books snapshot."""
+    return _flatten("quotes", storages, window, snapshot_id, source, target)
+
+
+def parse_executions(
+    storages: Storages,
+    window: Window,
+    *,
+    snapshot_id: int | None = None,
+    source: str = BOOKS,
+    target: str = EXECUTIONS,
+) -> Landed:
+    """Replace `window` of silver `executions` with the executions of one books snapshot."""
+    return _flatten("executions", storages, window, snapshot_id, source, target)
+
+
+#: The three flattening tasks, by the kind each reads out of the books.
+FLATTENERS = {"orders": parse_orders, "quotes": parse_quotes, "executions": parse_executions}
+
+
+def _flatten(
+    kind: str,
+    storages: Storages,
+    window: Window,
+    snapshot_id: int | None,
+    source: str,
+    target: str,
+) -> Landed:
+    """Replace `window` of one event table from one books snapshot.
+
+    `snapshot_id` None pins the head this call finds; zero is a pinned
+    absence and reads nothing, never permission to follow a newer head, so
+    the window is emptied. A positive snapshot of a missing table is refused
+    before anything is written. The three kinds read one snapshot and write
+    three tables, so they may run in parallel.
     """
-    if kind not in FLATTENED:
-        raise ValueError(f"expected orders, quotes or executions; got {kind!r}")
     if snapshot_id is not None and (
         isinstance(snapshot_id, bool) or not isinstance(snapshot_id, int) or snapshot_id < 0
     ):
         raise ValueError(f"expected a nonnegative book snapshot_id or None, got {snapshot_id!r}")
-    target = EVENTS[kind] if target is None else target
     selected = market_window_filter(window)
     with contextlib.ExitStack() as opened:
         declared = book_field()
-        books = catalog.dataset(source, field=declared)
+        books = storages.dataset(source, field=declared)
         opened.callback(books.close)
         if snapshot_id is None:
             head = books.iceberg_table.current_snapshot() if books.exists else None
@@ -362,7 +426,7 @@ def parse_events(
         field = market_event_field()
         stored = stored_arrow_reader(bounded, field)
         opened.callback(stored.close)
-        events = catalog.dataset(target, field=field, merge_schema=True)
+        events = storages.dataset(target, field=field, merge_schema=True)
         opened.callback(events.close)
         written = events.overwrite_arrow_reader(stored, field, row_filter=selected)
         return Landed(
@@ -377,15 +441,22 @@ __all__ = [
     "BOOKS",
     "BOOKS_RUN",
     "EVENTS",
+    "EXECUTIONS",
+    "FIX_MESSAGES",
+    "FIX_MESSAGES_RAW",
     "FLATTENED",
+    "FLATTENERS",
     "HISTORY",
-    "MESSAGES",
-    "RAW",
-    "REFINED",
+    "LOG_MESSAGES",
+    "ORDERS",
+    "QUOTES",
     "Landed",
+    "Storages",
     "parse_books",
-    "parse_events",
-    "parse_fix_raw",
-    "parse_fix_refined",
-    "parse_messages",
+    "parse_executions",
+    "parse_fix_messages_raw",
+    "parse_fix_messages_refined",
+    "parse_log_messages",
+    "parse_orders",
+    "parse_quotes",
 ]

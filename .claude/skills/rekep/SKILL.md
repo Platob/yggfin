@@ -1,50 +1,55 @@
 ---
 name: rekep
-description: Use and extend `rekep`, the processing library that turns ULBridge text captures into FIX and market Iceberg tables. Use for any work in this repository or with the `rekep` package - landing a window through the `rekep.pipeline` stages (`parse_messages`, `parse_fix_raw`, `parse_fix_refined`, `parse_books`, `parse_events`) over an `IcebergCatalog`, choosing windows and catalogs (local SQLite, S3, AWS Glue, S3 Tables), pinning the market event kinds to one book snapshot, creating tables ahead of a run with `rekep.deploy`, reading landed tables from Python, the FIX codec and registry, table contracts (`iceberg_contract`, `schemas/rekep`), and changing, testing or documenting the code.
+description: Use and extend `rekep`, the processing library that lands ULBridge FIX bridge captures as bronze and silver Iceberg tables. Use for any work in this repository or with the `rekep` package - running the `rekep.pipeline` tasks (`parse_log_messages`, `parse_fix_messages_raw`, `parse_fix_messages_refined`, `parse_books`, `parse_orders`, `parse_quotes`, `parse_executions`) over a window and a `Storages` of three catalogs (local SQLite, AWS Glue, S3 Tables), scheduling the graph (a Python runner, Airflow), pinning the flatteners to one book snapshot, deploying tables with `rekep.deploy`, reading landed tables, the FIX registry and codec (`FixRegistry.from_env`, `FixCodec.from_env`, `State`), the published contracts under `schemas/`, and changing, testing or documenting the code.
 ---
 
 # rekep
 
-`rekep` (Python package under `python/`) streams text captures through the
-native Yggdryl FIX codec into Iceberg. It is a library: every pipeline step is
-a **function of `rekep.pipeline`** over one `IcebergCatalog` and one window,
-and where, when and over what a stage runs is the caller's.
+`rekep` (the Python package under `python/`) reads the text a ULBridge FIX
+bridge logs and lands it as Iceberg tables in three layers. It is a library:
+every step is a **task**, a function of `rekep.pipeline` over one
+`rekep.Storages` and one window, and where, when and over which window a task
+runs is its caller's.
 
 ```text
-capture URI    -> parse_messages             -> logs.messages
-logs.messages  -> parse_fix_raw              -> fix.raw
-fix.raw        -> parse_fix_refined          -> fix.refined
-fix.refined    -> parse_books                -> market.books
-market.books   -> parse_events("orders")     -> market.orders      (the three kinds
-               -> parse_events("quotes")     -> market.quotes       read one pinned
-               -> parse_events("executions") -> market.executions   book snapshot)
+capture                              -> parse_log_messages         -> bronze.record_keeping.log_messages
+bronze.record_keeping.log_messages   -> parse_fix_messages_raw     -> bronze.record_keeping.fix_messages
+bronze.record_keeping.fix_messages   -> parse_fix_messages_refined -> silver.record_keeping.fix_messages
+silver.record_keeping.fix_messages   -> parse_books                -> silver.record_keeping.books
+silver.record_keeping.books          -> parse_orders               -> silver.record_keeping.orders      (the three
+                                     -> parse_quotes               -> silver.record_keeping.quotes       read one book
+                                     -> parse_executions           -> silver.record_keeping.executions   snapshot)
 ```
 
-`AGENTS.md` is the binding contract for how code here is written and who owns
-what; read it before changing code. This skill is the operating manual.
+A table is `<layer>.<namespace>.<table>`: the layer is one of the three
+Iceberg catalogs `Storages` holds, `<namespace>.<table>` its name there. Gold
+is the consumers' layer; no task writes it. `AGENTS.md` is the binding
+contract for how code here is written and who owns what; read it before
+changing code. This skill is the operating manual.
 
 ## Where things are
 
 | path | what |
 | --- | --- |
-| `python/src/rekep/pipeline.py` | the stages, `Landed`, and the table names they write (`MESSAGES`, `RAW`, `REFINED`, `BOOKS`, `EVENTS`) |
-| `python/src/rekep/deploy.py` | `deploy(catalog)` and `TABLES`: the graph's tables, created ahead of a run |
-| `python/src/rekep/{text,fix,market,times,iceberg,fields}` | the library the stages compose |
-| `python/tests/` | the suite; `-m integration` runs real Iceberg transactions |
-| `data/capture/ulbridge.log` | the 144-line capture every documented count comes from (`data/README.md`) |
-| `config/` | where an operator's own FIX dictionary goes (`config/README.md`) |
-| `schemas/rekep/*.json` | reviewed Iceberg contracts (Message, FixMsg, Book, MarketEvent) |
-| `docs/` | the mkdocs site; `docs/pipeline/` explains each stage |
-| `tools/fix_registry_dump.py` | regenerates `docs/assets/fix-*.json` after a registry change |
+| `python/src/rekep/pipeline.py` | the tasks, `Landed`, the table names (`LOG_MESSAGES`, `FIX_MESSAGES_RAW`, `FIX_MESSAGES`, `BOOKS`, `ORDERS`, `QUOTES`, `EXECUTIONS`), `EVENTS`, `FLATTENERS`, `FLATTENED`, `HISTORY` |
+| `python/src/rekep/storages.py` | `Storages`: one catalog per layer, `dataset("<layer>.<ns>.<table>")` |
+| `python/src/rekep/deploy.py` | `deploy(storages)` and `TABLES`: the graph's tables, created ahead of a run |
+| `python/src/rekep/text.py` | the bridge read: `text_options`, `log_message_field`, `CAPTURES`, `RECORD_CLOCK` |
+| `python/src/rekep/fix.py` | the bundled registry install, the FIX doors, `fix_message_field`, `iceberg_event_field`, `UNDATED`, `REGISTRY_VARIABLE` |
+| `python/src/rekep/market.py` | the book fold and the event flattening, `book_field`, `market_event_field` |
+| `python/src/rekep/{times,iceberg,fields}` | windows, the Iceberg dataset, field metadata |
+| `python/tests/` | unit tests mirroring the modules; `tests/storages/` lands the capture through every task under `-m integration` |
+| `data/capture/ulbridge.log` | the 144-line capture every documented count reads (`data/README.md`) |
+| `schemas/` | generated: each table's Iceberg contract and each layer's dbt sources (`schemas/README.md`) |
+| `docs/` | the mkdocs site; `docs/tables/` and `docs/samples/` are generated |
+| `tools/` | `schemas_dump.py`, `samples_dump.py`, `fix_registry_dump.py`: the generators |
 
 ## Setup
 
 Work from the **repository root**: the examples' relative paths
-(`file:data/capture`, `data/catalog.db`) resolve against the working directory.
-
-```bash
-uv sync --project python          # default group: dev
-```
+(`file:data/capture/ulbridge.log`) resolve against the working directory.
+The environment is `python/.venv`, which `uv sync --project python` creates
+with the default `dev` group.
 
 `rekep` is not published on PyPI. Outside a checkout install it from one,
 `pip install "./python[iceberg]"` (add `glue` or `s3tables` for those
@@ -53,327 +58,255 @@ catalogs), or from Git with
 
 ## Land a window
 
-Each stage takes an open catalog and a window, reads its source table,
-replaces its window of its target, creates the target where it is missing,
-and answers `Landed`. It never closes the catalog; the caller does.
-
 ```python
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from rekep.iceberg import IcebergCatalog
-from rekep.pipeline import Landed, parse_fix_raw, parse_fix_refined, parse_messages
-from rekep.times import window_of
-
-root = Path(tempfile.mkdtemp())
-catalog = IcebergCatalog.from_dict({"name": "rekep", "properties": {
-    "type": "sql", "uri": f"sqlite:///{root}/catalog.db", "warehouse": str(root / "warehouse")}})
-day = window_of("2026-08-14", "2026-08-14")  # the capture's day: a date `end` is the end of that day
-try:
-    assert parse_messages("file:data/capture", catalog, day) == Landed(read=144, written=144)
-    assert parse_fix_raw(catalog, day) == Landed(read=144, written=49, skipped=30)
-    assert parse_fix_refined(catalog, day) == Landed(read=49, written=19)
-finally:
-    catalog.close()
-```
-
-Order matters: each stage reads only the table before it. A replay of the same
-window lands the same rows under the same keys and answers the same numbers,
-so a table holds each row once. A stage per process is fine: open the catalog,
-run it, close it.
-
-`Landed` holds `read` (source rows the window selected), `written` (target rows
-carried into the table), `skipped` (answered rows the target's key folded into
-a written one: 30 frames of `fix.raw` are one message logged again at another
-hop) and `snapshot_id` (the `market.books` snapshot `parse_books` committed or
-`parse_events` read; None for the other stages).
-
-The stages log to the `rekep.*` loggers and configure nothing:
-`logging.basicConfig()` with `logging.getLogger("rekep").setLevel(logging.INFO)`
-shows each table created and each commit, and `DEBUG` adds scans,
-projections and files.
-
-## When a stage fails
-
-| message | meaning |
-| --- | --- |
-| `FileNotFoundError: <uri>` (`parse_messages`) | the capture URI does not exist; an absent path would otherwise read as a window without lines |
-| `window [...) is empty` / `end=... is not an instant` | bad bounds; a date `end` is the end of that day |
-| `FIX registry contains no specification fields` | `fix_registry(location)` names an empty, missing or wrong dictionary |
-| `unable to open database file` | the SQLite catalog's directory does not exist (SQLite creates the file, not its directory) |
-| `URI missing, please provide using --uri ...` | a catalog mapping without its `properties` |
-| `FixCodec.__new__() got an unexpected keyword argument` | a codec pin the native codec does not declare |
-| `expected orders, quotes or executions` | `parse_events` given another kind |
-| `expected a nonnegative book snapshot_id or None` | a bad pinned books snapshot |
-| `has no snapshot N: table is missing` / `Snapshot not found: N` | the pinned books table or snapshot does not exist; nothing was written |
-| `ArrowInvalid ... expected a bid or ask side` / `expected a symbol outside global mode` (`parse_books`) | an admitted message the native book fold refuses; the table's prior snapshot stays visible |
-
-Turn on `DEBUG` records to see what was scanned and written, then inspect the
-tables from Python (below).
-
-## Windows
-
-- `rekep.times.window_of(start, end)` is `[start, end)` as aware UTC instants,
-  over `currunix` (the event instant). A bound is a `datetime`, an ISO instant
-  (`2026-08-14T10:00:00Z`), a date (`2026-08-14`), epoch nanoseconds (an
-  `int`), or a named instant: `now`, `today`, `yesterday`, `tomorrow`, `epoch`
-  (`utcnow`, `utctoday` alike). A date as `end` is the end of that day.
-  Neither bound is the last day up to now. An empty or inverted window is
-  refused.
-- `parse_messages` hands the window to the native read as its `where`; a line
-  its header cannot date takes the object's modification time.
-- `parse_fix_refined` also reads `HISTORY`, the hour before `start`, as
-  lifecycle context and writes only the window (plus still-undated epoch rows).
-- The market stages replace exactly `[start, end)` atomically: an empty rerun
-  clears the window; rows outside it survive. Books start with no depth before
-  `start`.
-
-## Market: books, then the kinds off one snapshot
-
-`parse_books` answers the snapshot it committed; hand that id and the same
-window to `parse_events` for each kind, so all three read one commit even if
-`market.books` moves on. The kinds are independent and may run in separate
-processes. Over the capture, the midday hour is a book window; the whole day
-is not, because the capture holds an AE report whose side states no
-`Side(54)` and a cancel reject that names no symbol, both of which the fold
-refuses.
-
-```python
-import tempfile
-from pathlib import Path
-
-from rekep.iceberg import IcebergCatalog
+from rekep import Storages
 from rekep.pipeline import (
-    EVENTS,
+    FLATTENERS,
+    Landed,
     parse_books,
-    parse_events,
-    parse_fix_raw,
-    parse_fix_refined,
-    parse_messages,
+    parse_fix_messages_raw,
+    parse_fix_messages_refined,
+    parse_log_messages,
 )
 from rekep.times import window_of
 
 root = Path(tempfile.mkdtemp())
-catalog = IcebergCatalog.from_dict({"name": "rekep", "properties": {
-    "type": "sql", "uri": f"sqlite:///{root}/catalog.db", "warehouse": str(root / "warehouse")}})
-day = window_of("2026-08-14", "2026-08-14")
-midday = window_of("2026-08-14T12:00:00Z", "2026-08-14T13:00:00Z")
-try:
-    parse_messages("file:data/capture", catalog, day)
-    parse_fix_raw(catalog, day)
-    parse_fix_refined(catalog, day)
-    books = parse_books(catalog, midday)
-    written = {
-        kind: parse_events(kind, catalog, midday, snapshot_id=books.snapshot_id).written
-        for kind in EVENTS
-    }
-    assert (books.read, books.written) == (12, 5)
-    assert written == {"orders": 1, "quotes": 0, "executions": 7}
-finally:
-    catalog.close()
+storages = Storages.from_dict({layer: {"name": layer, "properties": {
+    "type": "sql", "uri": f"sqlite:///{root / layer}.db", "warehouse": str(root / layer)}}
+    for layer in ("bronze", "silver", "gold")})
+window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
+with storages:
+    assert parse_log_messages("file:data/capture/ulbridge.log", storages, window) == Landed(128, 128)
+    assert parse_fix_messages_raw(storages, window) == Landed(read=128, written=41, skipped=27)
+    assert parse_fix_messages_refined(storages, window) == Landed(read=41, written=14)
+    books = parse_books(storages, window)
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        running = {kind: pool.submit(task, storages, window, snapshot_id=books.snapshot_id)
+                   for kind, task in FLATTENERS.items()}
+    written = {kind: future.result().written for kind, future in running.items()}
+    assert (books.written, written) == (6, {"orders": 1, "quotes": 0, "executions": 7})
 ```
 
-`snapshot_id=None` pins whatever head the call finds; `0` means the books
-table had no commit, reads nothing and empties the window. A positive id of a
-missing table is refused before anything is written. After a book
-replacement, run the kinds again against the new snapshot.
+Order matters: each task reads only the table before it. Every task creates
+its target where it is missing, never closes the catalogs, and replaces its
+window, so a rerun lands the same rows and answers the same numbers: a retry
+is running it again. A task per process is fine: open `Storages`, run, close.
 
-## Catalogs
+`Landed` holds `read` (source rows the window selected), `written` (target
+rows carried into the table), `skipped` (answered rows the key folded into a
+written one: 27 bronze FIX messages restate another hop's exactly) and
+`snapshot_id` (the books snapshot `parse_books` committed or a flattener
+read; None for the others). Tasks log to the `rekep.*` loggers and configure
+nothing: `INFO` shows each table created and each commit, `DEBUG` adds scans
+and files.
 
-`IcebergCatalog.from_dict` takes `{"name": ..., "properties": {...}}`
-(PyIceberg catalog and FileIO properties). Never put credentials in the
-mapping: use roles, profiles or the standard AWS environment.
+## When a task fails
 
-| mode | properties |
+| message | meaning |
 | --- | --- |
-| local | `type: sql`, `uri: sqlite:////abs/catalog.db`, `warehouse: /abs/warehouse` |
-| SQL catalog, S3 data | `type: sql`, `uri: <sqlalchemy url>`, `warehouse: s3://bucket/prefix`, `s3.region` |
-| AWS Glue | `type: glue`, `warehouse: s3://bucket/prefix`, `glue.region`, `s3.region` |
+| `FileNotFoundError: <uri>` | `parse_log_messages` got a capture that does not exist |
+| `window [...) is empty` / `end=... is not an instant` | bad bounds; a date `end` is the end of that day |
+| `expected one catalog per layer (bronze, silver, gold): missing ...` | a `Storages` mapping without every layer |
+| `row header captures nothing for ...` | a `rowheader` that renames or drops a capture |
+| `FIX registry contains no specification fields` | a codec over an empty dictionary folder |
+| `FixCodec.__new__() got an unexpected keyword argument` | a codec pin the native codec does not declare |
+| `ArrowInvalid ... expected a bid or ask side` / `expected a symbol outside global mode` | `parse_books` met an admitted message the fold cannot read (the capture has two: 14:52:55 and 21:59:46 UTC); the table's prior snapshot stays |
+| `expected a nonnegative book snapshot_id or None` / `has no snapshot N: table is missing` | a bad or missing pinned books snapshot; nothing was written |
+| `unable to open database file` | a SQLite catalog whose folder does not exist |
+
+## Windows
+
+- `rekep.times.window_of(start, end)` is `[start, end)` as aware UTC instants
+  over `currunix`. A bound is a `datetime`, an ISO instant, a date, epoch
+  nanoseconds (`int`) or `now`/`today`/`yesterday`/`tomorrow`/`epoch`; a date
+  `end` is the end of that day; neither bound is the last day up to now.
+- Each table is windowed on its own clock: the line's printed instant on
+  `log_messages`, the message's own on FIX rows. The capture's bridge prints
+  local time, two hours ahead of UTC, so its lines of 14:46 carry messages of
+  12:46.
+- `parse_fix_messages_refined` reads `HISTORY` (one hour) before its window
+  and writes only the events the walk dates inside it; an event whose bronze
+  row sits in a later hour than its walked instant lands only in a window
+  holding both. Run silver behind bronze, over wide windows (a day), and
+  rerun a wider window to reconcile. `docs/dags/index.md#late-events` has the
+  numbers.
+- `parse_books` and the flatteners replace exactly `[start, end)`; books start
+  with no depth before `start`.
+- Every scan pushes the window into Iceberg, so only the window's hour
+  partitions are planned (`dataset.scan_plan(row_filter)` shows it).
+
+## Storages
+
+`Storages.from_dict({layer: IcebergCatalog.from_dict mapping})` needs all of
+`bronze`, `silver`, `gold`. Bronze and silver both hold
+`record_keeping.fix_messages`, so the layers never share a catalog: three
+SQLite databases, three Glue Data Catalogs (`glue.id`), three S3 table
+buckets.
+
+| mode | one layer's properties |
+| --- | --- |
+| local | `type: sql`, `uri: sqlite:////abs/<layer>.db`, `warehouse: /abs/<layer>` |
+| SQL catalog, S3 data | `type: sql`, `uri: <sqlalchemy url>`, `warehouse: s3://bucket/<layer>`, `s3.region` |
+| AWS Glue | `type: glue`, `glue.id: <catalog id>`, `warehouse: s3://bucket/<layer>`, `glue.region`, `s3.region` |
 | S3 Tables | `type: s3tables`, `warehouse: arn:aws:s3tables:<region>:<account>:bucket/<name>` |
 | S3 Tables via Glue | `type: s3tables`, `warehouse: <account>:s3tablescatalog/<name>`, `rest.signing-region` |
 
-S3-compatible stores add `s3.endpoint` (and `s3.force-virtual-addressing=false`
-where needed). `s3tables` endpoints also honour `AWS_ENDPOINT_URL_S3TABLES` /
-`AWS_ENDPOINT_URL_GLUE`. Full reference: `docs/storage/catalogs.md` and
-`docs/storage/iceberg.md`.
+Never put credentials in a mapping. `docs/storages/` is the full reference.
 
-## Stage parameters worth knowing
+## Task parameters worth knowing
 
-- `parse_messages(source, catalog, window, *, rowheader=None, target=MESSAGES)`:
-  `source` is a file, directory or prefix URI (`file:data/capture`,
-  `file:///abs/path`, `s3://bucket/prefix?region=eu-west-1`,
-  `s3://b/p?endpoint_override=host:9000&scheme=http&force_path_style=true`),
-  bound and closed by the stage, or an `IOBase` the caller keeps open. Source
-  credentials and endpoints belong on this URI, not on the catalog.
-  `rowheader=None` is `ULBRIDGE_ROWHEADER`; another header must keep the same
-  capture names, and is refused otherwise.
-- `parse_fix_raw`, `parse_fix_refined`, `parse_books`: `codec`, `fix_codec()`
-  when None. Build one with `fix_codec(registry, **pins)`, where `registry` is
-  `fix_registry()` (the bundled dictionary) or `fix_registry("file:config/fix")`
-  (`config/README.md`), and the pins go to the native `FixCodec`, which
-  validates every keyword: `batch_row_size`, `include_msgtypes`,
-  `exclude_msgtypes`, `threads`, `official_time_delay_ms`, `snapshot_ns`, ...
-  Hand the refined and books stages the codec the raw stage parsed with.
-- `parse_books`: `snapshot_millis` (0 = off) emits book snapshots on that grid.
-- `parse_events(kind, catalog, window, *, snapshot_id=None, ...)`: `kind` is
-  `orders`, `quotes` or `executions`.
-- Every stage takes a `target` table name, and every stage after
-  `parse_messages` a `source` table name, defaulted to the constants above.
+- `parse_log_messages(source, storages, window, *, rowheader=None, target=LOG_MESSAGES)`:
+  `source` is a file, folder or prefix URI (`file:data/capture`,
+  `s3://bucket/prefix?region=eu-west-1`) or an `IOBase` the caller keeps open.
+  `rowheader=None` is `ULBRIDGE_ROWHEADER`; another must keep
+  `rekep.text.CAPTURES`.
+- `parse_fix_messages_raw`, `parse_fix_messages_refined`, `parse_books`:
+  `codec=None` is `FixCodec.from_env(default_sending_time=UNDATED)`. Hand all
+  three the same codec.
+- `parse_books`: `snapshot_millis` (0 = off) emits book snapshots on a grid.
+- `parse_orders`, `parse_quotes`, `parse_executions`: `snapshot_id=None` pins
+  the head found; pass the one `parse_books` answered.
+- Every task takes a `target` table name, and every task after the first a
+  `source`, defaulted to the constants above.
 
 ## Deploying tables ahead of a run
-
-Every stage creates its own target on first write; `deploy` matters where the
-catalog is owned by someone else (Glue, S3 Tables) and is created once,
-ahead of the jobs that fill it.
 
 ```python
 import tempfile
 from pathlib import Path
 
+from rekep import Storages
 from rekep.deploy import deploy
-from rekep.fix import fix_codec
-from rekep.iceberg import IcebergCatalog
 
 root = Path(tempfile.mkdtemp())
-catalog = IcebergCatalog.from_dict({"name": "rekep", "properties": {
-    "type": "sql", "uri": f"sqlite:///{root}/catalog.db", "warehouse": str(root / "warehouse")}})
-try:
-    assert set(deploy(catalog, dry_run=True).values()) == {"missing"}
-    assert deploy(catalog, tables=["fix.raw"], codec=fix_codec()) == {"fix.raw": "created"}
-    assert deploy(catalog)["fix.raw"] == "present"
-finally:
-    catalog.close()
+storages = Storages.from_dict({layer: {"name": layer, "properties": {
+    "type": "sql", "uri": f"sqlite:///{root / layer}.db", "warehouse": str(root / layer)}}
+    for layer in ("bronze", "silver", "gold")})
+raw = "bronze.record_keeping.fix_messages"
+with storages:
+    assert set(deploy(storages, dry_run=True).values()) == {"missing"}
+    assert deploy(storages, tables=[raw]) == {raw: "created"}
+    assert deploy(storages)[raw] == "present"
 ```
 
-`deploy` answers `created`, `present` or, under `dry_run`, `missing` per table,
-and never alters an existing table. `tables` narrows it to some of `TABLES`,
-`table_properties` sets properties on the tables it creates, and `codec` types
-the two FIX tables exactly as the run parsing into them would.
+`deploy` answers `created`, `present` or, under `dry_run`, `missing` per
+table, and never alters an existing table.
 
-## Reading tables from Python
+## Reading tables
 
-Public code imports `rekep`, never `yggdryl` directly. With `catalog` open on
-tables landed as above:
+Public code imports `rekep` and nothing beneath it. With `storages` open on
+landed tables:
 
 ```python
+from rekep import State
 from rekep.fix import SORT_COLUMNS, fix_window_filter
+from rekep.pipeline import FIX_MESSAGES
 from rekep.times import window_of
 
-refined = catalog.dataset("fix.refined")
+events = storages.dataset(FIX_MESSAGES)
 try:
-    reader = refined.read_arrow_reader(   # streams; pushes filter/projection/limit down
-        columns=("crosscode", "currunix", "seqnum", "curruuid", "msgtype", "state"),
+    table = events.read_arrow_reader(   # streams; pushes filter, projection, order down
+        columns=("currunix", "seqnum", "curruuid", "crosscode", "msgtype", "state"),
         row_filter=fix_window_filter(window_of("2026-08-14", "2026-08-14")),
-        order_by=SORT_COLUMNS,             # ordered columns must be projected
-        snapshot_id=None,                  # or a pinned snapshot
-    )
-    table = reader.read_all()
+        order_by=SORT_COLUMNS,          # ordered columns must be projected
+    ).read_all()
 finally:
-    refined.close()
+    events.close()
+states = [State(code) for code in table.column("state").to_pylist()]
 ```
 
-`catalog.tables()` lists identifiers; `dataset.read_arrow_table()` reads a
-small table whole. Parse one line directly with the codec:
+`state` is an `int32` code of `rekep.State` (60 members, code = rank * 100 +
+place: `FILLED` is 8003). Keys: `curruuid` on every table; `srcuuids` on FIX
+and event rows lists the `log_messages.curruuid` of the lines an event was
+logged on; `crosscode` is the business id (OrderID, ClOrdID, ...) on FIX rows
+and the object a line was read from on `log_messages`. Column meanings:
+`docs/tables/`; real rows: `docs/samples/`.
+
+## FIX registry
+
+Importing `rekep` installs the bundled dictionary as the process default:
+`FixRegistry.from_env()` (7,789 definitions, 737 code sets including the
+intrinsic `statecodeset` and `msgcatcodeset`) and `FixCodec.from_env(**pins)`.
+`FixRegistry.install_env` refuses a second default. For another dictionary,
+set the variable `rekep.fix.REGISTRY_VARIABLE` names to its folder before the
+process imports `rekep`, or build `FixCodec(FixRegistry.from_handle(folder),
+default_sending_time=UNDATED)` and pass it as `codec=` to the three FIX tasks
+and to `deploy`.
 
 ```python
-from rekep.fix import FixCodec, fix_registry
+from rekep import FixCodec
 
-codec = FixCodec(fix_registry())
-message = next(iter(codec.parse_line(b"Sending : 8=FIX.4.4|35=D|11=ORD-1|55=AAPL|54=1|38=12|10=000|")))
+message = next(iter(FixCodec.from_env().parse_line(b"8=FIX.4.4|35=D|11=ORD-1|55=AAPL|54=1|38=12|10=000|")))
 assert message.by_name("symbol").as_py() == "AAPL"
 ```
 
-Keys to join on: `logs.messages.curruuid` is a line; FIX rows are keyed on
-`curruuid` (one event), and `srcuuids` lists the line identities an event was
-logged on. `crosscode` is the business id (OrderID, ClOrdID, ...) on FIX rows.
-Column meanings: `docs/products/`.
+## Generated files
 
-## Contracts
+Regenerate from the repository root, review the diff, commit the result:
 
-The four reviewed Iceberg contracts live in `schemas/rekep/`; regenerate them
-after a deliberate shape change and review the diff:
+| run | writes | when | drift fails |
+| --- | --- | --- | --- |
+| `python tools/schemas_dump.py` | `schemas/**`, `docs/tables/**` | a table's field changes | `tests/test_schemas.py` |
+| `python tools/samples_dump.py` | `docs/samples/**` | a task, a field or the capture changes | `tests/test_docs.py` under `-m integration` |
+| `python tools/fix_registry_dump.py` | `docs/assets/fix-*.json` | the bundled registry changes | nothing: regenerate by hand |
 
-```python
-from pathlib import Path
-
-from rekep.fields import field_of
-from rekep.fix import fix_message_field
-from rekep.iceberg import iceberg_contract
-from rekep.market import book_field, market_event_field
-from rekep.text import Message
-
-CONTRACTS = {
-    "message": Message,
-    "fixmsg": fix_message_field(),
-    "book": book_field(),
-    "marketevent": market_event_field(),
-}
-for name, declared in CONTRACTS.items():
-    document = f"{iceberg_contract(field_of(declared))}\n"
-    Path(f"schemas/rekep/{name}.json").write_text(document, encoding="utf-8")
-```
-
-`iceberg_contract_field(document, name)` reads one back and refuses a layout
-one Field cannot hold; `python/tests/test_schemas.py` fails on drift. An
-identity or key change means rebuilding affected tables from source under one
-native revision (AGENTS.md, Pipeline); never mix old and new keys.
+An identity or key change means rebuilding the affected tables and every
+table after them from the capture; never mix old and new keys.
 
 ## Changing the code
 
-Ownership (from AGENTS.md): Yggdryl owns `Field`, text reading, codecs, FIX
-parsing and lifecycle; Arrow owns shape kernels; PyIceberg owns tables and
-commits; rekep owns the text `Message` contract, the thin seams and the stages
-that compose them. Never add a second Field class, filesystem layer, text
-reader, codec or registry here; no Python row loops over Arrow data; prefer
-deleting to compatibility layers.
+Ownership (AGENTS.md): the native dependency owns `Field`, text reading,
+codecs, the FIX registry, parsing, lifecycle and the book fold; Arrow owns
+shape kernels; PyIceberg owns tables and commits; rekep owns the thin seams,
+`Storages` and the tasks that compose them. Never add a second Field class,
+filesystem layer, text reader, codec or registry here; no Python row loops
+over Arrow data; prefer deleting to compatibility layers.
 
-To add or change a stage:
+To add or change a task:
 
 1. A function in `python/src/rekep/pipeline.py`, in graph order, taking
-   `(catalog, window, *, source=..., target=...)` after any leading input and
-   answering `Landed`. It composes library readers, opens its datasets through
-   the catalog it is handed and closes them, never closes the catalog, and
-   writes with one `overwrite_arrow_reader`: `merge_by=True` for a keyed
-   table, `row_filter` for an exact-window replacement. Its table name is a
-   constant beside the others and in `__all__`.
-2. Its table in `rekep.deploy.TABLES`.
-3. Tests: refusals and internals in `python/tests/test_pipeline.py`; the landed
-   contract once as `integration` (`test_workflow.py` over the capture,
-   `test_market_pipeline.py` for the market stages).
-4. A page under `docs/pipeline/` and its entry in `mkdocs.yml`.
+   `(storages, window, *, source=..., target=...)` after any leading input and
+   answering `Landed`. It opens its datasets through `storages` and closes
+   them, never closes a catalog, pushes the window into its scan, and writes
+   with one `overwrite_arrow_reader`: `merge_by=True` for a keyed table,
+   `row_filter` for an exact-window replacement. Its table name is a constant
+   beside the others and in `__all__`.
+2. Its table in `rekep.deploy.TABLES`, with a description and writer in
+   `tools/schemas_dump.py`; regenerate `schemas/` and `docs/tables/`.
+3. Tests: unit tests beside the module's own (`tests/test_<module>.py`); the
+   landed contract once in `tests/storages/`, marked `integration`.
+4. A page under `docs/tasks/`, its nav entry in `mkdocs.yml`, the samples
+   regenerated, and this skill.
 
-Checks before a commit:
+Checks before a commit, from `python/`:
 
 ```bash
-cd python
 uv run ruff check . ../tools && uv run ruff format --check . ../tools
 uv run pytest -q                      # unit (integration excluded by default)
-uv run pytest -q -m integration       # real local Iceberg transactions, a few minutes
-cd .. && UV_PROJECT_ENVIRONMENT=/tmp/docs-venv uv run --project python --group docs mkdocs build --strict
+uv run pytest -q -m integration       # real local Iceberg transactions and every asserting doc example
+cd .. && uv run --project python --group docs mkdocs build --strict
 ```
 
 CI lints `python/`, runs the unit suite and the market integration tests on
-Linux and Windows under Python 3.10 and 3.13, and builds the docs strictly;
-the whole integration suite runs on pushes to `main` and on a pull request
-comment containing `--integration`. Lint `../tools` yourself. The docs build
-uses its own environment so the shared `.venv` keeps its default groups.
-`uv run --project python python tools/fix_registry_dump.py` regenerates
-`docs/assets/fix-*.json` after a registry change.
+Linux and Windows under Python 3.10 and 3.13, and builds the docs strictly.
+Documentation never names the native dependency: `tests/test_docs.py` fails
+on it.
 
 ## Pitfalls
 
-- Relative locations resolve against the working directory: `file:data/capture`
-  and `sqlite:///data/catalog.db` mean another place from
-  another directory. Work from the repo root or spell absolute locations.
+- Relative locations resolve against the working directory. Work from the
+  repository root or spell absolute locations.
 - `window_of()` with no bounds is the last day up to now; the capture is dated
   2026-08-14, so an unbounded run over it reads nothing.
 - An `int` bound is epoch nanoseconds: `window_of(20260814, ...)` starts in
   1970. Spell the date, `"2026-08-14"`.
-- `fix.raw` rows have empty `seqnum`/`prevuuid`/`parentuuids` by design; the
-  chain is `fix.refined`'s. Products read `fix.refined`, never `fix.raw`.
-- `logs.messages` and the FIX tables replay by key within the hour partition;
-  a changed identity leaves the old row, so rebuild the window or the table.
-- Market window replacement is exact; `parse_books` does not reconstruct depth
-  from before `start`.
-- A stage never closes the catalog. Close it yourself: on Windows an open
-  SQLite catalog is a file its caller cannot delete.
+- Bronze FIX rows have empty `seqnum`/`prevuuid` by design; chains are
+  silver's. Products read silver, never bronze FIX.
+- A books window over the capture's whole day raises: the fold refuses the
+  capture's side-less trade report and symbol-less cancel reject.
+- A task never closes the catalogs. Close `Storages` yourself: on Windows an
+  open SQLite catalog is a file its caller cannot delete.

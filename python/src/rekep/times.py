@@ -58,7 +58,7 @@ NAMED: dict[str, Any] = {
 #:
 #: One declaration because the set of accepted spellings is *one behavior*
 #: even where the execution is two: this module reads configuration with
-#: `strptime`, while the Message header expression uses the same shapes.
+#: `strptime`, while the row header expression uses the same shapes.
 @dataclasses.dataclass(frozen=True)
 class Stamp:
     """One accepted spelling of an instant, and where its parts sit in it."""
@@ -270,7 +270,7 @@ names its clock `timestamp` and its level `level`, and a capture reaches a
 column by being called what the column is called. `mtime` is the one name the
 read consumes -- the record clock it settles `currunix` from, at nanoseconds
 UTC whatever the fraction spells -- and `loglevel` is the column
-`logs.messages` keeps. `test_times.py` pins those two renames and the fraction
+`log_messages` keeps. `test_times.py` pins those two renames and the fraction
 against the native text, so every other character is still the core's.
 
 The fraction reads what this bridge writes: three digits, under a point or a
@@ -288,7 +288,7 @@ the whole of how a bracket part is told from another: `msgpluginid`,
 `msgsessionid`, `msgctxid` and `msgseqnum` are the crate's own fields 65009,
 65032, 65008 and 34, which a parse reads off the line it was handed.
 `msgthreadid` and `loglevel` name no field of the graph and stay on
-`logs.messages`; a FIX row links back to the whole capture record through
+`log_messages`; a FIX row links back to the whole capture record through
 `srcuuids`.
 """
 

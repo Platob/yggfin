@@ -1,76 +1,130 @@
-# Table contract snapshots
+# Table contracts
 
-The files in this directory are reviewed snapshots of the fields that declare
-the published tables. Runtime constructors remain the source of truth.
+Every table the `rekep` tasks write, published as files a consumer reads
+without installing `rekep`: the Iceberg contract of each table, and each
+layer as a dbt source. They are generated from the fields the tasks declare
+the tables with, never edited by hand.
 
-| snapshot | runtime constructor | tables | stored columns |
-| --- | --- | --- | ---: |
-| `rekep/message.json` | `Message.into_field()` | `logs.messages` | 12 |
-| `rekep/fixmsg.json` | `fix_message_field()` | `fix.raw`, `fix.refined` | 128 |
-| `rekep/book.json` | `book_field()` | `market.books` | 53 |
-| `rekep/marketevent.json` | `market_event_field()` | `market.orders`, `market.quotes`, `market.executions` | 50 |
+```text
+schemas/
+  bronze/
+    schema.yml                      dbt sources, version 2: the bronze layer
+    record_keeping/
+      log_messages.json             Iceberg contract of bronze.record_keeping.log_messages
+      fix_messages.json             Iceberg contract of bronze.record_keeping.fix_messages
+  silver/
+    schema.yml                      dbt sources, version 2: the silver layer
+    record_keeping/
+      fix_messages.json
+      books.json
+      orders.json
+      quotes.json
+      executions.json
+  gold/
+    schema.yml                      dbt sources, version 2: no table yet
+```
 
-`fixmsg.json` is named **FixMsg**. It is generated from the live FIX registry,
-then narrowed exactly as the Iceberg boundary narrows it. It is reviewed
-output and is never edited as an alternate schema.
+A table is named `<layer>.<namespace>.<table>`, and its contract is
+`schemas/<layer>/<namespace>/<table>.json`: the layer is the Iceberg catalog
+that holds it, and `<namespace>.<table>` its name in that catalog.
 
-## Market shapes
+| table | written by | columns |
+| --- | --- | ---: |
+| `bronze.record_keeping.log_messages` | `parse_log_messages` | 23 |
+| `bronze.record_keeping.fix_messages` | `parse_fix_messages_raw` | 132 |
+| `silver.record_keeping.fix_messages` | `parse_fix_messages_refined` | 132 |
+| `silver.record_keeping.books` | `parse_books` | 59 |
+| `silver.record_keeping.orders` | `parse_orders` | 49 |
+| `silver.record_keeping.quotes` | `parse_quotes` | 49 |
+| `silver.record_keeping.executions` | `parse_executions` | 49 |
 
-`rekep.market.book_field()` derives Book from the native empty book reader's
-schema. Its required `bid` and `ask` structs retain `live` depth and `deltas`;
-its required `executions` list contains already decomposed execution events.
-`market_event_field()` derives the shared event shape from that execution
-child. Order and quote deltas project onto the same shape after selection by
-native `operationkind`; FIX `marketoperationid` is not the child-kind selector.
+Every table is keyed on `curruuid`, partitioned by `hour(currunix)` and sorted
+by `currunix, seqnum, curruuid`. The column meanings are on the
+[Tables](https://platob.github.io/yggfin/tables/) pages.
 
-All market fields declare native `curruuid` as key, hour(`currunix`) as
-partition, and `currunix, seqnum, curruuid` as sort order. The storage boundary
-recursively narrows nanosecond timestamps to microseconds, UUIDs to fixed
-bytes and semantic extensions to storage types. Unsigned codes are signed
-views of the same bits. Exact decimal prices and quantities remain decimals.
-The storage row therefore does not promise a nanosecond-exact native round trip.
+## The Iceberg contract
 
-## Where the FIX row comes from
+`<table>.json` is the three things an Iceberg table records about its shape,
+each as PyIceberg's own model serializes it:
 
-The native FIX row has 128 columns. Parse, storage, reconstruction, and
-lifecycle all use that exact **FixMsg** shape. `msgthreadid`, `loglevel` and
-`body` belong only to `logs.messages`, and FixMsg holds none of them.
-`crosscode` and `seqnum` stand on both shapes and mean the row they sit on:
-the object a line was read from and its row number there, a message's chain
-and its step in it. The bridge's `msgsessionid`, `msgctxid`, `msgseqnum`, and
-`msgpluginid` are not capture columns at all -- they are native FixMsg fields
-a text line fills, so they stand on both shapes under one spelling and
-nothing translates between them. A `fix.raw` row names its one line through
-`srcuuids` and a `fix.refined` row every line its event was logged on, whose
-values join to `logs.messages.curruuid`.
+| key | PyIceberg model | holds |
+| --- | --- | --- |
+| `schema` | `pyiceberg.schema.Schema` | every column with its field id, type, `required` and `doc`, and `identifier-field-ids`, the key |
+| `partition-spec` | `pyiceberg.partitioning.PartitionSpec` | `hour(currunix)` |
+| `sort-order` | `pyiceberg.table.sorting.SortOrder` | `currunix, seqnum, curruuid`, ascending |
 
-The native row contains 32 crate fields. These include `msgcat` (`MsgCat`),
-the seven lifted identifier-code columns `isincode`, `cficode`, `cusipcode`,
-`sedolcode`, `bloombergcode`, `figicode`, and `miccode`, and the lifecycle
-clock `exprtime`. Registry code vocabularies are referenced by `FIX:codeset`
-and owned centrally by the registry.
+It holds no data location, table UUID, snapshot or catalog state. Load it
+into those models, from the repository root:
 
-`fixentries` is the residual protocol tree. Values successfully represented
-by lifted columns are omitted from it, and `nofixentries` counts what remains.
-The fixed row can reconstruct the same canonical message semantics; it does
-not promise the arrival byte order or a complete second copy of every lifted
-pair.
+```python
+import json
+from pathlib import Path
 
-## What a contract holds
+from pyiceberg.partitioning import PartitionSpec
+from pyiceberg.schema import Schema
+from pyiceberg.table.sorting import SortOrder
 
-Each snapshot is the structural `Field` document plus the table declarations
-PyIceberg records: identifier fields, partition transforms and sort order. It
-contains no data location, table UUID, snapshot history or catalog state.
+document = json.loads(
+    Path("schemas/bronze/record_keeping/log_messages.json").read_text(encoding="utf-8")
+)
+schema = Schema.model_validate(document["schema"])
+spec = PartitionSpec.model_validate(document["partition-spec"])
+order = SortOrder.model_validate(document["sort-order"])
 
-These files are not alternate implementations. Runtime code builds the field,
-`iceberg_contract` records its storage contract, and a review compares the
-result with the checked-in snapshot.
+assert schema.identifier_field_names() == {"curruuid"}
+assert schema.find_column_name(spec.fields[0].source_id) == "currunix"
+assert len(order.fields) == 3
+```
 
-## Regenerate and validate the contracts
+`catalog.create_table("record_keeping.log_messages", schema=schema,
+partition_spec=spec, sort_order=order)` then creates the table in any
+PyIceberg catalog, as a task's first write would. From `rekep`,
+`rekep.iceberg.iceberg_contract_field(text, name)` reads a contract back as
+the `Field` it states.
 
-Each file is `iceberg_contract(<constructor>())` for the constructor the table
-above names, written with a trailing newline, and reads back through
-`iceberg_contract_field(<text>, <stem>)`.
-[Portable contracts](../docs/contracts/index.md#verify-a-snapshot) holds both
-as Python run from the repository root, and `python/tests/test_schemas.py`
-fails on any drift between a file and its constructor.
+## The dbt sources
+
+`<layer>/schema.yml` is a dbt properties file, `version: 2`, declaring one
+source per layer and namespace, named as the layer:
+
+| key | holds |
+| --- | --- |
+| `sources[].name` | the layer: `bronze`, `silver`, `gold` |
+| `sources[].database` | the layer's catalog |
+| `sources[].schema` | the namespace, `record_keeping` |
+| `tables[].name` | the table, as a model names it |
+| `tables[].meta` | the task that writes it, and its `primary_key`, `partitioned_by` and `sorted_by` |
+| `columns[].data_type` | the column's Iceberg type |
+| `columns[].data_tests` | `not_null` on a required column, `unique` on the key, and `accepted_values` with every state code on `state` |
+
+Copy a layer's file under a dbt project's model paths, or point
+`model-paths` at it, and a model selects a table by the source name and the
+table name:
+
+```sql
+select currunix, crosscode, state
+from {{ source('silver', 'fix_messages') }}
+where state = 8003  -- FILLED
+```
+
+`{{ source('bronze', 'log_messages') }}` reaches the captured lines, and
+`dbt test --select source:silver` runs the tests the file declares. The
+`state` codes are those of a lifecycle-sorted enum, `rekep.State`, listed on
+the [States](https://platob.github.io/yggfin/tables/states/) page. The gold
+source declares no table: it is where a consumer's own models land.
+
+## Regenerate
+
+From the repository root, whenever a task's field changes:
+
+```bash
+uv run --project python python tools/schemas_dump.py
+```
+
+It rewrites every file here, the table pages under `docs/tables/`, and
+`docs/tables/states.md`. Review the diff before committing it: a changed
+contract is a changed table, and a table written under another key or other
+field ids is rebuilt from the capture rather than evolved.
+`python/tests/test_schemas.py` fails on any drift between these files and the
+fields, validates every contract through PyIceberg's models, and every
+`schema.yml` as a dbt version 2 source file.

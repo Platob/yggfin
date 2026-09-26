@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import datetime
+import os
+import subprocess
+import sys
 from collections import defaultdict
 from pathlib import Path
 
 import pyarrow
 import pytest
 from pyiceberg.expressions import And, EqualTo, GreaterThanOrEqual, IsNull, LessThan, Or
-from yggdryl import IOBase
+from yggdryl import IOBase, State
 from yggdryl.fix import fix_schema
 
 from rekep.fields import stored_arrow_reader
@@ -22,7 +25,8 @@ from rekep.fix import (
     SOURCES,
     TRANSACTION_CLOCK,
     UNDATED,
-    fix_codec,
+    FixCodec,
+    FixRegistry,
     fix_crate_fields,
     fix_lifecycle_arrow_reader,
     fix_lifecycle_messages,
@@ -30,22 +34,19 @@ from rekep.fix import (
     fix_parse_arrow_reader,
     fix_parse_field,
     fix_parse_lines,
-    fix_registry,
     fix_row_messages,
-    fix_text_options,
     fix_window_filter,
-    iceberg_fix_field,
+    iceberg_event_field,
 )
 from rekep.iceberg import partition_keys, primary_keys, sort_keys
-from rekep.text import Message
+from rekep.text import log_message_field, text_options
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "data" / "capture" / "ulbridge.log"
 
-#: What the bundled capture states, read through the pins this package sets.
-#: The same numbers `cargo run --example fix_capture` prints in a core
-#: checkout: 144 physical lines answer 79 messages, because a line can carry
-#: two frames and a line carrying none answers nothing.
+#: What the bundled capture states, read through the pins this package sets:
+#: 144 physical lines answer 79 messages, because a line can carry two frames
+#: and a line carrying none answers nothing.
 LINES = 144
 MESSAGES = 79
 
@@ -56,15 +57,15 @@ MESSAGES = 79
 #: carries the session, context and sequence the fold merges on.
 CHAINS = {
     "": (1, 1, 0),
-    "00026877709XOEA0": (1, 1, 0),
-    "00026877711XOEA0": (4, 4, 2),
-    "00026877712XOEA0": (2, 1, 0),
-    "00026877713XOEA0": (3, 3, 2),
-    "175631111-2274-42616_225": (4, 3, 1),
-    "20260814_TP1_CLIENT_1013": (1, 1, 0),
-    "923465840": (1, 1, 0),
-    "OD9EOEDJ401": (1, 1, 0),
-    "OD9EOEDJ402": (1, 1, 0),
+    "00079132541GLXC0": (1, 1, 0),
+    "00079132557GLXC0": (4, 4, 2),
+    "00079132558GLXC0": (2, 1, 0),
+    "00079132559GLXC0": (3, 3, 2),
+    "20260814_CQ9_LIAPUS_9623": (1, 1, 0),
+    "830850681": (1, 1, 0),
+    "931070583-1940-30712_192": (4, 3, 1),
+    "XM8NNITE383": (1, 1, 0),
+    "XM8NNITE384": (1, 1, 0),
 }
 
 #: How many rows a table keyed on `curruuid` holds after the whole capture,
@@ -72,14 +73,18 @@ CHAINS = {
 EVENTS = sum(events for _, events, _ in CHAINS.values())
 
 #: The native row is the only FIX row shape at every stage.
-ROW = 128
-CRATE = 32
-PARSED_EVENTS = 49
+ROW = 132
+CRATE = 40
+PARSED_EVENTS = 48
+
+#: The messages of the capture stating no `SendingTime(52)`: the parse dates
+#: each by the line it was read out of, and the walk by its `TransactTime`.
+UNSENT = 63
 
 #: Two lines the bridge header matches, one under a point and one under a
-#: comma, and two messages: the second states no `SendingTime` of its own, so
-#: it settles at the codec's pin whatever its line was stamped at -- a line's
-#: clock is context to a message and never its event.
+#: comma, and two messages, neither stating a `SendingTime` of its own: each
+#: is dated by the clock of the line it was read out of, which is also the
+#: instant it was recorded at.
 BRIEF = (
     b"2026-08-14 00:05:01.147 [250-e7256476:9effef3e6a:72504] [ULBridge] (INFO) "
     b"Sending : 8=FIX.4.4|35=D|11=A1|55=AAPL|10=0|\n"
@@ -97,17 +102,19 @@ def _capture(tmp_path: Path) -> IOBase:
     return IOBase.from_uri(source.as_uri())
 
 
-def _codec():
-    """The codec the two FIX stages pin: the dictionary and the undated floor, and
-    no capture order, because the batch door fills a field from the column
-    named after it."""
-    return fix_codec(fix_registry())
+def _codec() -> FixCodec:
+    """The codec the two FIX stages pin: the process dictionary and the undated
+    floor, and no capture order, because the batch door fills a field from the
+    column named after it."""
+    return FixCodec.from_env(default_sending_time=UNDATED)
 
 
-def _line_codec():
+def _line_codec() -> FixCodec:
     """The codec a reader holding lines pins: the same, plus the header's
     capture order, because the line door resolves a bracket part by position."""
-    return fix_codec(fix_registry(), options=fix_text_options())
+    return FixCodec.from_env(
+        default_sending_time=UNDATED, capture_names=list(text_options().capture_names)
+    )
 
 
 def _reader(table: pyarrow.Table) -> pyarrow.RecordBatchReader:
@@ -123,7 +130,7 @@ def _msgtype(message) -> str | None:
 def _parsed(handle: IOBase) -> pyarrow.Table:
     """One capture through the parse, in the parse's own shape."""
     return fix_parse_arrow_reader(
-        _codec(), handle.read_arrow_reader(options=Message.text_options())
+        _codec(), handle.read_arrow_reader(options=text_options())
     ).read_all()
 
 
@@ -137,16 +144,16 @@ def _parsed_fixture() -> pyarrow.Table:
 
 
 def _raw(handle: IOBase) -> pyarrow.Table:
-    """One capture through the first stage, as `fix.raw` stores it."""
+    """One capture through the first stage, as bronze `fix_messages` stores it."""
     codec = _codec()
-    reader = handle.read_arrow_reader(options=Message.text_options())
+    reader = handle.read_arrow_reader(options=text_options())
     return stored_arrow_reader(
         fix_parse_arrow_reader(codec, reader), fix_message_field(codec)
     ).read_all()
 
 
 def _refined(raw: pyarrow.Table) -> pyarrow.Table:
-    """The second stage over stored `fix.raw` rows, as `fix.refined` stores it."""
+    """The second stage over stored bronze rows, as silver `fix_messages` stores it."""
     codec = _codec()
     return stored_arrow_reader(
         fix_lifecycle_arrow_reader(codec, _reader(raw)), fix_message_field(codec)
@@ -170,19 +177,19 @@ def _chains(rows: pyarrow.Table) -> dict[str, tuple[int, int, int]]:
 
 
 def _sources(rows: pyarrow.Table) -> list[bytes]:
-    """The one line each row names, as the bytes `logs.messages` keys it by."""
+    """The one line each row names, as the bytes `log_messages` keys it by."""
     return [held[0] for held in rows.column(SOURCES).to_pylist()]
 
 
 @pytest.fixture(scope="module")
 def lines() -> pyarrow.Table:
-    """The whole bridge corpus as `logs.messages` holds it: the `Message`
-    contract past the storage boundary, the line's own identity on every row
-    as the sixteen bytes a table keys on."""
+    """The whole bridge corpus as `log_messages` holds it: the text read past
+    the storage boundary, the line's own identity on every row as the sixteen
+    bytes a table keys on."""
     handle = IOBase.from_uri(FIXTURE.as_uri())
     try:
         return stored_arrow_reader(
-            handle.read_arrow_reader(options=Message.text_options()), Message.into_field()
+            handle.read_arrow_reader(options=text_options()), log_message_field()
         ).read_all()
     finally:
         handle.close()
@@ -190,7 +197,7 @@ def lines() -> pyarrow.Table:
 
 @pytest.fixture(scope="module")
 def raw() -> pyarrow.Table:
-    """The whole bridge corpus, through `parse_fix_raw`'s parse."""
+    """The whole bridge corpus, through `parse_fix_messages_raw`'s parse."""
     handle = IOBase.from_uri(FIXTURE.as_uri())
     try:
         return _raw(handle)
@@ -209,7 +216,7 @@ def refined(raw: pyarrow.Table) -> pyarrow.Table:
 
 def test_the_published_row_is_the_dictionarys_native_shape() -> None:
     """Field for field: names, types, nullability and order, all yggdryl's."""
-    registry = fix_registry()
+    registry = FixRegistry.from_env()
     declared = fix_schema(registry, FIXMSG)
 
     assert (
@@ -222,7 +229,9 @@ def test_the_published_row_is_the_dictionarys_native_shape() -> None:
     assert {member.name for member in fix_crate_fields()} >= {
         "currunix",
         "creaunix",
-        "exprtime",
+        "execunix",
+        "recdunix",
+        "exprunix",
         "prevunix",
         "snapunix",
         "curruuid",
@@ -232,14 +241,11 @@ def test_the_published_row_is_the_dictionarys_native_shape() -> None:
         "crosshashcode",
         "prevuuid",
         "seqnum",
-        "parentuuids",
         "srcuuids",
-        "identifiers",
+        "msgsesseventid",
         "state",
         "msgcat",
         "isincode",
-        "cusipcode",
-        "sedolcode",
         "bloombergcode",
         "miccode",
         "figicode",
@@ -275,11 +281,12 @@ def test_the_retired_columns_are_gone_rather_than_kept_beside_the_new_ones() -> 
         ("prevupdatedat", "prevunix"),
         ("createdat", "creaunix"),
         ("snapshotat", "snapunix"),
-        ("expiredat", "exprtime"),
+        ("expiredat", "exprunix"),
+        ("exprtime", "exprunix"),
         ("msghash", "currhashcode"),
         ("msgphash", "crosshashcode"),
         ("prevmsghash", "prevuuid"),
-        ("altids", "identifiers"),
+        ("identifiers", "msgsesseventid"),
         ("bridgesessionid", "msgsessionid"),
     ):
         assert retired not in names, retired
@@ -290,8 +297,7 @@ def test_the_retired_columns_are_gone_rather_than_kept_beside_the_new_ones() -> 
         "instuuid",
         "code",
         "version",
-        "parentclordid",
-        "parentorderid",
+        "parentuuids",
         "sendersessionid",
         "targetsessionid",
         "prevpluginid",
@@ -318,8 +324,7 @@ def test_the_storage_boundary_narrows_what_a_row_filter_cannot_be_lowered_to() -
 
     for name in ("curruuid", "crossuuid", "prevuuid"):
         assert schema.field(name).type == pyarrow.binary(16), name
-    for name in ("parentuuids", SOURCES):
-        assert schema.field(name).type.field(0).type == pyarrow.binary(16), name
+    assert schema.field(SOURCES).type.field(0).type == pyarrow.binary(16)
     assert not [
         member.name for member in schema if isinstance(member.type, pyarrow.BaseExtensionType)
     ]
@@ -348,7 +353,7 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from(raw) -> None:
 
     A message logged at four hops is four lines -- four different bodies, four
     different digests -- and one row, so either column would be one arrival's
-    answer standing in for the event's. `logs.messages` holds all four; the row
+    answer standing in for the event's. `log_messages` holds all four; the row
     names the line it was read from and is re-emitted from its own arrival
     record.
     """
@@ -385,10 +390,57 @@ def test_the_narrowing_walks_into_a_nested_type() -> None:
         ]
     )
 
-    narrowed = iceberg_fix_field(nested, "Nested").into_arrow_schema()
+    narrowed = iceberg_event_field(nested, "Nested").into_arrow_schema()
 
     member = narrowed.field("parties").type.field(0).type.field(0)
     assert member.type == pyarrow.binary(16)
+
+
+def test_the_key_is_required_whatever_the_row_states() -> None:
+    """A native row may state its identity nullable -- the book's does, being
+    one row over every market leaf -- and a table keyed on it cannot hold a
+    row without one, so the declaration requires it and the write refuses
+    such a row rather than the table refusing to be created."""
+    row = pyarrow.schema(
+        [
+            pyarrow.field(EVENT_CLOCK, pyarrow.timestamp("ns", tz="UTC"), nullable=False),
+            pyarrow.field(MESSAGE_KEY, pyarrow.uuid(), nullable=True),
+            pyarrow.field(CHAIN_STEP, pyarrow.uint64()),
+        ]
+    )
+
+    field = iceberg_event_field(row, "Keyed")
+
+    assert field[MESSAGE_KEY].nullable is False
+    assert field[CHAIN_STEP].nullable is True
+    assert primary_keys(field) == [MESSAGE_KEY]
+    assert partition_keys(field) == {EVENT_CLOCK: "hour"}
+    assert list(sort_keys(field)) == list(SORT_COLUMNS)
+    assert field.name == "Keyed"
+
+
+def test_the_state_is_the_lifecycle_sorted_code_and_stores_as_its_integer(raw, refined) -> None:
+    """`state` crosses Arrow as `int32` under `yggdryl.state` and is stored as
+    the integer alone: a code is `rank * 100 + place`, so a table orders and
+    filters states by their place in a lifecycle with no lookup."""
+    parsed = fix_parse_field().into_arrow_schema().field("state")
+    stored = fix_message_field().into_arrow_schema().field("state")
+
+    assert parsed.type == stored.type == pyarrow.int32()
+    assert parsed.metadata[b"ARROW:extension:name"] == b"yggdryl.state"
+    assert b"ARROW:extension:name" not in stored.metadata
+    assert raw.schema.field("state").type == pyarrow.int32()
+    stated = {State(code) for code in raw.column("state").to_pylist()}
+    assert {State.UNKNOWN, State.PENDING_NEW, State.PARTIALLY_FILLED, State.FILLED} <= stated
+    assert State.REJECTED in stated and State.PENDING_CANCEL in stated
+    # The walk adds the expiry it schedules, and never a state the capture
+    # could not reach.
+    walked = {State(code) for code in refined.column("state").to_pylist()}
+    assert State.EXPIRED in walked - stated
+    assert all(state.rank * 100 <= state.value < (state.rank + 1) * 100 for state in walked)
+    # Read back as a message, the column is the member again.
+    message = next(iter(fix_row_messages(_codec(), _reader(raw))))
+    assert message.state.as_py() is State(raw.column("state")[0].as_py())
 
 
 def test_a_content_code_above_the_signed_range_is_read_and_not_refused() -> None:
@@ -428,7 +480,36 @@ def test_a_pin_the_codec_does_not_take_is_refused_by_name() -> None:
     """A version is what a row states, so pinning one is an error and not a
     silently forwarded keyword that parses every line under the wrong rule."""
     with pytest.raises(TypeError, match="unexpected keyword argument 'version'"):
-        fix_codec(fix_registry(), version="4.4")
+        FixCodec.from_env(version="4.4")
+
+
+# -- the process registry ------------------------------------------------------
+
+
+def test_the_bundled_registry_is_what_the_process_default_answers() -> None:
+    """Importing the module installs the dictionary it ships, so a codec built
+    over the process default reads with it and nothing names it twice."""
+    assert _codec().registry == FixRegistry.from_env()
+    assert len(FixRegistry.from_env()) > len(FixRegistry())
+
+
+def test_a_registry_the_environment_names_is_kept(tmp_path) -> None:
+    """`YGGDRYL_FIX_REGISTRY` is the caller's choice, and importing the
+    package does not replace it with the bundle."""
+    bare = FixRegistry()
+    bare.write_into(tmp_path / "registry")
+    probe = "import rekep.fix as f; print(len(f.FixRegistry.from_env()))"
+
+    ran = subprocess.run(  # noqa: S603
+        [sys.executable, "-c", probe],
+        env={**os.environ, "YGGDRYL_FIX_REGISTRY": str(tmp_path / "registry")},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert ran.returncode == 0, ran.stderr
+    assert int(ran.stdout) == len(bare)
 
 
 # -- the first stage: the parse ----------------------------------------------
@@ -445,29 +526,48 @@ def test_a_message_stating_no_clock_answers_the_same_identity_on_every_read(tmp_
     assert first.num_rows == second.num_rows == 2
     assert first.column(MESSAGE_KEY).to_pylist() == second.column(MESSAGE_KEY).to_pylist()
     assert len(set(first.column(MESSAGE_KEY).to_pylist())) == 2
-    # The message inside the second line states no clock, so it takes the
-    # codec's floor rather than the instant the parse ran.
-    assert first.column(EVENT_CLOCK).to_pylist()[1] == UNDATED
+    # Neither message states a clock, so each is dated by the line it was read
+    # out of -- the instant it was recorded at, and never one the message
+    # states -- rather than by the instant the parse ran.
+    lines = [
+        datetime.datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC),
+        datetime.datetime(2026, 8, 14, 0, 5, 1, 148000, tzinfo=UTC),
+    ]
+    assert first.column(EVENT_CLOCK).to_pylist() == first.column("recdunix").to_pylist() == lines
+    assert first.column("sendingtime").null_count == 2
+
+
+def test_a_frame_read_off_no_line_takes_the_codecs_pin() -> None:
+    """The raw-byte doors read no line, so an undated frame there has no
+    recording clock to be dated by and takes the pin -- the epoch, never now --
+    and a replay of the same bytes answers the same identity."""
+    frame = b"8=FIX.4.4|35=D|11=A1|55=AAPL|10=0|"
+    codec = _codec()
+
+    first, second = codec.parse_fix_line(frame), codec.parse_fix_line(frame)
+
+    assert codec.default_sending_time.as_py() == UNDATED
+    assert first.currunix == second.currunix == 0
+    assert first.curruuid == second.curruuid
 
 
 def test_the_capture_answers_a_message_per_frame_and_not_a_row_per_line(raw) -> None:
-    """144 lines, 79 messages, and 49 parsed event identities."""
+    """144 lines, 79 messages, and 48 parsed event identities."""
     assert raw.num_rows == MESSAGES
     assert len(set(raw.column(MESSAGE_KEY).to_pylist())) == PARSED_EVENTS
 
 
 def test_the_parse_places_no_message_in_a_chain(raw) -> None:
-    """`fix.raw` has no chain, and says so.
+    """Bronze `fix_messages` has no chain, and says so.
 
     The parse fills what a message implied about itself and nothing about the
     message before it: `seqnum`, `prevuuid` and `prevunix` are empty on every
-    row and `parentuuids` names nobody. A message read back off the row stands
-    at step zero, which is what an empty place reads as.
+    row. A message read back off the row stands at step zero, which is what an
+    empty place reads as.
     """
     assert raw.column(CHAIN_STEP).null_count == raw.num_rows
     assert raw.column("prevuuid").null_count == raw.num_rows
     assert raw.column("prevunix").null_count == raw.num_rows
-    assert all(not parents for parents in raw.column("parentuuids").to_pylist())
     # What the parse did settle is on every row: the state the message states
     # and the instant its chain opened at, before any fold.
     assert raw.column("state").null_count == 0
@@ -481,7 +581,7 @@ def test_the_parse_places_no_message_in_a_chain(raw) -> None:
 def test_a_message_names_the_stored_line_it_was_parsed_out_of(lines, raw) -> None:
     """Provenance, never lineage.
 
-    `logs.messages` states the line's own `curruuid` on every row, and the
+    `log_messages` states the line's own `curruuid` on every row, and the
     batch door reads it back -- viewed from the sixteen bytes a table keys on
     to the identity the read states -- as each message's one source. That
     view is what makes the join exact: a carrier stating no identity leaves
@@ -547,28 +647,37 @@ def test_every_restatement_of_an_event_settles_on_one_identity(raw) -> None:
     assert restated, "the capture logs messages at several hops"
     assert len(held) == PARSED_EVENTS
     # Each restatement is its own line, so the arrivals of one event span
-    # several rows of `logs.messages` -- which is why the row cannot carry one
+    # several rows of `log_messages` -- which is why the row cannot carry one
     # line's bytes or one line's digest as if they were the event's.
     assert sum(len(lines) for lines in restated.values()) > len(restated)
 
 
 def test_a_market_fact_is_fixs_own_field_and_the_trait_answers_off_it(raw) -> None:
-    """`Price(44)`, `OrderQty(38)` and `LastPx(31)` are columns of the row and
-        the ladder is not: what a message is about is `FixMsg.price`, read off those
-    columns by a reader holding the message, never a second column stored
-    beside them."""
-    rows = raw.select(("price", "lastpx", "avgpx", "orderqty", "lastqty")).to_pylist()
+    """`Price(44)`, `LastPx(31)`, `AvgPx(6)`, `OrderQty(38)` and `LastQty(32)`
+    are columns of the row, and each market fact a message answers is read off
+    its own column -- `FixMsg.price` off `price` alone, `FixMsg.quantity` off
+    `orderqty` -- never a second column stored beside them, and never one
+    standing in for another."""
+    answers = {
+        "price": "price",
+        "lastpx": "lastpx",
+        "avgpx": "avgpx",
+        "quantity": "orderqty",
+        "lastqty": "lastqty",
+    }
+    rows = raw.select(tuple(answers.values())).to_pylist()
     messages = list(fix_row_messages(_codec(), _reader(raw)))
 
     assert sum(1 for row in rows if row["lastpx"]) == 57
     assert sum(1 for row in rows if row["price"] is not None) == 63
+    assert any(row["price"] is None and row["lastpx"] for row in rows), "a fill states no price"
     for row, message in zip(rows, messages, strict=True):
-        stated = next(
-            (row[name] for name in ("price", "lastpx", "avgpx") if row[name] is not None), None
-        )
-        answered = message.price.as_py() if message.price is not None else None
-        if stated is not None:
-            assert answered is not None and float(answered) == float(stated)
+        for trait, column in answers.items():
+            answered = getattr(message, trait)
+            stated = row[column]
+            assert (None if answered is None else float(answered.as_py())) == (
+                None if stated is None else float(stated)
+            ), (trait, column)
 
 
 def test_the_instrument_columns_say_what_the_capture_says(raw) -> None:
@@ -612,11 +721,11 @@ def test_the_two_doors_read_the_same_capture_as_the_same_messages() -> None:
         by_line = [
             (_msgtype(message), message.currunix, message.srcuuids, message.currhashcode)
             for message in fix_parse_lines(
-                _line_codec(), handle.read_text_lines(options=fix_text_options())
+                _line_codec(), handle.read_text_lines(options=text_options())
             )
         ]
         rows = fix_parse_arrow_reader(
-            _codec(), handle.read_arrow_reader(options=Message.text_options())
+            _codec(), handle.read_arrow_reader(options=text_options())
         ).read_all()
     finally:
         handle.close()
@@ -650,23 +759,28 @@ def test_the_batch_door_also_answers_messages(raw) -> None:
 
 
 def test_the_walk_reads_the_chains_the_capture_describes(refined) -> None:
-    """The counts `cargo run --example fix_capture` prints, column for column."""
+    """The chains the capture describes, column for column."""
     assert _chains(refined) == CHAINS
     assert refined.num_rows == sum(rows for rows, _, _ in CHAINS.values())
     assert len(set(refined.column(MESSAGE_KEY).to_pylist())) == EVENTS
 
 
 def test_the_walk_restates_the_events_and_adds_none(raw, refined) -> None:
-    """A `fix.refined` row differs from its `fix.raw` twin in what the walk filled --
+    """A silver row differs from its bronze twin in what the walk filled --
     its place, its lineage, the folded state and clocks -- and in the identity
-    those re-settle to. The parse could date only the messages that stated a
-    sending clock; the walk dates the rest by their transaction time, so those
-    leave the pin's hour for the hour they happened in and settle a new
+    those re-settle to. A message stating no sending clock is dated at the
+    parse by the line it was read out of, which is when it was recorded and
+    not when it happened; the walk dates it by its transaction time, so it
+    leaves the line's hour for the hour it happened in and settles a new
     identity there. What the walk never does is add an event."""
     assert len(set(refined.column(MESSAGE_KEY).to_pylist())) == EVENTS
-    pinned = sum(1 for instant in raw.column(EVENT_CLOCK).to_pylist() if instant == UNDATED)
-    assert pinned == 63, "the parse dates only what stated SendingTime"
-    assert raw.column("sendingtime").null_count == pinned
+    columns = (EVENT_CLOCK, "recdunix", "sendingtime", TRANSACTION_CLOCK)
+    unsent = [row for row in raw.select(columns).to_pylist() if row["sendingtime"] is None]
+    assert len(unsent) == UNSENT
+    assert all(row[EVENT_CLOCK] == row["recdunix"] for row in unsent), "dated by the line"
+    assert not any(instant == UNDATED for instant in raw.column(EVENT_CLOCK).to_pylist())
+    walked = [row for row in refined.select(columns).to_pylist() if row["sendingtime"] is None]
+    assert walked and all(row[EVENT_CLOCK] == row[TRANSACTION_CLOCK] for row in walked)
     assert not any(instant == UNDATED for instant in refined.column(EVENT_CLOCK).to_pylist())
     assert refined.column("prevuuid").null_count < refined.num_rows
     assert refined.column(CHAIN_STEP).null_count < refined.num_rows
@@ -675,8 +789,8 @@ def test_the_walk_restates_the_events_and_adds_none(raw, refined) -> None:
 
 
 def test_a_refined_message_follows_the_messages_before_it(refined) -> None:
-    """Lineage: `prevuuid` and every one of `parentuuids` are the `curruuid`
-    of messages this table holds, and a step never precedes what it follows."""
+    """Lineage: `prevuuid` is the `curruuid` of a message this table holds,
+    and a step never precedes what it follows."""
     identities = set(refined.column(MESSAGE_KEY).to_pylist())
     instants = dict(
         zip(
@@ -686,11 +800,9 @@ def test_a_refined_message_follows_the_messages_before_it(refined) -> None:
         )
     )
     followed = [
-        (identity, previous, parents, instant)
-        for identity, previous, parents, instant in zip(
-            refined.column(MESSAGE_KEY).to_pylist(),
+        (previous, instant)
+        for previous, instant in zip(
             refined.column("prevuuid").to_pylist(),
-            refined.column("parentuuids").to_pylist(),
             refined.column(EVENT_CLOCK).to_pylist(),
             strict=True,
         )
@@ -698,10 +810,8 @@ def test_a_refined_message_follows_the_messages_before_it(refined) -> None:
     ]
 
     assert followed, "a walked chain has steps that follow one another"
-    for _identity, previous, parents, instant in followed:
+    for previous, instant in followed:
         assert previous in identities
-        assert parents and all(parent in identities for parent in parents)
-        assert previous in parents, "the predecessor is among the parents"
         assert instants[previous] <= instant
 
 
@@ -712,16 +822,10 @@ def test_a_duplicate_is_not_a_successor(refined) -> None:
     job, not the walk's, so every copy is still a row here."""
     held: dict[bytes, set[tuple]] = defaultdict(set)
     for row in refined.select(
-        (MESSAGE_KEY, "prevuuid", CHAIN_STEP, "state", "parentuuids", EVENT_CLOCK)
+        (MESSAGE_KEY, "prevuuid", CHAIN_STEP, "state", EVENT_CLOCK)
     ).to_pylist():
         held[row[MESSAGE_KEY]].add(
-            (
-                row["prevuuid"],
-                row[CHAIN_STEP],
-                row["state"],
-                tuple(row["parentuuids"] or ()),
-                row[EVENT_CLOCK],
-            )
+            (row["prevuuid"], row[CHAIN_STEP], row["state"], row[EVENT_CLOCK])
         )
     copies = {identity: places for identity, places in held.items() if len(places) > 0}
 
@@ -736,7 +840,7 @@ def test_the_walk_reads_the_row_and_never_the_capture_beside_it(raw, refined) ->
     A line's text is not content here. The walk reads only the native row,
     whose `srcuuids` name the stored lines it joins back to.
     """
-    assert _chains(refined)["00026877711XOEA0"] == CHAINS["00026877711XOEA0"] == (4, 4, 2)
+    assert _chains(refined)["00079132557GLXC0"] == CHAINS["00079132557GLXC0"] == (4, 4, 2)
     assert refined.column_names == raw.column_names
     assert set(_sources(refined)) <= set(_sources(raw))
     assert refined.column(EVENT_CLOCK).to_pylist() == sorted(
@@ -762,12 +866,15 @@ def test_the_walk_over_stored_rows_rebuilds_native_row_types(raw) -> None:
 
 def test_the_walk_sorts_distinct_effective_instants_and_keeps_equal_ties(raw) -> None:
     """Lifecycle orders different event times while equal times retain input
-    order, so a stored scan supplies the deterministic tie order."""
+    order, so a stored scan supplies the deterministic tie order. A message
+    stating no sending clock is placed by its transaction time, never by the
+    line it was recorded on."""
     selected: list[int] = []
     seen = set()
-    for index, row in enumerate(raw.select((EVENT_CLOCK, TRANSACTION_CLOCK)).to_pylist()):
+    columns = (EVENT_CLOCK, "sendingtime", TRANSACTION_CLOCK)
+    for index, row in enumerate(raw.select(columns).to_pylist()):
         instant = row[EVENT_CLOCK]
-        if instant == UNDATED and row[TRANSACTION_CLOCK] is not None:
+        if row["sendingtime"] is None and row[TRANSACTION_CLOCK] is not None:
             instant = row[TRANSACTION_CLOCK]
         if instant not in seen:
             seen.add(instant)
@@ -808,7 +915,7 @@ def test_the_line_door_walks_the_same_way() -> None:
         walked = list(
             fix_lifecycle_messages(
                 _line_codec(),
-                fix_parse_lines(_line_codec(), handle.read_text_lines(options=fix_text_options())),
+                fix_parse_lines(_line_codec(), handle.read_text_lines(options=text_options())),
             )
         )
     finally:
@@ -833,7 +940,7 @@ def test_a_walk_needs_no_capture_sidecar(raw) -> None:
 
 
 def test_the_refined_window_reads_the_event_clock_and_the_pin() -> None:
-    """The `fix.raw` rows a window covers: dated in it, or waiting at the pin
+    """The bronze rows a window covers: dated in it, or waiting at the pin
     with a transaction time in it -- or none at all, which is every window."""
     lower = datetime.datetime(2026, 8, 14, tzinfo=UTC)
     upper = datetime.datetime(2026, 8, 15, tzinfo=UTC)
