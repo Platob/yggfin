@@ -1619,6 +1619,8 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/96/07/ef82e4fa368c327ad789942d315f0c2e4f9b9f90394fc8f5aed9ee76ea5d/yggdryl-0.1.14-cp311-cp311-win_arm64.whl", hash = "sha256:a81d0baf072b9660232f2dfa737609d3d4fbdb89b90d7551d72c7ed4c1ba6f74", size = 30151107, upload-time = "2026-09-26T23:05:11.845Z" },
     { url = "https://files.pythonhosted.org/packages/9b/34/5ae32c7c8dd2915a384b6794a60420eb43b9fa9af0aabbb0b55fbf25ea4f/yggdryl-0.1.14-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:47573c603242c3011f07c17ff8986d7b1dfc1c8f7e87d8ce41b7962b16de2722", size = 30006022, upload-time = "2026-09-26T23:05:17.501Z" },
     { url = "https://files.pythonhosted.org/packages/d5/45/5606373890563ccd6319742f259f2d68559307e4acfced1585c7a443a80e/yggdryl-0.1.14-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:105df5593cc65f25216b6959b7ba87814c82ec25a8d4bbdfb788c7eb856b770d", size = 27711261, upload-time = "2026-09-26T23:05:22.417Z" },
+    { url = "https://files.pythonhosted.org/packages/a6/db/971dab8976a811f0bba41b7b2e583a6005ea5c837f9741b64296a3baeece/yggdryl-0.1.14-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:27b106f312682c81fed19821d00f5dc4428dc0fec811c42f7e27b3ab1b7a8e8f", size = 29017317, upload-time = "2026-09-26T23:05:27.278Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/f5/10de40f5ada7f493ab0502f61cfb8ba251bd2730d1e0b919b58f0bfc4964/yggdryl-0.1.14-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:26bf47be56a08a7512972fac40749259b93f00d8e32fcdcb006752a0a64a4b55", size = 31441966, upload-time = "2026-09-26T23:05:32.79Z" },
 ]
 
 [[package]]
