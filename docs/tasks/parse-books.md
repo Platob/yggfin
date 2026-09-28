@@ -43,10 +43,10 @@ with storages:
     parse_fix_messages_refined(storages, window)
 
     first = parse_books(storages, window)
-    assert (first.read, first.written) == (49, 29)
+    assert (first.read, first.written) == (47, 29)
     # A rerun replaces the same window with the same books, in a new snapshot.
     again = parse_books(storages, window)
-    assert (again.read, again.written) == (49, 29)
+    assert (again.read, again.written) == (47, 29)
     assert again.snapshot_id != first.snapshot_id
 
     books = storages.dataset(BOOKS)
@@ -120,8 +120,9 @@ storages = Storages.from_dict(
         for layer in ("bronze", "silver", "gold")
     }
 )
-# The bridge prints the reject's lines at 23:59, two hours ahead of its frame.
-evening = window_of("2026-08-14T21:00:00Z", "2026-08-15T00:00:00Z")
+# The bridge prints the reject's lines at 23:59 on its Central European clock:
+# read in that zone, they share the hour of 21:00 UTC with the frames they carry.
+evening = window_of("2026-08-14T21:00:00Z", "2026-08-14T22:00:00Z")
 order = "SELL:816179183-1983-98963_912"
 
 
@@ -141,7 +142,7 @@ with storages:
     assert (reject["crosscode"], reject["side"]) == (order, Side.SELL)
 
     landed = parse_books(storages, evening)
-    assert (landed.read, landed.written) == (4, 1)
+    assert (landed.read, landed.written) == (3, 1)
     (book,) = rows(BOOKS)
     assert (book["currunix"], book["crosscode"]) == (reject["currunix"], "XXXX:XXXXXX")
     # The cancel request, then its reject, in the chain's order: the reject

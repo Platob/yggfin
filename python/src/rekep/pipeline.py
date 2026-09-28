@@ -68,7 +68,7 @@ from rekep.market import (
 )
 from rekep.storages import Storages
 from rekep.text import log_message_field, text_options
-from rekep.times import EPOCH, hour_window, where_within, within
+from rekep.times import EPOCH, TIMEZONE, hour_window, where_within, within
 
 #: The tables the graph writes, each under the name its task writes by default.
 LOG_MESSAGES = "bronze.record_keeping.log_messages"
@@ -153,7 +153,7 @@ def parse_log_messages(
     window: Window | None = None,
     *,
     rowheader: str | None = None,
-    timezone: str = "UTC",
+    timezone: str = TIMEZONE,
     target: str = LOG_MESSAGES,
 ) -> Landed:
     """Land the lines of `source` whose `currunix` falls in `window`, or every line.
@@ -163,8 +163,8 @@ def parse_log_messages(
     which would read as a window without lines. `rowheader` names the header
     of a bridge writing the same facts in a layout of its own; its capture
     names must still be `rekep.text.CAPTURES`. `timezone` is the zone the
-    bridge prints its clock in: a bridge printing local time is read in its
-    zone, so a line lands in the hour of the message it carries.
+    bridge prints its clock in, `rekep.times.TIMEZONE` unless stated: a line
+    read in its bridge's zone lands in the hour of the message it carries.
 
     Given no `window`, every line is read and staged in a local Arrow stream
     file, and `Landed.window` answers `rekep.times.hour_window` over the

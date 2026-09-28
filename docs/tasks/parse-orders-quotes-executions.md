@@ -53,7 +53,7 @@ with storages:
             for kind, task in FLATTENERS.items()
         }
         landed = {kind: future.result() for kind, future in running.items()}
-    assert landed["orders"] == Landed(read=29, written=9, snapshot_id=pinned)
+    assert landed["orders"] == Landed(read=29, written=8, snapshot_id=pinned)
     assert landed["quotes"] == Landed(read=29, written=0, snapshot_id=pinned)
     assert landed["executions"] == Landed(read=29, written=7, snapshot_id=pinned)
 

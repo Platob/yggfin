@@ -34,11 +34,11 @@ window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 codec = FixCodec.from_env(default_sending_time=UNDATED, threads=2, batch_row_size=4_096)
 with storages:
     parse_log_messages("file:data/capture/ulbridge.log", storages, window)
-    # 128 lines carry 68 frames, and every report of a fill splits off the
-    # execution it reports: 124 messages. The key folds the 50 that restate a
-    # message another hop already logged: 74 rows.
+    # 129 lines carry 69 frames, and every report of a fill splits off the
+    # execution it reports: 125 messages. The key folds the 53 that restate a
+    # message another hop already logged: 72 rows.
     landed = parse_fix_messages_raw(storages, window, codec=codec)
-    assert landed == Landed(read=128, written=74, skipped=50)
+    assert landed == Landed(read=129, written=72, skipped=53)
 
     raw = storages.dataset(FIX_MESSAGES_RAW)
     try:
@@ -46,16 +46,16 @@ with storages:
     finally:
         raw.close()
     # Nothing has walked: no row has a place in a chain yet.
-    assert table.column("seqnum").null_count == table.column("prevuuid").null_count == 74
-    # Each row names the one line it was parsed from, and each of the 33
+    assert table.column("seqnum").null_count == table.column("prevuuid").null_count == 72
+    # Each row names the one line it was parsed from, and each of the 32
     # executions split out of a report names that report beside it.
     lengths = pyarrow.compute.list_value_length(table.column("srcuuids")).to_pylist()
-    assert (lengths.count(1), lengths.count(2)) == (41, 33)
+    assert (lengths.count(1), lengths.count(2)) == (40, 32)
 ```
 
 Over the capture's whole day the same task reads 144 lines, answers 135
 messages -- 79 frames and the 56 executions their reports split off -- and
-lands 81 rows, 54 of them folded.
+lands 77 rows, 58 of them folded.
 
 ## Read
 
@@ -94,7 +94,7 @@ native codec validates every pin. Useful pins are `batch_row_size` and
 
 | column | on a bronze row |
 | --- | --- |
-| `currunix` | the transaction clock standing within `official_time_delay_ms` of the `SendingTime` the message states, else that `SendingTime`; a message stating none is dated by the line it was read off |
+| `currunix` | the transaction clock standing within `official_time_delay_ms` of the `SendingTime` the message states, else that `SendingTime`; a message stating none measures its transaction clock against the line it was read off the same way, and takes the line's instant where none stands that near |
 | `curruuid` | the message's identity, a UUIDv7 over its instant and its content; the table's key |
 | `crosscode` | the identifier every message of one lifecycle shares: `OrderID`, else `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID` or `MDReqID`, the first stated, or `ExecID=` its `ExecID` for an execution split out of a report; prefixed `BUY:`, `SELL:` and so on with the side the message states |
 | `srcuuids` | the `curruuid` of the one `log_messages` line the message was parsed from, and for an execution split out of a report that report's `curruuid` beside it |
@@ -113,8 +113,13 @@ execution through the parse.
 A bridge logs a message again at every hop it passes. A copy that restates
 another exactly answers the same identity, so the table is keyed on
 `curruuid` alone, within the hour of `currunix`, and the copies the key folded
-into a written row are `skipped`. A copy a hop changed -- an enrichment plugin
-added a field -- is a row of its own here, and the walk merges it into the
-event it is, in [silver](parse-fix-messages-refined.md). The write replaces the
-window's keys and adds any column a newer dictionary declares
-(`merge_schema=True`). A rerun lands the same rows again.
+into a written row are `skipped`. A copy stating no `SendingTime` takes the
+transaction clock it states only where its line stands within
+`official_time_delay_ms` of it, which a line read in its bridge's zone does,
+so it folds with the copies that state one; read in another zone, it takes
+its line's instant, hours away from them, and folds with none of them. A copy
+a hop changed -- an enrichment plugin added a field -- is a row of its own
+here, and the walk merges it into the event it is, in
+[silver](parse-fix-messages-refined.md). The write replaces the window's keys
+and adds any column a newer dictionary declares (`merge_schema=True`). A
+rerun lands the same rows again.

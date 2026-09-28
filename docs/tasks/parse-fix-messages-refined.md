@@ -44,7 +44,7 @@ with storages:
     parse_fix_messages_raw(storages, window)
     # The walk merges the messages of one event, adds an expiry, and restates
     # every chain alive on each whole hour.
-    assert parse_fix_messages_refined(storages, window) == Landed(read=74, written=49)
+    assert parse_fix_messages_refined(storages, window) == Landed(read=72, written=47)
 
     refined = storages.dataset(FIX_MESSAGES)
     lines = storages.dataset(LOG_MESSAGES)
@@ -57,7 +57,8 @@ with storages:
         refined.close()
         lines.close()
 
-    # One order, filled in three steps plus a fill reported on its own.
+    # One order filled at one instant: the walk takes its fills in `curruuid`
+    # order, so the last stands as a head of its own beside a chain of three.
     states = sorted(State(code).name for code in walked.column("state").to_pylist())
     assert states == ["FILLED", "FILLED", "PARTIALLY_FILLED", "PARTIALLY_FILLED"]
     assert sorted(step for step in walked.column("seqnum").to_pylist() if step) == [1, 2]
@@ -78,7 +79,7 @@ with storages:
     assert all(tick.minute == tick.second == 0 for tick in views.column("snapunix").to_pylist())
 ```
 
-Over the capture's whole day the same task reads 81 bronze rows and lands 27
+Over the capture's whole day the same task reads 77 bronze rows and lands 23
 events and 42 views.
 
 ## Read
@@ -135,10 +136,13 @@ always the key of the bronze row it restates.
 
 An event is written by the run whose window holds the instant the walk dated
 it at, and read by the runs whose window, or the hour before it, holds its
-bronze rows. A message stating no `SendingTime` sits in bronze at its line's
-instant and is dated by the walk at its `TransactTime`; where the bridge's
-clock runs ahead of the UTC its frames state, as the shipped capture's does
-by two hours, only a window holding both lands it.
+bronze rows. A message stating no `SendingTime` sits in bronze at the
+transaction clock standing within `official_time_delay_ms` of its line, else
+at its line's instant, and the walk dates it at its `TransactTime`: read in
+the zone its bridge prints in, a line shares its message's hour. Read in
+another -- the shipped capture, printed on a Central European clock, read as
+UTC -- such a message sits in bronze hours from the instant the walk dates it
+at, and only a window holding both lands it.
 [DAGs](../dags/index.md#late-events) says how to schedule for that.
 
 `codec` must be the one the bronze rows were parsed with,

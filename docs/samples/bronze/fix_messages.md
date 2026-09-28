@@ -1,14 +1,15 @@
 # bronze.record_keeping.fix_messages
 
-74 rows: one per FIX message the parse read off the stored lines of
+72 rows: one per FIX message the parse read off the stored lines of
 `[2026-08-14 00:00, 2026-08-14 16:30)` UTC, keyed on the message's identity. Nothing has walked, so
 `seqnum` and `prevuuid` are empty on every row.
 Columns: [bronze.record_keeping.fix_messages](../../tables/bronze/fix_messages.md).
 
 ## One execution, logged at every hop
 
-Execution `00030561317VOJO7` closed order `BUY:00084776691VFRM7`. The bridge logged it on
-lines 73 to 92, once per plugin it passed, and wrote prose between.
+Execution `00030561317VOJO7` is the last fill of order `BUY:00084776691VFRM7`. The bridge
+logged it on lines 73 to 92, once per plugin it passed, and wrote
+prose between.
 The parse answers a message per frame a line carries, and a report of a fill
 answers the execution it splits off beside it; a message that restates
 another under the same identity is folded by the key and counted in
@@ -41,36 +42,39 @@ another under the same identity is folded by the key and counted in
 
 A message stating its own `SendingTime` is dated by the transaction clock
 standing within `official_time_delay_ms` of it, here its `TransactTime`; one
-stating none is dated by the line it was read off, until the walk dates it
-by its `TransactTime`. Each row names the one line it was parsed from, and
-the execution a report splits off names that report beside it, `FILLED`:
-one fill, complete in itself, whatever the report's own state.
+stating none is measured against the line it was read off, which, read in
+the bridge's zone, stands within that delay of its `TransactTime`, so it is
+dated by that clock too, at the precision its frame spells. Each row names
+the one line it was parsed from, and the execution a report splits off
+names that report beside it, `FILLED`: one fill, complete in itself,
+whatever the report's own state.
 
 | currunix | msgcat | curruuid | state | sendingtime | transacttime | line |
 | --- | --- | --- | --- | --- | --- | :---: |
+| `2026-08-14 12:46:39.743` | `ORDR` (10) | `…66a1aa` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 91 |
+| `2026-08-14 12:46:39.743` | `ORDR` (10) | `…36bdc1` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 74 |
+| `2026-08-14 12:46:39.743` | `EXEC` (8) | `…879dd1` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 77 |
+| `2026-08-14 12:46:39.743` | `ORDR` (10) | `…8f34a4` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 75 |
+| `2026-08-14 12:46:39.743` | `EXEC` (8) | `…0bc0aa` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 91 |
+| `2026-08-14 12:46:39.743` | `ORDR` (10) | `…1372bf` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 82 |
+| `2026-08-14 12:46:39.743` | `EXEC` (8) | `…469ab9` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 75 |
+| `2026-08-14 12:46:39.743` | `EXEC` (8) | `…963af2` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 82 |
+| `2026-08-14 12:46:39.743` | `EXEC` (8) | `…49748f` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 74 |
+| `2026-08-14 12:46:39.743` | `ORDR` (10) | `…dc1cb8` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 83 |
+| `2026-08-14 12:46:39.743` | `ORDR` (10) | `…699d7d` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 77 |
+| `2026-08-14 12:46:39.743` | `EXEC` (8) | `…4d3852` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 83 |
 | `2026-08-14 12:46:39.743016` | `EXEC` (8) | `…44557d` | `FILLED` (8003) | `2026-08-14 12:46:39.762` | `2026-08-14 12:46:39.743016` | 73 |
 | `2026-08-14 12:46:39.743016` | `ORDR` (10) | `…1bd79f` | `FILLED` (8003) | `2026-08-14 12:46:39.762` | `2026-08-14 12:46:39.743016` | 73 |
-| `2026-08-14 14:46:39.771` | `ORDR` (10) | `…66a1aa` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 91 |
-| `2026-08-14 14:46:39.771` | `ORDR` (10) | `…36bdc1` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 74 |
-| `2026-08-14 14:46:39.771` | `EXEC` (8) | `…879dd1` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 77 |
-| `2026-08-14 14:46:39.771` | `ORDR` (10) | `…8f34a4` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 75 |
-| `2026-08-14 14:46:39.771` | `EXEC` (8) | `…0bc0aa` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 91 |
-| `2026-08-14 14:46:39.771` | `ORDR` (10) | `…1372bf` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 82 |
-| `2026-08-14 14:46:39.771` | `EXEC` (8) | `…469ab9` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 75 |
-| `2026-08-14 14:46:39.771` | `EXEC` (8) | `…963af2` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 82 |
-| `2026-08-14 14:46:39.771` | `EXEC` (8) | `…49748f` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 74 |
-| `2026-08-14 14:46:39.771` | `ORDR` (10) | `…dc1cb8` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 83 |
-| `2026-08-14 14:46:39.771` | `ORDR` (10) | `…699d7d` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 77 |
-| `2026-08-14 14:46:39.771` | `EXEC` (8) | `…4d3852` | `FILLED` (8003) |  | `2026-08-14 12:46:39.743` | 83 |
 
 ## Every row, by message type and state
 
 | msgtype | state | rows |
 | --- | --- | :---: |
-| `8` | `NEW` (2001) | 4 |
+| `8` | `NEW` (2001) | 3 |
 | `8` | `PARTIALLY_FILLED` (4001) | 3 |
 | `8` | `TRADE` (4002) | 13 |
-| `8` | `FILLED` (8003) | 50 |
+| `8` | `FILLED` (8003) | 48 |
 | `A` | `UNKNOWN` (0) | 1 |
+| `AE` | `FILLED` (8003) | 1 |
 | `D` | `PENDING_NEW` (1001) | 2 |
 | `n` | `FILLED` (8003) | 1 |

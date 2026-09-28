@@ -59,20 +59,23 @@ storages = Storages.from_dict(
 window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 with storages:
     capture = "file:data/capture/ulbridge.log"
-    assert parse_log_messages(capture, storages, window) == Landed(read=128, written=128)
-    assert parse_fix_messages_raw(storages, window) == Landed(read=128, written=74, skipped=50)
-    assert parse_fix_messages_refined(storages, window) == Landed(read=74, written=49)
+    assert parse_log_messages(capture, storages, window) == Landed(read=129, written=129)
+    assert parse_fix_messages_raw(storages, window) == Landed(read=129, written=72, skipped=53)
+    assert parse_fix_messages_refined(storages, window) == Landed(read=72, written=47)
     books = parse_books(storages, window)
     events = {
         kind: task(storages, window, snapshot_id=books.snapshot_id).written
         for kind, task in FLATTENERS.items()
     }
-    assert (books.written, events) == (29, {"orders": 9, "quotes": 0, "executions": 7})
+    assert (books.written, events) == (29, {"orders": 8, "quotes": 0, "executions": 7})
 ```
 
 Every task replaces its window of the table it writes, so a rerun lands the
-same rows again. The FIX dictionary ships inside the package and is the
-process default: `rekep.FixRegistry.from_env()` answers it and
+same rows again. A line's clock states no offset: `parse_log_messages` reads
+it in `timezone`, `Europe/Zurich` unless stated -- the Central European clock
+the shipped capture's bridge prints -- so each line is dated in the hour of
+the message it carries. The FIX dictionary ships inside the package and is
+the process default: `rekep.FixRegistry.from_env()` answers it and
 `rekep.FixCodec.from_env()` parses under it.
 
 | read | for |

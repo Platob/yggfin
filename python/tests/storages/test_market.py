@@ -184,20 +184,22 @@ CANCELLED = "SELL:816179183-1983-98963_912"
 
 def test_books_fold_a_cancel_reject_under_the_side_of_its_order(storages: Storages) -> None:
     """The trade report of 14:52:55, whose side group states no `Side(54)`,
-    splits off no execution and so books nothing: the window's books are the
-    hourly restatements of the order the walk left alive. The capture's last
-    order message is a cancel reject at 21:59:46 that states no `Side(54)`
-    either; the walk joins it to the one live side of its order, the sell,
-    and writes that side into its silver row, so the fold books it beside the
-    cancel request it answers and the books outside its window stay."""
+    splits off no execution and so books nothing: the books from 14:00 are
+    the hourly restatements of the order the events of 12:46 left alive. The
+    capture's last order message is a cancel reject at 21:59:46 that states
+    no `Side(54)` either; the walk joins it to the one live side of its order,
+    the sell, and writes that side into its silver row, so the fold books it
+    beside the cancel request it answers and the books outside its window
+    stay."""
     parse_log_messages(CAPTURE.as_uri(), storages, DAY)
-    traded = (
-        datetime.datetime(2026, 8, 14, 14, tzinfo=UTC),
+    walked = (
+        datetime.datetime(2026, 8, 14, 12, tzinfo=UTC),
         datetime.datetime(2026, 8, 14, 17, tzinfo=UTC),
     )
-    parse_fix_messages_raw(storages, traded)
-    parse_fix_messages_refined(storages, traded)
+    parse_fix_messages_raw(storages, walked)
+    parse_fix_messages_refined(storages, walked)
     assert "AE" in read(storages, FIX_MESSAGES).column("msgtype").to_pylist()
+    traded = (datetime.datetime(2026, 8, 14, 14, tzinfo=UTC), walked[1])
     assert parse_books(storages, traded).written == 3
     booked = read(storages, BOOKS).to_pylist()
     assert [book[EVENT_CLOCK].hour for book in booked] == [14, 15, 16]
@@ -243,8 +245,9 @@ def test_books_fold_a_cancel_reject_under_the_side_of_its_order(storages: Storag
     assert not book["executions"]
 
 
-#: The capture's day up to the window's end: the report of 01:03 and the
-#: events of 12:46, in two categories, and nothing the fold refuses.
+#: The capture's day up to the window's end: the report of 01:03, the events
+#: of 12:46, in two categories, and the trade report of 14:52:55, which books
+#: nothing; nothing the fold refuses.
 MORNING = (
     datetime.datetime(2026, 8, 14, tzinfo=UTC),
     datetime.datetime(2026, 8, 14, 16, 30, tzinfo=UTC),
@@ -282,7 +285,7 @@ def test_a_window_opens_on_the_book_its_hour_before_left(
     print(f"\nwhole morning {whole}\nfrom 02:00    {opened}")
     for book in found:
         print(f"{book[EVENT_CLOCK]:%H:%M:%S.%f} {book['snapunix']} {book['crosscode']}")
-    assert opened.read == whole.read == 49, "the hour before 02:00 holds the 01:03 report"
+    assert opened.read == whole.read == 47, "the hour before 02:00 holds the 01:03 report"
     assert found == expected
     first = found[0]
     assert first[EVENT_CLOCK] == first["snapunix"] == OPENED[0]
@@ -300,19 +303,20 @@ def test_a_window_opens_on_the_book_its_hour_before_left(
 def test_books_at_a_window_start_are_the_books_the_whole_history_holds(
     storages: Storages,
 ) -> None:
-    """Every event of the capture's afternoon is dated 12:46, so a window
-    opening at 13:00 or 14:00 reads none of them: what its books hold at
-    `start` comes from the views the walk restated on the hour, which
-    silver holds. Each book it lands is the one the fold over the whole
-    morning lands at that instant -- but a book the morning's fills left
-    empty, which the whole fold keeps restating with nothing in it, names no
-    live chain a view could carry, so a window opening after it emptied
-    does not know it."""
+    """Every event the capture's afternoon books is dated 12:46 -- the trade
+    report of 14:52:55 books nothing -- so a window opening at 13:00 or 14:00
+    lands none of them, and one opening at 14:00 reads none either: what its
+    books hold at `start` comes from the views the walk restated on the
+    hour, which silver holds. Each book it lands is the one the fold over
+    the whole morning lands at that instant -- but a book the morning's
+    fills left empty, which the whole fold keeps restating with nothing in
+    it, names no live chain a view could carry, so a window whose hour
+    before opens after it emptied does not know it."""
     parse_log_messages(CAPTURE.as_uri(), storages, DAY)
     parse_fix_messages_raw(storages, MORNING)
     parse_fix_messages_refined(storages, MORNING)
     parse_books(storages, MORNING)
-    for hour, read_rows, emptied in ((13, 37, 0), (14, 17, 3)):
+    for hour, read_rows, emptied in ((13, 35, 0), (14, 18, 3)):
         start = datetime.datetime(2026, 8, 14, hour, tzinfo=UTC)
         target = f"silver.record_keeping.books_from_{hour}"
         landed = parse_books(storages, (start, MORNING[1]), target=target)
@@ -348,9 +352,9 @@ def test_the_book_grid_flattens_every_event_once(storages: Storages) -> None:
     membership at its instant and a grid book restates what its book holds,
     each answering no delta or execution, so the event tables flattened from
     the hourly silver and books are exactly those flattened with no grid at
-    all. Every order is one silver event, the two reports of one fill logged
-    at one instant included, which share one key; the executions split out
-    of those two are one execution."""
+    all. Every order and every execution is flattened off one silver event
+    under a key of its own: the lines each hop logged one report on fold
+    into one event, so no report lands twice."""
     parse_log_messages(CAPTURE.as_uri(), storages, DAY)
     parse_fix_messages_raw(storages, MORNING)
     walked = parse_fix_messages_refined(storages, MORNING)
@@ -367,7 +371,7 @@ def test_the_book_grid_flattens_every_event_once(storages: Storages) -> None:
     )
     grid = [row for row in read(storages, BOOKS).to_pylist() if row["snapunix"] is not None]
     print(f"\nhourly {walked} {gridded}\nnone   {events} {plain}")
-    assert (walked.written, events.written) == (49, 22)
+    assert (walked.written, events.written) == (47, 20)
     assert gridded.written == plain.written + len(grid) == 29
     assert all(not row["deltas"] and not row["executions"] for row in grid)
     for kind, task in FLATTENERS.items():
@@ -388,17 +392,17 @@ def test_the_book_grid_flattens_every_event_once(storages: Storages) -> None:
     silver = [row for row in read(storages, FIX_MESSAGES).to_pylist() if row["snapunix"] is None]
     matched = collections.Counter(tuple(row[key] for key in MATCHED) for row in silver)
     flattened = set()
-    for kind, (landed, keys) in {"orders": (9, 8), "executions": (7, 7)}.items():
+    for kind, landed in {"orders": 8, "executions": 7}.items():
         held = read(storages, EVENTS[kind]).to_pylist()
         found = collections.Counter(tuple(row[key] for key in MATCHED) for row in held)
         identities = {row["curruuid"] for row in held}
         print(f"{kind}: {len(held)} rows, {len(identities)} keys, off {sum(found.values())} events")
-        assert (len(held), len(identities)) == (landed, keys), kind
+        assert len(held) == len(identities) == landed, kind
         assert all(row["snapunix"] is None for row in held), "no view is an event"
         for key, count in found.items():
-            # An order is one delta per event; an execution is one per fill,
-            # however many reports of that fill the walk kept apart.
-            assert count == (matched[key] if kind == "orders" else 1), (kind, key)
+            # One delta or one execution per event: the two fills of one
+            # order reported at one instant are two events and two orders.
+            assert count == matched[key], (kind, key)
         flattened |= set(found)
     left = collections.Counter(
         (row["msgtype"], State(row["state"]).name)
@@ -406,15 +410,16 @@ def test_the_book_grid_flattens_every_event_once(storages: Storages) -> None:
         if tuple(row[key] for key in MATCHED) not in flattened
     )
     print(f"not a book input: {dict(left)}")
-    # Administration, the one message the bridge sent as XML, and the chain
-    # of an order only ever acknowledged -- its acknowledgement, its restated
-    # acknowledgement and the expiry that ends it -- execute nothing, so the
-    # fold admits none of them; every other event is flattened, once.
+    # Administration, the one message the bridge sent as XML, the trade
+    # report that splits off no execution, and the chain of an order only
+    # ever acknowledged -- its acknowledgement, which every hop's line of it
+    # folds into, and the expiry that ends it -- execute nothing, so the fold
+    # admits none of them; every other event is flattened, once.
     assert left == {
         ("A", "UNKNOWN"): 1,
         ("n", "FILLED"): 1,
+        ("AE", "FILLED"): 1,
         ("8", "NEW"): 1,
-        ("8", "UPDATED"): 1,
         ("8", "EXPIRED"): 1,
     }
 

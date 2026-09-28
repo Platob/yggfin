@@ -38,16 +38,18 @@ a86eebbea2a32427965094f0d7b336becf4c3e3050c72c1ebf98a5819713f7e0
 
 Every line sits under the bridge's bracket and is dated 2026-08-14 by the
 bridge's clock: 129 spell the fraction as three digits after a point, `.769`,
-and 15 group the micros after them, `.524_315`. The bridge prints its local
-time, two hours ahead of the UTC its FIX frames state: the 112 lines printed
-at 14:46 carry the messages of 12:46.
+and 15 group the micros after them, `.524_315`. The bridge prints a Central
+European summer clock, two hours ahead of the UTC its FIX frames state, and
+`parse_log_messages` reads it in `Europe/Zurich` unless told another zone: the
+112 lines printed at 14:46 are dated 12:46 UTC, the hour of the messages they
+carry.
 
-| hour the lines were printed at | lines |
-| --- | ---: |
-| 03 | 16 |
-| 14 | 112 |
-| 16 | 1 |
-| 23 | 15 |
+| hour the lines were printed at | UTC hour of `currunix` | lines |
+| --- | --- | ---: |
+| 03 | 01 | 16 |
+| 14 | 12 | 112 |
+| 16 | 14 | 1 |
+| 23 | 21 | 15 |
 
 ### What it answers
 
@@ -56,21 +58,21 @@ Over the capture's whole day, `window_of("2026-08-14", "2026-08-14")`:
 | reading | count | why |
 | --- | ---: | --- |
 | lines | 144 | one `bronze.record_keeping.log_messages` row each: the content code digests the line's row number, so the exact repeats answer identities of their own |
-| lines the row header does not date | 0 | the shipped header reads every fraction this bridge writes |
+| lines the row header does not date | 0 | the shipped header reads both fractions the capture spells, `.769` and `.524_315` |
 | messages the parse answers | 135 | 65 lines carry no frame and each of the other 79 carries one, and each of the 56 reports of a fill answers the execution it reports beside itself; a message is a row, not a line |
-| `bronze.record_keeping.fix_messages` rows | 81 | the key folds the 54 messages that restate another hop's exactly |
-| `silver.record_keeping.fix_messages` rows | 69 | the 81 bronze rows walked: the messages of one event merged and one expiry added, 27 events, and every chain still alive restated on each whole hour, 42 views |
-| `silver.record_keeping.books` rows | 45 | the 69 silver rows folded into three `MIC:CFI` categories: 7 books an event moved, and every book restated on each whole hour from the first after it opens to 21:00, 38 views |
-| `silver.record_keeping.orders`, `quotes`, `executions` rows | 11, 0, 7 | the books' order deltas, quote deltas and executions |
+| `bronze.record_keeping.fix_messages` rows | 77 | the key folds the 58 messages that restate another hop's exactly |
+| `silver.record_keeping.fix_messages` rows | 65 | the 77 bronze rows walked: the messages of one event merged and one expiry added, 23 events, and every chain still alive restated on each whole hour, 42 views |
+| `silver.record_keeping.books` rows | 45 | the 65 silver rows folded into three `MIC:CFI` categories: 7 books an event moved, and every book restated on each whole hour from the first after it opens to 21:00, 38 views |
+| `silver.record_keeping.orders`, `quotes`, `executions` rows | 10, 0, 7 | the books' order deltas, quote deltas and executions |
 
 At 21:59:46 the capture holds a cancel request and its reject, which states
 no `Side(54)`: the walk joins it to the one live side of its order, the
 sell, so the fold books both on that side -- the two orders the day adds to
-the morning's nine. The documented runs use
+the morning's eight. The documented runs use
 `window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")`, the morning's
-order flow and the expiry of its open order at 16:25, which lands 128 lines,
-74 bronze and 49 silver FIX rows, 29 books, 9 orders, 0 quotes and 7
-executions:
+order flow, its one trade report at 14:52 and the expiry of its open order at
+16:25, which lands 129 lines, 72 bronze and 47 silver FIX rows, 29 books, 8
+orders, 0 quotes and 7 executions:
 [Data samples](../docs/samples/index.md) shows every table's rows.
 
 `python/tests/storages/` runs the capture through every task under
