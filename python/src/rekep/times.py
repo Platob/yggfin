@@ -285,8 +285,9 @@ than leaving a width to a header of its own.
 
 Every capture is named for the column the native read fills from it, which is
 the whole of how a bracket part is told from another: `msgpluginid`,
-`msgsessionid`, `msgctxid` and `msgseqnum` are the crate's own fields 65009,
-65032, 65008 and 34, which a parse reads off the line it was handed.
+`msgsessionid`, `msgctxid` and `msgseqnum` are the crate's own fields 65017,
+65020 and 65019 and `MsgSeqNum(34)`, which a parse reads off the line it was
+handed.
 `msgthreadid` and `loglevel` name no field of the graph and stay on
 `log_messages`; a FIX row links back to the whole capture record through
 `srcuuids`.

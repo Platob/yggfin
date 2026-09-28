@@ -53,9 +53,9 @@ with storages:
             for kind, task in FLATTENERS.items()
         }
         landed = {kind: future.result() for kind, future in running.items()}
-    assert landed["orders"] == Landed(read=6, written=1, snapshot_id=pinned)
-    assert landed["quotes"] == Landed(read=6, written=0, snapshot_id=pinned)
-    assert landed["executions"] == Landed(read=6, written=7, snapshot_id=pinned)
+    assert landed["orders"] == Landed(read=29, written=9, snapshot_id=pinned)
+    assert landed["quotes"] == Landed(read=29, written=0, snapshot_id=pinned)
+    assert landed["executions"] == Landed(read=29, written=7, snapshot_id=pinned)
 
     # Zero is a pinned absence: nothing is read, so the window is emptied.
     assert parse_orders(storages, window, snapshot_id=0) == Landed(
@@ -91,11 +91,12 @@ another, so they may run in threads, processes or separate scheduler tasks.
 
 ## Orders and quotes
 
-The scan projects only `bidside.deltas` and `askside.deltas`
-(`rekep.pipeline.FLATTENED`), the live depth and side summaries excluded.
-Arrow flattens those lists and keeps the events whose `kind` is
-`order_event`, or `quote_event`, as `rekep.market.EVENT_KINDS` names them. A
-delta is an event -- a terminal one included -- while `live` depth is never
+The scan projects only the book's `deltas` (`rekep.pipeline.FLATTENED`),
+the `alive` depth and the price levels excluded. Arrow flattens that list and
+keeps the events whose `marketdatakind` is `ORDR`, or `QUOT`, as
+`rekep.market.EVENT_KINDS` names them by `rekep.MarketDataKind` member. A
+delta is an event -- a terminal one included, and every report of a fill,
+beside the execution split out of it -- while `alive` depth is never
 flattened: repeating resting depth would make events of entries that did not
 change. A full-snapshot replacement or a range deletion does not promise a
 cancellation for every member it removed.
@@ -103,16 +104,18 @@ cancellation for every member it removed.
 ## Executions
 
 The scan projects only the book's `executions` list, which Arrow flattens.
-The fold has already decomposed each admitted trade report into its sided
-execution leaves; this task decomposes nothing again and copies no trade's
-aggregate quantity over its leaves.
+The parse has already split each report of a fill into the execution it
+reports, and each trade report into one execution per side it states, each
+`FILLED`; the fold books each once, and this task decomposes nothing again and
+copies no trade's aggregate quantity over its leaves.
 
 ## The row
 
 The three tables share one shape, `rekep.market.market_event_field()`: the
 book's execution child, so every event keeps its own identity, clock, side,
 exact price and quantity, identifiers and lineage. `srcuuids` names the lines
-the event was logged on. [Orders](../tables/silver/orders.md),
+the event was logged on, and an execution names the report it was split out
+of beside them. [Orders](../tables/silver/orders.md),
 [quotes](../tables/silver/quotes.md) and
 [executions](../tables/silver/executions.md) list the columns;
 [the samples](../samples/silver/executions.md) show every execution of the

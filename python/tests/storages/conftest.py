@@ -55,10 +55,11 @@ DAY = window_of("2026-08-14", "2026-08-14")
 #: FIX frames state: the 112 lines printed at 14:46 carry the events of 12:46.
 #: So the window opens at 12:00, where those events are, runs past 14:46,
 #: where their lines are, and past 16:25, where the walk expires the day's
-#: open order -- and closes before 16:52, the line carrying the one trade
-#: report whose side states no `Side(54)`. The book fold refuses that report,
-#: so a window holding it is no book window, which
-#: `test_market.py::test_books_refuse_a_trade_report_whose_side_states_no_side`
+#: open order -- and closes before 16:52, the line carrying the day's one
+#: trade report, so the window's last hour holds a line its end does not. That
+#: report's side group states no `Side(54)`, so it splits off no execution and
+#: books nothing, which
+#: `test_market.py::test_books_fold_a_cancel_reject_under_the_side_of_its_order`
 #: pins.
 START = datetime.datetime(2026, 8, 14, 12, tzinfo=UTC)
 END = datetime.datetime(2026, 8, 14, 16, 30, tzinfo=UTC)

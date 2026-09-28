@@ -14,15 +14,18 @@ behavior.
 
 ## Ownership
 
-- The native dependency is the exact Yggdryl 0.1.14 release declared in
+- The native dependency is the exact Yggdryl 0.1.15 release declared in
   `python/pyproject.toml` and locked in `python/uv.lock`. Public applications
   and documentation import only `rekep`, and documentation never names the
   dependency: a capability a reader needs is re-exported through `rekep`.
+  The one exception is the XMLA page's command line, which names the serving
+  binary in a bash fence.
 - Yggdryl owns `Field`, scalar compilation, resource binding, filesystems,
   streams, codecs, decompression, text media and the text row's event
   columns, FIX registries and their process default, FIX batch parsing, the
   fixed `fixmsg` row, the lifecycle stage after the parse, the `State`
-  lifecycle enum, and the book fold.
+  lifecycle enum, the `Side` and `MarketDataKind` enums, the split of a
+  fill report into its execution, and the book fold with its `MIC:CFI` key.
 - Arrow owns columnar shape conversions and kernels.
 - PyIceberg owns table conversion, ids, snapshots, scan planning, and commits.
 - Rekep owns `Storages` (one catalog per layer), the bridge read's options and
@@ -245,32 +248,43 @@ restated under one identity, so the key folds the copies, and `skipped`
 counts them. `parse_fix_messages_refined` reads `[start - HISTORY, end)` of
 bronze -- `HISTORY` is one hour -- with `fix_window_filter`, which adds the
 `UNDATED` rows whose `TransactTime` the window holds, in `SORT_COLUMNS`
-order, walks the chains, and lands the events it places in the window. The
+order, walks the chains, and lands the rows it places in the window. The
 hour before is context only, and an expiry past `end` waits for its own
-window. A silver row differs from the bronze rows it merges in what the walk
-filled -- its place, its predecessor, the merged `srcuuids`, the earliest
-`recdunix`, the folded `creaunix`, `exprunix` and `state` -- and in the
-identity those re-settle to, so silver is written from bronze and never in
-place. An event lands only in a refined window holding both its bronze row
-and the instant the walk dates it at: where a bridge prints local time, its
-lines run ahead of the messages they carry by the zone's offset.
+window. `snapshot_millis`, `SNAPSHOT_MILLIS` (one hour) unless stated and
+zero for none, is the walk's grid whatever the codec pins: at every whole
+hour each live chain is restated as a view, `currunix == snapunix ==` the
+tick, under the identity that instant derives -- a row of its own under the
+silver key -- with the live event's content and place, moving no chain on.
+The rows at `start` are the chains the hour before left alive. A silver
+row differs from the bronze rows it merges in what the walk filled -- its
+place, its predecessor, the merged `srcuuids`, the earliest `recdunix`,
+the folded `creaunix`, `exprunix` and `state` -- and in the identity those
+re-settle to, so silver is written from bronze and never in place. An
+event lands only in a refined window holding both its bronze row and the
+instant the walk dates it at: where a bridge prints local time, its lines
+run ahead of the messages they carry by the zone's offset.
 
 Both FIX tables use `rekep.fix.fix_message_field(codec)` -- the dictionary's
-fixed row, 132 columns, 40 of them crate fields -- directly, without a rekep
+fixed row, 133 columns, 41 of them crate fields -- directly, without a rekep
 FIX model. Parse, storage, reconstruction and lifecycle all use that one row.
 `msgthreadid`, `loglevel` and `body` remain only in `log_messages`;
 `msgsessionid`, `msgctxid`, `msgseqnum` and `msgpluginid` are FIX fields a
 line fills, under one spelling; `srcuuids` joins a FIX row to the `curruuid`
-of the lines its event was logged on. `exprunix` (65053) is the deadline a
-chain folds forward. `state` (65052) is an `int32` code of the intrinsic
+of the lines its event was logged on, and an execution split out of a report
+to that report's `curruuid` beside them. `exprunix` (65007) is the deadline a
+chain folds forward. `state` (65029) is an `int32` code of the intrinsic
 `statecodeset`, which `rekep.State` enumerates -- code = rank * 100 + place,
 `UNKNOWN` 0 -- set by the first of tags 39, 150, 1036, 939, 297, 87, 665, 940,
 1375 and 531 a message states, else by what its message type asks for, else
-`UNKNOWN`. `crosscode` takes the first non-empty `OrderID`, `ClOrdID`,
-`OrigClOrdID`, `QuoteID`, `QuoteReqID` or `MDReqID`; `msgsesseventid` joins
-the message type, the capture session, context and sequence. Default absence
-spellings are empty text, `null`, `<null>`, `none`, `n/a` and `[n/a]`,
-trimmed and compared case-insensitively. `fixentries` is residual and does
+`UNKNOWN`. The parse splits a report of a fill into the report and the
+execution it reports, one per side for a trade report, each execution
+`FILLED`, and a quote stating both sides into one quote per side.
+`crosscode` takes the first non-empty `OrderID`, `ClOrdID`, `OrigClOrdID`,
+`QuoteID`, `QuoteReqID` or `MDReqID` -- `ExecID=` and the `ExecID` for a
+split execution -- prefixed with the side a message states; `msgsesseventid`
+joins the message type, the capture session, context and sequence. Default
+absence spellings are empty text, `null`, `<null>`, `none`, `n/a` and
+`[n/a]`, trimmed and compared case-insensitively. `fixentries` is residual and does
 not duplicate successfully lifted scalars or complete groups; a reconstructed
 row promises canonical message semantics, not arrival pair order or bytes.
 
@@ -287,28 +301,39 @@ as the message the same dictionary wrote. Parsing and local enrichment are
 independent per event and may use `threads`; only lifecycle enrichment owns
 cross-event state and order. Native construction validates every pin.
 
-The refined Iceberg scan merges at most 16 overlapping file streams at once
-and forms no Python `read_all` union. Native lifecycle processing still
-collects and stable-sorts its finite scan result, so it is not
-batch-memory-bounded.
+The refined and the books scans read the hour partitions in ascending
+order, finishing one before opening the next, merge at most 16 overlapping
+file streams at once and form no Python `read_all` union. The walk runs on
+`codec.with_sorted_lifecycle(True)`, so native lifecycle takes that sorted
+read as it comes and holds one epoch hour at a time, answering what a walk
+collecting the whole read answers; the book fold streams.
 
-`parse_books` reads only silver events in strict `[start, end)`, ordered by
-`SORT_COLUMNS`, restores them through `fix_row_messages`, and delegates to
-native `FixCodec.book_arrow_reader`. Lifecycle is not repeated. Native code
-owns admission, operation kinds, continuation, matching, expiration and book
-identity; invalid admitted messages remain errors. Books start with no depth
-before `start`; this is a window-local fold, not checkpoint reconstruction.
-Filter generated book times to the same strict window, including expirations.
+`parse_books` reads silver events in `[start - HISTORY, end)`, ordered by
+`SORT_COLUMNS`, clears every row's `symbol` with `categorized_symbol_reader`,
+restores them through `fix_row_messages`, and delegates to native
+`FixCodec.book_arrow_reader`, so every book is one `MIC:CFI` category per
+instant: the fold owns that key, `{miccode}:{cficode}` over the detailed
+classification a message's chain reaches, which no row cell holds.
+Lifecycle is not repeated. Native code owns admission, operation kinds,
+continuation, matching, expiration and book identity; invalid admitted
+messages remain errors. The fold takes the silver views of one instant as
+the whole membership of their book there, adding no delta, so a book at
+`start` holds every chain the walk that landed those views saw alive;
+beyond them books start with no depth before `start - HISTORY` -- a warmed
+window fold, not checkpoint reconstruction. `snapshot_millis`,
+`SNAPSHOT_MILLIS` (one hour) unless stated, restates every book on that grid
+without repeating a delta or an execution. Filter generated book times to the same strict window, including
+expirations and grid books.
 
 `parse_orders`, `parse_quotes` and `parse_executions` (`FLATTENERS`) run after
 books commit, every one against the book snapshot `parse_books` answered in
 `Landed.snapshot_id`, and project only the book columns their kind flattens
-(`FLATTENED`: `bidside.deltas` and `askside.deltas`, or `executions`); they
-are independent and may run in parallel. Arrow kernels select deltas by
-`kind` (`order_event`, `quote_event`) or flatten the root execution list.
-Never flatten `live` into event history, derive child identities, decompose
-trade reports again, or perform a Python loop over rows. Preserve each
-child's own facts.
+(`FLATTENED`: `deltas`, or `executions`); they are independent and may run
+in parallel. Arrow kernels select deltas by `marketdatakind` (`ORDR`, `QUOT`,
+the `MarketDataKind` members `EVENT_KINDS` names) or flatten the book's
+execution list. Never flatten `alive` into event history, derive child
+identities, split fills again, or perform a Python loop over rows. Preserve
+each child's own facts.
 
 `book_field()` derives from the native empty book reader's schema;
 `market_event_field()` derives from its execution child. `iceberg_event_field`
@@ -346,7 +371,9 @@ completed operation, DEBUG for scans and files -- and the caller configures
 - `docs/assets/fix-*.json` is `tools/fix_registry_dump.py`'s projection of the
   process registry, regenerated by hand when the registry changes.
 - Documentation -- `docs/`, `README.md`, `schemas/`, the skill -- names
-  capabilities through `rekep` and never names the native dependency.
+  capabilities through `rekep` and never names the native dependency. The one
+  exception is the XMLA page's command line, which names the serving binary
+  in a bash fence.
 
 ## Tests and benchmarks
 

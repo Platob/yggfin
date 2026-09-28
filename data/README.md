@@ -46,16 +46,20 @@ Over the capture's whole day, `window_of("2026-08-14", "2026-08-14")`:
 | --- | ---: | --- |
 | lines | 144 | one `bronze.record_keeping.log_messages` row each: the content code digests the line's row number, so the exact repeats answer identities of their own |
 | lines the row header does not date | 0 | the shipped header reads every fraction this bridge writes |
-| messages the parse answers | 79 | 65 lines carry no frame and each of the other 79 carries one; a message is a row, not a line |
-| `bronze.record_keeping.fix_messages` rows | 48 | the key folds the 31 messages that restate another hop's exactly |
-| `silver.record_keeping.fix_messages` rows | 19 | the 48 bronze rows walked: the messages of one event merged, and one expiry added |
+| messages the parse answers | 135 | 65 lines carry no frame and each of the other 79 carries one, and each of the 56 reports of a fill answers the execution it reports beside itself; a message is a row, not a line |
+| `bronze.record_keeping.fix_messages` rows | 81 | the key folds the 54 messages that restate another hop's exactly |
+| `silver.record_keeping.fix_messages` rows | 69 | the 81 bronze rows walked: the messages of one event merged and one expiry added, 27 events, and every chain still alive restated on each whole hour, 42 views |
+| `silver.record_keeping.books` rows | 45 | the 69 silver rows folded into three `MIC:CFI` categories: 7 books an event moved, and every book restated on each whole hour from the first after it opens to 21:00, 38 views |
+| `silver.record_keeping.orders`, `quotes`, `executions` rows | 11, 0, 7 | the books' order deltas, quote deltas and executions |
 
-The book fold refuses two of the day's messages, as it must: a trade report
-at 14:52:55 whose side states no `Side(54)`, printed at 16:52, and a cancel
-reject at 21:59:46 that names no symbol. So the day is no book window, and
-the documented runs use `window_of("2026-08-14T00:00:00Z",
-"2026-08-14T16:30:00Z")`, which lands 128 lines, 41 bronze and 14 silver FIX
-rows, 6 books, 1 order, 0 quotes and 7 executions:
+At 21:59:46 the capture holds a cancel request and its reject, which states
+no `Side(54)`: the walk joins it to the one live side of its order, the
+sell, so the fold books both on that side -- the two orders the day adds to
+the morning's nine. The documented runs use
+`window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")`, the morning's
+order flow and the expiry of its open order at 16:25, which lands 128 lines,
+74 bronze and 49 silver FIX rows, 29 books, 9 orders, 0 quotes and 7
+executions:
 [Data samples](../docs/samples/index.md) shows every table's rows.
 
 `python/tests/storages/` runs the capture through every task under

@@ -17,34 +17,41 @@ import pyarrow
 import pyarrow.compute
 import pytest
 
-from rekep import Field, FixRegistry, State, Storages
+from rekep import Field, FixRegistry, State, Storages, pipeline
 from rekep.fix import (
     EVENT_CLOCK,
     MESSAGE_KEY,
+    SORT_COLUMNS,
     SOURCES,
     TRANSACTION_CLOCK,
     UNDATED,
     FixCodec,
+    fix_lifecycle_arrow_reader,
     fix_message_field,
+    fix_window_filter,
     iceberg_event_field,
 )
 from rekep.iceberg import IcebergDataset, iceberg_contract_field, partition_keys
 from rekep.pipeline import (
     FIX_MESSAGES,
     FIX_MESSAGES_RAW,
+    HISTORY,
     LOG_MESSAGES,
+    SNAPSHOT_MILLIS,
     Landed,
     parse_fix_messages_raw,
     parse_fix_messages_refined,
     parse_log_messages,
 )
 from rekep.storages import LAYERS
-from rekep.times import window_of
+from rekep.times import window_of, within
 
 from .conftest import (
     CAPTURE,
     DAY,
+    END,
     ROOT,
+    START,
     WINDOW,
     Landing,
     graph,
@@ -64,17 +71,20 @@ UTC = datetime.timezone.utc
 FIX_CONTRACT = ROOT / "schemas" / "bronze" / "record_keeping" / "fix_messages.json"
 
 #: The fixed row's width: the crate's own columns and the dictionary's.
-COLUMNS = 132
+COLUMNS = 133
 
-#: How many messages the parse answers off the capture's 144 lines.
-DAY_MESSAGES = 79
+#: How many messages a dictionary typing no message type answers off the
+#: capture's 144 lines: the 79 frames, and the five executions it still
+#: splits off the reports it can read as fills.
+DAY_MESSAGES = 84
 
 #: How many messages the parse dates by their sending clock, and how many by
-#: their transaction clock, over the capture's day, per delay pin.
-DELAYS = {"default": (6, 13), "nought": (16, 3)}
+#: their transaction clock, over the capture's day, per delay pin. An
+#: execution split out of a report is dated as the report is.
+DELAYS = {"default": (8, 19), "nought": (23, 4)}
 
 #: The narrow dictionary's row: the crate's own columns, its clock and symbol.
-NARROW_COLUMNS = 33
+NARROW_COLUMNS = 34
 
 
 def test_the_fix_tables_are_laid_out_exactly_alike_by_the_event(landing: Landing) -> None:
@@ -100,13 +110,18 @@ def test_the_lineage_holds_across_the_layers(landing: Landing) -> None:
     named = set(lines.column("curruuid").to_pylist())
     assert len(named) == lines.num_rows, "a stored line has one identity"
 
-    assert all(len(held) == 1 for held in bronze.column(SOURCES).to_pylist())
+    # A message names the one line it was parsed out of, and an execution
+    # split out of a report names that report beside it.
+    reports = set(bronze.column(MESSAGE_KEY).to_pylist())
+    parsed = bronze.column(SOURCES).to_pylist()
+    assert all(len(set(held) & named) == 1 and set(held) <= named | reports for held in parsed)
+    assert any(set(held) & reports for held in parsed)
     observed = silver.column(SOURCES).to_pylist()
-    assert all(observed), "every event names the lines it was read from"
-    assert {line for held in observed for line in held} <= named
-    for held in (bronze, silver):
-        assert {line for sources in held.column(SOURCES).to_pylist() for line in sources} <= named
-        assert not {"msgthreadid", "loglevel", "body"} & set(held.column_names)
+    assert all(set(held) & named for held in observed), "every event names its lines"
+    for table in (bronze, silver):
+        sources = {line for held in table.column(SOURCES).to_pylist() for line in held}
+        assert sources <= named | reports
+        assert not {"msgthreadid", "loglevel", "body"} & set(table.column_names)
 
     assert bronze.column("seqnum").null_count == bronze.num_rows
     assert bronze.column("prevuuid").null_count == bronze.num_rows
@@ -184,9 +199,9 @@ def test_fix_rows_cross_from_the_codec_straight_into_both_layers(
         # One fact, one column: tags 44, 38 and 53 are their own columns.
         assert {"price", "orderqty", "quantity"} <= set(fixes.column_names)
         assert not {"px", "qty", "prevpx", "prevqty"} & set(fixes.column_names)
-        # A pair no dictionary explains is an entry of the residual record,
-        # which closes the row under the counter that counts it.
-        assert fixes.column_names[-3:] == ["metadata", "nofixentries", "fixentries"]
+        # A pair the dictionary names and no column projects is an entry of
+        # the residual record, keyed `tag:name`, which closes the row.
+        assert fixes.column_names[-2:] == ["metadata", "fixentries"]
         assert not {"35", "30001", "entries", "unmapped", "msgCtxId", "uuid"} & set(
             fixes.column_names
         )
@@ -418,8 +433,9 @@ def test_the_walk_reads_the_hour_before_its_window_and_writes_only_its_own(
     previous_clock: str,
 ) -> None:
     """The hour before `start` places a chain that began there, and none of
-    it is written; an expiry past `end` waits for its own window. The lines
-    arrive out of order, so arrival cannot stand in for the event's order."""
+    it is written but the view of it the hourly grid restates at `start`; an
+    expiry past `end` waits for its own window. The lines arrive out of
+    order, so arrival cannot stand in for the event's order."""
     from pyiceberg.io.pyarrow import PyArrowFile
 
     capture = tmp_path / "hours.log"
@@ -457,7 +473,7 @@ def test_the_walk_reads_the_hour_before_its_window_and_writes_only_its_own(
     landed = parse_fix_messages_refined(storages, HOUR)
     has_history = previous_clock == "09:59:00"
     assert landed.read == (2 if has_history else 1)
-    assert landed.written == (2 if expires == "10:40:00" else 1)
+    assert landed.written == (2 if expires == "10:40:00" else 1) + has_history
     assert paths and all(
         "currunix_hour=2026-08-14-09" in path or "currunix_hour=2026-08-14-10" in path
         for path in paths
@@ -465,15 +481,27 @@ def test_the_walk_reads_the_hour_before_its_window_and_writes_only_its_own(
     assert f"currunix_hour=2026-08-14-{'09' if has_history else '10'}" in paths[0]
 
     held = read(storages, FIX_MESSAGES)
-    walked = held.to_pylist()
+    walked = [row for row in held.to_pylist() if row["snapunix"] is None]
+    views = [row for row in held.to_pylist() if row["snapunix"] is not None]
     assert walked[0][EVENT_CLOCK] == datetime.datetime(2026, 8, 14, 10, 10, tzinfo=UTC)
     if has_history:
+        # The order of 09:59 as it stood at 10:00: its chain's first step,
+        # dated at the tick under the identity that instant derives.
+        (view,) = views
+        assert view[EVENT_CLOCK] == view["snapunix"] == HOUR[0]
+        assert (view["crosscode"], view["seqnum"], view["prevuuid"]) == (
+            walked[0]["crosscode"],
+            None,
+            None,
+        )
+        assert view["curruuid"] not in {walked[0]["curruuid"], walked[0]["prevuuid"]}
         assert walked[0]["prevuuid"] is not None
         assert walked[0]["prevunix"] == datetime.datetime(2026, 8, 14, 9, 59, tzinfo=UTC)
         assert walked[0]["seqnum"] == 1
     else:
         # The one-hour context is an explicit horizon, not a claim that a
         # business chain cannot have an older predecessor.
+        assert views == []
         assert walked[0]["prevuuid"] is None
         assert walked[0]["prevunix"] is None
         assert walked[0]["seqnum"] is None
@@ -482,6 +510,151 @@ def test_the_walk_reads_the_hour_before_its_window_and_writes_only_its_own(
         assert walked[1]["state"] == State.EXPIRED
     assert parse_fix_messages_refined(storages, HOUR) == landed
     assert read(storages, FIX_MESSAGES).equals(held)
+
+
+#: The grid the walk restates the chains on, in nanoseconds: one hour.
+GRID_NS = SNAPSHOT_MILLIS * 1_000_000
+
+
+def split(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Silver rows as the events the walk placed and the grid views of them."""
+    return (
+        [row for row in rows if row["snapunix"] is None],
+        [row for row in rows if row["snapunix"] is not None],
+    )
+
+
+def alive_at(events: list[dict[str, Any]], tick: datetime.datetime) -> set[tuple[Any, ...]]:
+    """The chains whose last event before `tick` leaves them alive, each as
+    that event's place: what the grid restates at `tick`."""
+    last: dict[bytes, dict[str, Any]] = {}
+    for row in sorted(events, key=lambda row: (row[EVENT_CLOCK], row["seqnum"] or 0)):
+        if row[EVENT_CLOCK] < tick:
+            last[row["crossuuid"]] = row
+    return {
+        placed(row)
+        for row in last.values()
+        if State(row["state"]).is_live() and row["state"] != State.EXPIRED
+    }
+
+
+def placed(row: dict[str, Any]) -> tuple[Any, ...]:
+    """What a view repeats of the live event it restates."""
+    return (
+        row["crossuuid"],
+        row["crosscode"],
+        row["seqnum"],
+        row["prevuuid"],
+        row["state"],
+        tuple(row[SOURCES]),
+    )
+
+
+def test_the_walk_restates_every_chain_alive_on_each_whole_hour(landing: Landing) -> None:
+    """At every whole hour the walk crosses, each chain still alive is
+    restated as it stands: dated at the tick -- `currunix` and `snapunix`
+    both -- under the identity that instant derives, so a view is a row of
+    its own beside its event and the key folds nothing into another."""
+    silver = landing.table(FIX_MESSAGES).filter(
+        within(landing.table(FIX_MESSAGES).column(EVENT_CLOCK), WINDOW)
+    )
+    events, views = split(silver.to_pylist())
+    refined = landing.landed["parse_fix_messages_refined"]
+    print(f"\n{len(events)} events and {len(views)} views: {refined}")
+    assert (len(events), len(views)) == (20, 12)
+    assert refined.written == silver.num_rows and refined.skipped == 0
+    assert all(view[EVENT_CLOCK] == view["snapunix"] for view in views)
+    ticks = sorted({view["snapunix"] for view in views})
+    assert all(tick.minute == tick.second == tick.microsecond == 0 for tick in ticks)
+    identities = [row[MESSAGE_KEY] for row in events + views]
+    assert len(set(identities)) == len(identities), "a view's identity is its tick's own"
+
+    hours = [START + index * HISTORY for index in range(int((END - START) / HISTORY) + 1)]
+    for tick in hours:
+        restated = {placed(view) for view in views if view["snapunix"] == tick}
+        print(f"{tick:%H:%M} {len(restated)} views")
+        assert restated == alive_at(events, tick), tick
+    assert ticks == hours[1:], "nothing is alive at 12:00: the hour before holds no chain"
+
+
+def test_the_rows_at_start_are_the_chains_the_hour_before_left_alive(
+    storages: Storages,
+) -> None:
+    """A window opening at 13:00 reads the hour before it, where the day's
+    chains began, and lands at 13:00 exactly the views the walk over the
+    whole window landed there -- every row it lands is the one that walk
+    landed. The grid is the task's `snapshot_millis`, whatever the codec
+    pins: zero lands the events alone, and a codec pinning a minute lands
+    the hourly views. The walk runs on the task's own codec stating the read
+    is sorted, so it holds an hour at a time."""
+    parse_log_messages(CAPTURE.as_uri(), storages, DAY)
+    parse_fix_messages_raw(storages, WINDOW)
+    used: list[FixCodec] = []
+
+    def spied(held: FixCodec, source: pyarrow.RecordBatchReader) -> pyarrow.RecordBatchReader:
+        used.append(held)
+        return fix_lifecycle_arrow_reader(held, source)
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(pipeline, "fix_lifecycle_arrow_reader", spied)
+        assert parse_fix_messages_refined(storages, WINDOW) == LANDED["parse_fix_messages_refined"]
+    # The task walks its sorted read an hour at a time, on the hourly grid.
+    (task,) = used
+    assert (task.sorted_lifecycle, task.snapshot_ns) == (True, GRID_NS)
+    held = read(storages, FIX_MESSAGES)
+
+    later = (START + HISTORY, END)
+    landed = parse_fix_messages_refined(storages, later)
+    stored = held.filter(within(held.column(EVENT_CLOCK), later))
+    at_start = [row for row in stored.to_pylist() if row[EVENT_CLOCK] == later[0]]
+    print(f"\nfrom 13:00 {landed}: {len(at_start)} rows at 13:00")
+    assert landed == Landed(read=68, written=stored.num_rows)
+    assert len(at_start) == 3 and all(row["snapunix"] == later[0] for row in at_start)
+    assert read(storages, FIX_MESSAGES).equals(held)
+
+    plain = parse_fix_messages_refined(
+        storages, WINDOW, snapshot_millis=0, target="silver.record_keeping.plain_fix_messages"
+    )
+    assert plain == Landed(read=68, written=20)
+    events, _ = split(held.to_pylist())
+    assert read(storages, "silver.record_keeping.plain_fix_messages").to_pylist() == events
+
+    minute = FixCodec.from_env(default_sending_time=UNDATED, snapshot_ns=60_000_000_000)
+    pinned = parse_fix_messages_refined(
+        storages, WINDOW, codec=minute, target="silver.record_keeping.pinned_fix_messages"
+    )
+    assert pinned == Landed(read=68, written=32)
+    assert read(storages, "silver.record_keeping.pinned_fix_messages").equals(held)
+
+
+def test_a_sorted_walk_answers_what_the_whole_walk_does(landing: Landing) -> None:
+    """The task's read arrives in instant order, one hour partition after
+    another, so its walk takes it as it comes and holds an hour at a time;
+    over the capture it answers exactly what the walk collecting the whole
+    read does, views included. The task's own pins are
+    `test_the_rows_at_start_are_the_chains_the_hour_before_left_alive`'s."""
+    codec = FixCodec.from_env(default_sending_time=UNDATED).with_snapshot_ns(GRID_NS)
+    field = fix_message_field(codec)
+    history = (START - HISTORY, END)
+
+    def walked(sorted_lifecycle: bool) -> pyarrow.Table:
+        raw = landing.storages.dataset(FIX_MESSAGES_RAW, field=field)
+        try:
+            scan = raw.read_arrow_reader(
+                field, row_filter=fix_window_filter(history), order_by=SORT_COLUMNS
+            )
+            with fix_lifecycle_arrow_reader(
+                codec.with_sorted_lifecycle(sorted_lifecycle), scan
+            ) as reader:
+                return reader.read_all()
+        finally:
+            raw.close()
+
+    hourly = walked(True)
+    whole = walked(False)
+    print(f"\nthe hourly walk answers {hourly.num_rows} rows, the whole walk {whole.num_rows}")
+    assert hourly.num_rows == whole.num_rows == 32
+    assert hourly.equals(whole)
 
 
 def test_maintenance_compacts_every_task_table_and_keeps_its_rows(storages: Storages) -> None:

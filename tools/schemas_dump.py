@@ -27,7 +27,7 @@ from typing import Any
 
 import yaml
 
-from rekep import State
+from rekep import MarketDataKind, Side, State
 from rekep.deploy import TABLES, Deployed
 from rekep.iceberg import iceberg_contract
 from rekep.storages import LAYERS
@@ -71,9 +71,10 @@ TABLE_DESCRIPTIONS = {
         "folded forward."
     ),
     "silver.record_keeping.books": (
-        "One row per book the fold answered over the silver FIX events of a window, "
-        "from no depth before its start: both sides' live depth and deltas, and the "
-        "executions."
+        "One row per book the fold answered over the silver FIX events of a window "
+        "and the hour before it, one `MIC:CFI` category per instant, every book "
+        "restated on the hour: the orders and quotes `alive` on both sides, the "
+        "`deltas`, the `executions`, and the `bidlimits` and `asklimits` price levels."
     ),
     "silver.record_keeping.orders": "The order deltas of the books, one row per order event.",
     "silver.record_keeping.quotes": "The quote deltas of the books, one row per quote event.",
@@ -141,6 +142,10 @@ def layout(document: dict[str, Any]) -> dict[str, list[str]]:
     }
 
 
+#: The columns storing the code of an enum, and the enum whose codes they accept.
+ENUMS = {"state": State, "side": Side, "marketdatakind": MarketDataKind}
+
+
 def dbt_column(member: dict[str, Any], key: list[str]) -> dict[str, Any]:
     """One top-level column as a dbt source column."""
     column: dict[str, Any] = {
@@ -154,10 +159,9 @@ def dbt_column(member: dict[str, Any], key: list[str]) -> dict[str, Any]:
         tests.append("not_null")
     if member["name"] in key:
         tests.append("unique")
-    if member["name"] == "state":
-        tests.append(
-            {"accepted_values": {"values": [int(state) for state in State], "quote": False}}
-        )
+    if member["name"] in ENUMS:
+        members = [int(held) for held in ENUMS[member["name"]]]
+        tests.append({"accepted_values": {"values": members, "quote": False}})
     if tests:
         column["data_tests"] = tests
     return column
@@ -282,7 +286,10 @@ def published() -> Iterator[tuple[pathlib.Path, str]]:
     documents = {table.table: contract(table) for table in TABLES}
     for table in TABLES:
         path = SCHEMAS / table.layer / f"{table.name.replace('.', '/')}.json"
-        yield path, json.dumps(documents[table.table], indent=2, ensure_ascii=False) + "\n"
+        yield (
+            path,
+            json.dumps(documents[table.table], indent=2, ensure_ascii=False) + "\n",
+        )
         yield (
             PAGES / table.layer / f"{table.name.split('.', 1)[1]}.md",
             page(table, documents[table.table]),

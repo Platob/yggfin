@@ -56,6 +56,7 @@ nav:
       - Three catalogs: storages/index.md
       - Catalog types: storages/catalogs.md
       - Iceberg datasets: storages/iceberg.md
+      - XMLA endpoint: storages/xmla.md
       - Benchmarks: storages/benchmarks.md
   - Tasks:
       - Overview: tasks/index.md

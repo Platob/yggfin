@@ -1,8 +1,11 @@
 """Native market books and their columnar Iceberg projections.
 
-Books hold the native fold over the requested FIX window. A window does not
-restore resting entries created before its start. Orders and quotes are the
-book's deltas; executions are its already decomposed execution events.
+A book is one `MIC:CFI` category per instant: `categorized_symbol_reader`
+clears every row's `symbol` first, so the native fold keys each message by
+its category. Books hold the native fold over the requested FIX window,
+opening on the membership the hourly lifecycle views state. Orders and
+quotes are the book's deltas; executions are its execution events, each
+split out of its report once, when the message was parsed.
 """
 
 from __future__ import annotations
@@ -14,6 +17,7 @@ from typing import Any
 
 import pyarrow as pa
 import pyarrow.compute as pc
+from yggdryl import MarketDataKind
 
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.fields import Field
@@ -37,64 +41,97 @@ def market_event_field() -> Field:
     return iceberg_event_field(pa.schema(events), "MarketEvent")
 
 
+def categorized_symbol_reader(source: pa.RecordBatchReader) -> pa.RecordBatchReader:
+    """FIX rows that state no `symbol`, so the native fold books each by category.
+
+    A message stating no ticker is booked under its category,
+    `{miccode}:{cficode}` -- `XXXX` for a market it names none of and
+    `XXXXXX` for a classification it knows none of -- and the fold is the
+    one owner of that key: the classification is the detailed code the
+    message's whole chain reaches, a coarse stated `cficode` refined by what
+    the bridge states beside it, which no cell of the row holds. Every row
+    is categorized, whatever ticker it stated; every other cell is kept.
+    """
+    index = source.schema.get_field_index("symbol")
+    field = source.schema.field(index)
+
+    def batches() -> Iterator[pa.RecordBatch]:
+        try:
+            for batch in source:
+                yield batch.set_column(index, field, pa.nulls(batch.num_rows, field.type))
+        finally:
+            source.close()
+
+    return OwnedRecordBatchReader(source.schema, batches(), source.close)
+
+
+#: The grid a book fold restates every book on, in milliseconds: one hour,
+#: epoch-aligned, so a book standing at a whole hour is answered there whole,
+#: `snapunix` set. Zero disables it.
+SNAPSHOT_MILLIS = 3_600_000
+
+
 def book_arrow_reader(
     codec: FixCodec,
     source: pa.RecordBatchReader,
     *,
-    snapshot_millis: int = 0,
-    global_: bool = False,
+    snapshot_millis: int = SNAPSHOT_MILLIS,
 ) -> pa.RecordBatchReader:
     """Continue books from ordered refined rows through the native codec.
 
+    One book per `symbol` a row states, else per `MIC:CFI` category, so rows
+    passed through `categorized_symbol_reader` fold one book per category.
     The codec ignores non-market records and refuses malformed admitted
     events. Refined lifecycle is already settled and is not run a second time.
+    A grid book restates what its book holds and answers no delta or
+    execution a book before it answered. A source row whose `snapunix` is set
+    -- a lifecycle view of a live chain -- is folded at that instant as the
+    whole membership of its book there, with no delta, so the views of one
+    hour restate what their books hold.
     """
     reader = codec.book_arrow_reader(
-        fix_row_messages(codec, source), snapshot_millis=snapshot_millis, global_=global_
+        fix_row_messages(codec, source), snapshot_millis=snapshot_millis
     )
     return OwnedRecordBatchReader.from_reader(reader, source.close)
 
 
-#: The book sides whose deltas the order and quote tables flatten.
-SIDES = ("bidside", "askside")
+#: The book column each event table flattens, by the table's kind.
+FLATTENED_COLUMNS = {"orders": "deltas", "quotes": "deltas", "executions": "executions"}
 
 #: The native leaf each event table holds, by the table's kind.
-EVENT_KINDS = {"orders": "order_event", "quotes": "quote_event", "executions": "execution_event"}
+EVENT_KINDS = {
+    "orders": MarketDataKind.ORDR,
+    "quotes": MarketDataKind.QUOT,
+    "executions": MarketDataKind.EXEC,
+}
 
 
 def book_event_arrow_reader(source: pa.RecordBatchReader, kind: str) -> pa.RecordBatchReader:
     """Flatten one event kind using Arrow kernels, preserving native facts.
 
-    Orders and quotes are the deltas of both book sides, selected by their
-    native `kind`; executions are the book's own execution list. All three
-    are the one native operation event, so every kind answers one schema.
-    Live depth is intentionally not expanded on every continuation: doing so
-    would manufacture repeated events for unchanged resting entries.
+    Orders and quotes are the book's deltas, selected by their native
+    `marketdatakind`; executions are the book's own execution list. All
+    three are the one native operation row, so every kind answers one
+    schema. Live depth is intentionally not expanded on every continuation:
+    doing so would manufacture repeated events for unchanged resting entries.
     """
     if kind not in EVENT_KINDS:
         raise ValueError(f"expected orders, quotes or executions; got {kind!r}")
-    if kind == "executions":
-        listed = source.schema.field("executions").type
-    else:
-        listed = source.schema.field(SIDES[0]).type.field("deltas").type
-    schema = pa.schema(listed.value_type)
-    leaf = EVENT_KINDS[kind]
+    column = FLATTENED_COLUMNS[kind]
+    schema = pa.schema(source.schema.field(column).type.value_type)
+    code = pa.scalar(int(EVENT_KINDS[kind]), pa.int32())
 
     def batches() -> Iterator[pa.RecordBatch]:
         try:
             for batch in source:
-                if kind == "executions":
-                    arrays = (pc.list_flatten(batch.column("executions")),)
-                else:
-                    arrays = (
-                        pc.list_flatten(pc.struct_field(batch.column(side), "deltas"))
-                        for side in SIDES
-                    )
-                for events in arrays:
-                    if kind != "executions":
-                        events = pc.filter(events, pc.equal(pc.struct_field(events, "kind"), leaf))
-                    if len(events):
-                        yield pa.RecordBatch.from_arrays(events.flatten(), schema=schema)
+                events = pc.list_flatten(batch.column(column))
+                if kind != "executions":
+                    kinds = pc.struct_field(events, "marketdatakind")
+                    if isinstance(kinds, pa.ExtensionArray):
+                        kinds = kinds.storage
+                    events = pc.filter(events, pc.equal(kinds.cast(pa.int32()), code))
+                if len(events):
+                    yield pa.RecordBatch.from_arrays(events.flatten(), schema=schema)
         finally:
             source.close()
 
@@ -130,10 +167,12 @@ def market_window_reader(
 
 __all__ = [
     "EVENT_KINDS",
-    "SIDES",
+    "FLATTENED_COLUMNS",
+    "SNAPSHOT_MILLIS",
     "book_arrow_reader",
     "book_event_arrow_reader",
     "book_field",
+    "categorized_symbol_reader",
     "market_event_field",
     "market_window_filter",
     "market_window_reader",

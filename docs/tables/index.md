@@ -8,20 +8,23 @@ the rows the task lands over the shipped capture.
 | table | written by | one row per | columns |
 | --- | --- | --- | ---: |
 | [`bronze.record_keeping.log_messages`](bronze/log_messages.md) | `parse_log_messages` | captured line | 23 |
-| [`bronze.record_keeping.fix_messages`](bronze/fix_messages.md) | `parse_fix_messages_raw` | FIX message parsed out of a line | 132 |
-| [`silver.record_keeping.fix_messages`](silver/fix_messages.md) | `parse_fix_messages_refined` | FIX event, walked | 132 |
-| [`silver.record_keeping.books`](silver/books.md) | `parse_books` | book the fold answered, per symbol and instant | 59 |
-| [`silver.record_keeping.orders`](silver/orders.md) | `parse_orders` | order delta of a book | 49 |
-| [`silver.record_keeping.quotes`](silver/quotes.md) | `parse_quotes` | quote delta of a book | 49 |
-| [`silver.record_keeping.executions`](silver/executions.md) | `parse_executions` | execution leaf of a book | 49 |
+| [`bronze.record_keeping.fix_messages`](bronze/fix_messages.md) | `parse_fix_messages_raw` | FIX message parsed out of a line | 133 |
+| [`silver.record_keeping.fix_messages`](silver/fix_messages.md) | `parse_fix_messages_refined` | FIX event, walked | 133 |
+| [`silver.record_keeping.books`](silver/books.md) | `parse_books` | book the fold answered, per `MIC:CFI` category and instant | 53 |
+| [`silver.record_keeping.orders`](silver/orders.md) | `parse_orders` | order delta of a book | 48 |
+| [`silver.record_keeping.quotes`](silver/quotes.md) | `parse_quotes` | quote delta of a book | 48 |
+| [`silver.record_keeping.executions`](silver/executions.md) | `parse_executions` | execution leaf of a book | 48 |
 
 Every table is an event table laid out the same way: it opens with the event
 columns -- `currunix`, the clocks, `curruuid`, `crossuuid`, `crosscode`, the
 content codes, `prevuuid`, `seqnum`, `srcuuids` and `state` -- is keyed on
 `curruuid` alone, partitioned by `hour(currunix)` and sorted by `currunix,
 seqnum, curruuid` within a partition. `state` is an `int32` lifecycle code,
-the same on every table: [States](states.md) lists all 60, and `rekep.State`
-reads one back.
+the same on every table: [States](states.md) lists all 61, and `rekep.State`
+reads one back. A market row's `side` and `marketdatakind` are `int32` codes
+too, never null, which `rekep.Side` and `rekep.MarketDataKind` read back:
+`ORDR` (10), `QUOT` (14) and `EXEC` (8) are the three event tables' kinds and
+`BOOK` (3) a book's.
 
 ```python
 from rekep import State
@@ -107,7 +110,9 @@ where state = 8003
 and `{{ source('bronze', 'log_messages') }}` reaches the lines. A column
 carries its Iceberg type as `data_type`, its description, and the tests its
 field implies: `not_null` on a required column, `unique` on the key, and
-`accepted_values` with every [state code](states.md) on `state`. A table's
+`accepted_values` with every [state code](states.md) on `state`, every
+`rekep.Side` code on `side` and every `rekep.MarketDataKind` code on
+`marketdatakind`. A table's
 `meta` names the task that writes it and its key, partition and sort order.
 The gold source declares no table: it is where a consumer's own models land.
 

@@ -31,7 +31,7 @@ changing code. This skill is the operating manual.
 
 | path | what |
 | --- | --- |
-| `python/src/rekep/pipeline.py` | the tasks, `Landed`, the table names (`LOG_MESSAGES`, `FIX_MESSAGES_RAW`, `FIX_MESSAGES`, `BOOKS`, `ORDERS`, `QUOTES`, `EXECUTIONS`), `EVENTS`, `FLATTENERS`, `FLATTENED`, `HISTORY` |
+| `python/src/rekep/pipeline.py` | the tasks, `Landed`, the table names (`LOG_MESSAGES`, `FIX_MESSAGES_RAW`, `FIX_MESSAGES`, `BOOKS`, `ORDERS`, `QUOTES`, `EXECUTIONS`), `EVENTS`, `FLATTENERS`, `FLATTENED`, `HISTORY`, `SNAPSHOT_MILLIS` |
 | `python/src/rekep/storages.py` | `Storages`: one catalog per layer, `dataset("<layer>.<ns>.<table>")` |
 | `python/src/rekep/deploy.py` | `deploy(storages)` and `TABLES`: the graph's tables, created ahead of a run |
 | `python/src/rekep/text.py` | the bridge read: `text_options`, `log_message_field`, `CAPTURES`, `RECORD_CLOCK` |
@@ -81,14 +81,14 @@ storages = Storages.from_dict({layer: {"name": layer, "properties": {
 window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 with storages:
     assert parse_log_messages("file:data/capture/ulbridge.log", storages, window) == Landed(128, 128)
-    assert parse_fix_messages_raw(storages, window) == Landed(read=128, written=41, skipped=27)
-    assert parse_fix_messages_refined(storages, window) == Landed(read=41, written=14)
+    assert parse_fix_messages_raw(storages, window) == Landed(read=128, written=74, skipped=50)
+    assert parse_fix_messages_refined(storages, window) == Landed(read=74, written=49)
     books = parse_books(storages, window)
     with ThreadPoolExecutor(max_workers=3) as pool:
         running = {kind: pool.submit(task, storages, window, snapshot_id=books.snapshot_id)
                    for kind, task in FLATTENERS.items()}
     written = {kind: future.result().written for kind, future in running.items()}
-    assert (books.written, written) == (6, {"orders": 1, "quotes": 0, "executions": 7})
+    assert (books.written, written) == (29, {"orders": 9, "quotes": 0, "executions": 7})
 ```
 
 Order matters: each task reads only the table before it. Every task creates
@@ -98,7 +98,7 @@ is running it again. A task per process is fine: open `Storages`, run, close.
 
 `Landed` holds `read` (source rows the window selected), `written` (target
 rows carried into the table), `skipped` (answered rows the key folded into a
-written one: 27 bronze FIX messages restate another hop's exactly) and
+written one: 50 bronze FIX messages restate another hop's exactly) and
 `snapshot_id` (the books snapshot `parse_books` committed or a flattener
 read; None for the others). Tasks log to the `rekep.*` loggers and configure
 nothing: `INFO` shows each table created and each commit, `DEBUG` adds scans
@@ -114,7 +114,7 @@ and files.
 | `row header captures nothing for ...` | a `rowheader` that renames or drops a capture |
 | `FIX registry contains no specification fields` | a codec over an empty dictionary folder |
 | `FixCodec.__new__() got an unexpected keyword argument` | a codec pin the native codec does not declare |
-| `ArrowInvalid ... expected a bid or ask side` / `expected a symbol outside global mode` | `parse_books` met an admitted message the fold cannot read (the capture has two: 14:52:55 and 21:59:46 UTC); the table's prior snapshot stays |
+| `ArrowInvalid ... expected a bid or ask operation` | `parse_books` met an admitted message the fold cannot read, such as one stating no `Side(54)` whose order has no live side to lend it one; the table's prior snapshot stays |
 | `expected a nonnegative book snapshot_id or None` / `has no snapshot N: table is missing` | a bad or missing pinned books snapshot; nothing was written |
 | `unable to open database file` | a SQLite catalog whose folder does not exist |
 
@@ -128,14 +128,26 @@ and files.
   `log_messages`, the message's own on FIX rows. The capture's bridge prints
   local time, two hours ahead of UTC, so its lines of 14:46 carry messages of
   12:46.
-- `parse_fix_messages_refined` reads `HISTORY` (one hour) before its window
-  and writes only the events the walk dates inside it; an event whose bronze
+- `parse_fix_messages_refined` reads `HISTORY` (one hour) before its window,
+  hour partition by hour partition in instant order, walks it an hour at a
+  time (never collecting the read) and writes only the rows the walk dates
+  inside the window -- at `start` the views of every chain the hour before
+  left alive; an event whose bronze
   row sits in a later hour than its walked instant lands only in a window
   holding both. Run silver behind bronze, over wide windows (a day), and
   rerun a wider window to reconcile. `docs/dags/index.md#late-events` has the
   numbers.
-- `parse_books` and the flatteners replace exactly `[start, end)`; books start
-  with no depth before `start`.
+- `parse_books` and the flatteners replace exactly `[start, end)`. The fold
+  reads `HISTORY` before `start` too, so a book standing at `start` holds what
+  that hour left resting, and every hourly view silver holds there is its
+  book's membership at that hour -- a chain older than `HISTORY` stands in
+  the book when the walk that landed it saw it alive. A book is one `MIC:CFI`
+  category per instant:
+  `parse_books` clears each row's `symbol`, so the fold keys a message by
+  `{miccode}:{cficode}` (`XXXX`/`XXXXXX` where unknown) and no book or event
+  states a ticker. A book nests `alive`, `deltas`, `executions`, `bidlimits`
+  and `asklimits`; orders and quotes are its `deltas` by `marketdatakind`,
+  executions its `executions`.
 - Every scan pushes the window into Iceberg, so only the window's hour
   partitions are planned (`dataset.scan_plan(row_filter)` shows it).
 
@@ -167,7 +179,14 @@ Never put credentials in a mapping. `docs/storages/` is the full reference.
 - `parse_fix_messages_raw`, `parse_fix_messages_refined`, `parse_books`:
   `codec=None` is `FixCodec.from_env(default_sending_time=UNDATED)`. Hand all
   three the same codec.
-- `parse_books`: `snapshot_millis` (0 = off) emits book snapshots on a grid.
+- `parse_books`: `snapshot_millis=SNAPSHOT_MILLIS` (one hour; 0 = off) restates
+  every book whole on that epoch-aligned grid (`snapunix` set, no delta or
+  execution repeated), between the fold's first and last operation.
+- `parse_fix_messages_refined`: `snapshot_millis=SNAPSHOT_MILLIS` (one hour;
+  0 = off, whatever the codec's `snapshot_ns` pin) restates every live chain
+  on that grid as a view: `currunix == snapunix ==` the hour, its own
+  `curruuid`, the live event's content and place, no chain moved on. Filter
+  `snapunix is null` for events alone.
 - `parse_orders`, `parse_quotes`, `parse_executions`: `snapshot_id=None` pins
   the head found; pass the one `parse_books` answered.
 - Every task takes a `target` table name, and every task after the first a
@@ -219,17 +238,21 @@ finally:
 states = [State(code) for code in table.column("state").to_pylist()]
 ```
 
-`state` is an `int32` code of `rekep.State` (60 members, code = rank * 100 +
-place: `FILLED` is 8003). Keys: `curruuid` on every table; `srcuuids` on FIX
+`state` is an `int32` code of `rekep.State` (61 members, code = rank * 100 +
+place: `FILLED` is 8003); `side` and `marketdatakind` on market rows are
+`int32` codes of `rekep.Side` and `rekep.MarketDataKind` (`ORDR` 10, `QUOT`
+14, `EXEC` 8, `BOOK` 3). Keys: `curruuid` on every table; `srcuuids` on FIX
 and event rows lists the `log_messages.curruuid` of the lines an event was
-logged on; `crosscode` is the business id (OrderID, ClOrdID, ...) on FIX rows
-and the object a line was read from on `log_messages`. Column meanings:
+logged on, and an execution split out of a report lists that report's
+`curruuid` beside them; `crosscode` is the business id (OrderID, ClOrdID,
+..., `ExecID=` for a split execution) prefixed with the side (`BUY:...`) on
+FIX rows, and the object a line was read from on `log_messages`. Column meanings:
 `docs/tables/`; real rows: `docs/samples/`.
 
 ## FIX registry
 
 Importing `rekep` installs the bundled dictionary as the process default:
-`FixRegistry.from_env()` (7,789 definitions, 737 code sets including the
+`FixRegistry.from_env()` (7,790 definitions, 737 code sets including the
 intrinsic `statecodeset` and `msgcatcodeset`) and `FixCodec.from_env(**pins)`.
 `FixRegistry.install_env` refuses a second default. For another dictionary,
 set the variable `rekep.fix.REGISTRY_VARIABLE` names to its folder before the
@@ -306,7 +329,13 @@ on it.
   1970. Spell the date, `"2026-08-14"`.
 - Bronze FIX rows have empty `seqnum`/`prevuuid` by design; chains are
   silver's. Products read silver, never bronze FIX.
-- A books window over the capture's whole day raises: the fold refuses the
-  capture's side-less trade report and symbol-less cancel reject.
+- A message stating no `Side(54)` is side-less in bronze and takes the one
+  live side of its order in silver: the capture's cancel reject at 21:59:46
+  is `931070583-1940-30712_192` in bronze and `SELL:931070583-1940-30712_192`,
+  side `SELL`, in silver, which is what the books fold. An order with no live
+  side to take stays side-less, and `parse_books` refuses it.
+- The parse splits every report of a fill into the report and the execution
+  it reports (`FILLED`), one per side for a trade report, and a two-sided
+  quote into one quote per side, so FIX tables hold more rows than frames.
 - A task never closes the catalogs. Close `Storages` yourself: on Windows an
   open SQLite catalog is a file its caller cannot delete.

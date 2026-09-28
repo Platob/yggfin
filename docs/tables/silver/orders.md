@@ -8,7 +8,7 @@ The order deltas of the books, one row per order event.
 | key | `curruuid` |
 | partitioned by | `hour(currunix)` |
 | sorted by | `currunix`, `seqnum`, `curruuid` |
-| columns | 49 |
+| columns | 48 |
 | Iceberg contract | `schemas/silver/record_keeping/orders.json` |
 | dbt source | `{{ source('silver', 'orders') }}`, `schemas/silver/schema.yml` |
 | sample rows | [silver.record_keeping.orders](../../samples/silver/orders.md) |
@@ -17,7 +17,7 @@ The order deltas of the books, one row per order event.
 
 | column | type | required | description |
 | --- | --- | :---: | --- |
-| `kind` | `string` |  |  |
+| `marketdatakind` | `int` |  |  |
 | `currunix` | `timestamptz` | yes | When the event happened: the settled instant, UTC. |
 | `creaunix` | `timestamptz` |  | When the event was created, where that is known; the earliest its chain knows once followed. |
 | `execunix` | `timestamptz` |  | The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation. |
@@ -38,8 +38,9 @@ The order deltas of the books, one row per order event.
 | `currency` | `string` | yes |  |
 | `quantity` | `decimal(38, 18)` |  |  |
 | `unit` | `string` | yes |  |
-| `side` | `string` | yes |  |
+| `side` | `int` | yes |  |
 | `securityids` | `map<string, string>` |  |  |
+| `isincode` | `string` |  |  |
 | `cficode` | `string` |  |  |
 | `miccode` | `string` |  |  |
 | `lastpx` | `decimal(38, 18)` |  |  |
@@ -51,21 +52,19 @@ The order deltas of the books, one row per order event.
 | `prevqty` | `decimal(38, 18)` |  |  |
 | `spotrate` | `decimal(38, 18)` |  |  |
 | `forwardpoints` | `decimal(38, 18)` |  |  |
+| `bidpx` | `decimal(38, 18)` |  |  |
+| `bidqty` | `decimal(38, 18)` |  |  |
+| `bidccy` | `string` |  |  |
+| `askpx` | `decimal(38, 18)` |  |  |
+| `askqty` | `decimal(38, 18)` |  |  |
+| `askccy` | `string` |  |  |
+| `fxrates` | `map<string, decimal(38, 18)>` |  |  |
 | `ticker` | `string` |  |  |
 | `metadata` | `map<string, string>` |  |  |
-| `marketoperationid` | `int` |  |  |
 | `tif` | `string` |  |  |
 | `tradable` | `boolean` |  |  |
-| `accountids` | `map<string, string>` |  |  |
-| `userids` | `map<string, string>` |  |  |
 | `altids` | `map<string, string>` |  |  |
-| `bid` | `struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), currency: string, quantity: decimal(38, 18), unit: string>` |  |  |
-| `ask` | `struct<price: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), currency: string, quantity: decimal(38, 18), unit: string>` |  |  |
-| `mdupdateaction` | `string` |  |  |
 | `bookscope` | `string` |  |  |
-| `mdentrypositionno` | `long` |  |  |
-| `mdentrypx` | `decimal(38, 18)` |  |  |
-| `mdentrysize` | `decimal(38, 18)` |  |  |
 
 ## `state` codes
 

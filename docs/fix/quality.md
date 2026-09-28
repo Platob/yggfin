@@ -8,8 +8,8 @@ Quality is represented in rows rather than hidden in parser control flow.
 | a FIX row's `currhashcode` | did the settled event change? |
 | `curruuid` | which event is this, whichever hop logged it? |
 | `srcuuids` | which lines was it logged on? |
-| `fixentries`, `nofixentries` | which pairs or groups did no lifted column represent, and how many? |
-| `fixentries` entries of `tag` 0 | which pairs had no registry definition? |
+| `fixentries` | which pairs or groups the dictionary names did no lifted column represent, keyed `tag:name`? |
+| `metadata` | which pairs had no registry definition, under the key the message spelled? |
 | a typed null beside a residual pair | which value failed translation or conversion? |
 | `state` of `UNKNOWN` (0) | which message stated no status and asked for none by its type? |
 

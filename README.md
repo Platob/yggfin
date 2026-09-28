@@ -60,14 +60,14 @@ window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 with storages:
     capture = "file:data/capture/ulbridge.log"
     assert parse_log_messages(capture, storages, window) == Landed(read=128, written=128)
-    assert parse_fix_messages_raw(storages, window) == Landed(read=128, written=41, skipped=27)
-    assert parse_fix_messages_refined(storages, window) == Landed(read=41, written=14)
+    assert parse_fix_messages_raw(storages, window) == Landed(read=128, written=74, skipped=50)
+    assert parse_fix_messages_refined(storages, window) == Landed(read=74, written=49)
     books = parse_books(storages, window)
     events = {
         kind: task(storages, window, snapshot_id=books.snapshot_id).written
         for kind, task in FLATTENERS.items()
     }
-    assert (books.written, events) == (6, {"orders": 1, "quotes": 0, "executions": 7})
+    assert (books.written, events) == (29, {"orders": 9, "quotes": 0, "executions": 7})
 ```
 
 Every task replaces its window of the table it writes, so a rerun lands the

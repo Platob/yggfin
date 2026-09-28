@@ -34,10 +34,11 @@ window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 codec = FixCodec.from_env(default_sending_time=UNDATED, threads=2, batch_row_size=4_096)
 with storages:
     parse_log_messages("file:data/capture/ulbridge.log", storages, window)
-    # 128 lines carry 68 messages, and the key folds the 27 that restate a
-    # message another hop already logged: 41 rows.
+    # 128 lines carry 68 frames, and every report of a fill splits off the
+    # execution it reports: 124 messages. The key folds the 50 that restate a
+    # message another hop already logged: 74 rows.
     landed = parse_fix_messages_raw(storages, window, codec=codec)
-    assert landed == Landed(read=128, written=41, skipped=27)
+    assert landed == Landed(read=128, written=74, skipped=50)
 
     raw = storages.dataset(FIX_MESSAGES_RAW)
     try:
@@ -45,14 +46,16 @@ with storages:
     finally:
         raw.close()
     # Nothing has walked: no row has a place in a chain yet.
-    assert table.column("seqnum").null_count == table.column("prevuuid").null_count == 41
-    # Each row names the one line it was parsed from.
-    lengths = pyarrow.compute.list_value_length(table.column("srcuuids"))
-    assert pyarrow.compute.all(pyarrow.compute.equal(lengths, 1)).as_py()
+    assert table.column("seqnum").null_count == table.column("prevuuid").null_count == 74
+    # Each row names the one line it was parsed from, and each of the 33
+    # executions split out of a report names that report beside it.
+    lengths = pyarrow.compute.list_value_length(table.column("srcuuids")).to_pylist()
+    assert (lengths.count(1), lengths.count(2)) == (41, 33)
 ```
 
-Over the capture's whole day the same task reads 144 lines, answers 79
-messages and lands 48 rows, 31 of them folded.
+Over the capture's whole day the same task reads 144 lines, answers 135
+messages -- 79 frames and the 56 executions their reports split off -- and
+lands 81 rows, 54 of them folded.
 
 ## Read
 
@@ -68,9 +71,13 @@ other column.
 ## Parse
 
 `rekep.fix.fix_parse_arrow_reader(codec, lines)` reads every frame each line
-carries: a line of prose answers none, a line carrying two frames answers two.
+carries: a line of prose answers none, a line carrying two frames answers two,
+a report of a fill answers, beside itself, the execution it reports -- a trade
+report one per side it states -- and a quote stating both sides answers one
+quote per side: each a message of its own naming its source in `srcuuids`, an
+execution `FILLED` whatever state its report reached.
 Its rows are the dictionary's fixed row, `rekep.fix.fix_message_field(codec)`:
-132 columns declared from the registry alone, so an empty window creates the
+133 columns declared from the registry alone, so an empty window creates the
 same table a full one does. Parsing and local enrichment are independent per
 message and run on `threads` workers, the available CPU count by default,
 while the output keeps the input's order.
@@ -89,12 +96,12 @@ native codec validates every pin. Useful pins are `batch_row_size` and
 | --- | --- |
 | `currunix` | the transaction clock standing within `official_time_delay_ms` of the `SendingTime` the message states, else that `SendingTime`; a message stating none is dated by the line it was read off |
 | `curruuid` | the message's identity, a UUIDv7 over its instant and its content; the table's key |
-| `crosscode` | the identifier every message of one lifecycle shares: `OrderID`, else `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID` or `MDReqID`, the first stated |
-| `srcuuids` | the `curruuid` of the one `log_messages` line the message was parsed from |
+| `crosscode` | the identifier every message of one lifecycle shares: `OrderID`, else `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID` or `MDReqID`, the first stated, or `ExecID=` its `ExecID` for an execution split out of a report; prefixed `BUY:`, `SELL:` and so on with the side the message states |
+| `srcuuids` | the `curruuid` of the one `log_messages` line the message was parsed from, and for an execution split out of a report that report's `curruuid` beside it |
 | `state` | the first of `OrdStatus`, `ExecType`, `ExecAckStatus`, `TrdRptStatus`, `QuoteStatus`, `AllocStatus`, `ConfirmStatus`, `AffirmStatus`, `MassActionResponse` or `MassCancelResponse` the message states, else what its message type asks for, else `UNKNOWN`, as an `int32` [code](../tables/states.md) |
 | `msgsesseventid` | `MsgType`, the session instance, the context and `MsgSeqNum` joined by `:`, where all four are stated |
 | `seqnum`, `prevuuid`, `prevunix` | empty: nothing has walked |
-| `fixentries`, `nofixentries` | what no lifted column represents, and how much of it |
+| `fixentries` | what no lifted column represents, keyed `tag:name` |
 
 `msgthreadid`, `loglevel` and `body` stay on the line: `srcuuids` joins a
 message back to it. [The table page](../tables/bronze/fix_messages.md) lists

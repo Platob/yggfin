@@ -4,8 +4,8 @@
     "fields": [
       {
         "id": 1,
-        "name": "kind",
-        "type": "string",
+        "name": "marketdatakind",
+        "type": "int",
         "required": false
       },
       {
@@ -111,7 +111,7 @@
         "name": "srcuuids",
         "type": {
           "type": "list",
-          "element-id": 50,
+          "element-id": 49,
           "element": "fixed[16]",
           "element-required": true
         },
@@ -152,7 +152,7 @@
       {
         "id": 22,
         "name": "side",
-        "type": "string",
+        "type": "int",
         "required": true
       },
       {
@@ -160,9 +160,9 @@
         "name": "securityids",
         "type": {
           "type": "map",
-          "key-id": 51,
+          "key-id": 50,
           "key": "string",
-          "value-id": 52,
+          "value-id": 51,
           "value": "string",
           "value-required": true
         },
@@ -170,266 +170,173 @@
       },
       {
         "id": 24,
-        "name": "cficode",
+        "name": "isincode",
         "type": "string",
         "required": false
       },
       {
         "id": 25,
-        "name": "miccode",
+        "name": "cficode",
         "type": "string",
         "required": false
       },
       {
         "id": 26,
+        "name": "miccode",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 27,
         "name": "lastpx",
         "type": "decimal(38, 18)",
         "required": false
       },
       {
-        "id": 27,
+        "id": 28,
         "name": "lastqty",
         "type": "decimal(38, 18)",
         "required": false
       },
       {
-        "id": 28,
+        "id": 29,
         "name": "avgpx",
         "type": "decimal(38, 18)",
         "required": false
       },
       {
-        "id": 29,
+        "id": 30,
         "name": "cumqty",
         "type": "decimal(38, 18)",
         "required": false
       },
       {
-        "id": 30,
+        "id": 31,
         "name": "leavesqty",
         "type": "decimal(38, 18)",
         "required": false
       },
       {
-        "id": 31,
+        "id": 32,
         "name": "prevpx",
         "type": "decimal(38, 18)",
         "required": false
       },
       {
-        "id": 32,
+        "id": 33,
         "name": "prevqty",
         "type": "decimal(38, 18)",
         "required": false
       },
       {
-        "id": 33,
+        "id": 34,
         "name": "spotrate",
         "type": "decimal(38, 18)",
         "required": false
       },
       {
-        "id": 34,
+        "id": 35,
         "name": "forwardpoints",
         "type": "decimal(38, 18)",
         "required": false
       },
       {
-        "id": 35,
-        "name": "ticker",
-        "type": "string",
-        "required": false
-      },
-      {
         "id": 36,
-        "name": "metadata",
-        "type": {
-          "type": "map",
-          "key-id": 53,
-          "key": "string",
-          "value-id": 54,
-          "value": "string",
-          "value-required": false
-        },
+        "name": "bidpx",
+        "type": "decimal(38, 18)",
         "required": false
       },
       {
         "id": 37,
-        "name": "marketoperationid",
-        "type": "int",
+        "name": "bidqty",
+        "type": "decimal(38, 18)",
         "required": false
       },
       {
         "id": 38,
-        "name": "tif",
+        "name": "bidccy",
         "type": "string",
         "required": false
       },
       {
         "id": 39,
-        "name": "tradable",
-        "type": "boolean",
+        "name": "askpx",
+        "type": "decimal(38, 18)",
         "required": false
       },
       {
         "id": 40,
-        "name": "accountids",
-        "type": {
-          "type": "map",
-          "key-id": 55,
-          "key": "string",
-          "value-id": 56,
-          "value": "string",
-          "value-required": true
-        },
+        "name": "askqty",
+        "type": "decimal(38, 18)",
         "required": false
       },
       {
         "id": 41,
-        "name": "userids",
-        "type": {
-          "type": "map",
-          "key-id": 57,
-          "key": "string",
-          "value-id": 58,
-          "value": "string",
-          "value-required": true
-        },
+        "name": "askccy",
+        "type": "string",
         "required": false
       },
       {
         "id": 42,
-        "name": "altids",
+        "name": "fxrates",
         "type": {
           "type": "map",
-          "key-id": 59,
+          "key-id": 52,
           "key": "string",
-          "value-id": 60,
-          "value": "string",
+          "value-id": 53,
+          "value": "decimal(38, 18)",
           "value-required": true
         },
         "required": false
       },
       {
         "id": 43,
-        "name": "bid",
-        "type": {
-          "type": "struct",
-          "fields": [
-            {
-              "id": 61,
-              "name": "price",
-              "type": "decimal(38, 18)",
-              "required": false
-            },
-            {
-              "id": 62,
-              "name": "spotrate",
-              "type": "decimal(38, 18)",
-              "required": false
-            },
-            {
-              "id": 63,
-              "name": "forwardpoints",
-              "type": "decimal(38, 18)",
-              "required": false
-            },
-            {
-              "id": 64,
-              "name": "currency",
-              "type": "string",
-              "required": false
-            },
-            {
-              "id": 65,
-              "name": "quantity",
-              "type": "decimal(38, 18)",
-              "required": false
-            },
-            {
-              "id": 66,
-              "name": "unit",
-              "type": "string",
-              "required": false
-            }
-          ]
-        },
+        "name": "ticker",
+        "type": "string",
         "required": false
       },
       {
         "id": 44,
-        "name": "ask",
+        "name": "metadata",
         "type": {
-          "type": "struct",
-          "fields": [
-            {
-              "id": 67,
-              "name": "price",
-              "type": "decimal(38, 18)",
-              "required": false
-            },
-            {
-              "id": 68,
-              "name": "spotrate",
-              "type": "decimal(38, 18)",
-              "required": false
-            },
-            {
-              "id": 69,
-              "name": "forwardpoints",
-              "type": "decimal(38, 18)",
-              "required": false
-            },
-            {
-              "id": 70,
-              "name": "currency",
-              "type": "string",
-              "required": false
-            },
-            {
-              "id": 71,
-              "name": "quantity",
-              "type": "decimal(38, 18)",
-              "required": false
-            },
-            {
-              "id": 72,
-              "name": "unit",
-              "type": "string",
-              "required": false
-            }
-          ]
+          "type": "map",
+          "key-id": 54,
+          "key": "string",
+          "value-id": 55,
+          "value": "string",
+          "value-required": false
         },
         "required": false
       },
       {
         "id": 45,
-        "name": "mdupdateaction",
+        "name": "tif",
         "type": "string",
         "required": false
       },
       {
         "id": 46,
-        "name": "bookscope",
-        "type": "string",
+        "name": "tradable",
+        "type": "boolean",
         "required": false
       },
       {
         "id": 47,
-        "name": "mdentrypositionno",
-        "type": "long",
+        "name": "altids",
+        "type": {
+          "type": "map",
+          "key-id": 56,
+          "key": "string",
+          "value-id": 57,
+          "value": "string",
+          "value-required": true
+        },
         "required": false
       },
       {
         "id": 48,
-        "name": "mdentrypx",
-        "type": "decimal(38, 18)",
-        "required": false
-      },
-      {
-        "id": 49,
-        "name": "mdentrysize",
-        "type": "decimal(38, 18)",
+        "name": "bookscope",
+        "type": "string",
         "required": false
       }
     ],

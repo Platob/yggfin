@@ -10,9 +10,7 @@ the repository root lands today.
 
 It opens at midnight, so the trade of 01:03 is in it, and closes at 16:30:
 after 14:46, where the bridge printed the day's order flow, and after 16:25,
-where the walk expires the day's open order -- and before 16:52, the line
-carrying the one trade report whose side states no `Side(54)`, which
-[`parse_books`](../tasks/parse-books.md) refuses. The bridge prints its lines
+where the walk expires the day's open order. The bridge prints its lines
 two hours ahead of the UTC its FIX frames state, which is why bronze
 `log_messages` holds hour 14 where silver holds hour 12:
 [DAGs](../dags/index.md#late-events) says what that means for a schedule.
@@ -22,22 +20,22 @@ two hours ahead of the UTC its FIX frames state, which is why bronze
 | task | writes | read | written | skipped |
 | --- | --- | :---: | :---: | :---: |
 | [`parse_log_messages`](../tasks/parse-log-messages.md) | `bronze.record_keeping.log_messages` | 128 | 128 | 0 |
-| [`parse_fix_messages_raw`](../tasks/parse-fix-messages-raw.md) | `bronze.record_keeping.fix_messages` | 128 | 41 | 27 |
-| [`parse_fix_messages_refined`](../tasks/parse-fix-messages-refined.md) | `silver.record_keeping.fix_messages` | 41 | 14 | 0 |
-| [`parse_books`](../tasks/parse-books.md) | `silver.record_keeping.books` | 14 | 6 | 0 |
-| [`parse_orders`](../tasks/parse-orders-quotes-executions.md) | `silver.record_keeping.orders` | 6 | 1 | 0 |
-| [`parse_quotes`](../tasks/parse-orders-quotes-executions.md) | `silver.record_keeping.quotes` | 6 | 0 | 0 |
-| [`parse_executions`](../tasks/parse-orders-quotes-executions.md) | `silver.record_keeping.executions` | 6 | 7 | 0 |
+| [`parse_fix_messages_raw`](../tasks/parse-fix-messages-raw.md) | `bronze.record_keeping.fix_messages` | 128 | 74 | 50 |
+| [`parse_fix_messages_refined`](../tasks/parse-fix-messages-refined.md) | `silver.record_keeping.fix_messages` | 74 | 49 | 0 |
+| [`parse_books`](../tasks/parse-books.md) | `silver.record_keeping.books` | 49 | 29 | 0 |
+| [`parse_orders`](../tasks/parse-orders-quotes-executions.md) | `silver.record_keeping.orders` | 29 | 9 | 0 |
+| [`parse_quotes`](../tasks/parse-orders-quotes-executions.md) | `silver.record_keeping.quotes` | 29 | 0 | 0 |
+| [`parse_executions`](../tasks/parse-orders-quotes-executions.md) | `silver.record_keeping.executions` | 29 | 7 | 0 |
 
 ## What each table holds
 
 | table | rows | sample |
 | --- | :---: | --- |
 | [bronze.record_keeping.log_messages](../tables/bronze/log_messages.md) | 128 | [rows](bronze/log_messages.md) |
-| [bronze.record_keeping.fix_messages](../tables/bronze/fix_messages.md) | 41 | [rows](bronze/fix_messages.md) |
-| [silver.record_keeping.fix_messages](../tables/silver/fix_messages.md) | 14 | [rows](silver/fix_messages.md) |
-| [silver.record_keeping.books](../tables/silver/books.md) | 6 | [rows](silver/books.md) |
-| [silver.record_keeping.orders](../tables/silver/orders.md) | 1 | [rows](silver/orders.md) |
+| [bronze.record_keeping.fix_messages](../tables/bronze/fix_messages.md) | 74 | [rows](bronze/fix_messages.md) |
+| [silver.record_keeping.fix_messages](../tables/silver/fix_messages.md) | 49 | [rows](silver/fix_messages.md) |
+| [silver.record_keeping.books](../tables/silver/books.md) | 29 | [rows](silver/books.md) |
+| [silver.record_keeping.orders](../tables/silver/orders.md) | 9 | [rows](silver/orders.md) |
 | [silver.record_keeping.quotes](../tables/silver/quotes.md) | 0 | [rows](silver/quotes.md) |
 | [silver.record_keeping.executions](../tables/silver/executions.md) | 7 | [rows](silver/executions.md) |
 
@@ -85,11 +83,11 @@ with storages:
     }
 
 assert (log.read, log.written, log.skipped) == (128, 128, 0)
-assert (raw.read, raw.written, raw.skipped) == (128, 41, 27)
-assert (refined.read, refined.written, refined.skipped) == (41, 14, 0)
-assert (books.read, books.written, books.skipped) == (14, 6, 0)
+assert (raw.read, raw.written, raw.skipped) == (128, 74, 50)
+assert (refined.read, refined.written, refined.skipped) == (74, 49, 0)
+assert (books.read, books.written, books.skipped) == (49, 29, 0)
 assert {kind: landed.written for kind, landed in events.items()} == {
-    "orders": 1,
+    "orders": 9,
     "quotes": 0,
     "executions": 7,
 }

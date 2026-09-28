@@ -6,16 +6,18 @@ from decimal import Decimal
 import pyarrow as pa
 import pytest
 
+from rekep import MarketDataKind, Side, State
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.fields import stored_arrow_reader
 from rekep.fix import FixCodec, fix_message_field, fix_parse_field
 from rekep.iceberg import partition_keys, primary_keys
 from rekep.market import (
     EVENT_KINDS,
-    SIDES,
+    FLATTENED_COLUMNS,
     book_arrow_reader,
     book_event_arrow_reader,
     book_field,
+    categorized_symbol_reader,
     market_event_field,
     market_window_reader,
 )
@@ -34,54 +36,84 @@ FRAMES = (
     b"54=2|1427=SELL-EXEC|1009=6|37=SELL-ORDER|10=0|",
 )
 
+#: Three orders on two markets. The second states a coarse `CFICode(461)` and
+#: the detailed code its bridge wrote beside it; the third a coarse code alone.
+CATEGORIZED = (
+    b"8=FIX.4.4|35=D|52=20260921-10:00:00|11=O1|55=AAPL|54=1|38=5|44=99|207=XNAS|461=ESVUFR|10=0|",
+    b"8=FIX.4.4|35=D|52=20260921-10:00:01|11=O2|55=MSFT|54=1|38=3|44=98|"
+    b"207=XNAS|461=ESXXXX|DETAILEDCFICODE=ESVUFR|10=0|",
+    b"8=FIX.4.4|35=D|52=20260921-10:00:02|11=O3|55=ACME|54=2|38=1|44=5|461=ESXXXX|10=0|",
+)
+
+
+def stored_rows(frames):
+    """The frames' messages as the silver table holds their rows."""
+    codec = FixCodec.from_env(batch_row_size=1)
+    # The line door splits a trade report into the executions it states.
+    messages = [message for frame in frames for message in codec.parse_line(frame)]
+    refined = codec.arrow_reader(fix_parse_field(codec), messages)
+    return codec, stored_arrow_reader(refined, fix_message_field(codec)).read_all()
+
 
 def native_books():
     """The frames' books, folded from their rows as the silver table holds them."""
-    codec = FixCodec.from_env(batch_row_size=1)
-    messages = [codec.parse_fix_line(frame) for frame in FRAMES]
-    refined = codec.arrow_reader(fix_parse_field(codec), messages)
-    stored = stored_arrow_reader(refined, fix_message_field(codec)).read_all()
+    codec, stored = stored_rows(FRAMES)
     return book_arrow_reader(codec, stored.to_reader())
 
 
 def test_books_accept_refined_storage_and_ignore_administration():
     books = native_books().read_all()
     assert books.num_rows == 4
-    assert books.column("kind").to_pylist() == ["book_event"] * 4
+    assert books.column("marketdatakind").to_pylist() == [int(MarketDataKind.BOOK)] * 4
     assert books.column("ticker").to_pylist() == ["AAPL"] * 4
-    assert books.column("bidside")[1].as_py()["live"][0]["price"] == Decimal("101")
-    # The trade report is decomposed into one execution per side it states,
-    # each keeping the quantity its own side traded.
+    assert books.column("bidlimits")[1].as_py()[0]["price"] == Decimal("101")
+    assert books.column("bidpx")[1].as_py() == Decimal("101")
+    # The trade report was split into one execution per side it states when
+    # it was parsed, each keeping the quantity its own side traded, and the
+    # book holds each once.
     traded = books.column("executions")[3].as_py()
-    assert [(held["side"], held["lastqty"]) for held in traded] == [
-        ("BUY", Decimal("4")),
-        ("SELL", Decimal("6")),
+    assert [(held["side"], held["lastqty"], held["state"]) for held in traded] == [
+        (int(Side.BUY), Decimal("4"), int(State.FILLED)),
+        (int(Side.SELL), Decimal("6"), int(State.FILLED)),
     ]
+
+
+def test_a_categorized_book_is_the_folds_own_mic_cfi_key():
+    codec, stored = stored_rows(CATEGORIZED)
+    categorized = categorized_symbol_reader(stored.to_reader()).read_all()
+    assert categorized.column("symbol").null_count == categorized.num_rows
+    assert categorized.drop_columns("symbol").equals(stored.drop_columns("symbol"))
+    books = book_arrow_reader(codec, categorized.to_reader()).read_all()
+    # The coarse stated code the bridge refined keys with the detailed one,
+    # so the two XNAS orders share one book, and a coarse code alone keys as
+    # no classification at all.
+    assert books.column("crosscode").to_pylist() == ["XNAS:ESVUFR"] * 2 + ["XXXX:XXXXXX"]
+    assert books.column("ticker").to_pylist() == [None] * 3
+    assert [len(alive) for alive in books.column("alive").to_pylist()] == [1, 2, 1]
+    # The key is the one the fold gives every leaf stating no ticker.
+    for book in books.to_pylist():
+        for leaf in book["deltas"]:
+            assert leaf["ticker"] is None
+            key = f"{leaf['miccode'] or 'XXXX'}:{leaf['cficode'] or 'XXXXXX'}"
+            assert key == book["crosscode"]
 
 
 @pytest.mark.parametrize(("kind", "expected"), [("orders", 1), ("quotes", 3), ("executions", 3)])
 def test_flatten_preserves_each_native_event_once(kind, expected):
     books = stored_arrow_reader(native_books(), book_field()).read_all()
-    columns = ["executions"] if kind == "executions" else list(SIDES)
-    events = book_event_arrow_reader(books.select(columns).to_reader(), kind).read_all()
+    column = FLATTENED_COLUMNS[kind]
+    events = book_event_arrow_reader(books.select([column]).to_reader(), kind).read_all()
     assert events.num_rows == expected
     assert events.schema.equals(market_event_field().into_arrow_schema(), check_metadata=False)
-    rows = books.to_pylist()
-    reference = []
-    for book in rows:
-        if kind == "executions":
-            reference.extend(book["executions"])
-        else:
-            reference.extend(
-                {name: value[name] for name in events.schema.names}
-                for side in SIDES
-                for value in book[side]["deltas"]
-                if value["kind"] == EVENT_KINDS[kind]
-            )
+    reference = [
+        value
+        for book in books.to_pylist()
+        for value in book[column]
+        if value["marketdatakind"] == EVENT_KINDS[kind]
+    ]
     assert events.to_pylist() == reference
     assert len(set(events.column("curruuid").to_pylist())) == expected
-    if kind == "quotes":
-        assert events.column("marketoperationid").to_pylist() == [3, 3, 3]
+    assert events.column("marketdatakind").to_pylist() == [int(EVENT_KINDS[kind])] * expected
 
 
 def test_empty_books_keep_the_native_contract():
@@ -161,7 +193,10 @@ def test_window_is_strict_at_both_bounds_and_excludes_undated_rows():
 
 def test_admitted_errors_are_not_dropped():
     codec = FixCodec.from_env()
-    bad = codec.parse_fix_line(b"8=FIX.4.4|35=AE|52=20260921-10:00:00|571=T1|150=H|55=AAPL|10=0|")
+    # A book entry stating no MDEntryType has no side to stand on.
+    bad = codec.parse_fix_line(
+        b"8=FIX.4.4|35=W|52=20260921-10:00:00|55=AAPL|268=1|278=B1|270=100|271=10|10=0|"
+    )
     source = codec.arrow_reader(fix_parse_field(codec), [bad])
-    with pytest.raises(Exception, match=r"MsgType\(35\).*AE"):
+    with pytest.raises(Exception, match=r"MDEntryType\(269\)"):
         book_arrow_reader(codec, source).read_all()

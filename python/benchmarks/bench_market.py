@@ -14,7 +14,12 @@ from _bench import best_of, parser, report  # noqa: E402
 
 from rekep.fields import stored_arrow_reader  # noqa: E402
 from rekep.fix import FixCodec  # noqa: E402
-from rekep.market import EVENT_KINDS, SIDES, book_event_arrow_reader, book_field  # noqa: E402
+from rekep.market import (  # noqa: E402
+    EVENT_KINDS,
+    FLATTENED_COLUMNS,
+    book_event_arrow_reader,
+    book_field,
+)
 
 
 def main() -> None:
@@ -39,17 +44,12 @@ def main() -> None:
         schema = columnar().schema
 
         def reference(kind=kind, schema=schema):
-            events = []
-            for book in corpus.to_pylist():
-                if kind == "executions":
-                    events.extend(book["executions"])
-                else:
-                    events.extend(
-                        {name: event[name] for name in schema.names}
-                        for side in SIDES
-                        for event in book[side]["deltas"]
-                        if event["kind"] == EVENT_KINDS[kind]
-                    )
+            events = [
+                event
+                for book in corpus.to_pylist()
+                for event in book[FLATTENED_COLUMNS[kind]]
+                if event["marketdatakind"] == EVENT_KINDS[kind]
+            ]
             return pa.Table.from_pylist(events, schema=schema)
 
         expected = reference()

@@ -8,7 +8,7 @@ One row per FIX message parsed out of a stored line, nothing walked: a message l
 | key | `curruuid` |
 | partitioned by | `hour(currunix)` |
 | sorted by | `currunix`, `seqnum`, `curruuid` |
-| columns | 132 |
+| columns | 133 |
 | Iceberg contract | `schemas/bronze/record_keeping/fix_messages.json` |
 | dbt source | `{{ source('bronze', 'fix_messages') }}`, `schemas/bronze/schema.yml` |
 | sample rows | [bronze.record_keeping.fix_messages](../../samples/bronze/fix_messages.md) |
@@ -42,7 +42,7 @@ One row per FIX message parsed out of a stored line, nothing walked: a message l
 | `srcuuids` | `list<fixed[16]>` |  | The identities of the elements this message was read from: the text line it was parsed out of, and none for one parsed from raw bytes. Provenance, never lineage: no walk moves it. |
 | `beginstring` | `string` | yes | Identifies beginning of new message and session protocol version by means of a session profile identifier (see FIX Session Layer for details). ALWAYS FIRST FIELD IN MESSAGE. (Always unencrypted). |
 | `msgtype` | `string` |  | Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted) |
-| `msgcat` | `int` |  | The stable integer code for the message type's business category. |
+| `msgcat` | `int` |  | The business category of the message type, as the member of the marketdatakind enum: the dictionary's FIX:msgcat for the type, UNKN where it files none; a row stating one is the row's word. |
 | `msgseqnum` | `long` |  | Integer message sequence number. |
 | `sendercompid` | `string` |  | Assigned value used to identify firm sending message. |
 | `targetcompid` | `string` |  | Assigned value used to identify receiving firm. |
@@ -58,9 +58,11 @@ One row per FIX message parsed out of a stored line, nothing walked: a message l
 | `securityid` | `string` |  | Security identifier value of SecurityIDSource (22) type (e.g. CUSIP, SEDOL, ISIN, etc). Requires SecurityIDSource. |
 | `securityidsource` | `string` |  | Identifies class or source of the SecurityID(48) value. |
 | `isincode` | `string` |  | The normalized ISIN the message identifies. |
+| `forexcode` | `string` |  | The currency pair the message is about, canonical CCY1/CCY2: the FOREX entry of the message's security identifiers, a view of get_securityids(); detected off Symbol(55) where the message states no other class; row-stated when written. |
 | `bloombergcode` | `string` |  | The normalized Bloomberg identifier the message identifies. |
 | `figicode` | `string` |  | The normalized FIGI the message identifies. |
 | `miccode` | `string` |  | The normalized market MIC the message identifies: LastMkt, else ExDestination, the market a bridge's instrument key names or SecurityExchange, the first an ISO 10383 MIC or a Reuters mnemonic resolving to one; a bridge's INSTRUMENT[EXCHANGE] states it. |
+| `strikepx` | `decimal(38, 18)` |  | The option strike price the message identifies: StrikePrice, as the decimal leaf; a row stating one is the row's word. |
 | `securitytype` | `string` |  | Indicates type of security. Security type enumerations are grouped by Product(460) field value. NOTE: Additional values may be used by mutual agreement of the counterparties. |
 | `securitysubtype` | `string` |  | Sub-type qualification/identification of the SecurityType. As an example for SecurityType(167)="REPO", the SecuritySubType="General Collateral" can be used to further specify the type of REPO. |
 | `securityexchange` | `string` |  | Market used to help identify a security. |
@@ -84,7 +86,7 @@ One row per FIX message parsed out of a stored line, nothing walked: a message l
 | `quoteid` | `string` |  | Unique identifier for quote |
 | `mdreqid` | `string` |  | Unique identifier for Market Data Request |
 | `quoterespid` | `string` |  | Message reference for Quote Response |
-| `side` | `string` |  | Side of order (see Volume : "Glossary" for value definitions) |
+| `side` | `int` |  | Side of order (see Volume : "Glossary" for value definitions) |
 | `price` | `decimal(38, 18)` |  | Price per unit of quantity (e.g. per share) |
 | `prevclosepx` | `decimal(38, 18)` |  | Previous closing price of security. |
 | `lastpx` | `decimal(38, 18)` |  | Price of this (last) fill. |
@@ -146,9 +148,8 @@ One row per FIX message parsed out of a stored line, nothing walked: a message l
 | `signaturelength` | `int` |  | Number of bytes in signature field |
 | `signature` | `binary` |  | Electronic signature |
 | `checksum` | `string` |  | Three byte, simple checksum (see Volume 2: "Checksum Calculation" for description). ALWAYS LAST FIELD IN MESSAGE; i.e. serves, with the trailing <SOH>, as the end-of-message delimiter. Always defined as three characters. (Always unencrypted) |
-| `metadata` | `map<string, string>` |  | What a bridge stated under its own namespaces - a `TECH.` or an `AMON.` key - each under the key as the bridge spelled it, folded, in sorted order. |
-| `nofixentries` | `int` |  | How many residual entries remain outside the row's projected columns. |
-| `fixentries` | `list<struct<tag: int, name: string, value: string, fixentries: list<struct<tag: int, name: string, value: string, fixentries: list<struct<tag: int, name: string, value: string, fixentries: string>>>>>>` |  | Content not represented by another column, in arrival order, beside what the dictionary made of it. |
+| `metadata` | `map<string, string>` |  | What a message stated that is no field: a bridge's namespaced keys - a `TECH.` or an `AMON.` key - and every key no dictionary resolved, each under the key as it was spelled, folded, in sorted order. |
+| `fixentries` | `map<string, string>` |  | Content no other column represents, keyed by each field's tag:name: a scalar's wire text, a group or a component as the JSON of what it holds, keyed the same way. |
 
 ## `state` codes
 

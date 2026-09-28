@@ -45,27 +45,44 @@ ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "data" / "capture" / "ulbridge.log"
 
 #: What the bundled capture states, read through the pins this package sets:
-#: 144 physical lines answer 79 messages, because a line can carry two frames
-#: and a line carrying none answers nothing.
+#: 144 physical lines carry 79 frames, because a line can carry two frames
+#: and a line carrying none answers nothing, and the parse answers 135
+#: messages: every report of a fill splits off the execution it reports, 56
+#: of them, each naming the report beside the line it was read off.
 LINES = 144
-MESSAGES = 79
+FRAMES = 79
+SPLIT = 56
+MESSAGES = FRAMES + SPLIT
 
 #: The lifecycle's business chains as `rows, identities, last seqnum`. A
 #: crosscode is the first stated business identifier, never the bridge header
-#: capture; lifecycle removes repeated deliveries and may emit an expiry. The
-#: shipped header matches every one of the 144 lines, so every observation
-#: carries the session, context and sequence the fold merges on.
+#: capture, prefixed with the side a message states, so a buy and a sell
+#: under one identifier are two chains; an execution split out of a report
+#: chains on its own `ExecID`. Lifecycle removes repeated deliveries and may
+#: emit an expiry. The shipped header matches every one of the 144 lines, so
+#: every observation carries the session, context and sequence the fold
+#: merges on. The cancel reject of `931070583-1940-30712_192` states no
+#: `Side(54)` and joins the one live side of its order, the sell; the
+#: bridge's own two restatements of it arrive after that chain ended, so no
+#: side of the identity is live to lend them one and they keep the bare code.
 CHAINS = {
     "": (1, 1, 0),
-    "00079132541GLXC0": (1, 1, 0),
-    "00079132557GLXC0": (4, 4, 2),
-    "00079132558GLXC0": (2, 1, 0),
-    "00079132559GLXC0": (3, 3, 2),
-    "20260814_CQ9_LIAPUS_9623": (1, 1, 0),
     "830850681": (1, 1, 0),
-    "931070583-1940-30712_192": (4, 3, 1),
-    "XM8NNITE383": (1, 1, 0),
-    "XM8NNITE384": (1, 1, 0),
+    "931070583-1940-30712_192": (2, 1, 0),
+    "BUY:00079132541GLXC0": (1, 1, 0),
+    "BUY:00079132557GLXC0": (4, 4, 2),
+    "BUY:00079132558GLXC0": (2, 1, 0),
+    "BUY:00079132559GLXC0": (3, 3, 2),
+    "BUY:20260814_CQ9_LIAPUS_9623": (1, 1, 0),
+    "BUY:ExecID=00064703457GBYZ0": (1, 1, 0),
+    "BUY:ExecID=00064703461GBYZ0": (2, 1, 0),
+    "BUY:ExecID=00064703467GBYZ0": (2, 2, 0),
+    "BUY:ExecID=00064703468GBYZ0": (1, 1, 0),
+    "BUY:ExecID=00064703546GBYZ0": (1, 1, 0),
+    "BUY:ExecID=1705": (1, 1, 0),
+    "BUY:XM8NNITE383": (1, 1, 0),
+    "BUY:XM8NNITE384": (1, 1, 0),
+    "SELL:931070583-1940-30712_192": (2, 2, 1),
 }
 
 #: How many rows a table keyed on `curruuid` holds after the whole capture,
@@ -73,13 +90,14 @@ CHAINS = {
 EVENTS = sum(events for _, events, _ in CHAINS.values())
 
 #: The native row is the only FIX row shape at every stage.
-ROW = 132
-CRATE = 40
-PARSED_EVENTS = 48
+ROW = 133
+CRATE = 41
+PARSED_EVENTS = 81
 
 #: The messages of the capture stating no `SendingTime(52)`: the parse dates
 #: each by the line it was read out of, and the walk by its `TransactTime`.
-UNSENT = 63
+#: An execution states what the report it was split out of states.
+UNSENT = 112
 
 #: Two lines the bridge header matches, one under a point and one under a
 #: comma, and two messages, neither stating a `SendingTime` of its own: each
@@ -177,8 +195,21 @@ def _chains(rows: pyarrow.Table) -> dict[str, tuple[int, int, int]]:
 
 
 def _sources(rows: pyarrow.Table) -> list[bytes]:
-    """The one line each row names, as the bytes `log_messages` keys it by."""
-    return [held[0] for held in rows.column(SOURCES).to_pylist()]
+    """Every source the rows name: the lines, and the reports an execution
+    was split out of."""
+    return [source for held in rows.column(SOURCES).to_pylist() for source in held]
+
+
+def _lines(rows: pyarrow.Table) -> list[bytes]:
+    """The one line each row of a parse names, as the bytes `log_messages`
+    keys it by: its one source that is no message of the parse, because an
+    execution split out of a report names that report beside the line."""
+    messages = set(rows.column(MESSAGE_KEY).to_pylist())
+    lines = []
+    for held in rows.column(SOURCES).to_pylist():
+        (line,) = [source for source in held if source not in messages]
+        lines.append(line)
+    return lines
 
 
 @pytest.fixture(scope="module")
@@ -343,7 +374,7 @@ def test_the_storage_boundary_narrows_what_a_row_filter_cannot_be_lowered_to() -
     for code in ("currhashcode", "crosshashcode", "seqnum"):
         assert schema.field(code).type == pyarrow.int64(), code
     assert len(schema) == ROW
-    assert schema.field(MESSAGE_KEY).metadata[b"FIX:tag"] == b"65039"
+    assert schema.field(MESSAGE_KEY).metadata[b"FIX:tag"] == b"65008"
     assert schema.field(MESSAGE_KEY).metadata[b"ICEBERG:primary_key"] == b"true"
 
 
@@ -366,11 +397,12 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from(raw) -> None:
         assert column not in parsed.names, column
     assert raw.column(SOURCES).null_count == 0
     # What the wire is rebuilt from is on the row. A fully projected message
-    # has no residual entries; one with an unprojected pair retains it.
-    assert raw.column("nofixentries").null_count == 0
-    counts = raw.column("nofixentries").to_pylist()
-    assert 0 in counts and any(count > 0 for count in counts)
-    assert counts == [len(entries) for entries in raw.column("fixentries").to_pylist()]
+    # has no residual entries; one with an unprojected pair retains it, keyed
+    # `tag:name` as the dictionary spells the field.
+    assert raw.column("fixentries").null_count == 0
+    residual = raw.column("fixentries").to_pylist()
+    assert [] in residual and any(residual)
+    assert ("107:securitydesc", "HOLCIM N") in {pair for pairs in residual for pair in pairs}
 
 
 def test_the_narrowing_walks_into_a_nested_type() -> None:
@@ -440,7 +472,7 @@ def test_the_state_is_the_lifecycle_sorted_code_and_stores_as_its_integer(raw, r
     assert all(state.rank * 100 <= state.value < (state.rank + 1) * 100 for state in walked)
     # Read back as a message, the column is the member again.
     message = next(iter(fix_row_messages(_codec(), _reader(raw))))
-    assert message.state.as_py() is State(raw.column("state")[0].as_py())
+    assert message.state is State(raw.column("state")[0].as_py())
 
 
 def test_a_content_code_above_the_signed_range_is_read_and_not_refused() -> None:
@@ -552,7 +584,7 @@ def test_a_frame_read_off_no_line_takes_the_codecs_pin() -> None:
 
 
 def test_the_capture_answers_a_message_per_frame_and_not_a_row_per_line(raw) -> None:
-    """144 lines, 79 messages, and 48 parsed event identities."""
+    """144 lines, 79 frames, 135 messages, and 81 parsed event identities."""
     assert raw.num_rows == MESSAGES
     assert len(set(raw.column(MESSAGE_KEY).to_pylist())) == PARSED_EVENTS
 
@@ -594,8 +626,12 @@ def test_a_message_names_the_stored_line_it_was_parsed_out_of(lines, raw) -> Non
     named = set(lines.column("curruuid").to_pylist())
     sources = raw.column(SOURCES).to_pylist()
 
-    assert all(len(held) == 1 for held in sources), "one line per message"
-    assert set(_sources(raw)) <= named
+    # A message names its one line, and an execution split out of a report
+    # names that report beside it.
+    assert [len(held) for held in sources].count(2) == SPLIT
+    assert all(len(held) in (1, 2) for held in sources)
+    assert set(_lines(raw)) <= named
+    assert set(_sources(raw)) - named <= set(raw.column(MESSAGE_KEY).to_pylist())
     # The identity the line landed under, not one the body alone implies: a
     # carrier that states none answers a recomputed identity instead -- at
     # the line's own instant, over a code that digests neither its row number
@@ -607,7 +643,7 @@ def test_a_message_names_the_stored_line_it_was_parsed_out_of(lines, raw) -> Non
     ).read_all()
     recomputed = [
         (held, source)
-        for held, source in zip(_sources(unstated), _sources(raw), strict=True)
+        for held, source in zip(_lines(unstated), _lines(raw), strict=True)
         if held != source
     ]
     assert len(recomputed) == len(sources), "no recomputed identity is the stored one"
@@ -630,9 +666,9 @@ def test_a_message_names_the_stored_line_it_was_parsed_out_of(lines, raw) -> Non
     partly = stored_arrow_reader(
         fix_parse_arrow_reader(_codec(), _reader(halved)), fix_message_field()
     ).read_all()
-    stated = [held in named for held in _sources(partly)]
+    stated = [held in named for held in _lines(partly)]
     assert any(stated) and not all(stated), "each message reads what its own row stated"
-    assert set(_sources(partly)) <= named | set(_sources(unstated))
+    assert set(_lines(partly)) <= named | set(_lines(unstated))
 
 
 def test_every_restatement_of_an_event_settles_on_one_identity(raw) -> None:
@@ -640,7 +676,7 @@ def test_every_restatement_of_an_event_settles_on_one_identity(raw) -> None:
     message logged at a second hop answers the identity the first one did, and
     the rows it was read from are different lines."""
     held: dict[bytes, set[bytes]] = defaultdict(set)
-    for identity, source in zip(raw.column(MESSAGE_KEY).to_pylist(), _sources(raw), strict=True):
+    for identity, source in zip(raw.column(MESSAGE_KEY).to_pylist(), _lines(raw), strict=True):
         held[identity].add(source)
     restated = {identity: lines for identity, lines in held.items() if len(lines) > 1}
 
@@ -668,8 +704,9 @@ def test_a_market_fact_is_fixs_own_field_and_the_trait_answers_off_it(raw) -> No
     rows = raw.select(tuple(answers.values())).to_pylist()
     messages = list(fix_row_messages(_codec(), _reader(raw)))
 
-    assert sum(1 for row in rows if row["lastpx"]) == 57
-    assert sum(1 for row in rows if row["price"] is not None) == 63
+    # Every execution split out of a report states the price it filled at.
+    assert sum(1 for row in rows if row["lastpx"]) == 113
+    assert sum(1 for row in rows if row["price"] is not None) == 116
     assert any(row["price"] is None and row["lastpx"] for row in rows), "a fill states no price"
     for row, message in zip(rows, messages, strict=True):
         for trait, column in answers.items():
@@ -840,7 +877,8 @@ def test_the_walk_reads_the_row_and_never_the_capture_beside_it(raw, refined) ->
     A line's text is not content here. The walk reads only the native row,
     whose `srcuuids` name the stored lines it joins back to.
     """
-    assert _chains(refined)["00079132557GLXC0"] == CHAINS["00079132557GLXC0"] == (4, 4, 2)
+    chain = "BUY:00079132557GLXC0"
+    assert _chains(refined)[chain] == CHAINS[chain] == (4, 4, 2)
     assert refined.column_names == raw.column_names
     assert set(_sources(refined)) <= set(_sources(raw))
     assert refined.column(EVENT_CLOCK).to_pylist() == sorted(
@@ -886,7 +924,10 @@ def test_the_walk_sorts_distinct_effective_instants_and_keeps_equal_ties(raw) ->
     # Two observations of one event at one instant are one event, so the tie
     # is no longer two rows to order but one row's provenance: the walk keeps
     # both lines under one identity in the core's canonical identity order.
-    tied = raw.take(pyarrow.array([0, 1]))
+    identities = raw.column(MESSAGE_KEY).to_pylist()
+    first = next(index for index, held in enumerate(identities) if identities.count(held) > 1)
+    second = identities.index(identities[first], first + 1)
+    tied = raw.take(pyarrow.array([first, second]))
     reversed_tied = tied.take(pyarrow.array([1, 0]))
     held, reversed_held = _refined(tied), _refined(reversed_tied)
     lines = lambda rows: rows.column(SOURCES).to_pylist()  # noqa: E731

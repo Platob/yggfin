@@ -38,6 +38,9 @@ JSON_FENCE = re.compile(r"^```json\n(.*?)^```", re.MULTILINE | re.DOTALL)
 #: imports `rekep`, and the package re-exports what they need.
 NATIVE = re.compile(r"yggdryl", re.IGNORECASE)
 
+#: The one page whose bash fences name the native serving binary.
+XMLA_PAGE = DOCS / "storages" / "xmla.md"
+
 #: A command of a `rekep` console script, which the package does not install.
 COMMAND = re.compile(r"\brekep\s+(?:tasks|fields)\b")
 
@@ -104,21 +107,45 @@ def test_navigation_names_existing_pages() -> None:
 def test_every_page_is_in_the_navigation() -> None:
     """A page nobody navigates to is a page nobody reads."""
     pages = {
-        str(page.relative_to(DOCS)) for page in DOCS.rglob("*.md") if page.parent != DOCS / "assets"
+        page.relative_to(DOCS).as_posix()
+        for page in DOCS.rglob("*.md")
+        if page.parent != DOCS / "assets"
     }
     assert pages - set(navigation()) == set()
 
 
+def fenced_lines(text: str, language: str) -> set[int]:
+    """The line numbers, from one, inside `language` fences of a page."""
+    held: set[int] = set()
+    fenced = False
+    for number, line in enumerate(text.splitlines(), 1):
+        if fenced and line.startswith("```"):
+            fenced = False
+        elif fenced:
+            held.add(number)
+        elif line.strip() == f"```{language}":
+            fenced = True
+    return held
+
+
 def test_no_documentation_names_the_native_dependency() -> None:
-    named = [
-        f"{path.relative_to(ROOT)}:{number}"
-        for path in PUBLISHED
-        for number, line in enumerate(
-            path.read_text(encoding="utf-8", errors="replace").splitlines(), 1
-        )
-        if NATIVE.search(line)
-    ]
+    """The one exception is the XMLA page's command line, which names the
+    serving binary inside its bash fences."""
+    named = []
+    for path in PUBLISHED:
+        text = path.read_text(encoding="utf-8", errors="replace")
+        exempt = fenced_lines(text, "bash") if path == XMLA_PAGE else set()
+        named += [
+            f"{path.relative_to(ROOT)}:{number}"
+            for number, line in enumerate(text.splitlines(), 1)
+            if NATIVE.search(line) and number not in exempt
+        ]
     assert not named, named
+    xmla = XMLA_PAGE.read_text(encoding="utf-8")
+    serving = fenced_lines(xmla, "bash")
+    assert any(
+        NATIVE.search(line) for number, line in enumerate(xmla.splitlines(), 1) if number in serving
+    ), "the XMLA page states the serving command line"
 
 
 def test_every_table_has_its_column_page_and_its_samples() -> None:

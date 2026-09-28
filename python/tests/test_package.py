@@ -109,7 +109,7 @@ def test_rekep_installs_its_bundled_registry_as_the_process_default() -> None:
     bundled = FixRegistry.from_handle(_REGISTRY)
 
     assert _REGISTRY.is_dir()
-    assert len(bundled) == 7789
+    assert len(bundled) == 7790
     assert FixRegistry.from_env() == bundled
     assert FixCodec.from_env().registry == bundled
     assert IOBase.__module__.startswith("yggdryl")
@@ -155,4 +155,4 @@ def test_the_bundled_dictionary_is_the_crates_own_where_it_restates_the_crate() 
     assert sorted(held) == sorted(owned)
     # And the registry is the same one with them or without: the core seeds
     # what they restate, so nothing is added and nothing is lost.
-    assert len(FixRegistry.from_env()) == 7789
+    assert len(FixRegistry.from_env()) == 7790
