@@ -217,7 +217,12 @@ the object the line was read from, so a capture is replayed from where it was
 read, never from a copy. The table is keyed on `curruuid` alone, the line
 identity the read states; `currhashcode` is its exact-content code and not a
 second key. A text row names its source through the read's own `crosscode`
-and `seqnum`, and its `state` is `UNKNOWN`.
+and `seqnum`, and its `state` is `UNKNOWN`. Given no window, it reads every
+line, stages them in a local Arrow stream file, lands them, and answers
+`Landed.window` -- `rekep.times.hour_window` over the earliest and latest
+`currunix` not pinned at `EPOCH`: `start` truncated to its hour, `end`
+truncated and one hour later unless it already stands on a whole hour past
+`start` -- the window the tasks after it run over.
 
 Every `curruuid` and `currhashcode` is the installed native revision's value.
 Rekep never reimplements identity derivation or translates old identities.

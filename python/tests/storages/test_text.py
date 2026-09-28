@@ -174,6 +174,31 @@ def test_an_empty_capture_is_read_and_produces_nothing(storages: Storages, tmp_p
     assert rows(storages) == {LOG_MESSAGES: 0}
 
 
+def test_no_window_lands_every_line_and_infers_the_whole_hours_they_span(
+    storages: Storages,
+) -> None:
+    """Given no window, every line lands, and the window the stages after it
+    run over is the whole hours from the first line's to past the last's --
+    the same rows those stages would read under the day."""
+    landed = parse_log_messages(CAPTURE.as_uri(), storages)
+
+    start = datetime.datetime(2026, 8, 14, 3, tzinfo=UTC)
+    assert landed == Landed(
+        read=144, written=144, window=(start, datetime.datetime(2026, 8, 15, tzinfo=UTC))
+    )
+    assert rows(storages) == {LOG_MESSAGES: 144}
+    assert parse_fix_messages_raw(storages, landed.window) == parse_fix_messages_raw(storages, DAY)
+
+
+def test_no_window_over_undated_lines_infers_none(storages: Storages, tmp_path: Path) -> None:
+    """An empty capture dates nothing, so it lands nothing and infers no window."""
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    (empty / "quiet.log").write_text("", encoding="utf-8")
+
+    assert parse_log_messages(empty.as_uri(), storages) == Landed(read=0, written=0)
+
+
 def test_several_files_are_one_capture(storages: Storages, tmp_path: Path) -> None:
     """A capture is a directory, opened one naturally sorted path at a time."""
     capture = tmp_path / "capture"

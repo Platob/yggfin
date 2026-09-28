@@ -171,11 +171,13 @@ Never put credentials in a mapping. `docs/storages/` is the full reference.
 
 ## Task parameters worth knowing
 
-- `parse_log_messages(source, storages, window, *, rowheader=None, target=LOG_MESSAGES)`:
+- `parse_log_messages(source, storages, window=None, *, rowheader=None, target=LOG_MESSAGES)`:
   `source` is a file, folder or prefix URI (`file:data/capture`,
   `s3://bucket/prefix?region=eu-west-1`) or an `IOBase` the caller keeps open.
   `rowheader=None` is `ULBRIDGE_ROWHEADER`; another must keep
-  `rekep.text.CAPTURES`.
+  `rekep.text.CAPTURES`. `window=None` lands every line, staged in a local
+  Arrow stream file, and answers `Landed.window`, the whole hours its dated
+  lines span, for the next tasks.
 - `parse_fix_messages_raw`, `parse_fix_messages_refined`, `parse_books`:
   `codec=None` is `FixCodec.from_env(default_sending_time=UNDATED)`. Hand all
   three the same codec.

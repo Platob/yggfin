@@ -19,6 +19,7 @@ from rekep.times import (
     UTC,
     WINDOW,
     datetime_of,
+    hour_window,
     unix_of,
     where_within,
     window_of,
@@ -416,3 +417,34 @@ def test_a_line_no_clock_dates_is_outside_every_window_but_the_epochs() -> None:
     assert every.column("currunix").to_pylist() == [EPOCH]
     assert answered.num_rows == 0
     assert answered.schema.equals(every.schema, check_metadata=True)
+
+
+def _nanos(*parts: int) -> int:
+    at = datetime.datetime(*parts, tzinfo=UTC)
+    return int(at.timestamp()) * 10**9
+
+
+@pytest.mark.parametrize(
+    ("first", "last", "window"),
+    [
+        # `start` truncates; `end` truncates and adds an hour past a partial hour.
+        (_nanos(2026, 8, 14, 3, 15), _nanos(2026, 8, 14, 23, 5), ((8, 14, 3), (8, 15, 0))),
+        # A `last` standing on a whole hour past `start` ends the window there.
+        (_nanos(2026, 8, 14, 3, 15), _nanos(2026, 8, 14, 5), ((8, 14, 3), (8, 14, 5))),
+        # A span within one hour, and one whole-hour instant, cover that hour.
+        (_nanos(2026, 8, 14, 3, 15), _nanos(2026, 8, 14, 3, 45), ((8, 14, 3), (8, 14, 4))),
+        (_nanos(2026, 8, 14, 3), _nanos(2026, 8, 14, 3), ((8, 14, 3), (8, 14, 4))),
+        # One nanosecond past the hour is not the hour.
+        (_nanos(2026, 8, 14, 3), _nanos(2026, 8, 14, 5) + 1, ((8, 14, 3), (8, 14, 6))),
+    ],
+)
+def test_hour_window_truncates_start_and_rounds_end_up_to_the_hour(
+    first: int, last: int, window: tuple[tuple[int, int, int], tuple[int, int, int]]
+) -> None:
+    expected = tuple(datetime.datetime(2026, *bound, tzinfo=UTC) for bound in window)
+    assert hour_window(first, last) == expected
+
+
+def test_hour_window_refuses_an_inverted_span() -> None:
+    with pytest.raises(ValueError, match="inverted"):
+        hour_window(1, 0)

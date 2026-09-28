@@ -32,9 +32,13 @@ from __future__ import annotations
 import contextlib
 import dataclasses
 import datetime
+import os
+import tempfile
 import uuid
 
 import pyarrow
+import pyarrow.compute
+import pyarrow.ipc
 from yggdryl import IOBase
 
 from rekep.arrow_reader import OwnedRecordBatchReader
@@ -64,7 +68,7 @@ from rekep.market import (
 )
 from rekep.storages import Storages
 from rekep.text import log_message_field, text_options
-from rekep.times import where_within, within
+from rekep.times import EPOCH, hour_window, where_within, within
 
 #: The tables the graph writes, each under the name its task writes by default.
 LOG_MESSAGES = "bronze.record_keeping.log_messages"
@@ -112,6 +116,11 @@ class Landed:
     #: None for every other stage.
     snapshot_id: int | None = None
 
+    #: The whole-hour window `parse_log_messages` inferred from the lines it
+    #: landed when it was given none, for the stages after it to run over;
+    #: None when a window was given or no line was dated.
+    window: Window | None = None
+
 
 def _codec_or_env(codec: FixCodec | None) -> FixCodec:
     """`codec`, else the process registry's own, pinned so an undated message
@@ -141,13 +150,13 @@ class _Count:
 def parse_log_messages(
     source: IOBase | str,
     storages: Storages,
-    window: Window,
+    window: Window | None = None,
     *,
     rowheader: str | None = None,
     timezone: str = "UTC",
     target: str = LOG_MESSAGES,
 ) -> Landed:
-    """Land the lines of `source` whose `currunix` falls in `window`.
+    """Land the lines of `source` whose `currunix` falls in `window`, or every line.
 
     `source` is an `IOBase`, or a URI bound here and closed after. One that
     does not exist is refused: the read of an absent path answers no rows,
@@ -156,6 +165,11 @@ def parse_log_messages(
     names must still be `rekep.text.CAPTURES`. `timezone` is the zone the
     bridge prints its clock in: a bridge printing local time is read in its
     zone, so a line lands in the hour of the message it carries.
+
+    Given no `window`, every line is read and staged in a local Arrow stream
+    file, and `Landed.window` answers `rekep.times.hour_window` over the
+    earliest and latest `currunix` a line was dated at -- lines pinned at
+    `EPOCH` date nothing -- for the stages after this one to run over.
     """
     with contextlib.ExitStack() as opened:
         if isinstance(source, str):
@@ -165,16 +179,22 @@ def parse_log_messages(
             raise FileNotFoundError(source.masked_uri or str(source.url))
         options = text_options(rowheader, timezone)
         field = log_message_field(rowheader)
-        # The window is the read's `where`, answered by the record surface
-        # over the rows the lines become: the lines whose `currunix` -- off
-        # the header, or off the object's own modification time where the
-        # header did not match -- falls in `[start, end)`, and no other.
-        options.filter = where_within(EVENT_CLOCK, window)
+        if window is not None:
+            # The window is the read's `where`, answered by the record surface
+            # over the rows the lines become: the lines whose `currunix` --
+            # off the header, or off the object's own modification time where
+            # the header did not match -- falls in `[start, end)`, and no other.
+            options.filter = where_within(EVENT_CLOCK, window)
         messages = storages.dataset(target, field=field)
         opened.callback(messages.close)
         read = _Count()
         lines = read(source.read_arrow_reader(options=options))
         opened.callback(lines.close)
+        inferred = None
+        if window is None:
+            staged = opened.enter_context(tempfile.TemporaryDirectory(prefix="rekep-"))
+            lines, inferred = _staged_span(lines, os.path.join(staged, "log_messages.arrows"))
+            opened.callback(lines.close)
         # The storage boundary: the content codes and the row number are read
         # unsigned and Iceberg's only sixty-four-bit integer is signed, so
         # those eight bytes are viewed rather than converted, and the field
@@ -184,7 +204,37 @@ def parse_log_messages(
         # Keyed on `curruuid` within the hour of `currunix`: a replay of the
         # window lands the same rows again, so the table holds each line once.
         written = messages.overwrite_arrow_reader(stored, field, merge_by=True)
-        return Landed(read=read.rows, written=written)
+        return Landed(read=read.rows, written=written, window=inferred)
+
+
+def _staged_span(
+    lines: pyarrow.RecordBatchReader, path: str
+) -> tuple[pyarrow.RecordBatchReader, Window | None]:
+    """`lines` written to the Arrow stream file at `path` and read back, with
+    the whole-hour window of the `currunix` they were dated at."""
+    compute = pyarrow.compute
+    nanos = pyarrow.timestamp("ns", tz="UTC")
+    first = last = None
+    with pyarrow.ipc.new_stream(path, lines.schema) as writer:
+        for batch in lines:
+            writer.write_batch(batch)
+            clock = batch.column(EVENT_CLOCK).cast(nanos)
+            dated = clock.filter(compute.not_equal(clock, pyarrow.scalar(EPOCH, nanos)))
+            span = compute.min_max(dated.cast(pyarrow.int64()))
+            low, high = span["min"].as_py(), span["max"].as_py()
+            if low is not None:
+                first = low if first is None else min(first, low)
+                last = high if last is None else max(last, high)
+    lines.close()
+    mapped = pyarrow.memory_map(path)
+    staged = pyarrow.ipc.open_stream(mapped)
+
+    def close() -> None:
+        staged.close()
+        mapped.close()
+
+    span = None if first is None else hour_window(first, last)
+    return OwnedRecordBatchReader(staged.schema, staged, close), span
 
 
 def parse_fix_messages_raw(

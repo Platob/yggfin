@@ -399,6 +399,32 @@ def window_of(start: Any = None, end: Any = None) -> tuple[datetime.datetime, da
     return lower, upper
 
 
+#: The grain an inferred window is aligned to: the tables partition by the
+#: hour of `currunix`, so a window of whole hours plans whole partitions.
+HOUR = datetime.timedelta(hours=1)
+
+
+def hour_window(first: int, last: int) -> tuple[datetime.datetime, datetime.datetime]:
+    """The whole-hour window a span of instants spells, from nanoseconds since the epoch.
+
+    `start` is `first` truncated to its hour. `end` is `last` truncated to its
+    hour, one hour later unless `last` already stands on a whole hour distinct
+    from `start` -- so a span within one hour, even a single whole-hour
+    instant, covers that hour, and a `last` on a whole hour past `start` ends
+    the window there.
+    """
+    if last < first:
+        raise ValueError(f"span [{first}, {last}] is inverted")
+    grain = HOUR // datetime.timedelta(microseconds=1) * 1000
+    start, end = first - first % grain, last - last % grain
+    if end != last or end == start:
+        end += grain
+    return (
+        EPOCH + datetime.timedelta(microseconds=start // 1000),
+        EPOCH + datetime.timedelta(microseconds=end // 1000),
+    )
+
+
 def within(
     values: pyarrow.Array | pyarrow.ChunkedArray,
     window: tuple[datetime.datetime, datetime.datetime],
