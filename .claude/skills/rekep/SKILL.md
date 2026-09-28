@@ -331,7 +331,7 @@ on it.
   silver's. Products read silver, never bronze FIX.
 - A message stating no `Side(54)` is side-less in bronze and takes the one
   live side of its order in silver: the capture's cancel reject at 21:59:46
-  is `931070583-1940-30712_192` in bronze and `SELL:931070583-1940-30712_192`,
+  is `816179183-1983-98963_912` in bronze and `SELL:816179183-1983-98963_912`,
   side `SELL`, in silver, which is what the books fold. An order with no live
   side to take stays side-less, and `parse_books` refuses it.
 - The parse splits every report of a fill into the report and the execution

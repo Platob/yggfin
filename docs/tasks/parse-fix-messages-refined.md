@@ -49,7 +49,7 @@ with storages:
     refined = storages.dataset(FIX_MESSAGES)
     lines = storages.dataset(LOG_MESSAGES)
     try:
-        walked = refined.read_arrow_table(row_filter="crosscode == 'BUY:00079132557GLXC0'")
+        walked = refined.read_arrow_table(row_filter="crosscode == 'BUY:00084776691VFRM7'")
         logged = lines.read_arrow_table(columns=("curruuid", "seqnum"))
         expired = refined.read_arrow_table(row_filter=f"state == {int(State.EXPIRED)}")
         views = refined.read_arrow_table(row_filter="snapunix is not null")

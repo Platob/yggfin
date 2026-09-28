@@ -122,7 +122,7 @@ storages = Storages.from_dict(
 )
 # The bridge prints the reject's lines at 23:59, two hours ahead of its frame.
 evening = window_of("2026-08-14T21:00:00Z", "2026-08-15T00:00:00Z")
-order = "SELL:931070583-1940-30712_192"
+order = "SELL:816179183-1983-98963_912"
 
 
 def rows(table: str) -> list:
@@ -275,7 +275,7 @@ with storages:
     assert later == books(BOOKS)
     first = later[0]
     assert first["currunix"] == first["snapunix"] == opened[0]
-    assert (first["crosscode"], len(first["alive"])) == ("RJEA:XXXXXX", 1)
+    assert (first["crosscode"], len(first["alive"])) == ("JOVM:XXXXXX", 1)
 ```
 
 ## The row

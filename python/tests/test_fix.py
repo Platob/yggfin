@@ -61,28 +61,28 @@ MESSAGES = FRAMES + SPLIT
 #: chains on its own `ExecID`. Lifecycle removes repeated deliveries and may
 #: emit an expiry. The shipped header matches every one of the 144 lines, so
 #: every observation carries the session, context and sequence the fold
-#: merges on. The cancel reject of `931070583-1940-30712_192` states no
+#: merges on. The cancel reject of `816179183-1983-98963_912` states no
 #: `Side(54)` and joins the one live side of its order, the sell; the
 #: bridge's own two restatements of it arrive after that chain ended, so no
 #: side of the identity is live to lend them one and they keep the bare code.
 CHAINS = {
     "": (1, 1, 0),
-    "830850681": (1, 1, 0),
-    "931070583-1940-30712_192": (2, 1, 0),
-    "BUY:00079132541GLXC0": (1, 1, 0),
-    "BUY:00079132557GLXC0": (4, 4, 2),
-    "BUY:00079132558GLXC0": (2, 1, 0),
-    "BUY:00079132559GLXC0": (3, 3, 2),
-    "BUY:20260814_CQ9_LIAPUS_9623": (1, 1, 0),
-    "BUY:ExecID=00064703457GBYZ0": (1, 1, 0),
-    "BUY:ExecID=00064703461GBYZ0": (2, 1, 0),
-    "BUY:ExecID=00064703467GBYZ0": (2, 2, 0),
-    "BUY:ExecID=00064703468GBYZ0": (1, 1, 0),
-    "BUY:ExecID=00064703546GBYZ0": (1, 1, 0),
-    "BUY:ExecID=1705": (1, 1, 0),
-    "BUY:XM8NNITE383": (1, 1, 0),
-    "BUY:XM8NNITE384": (1, 1, 0),
-    "SELL:931070583-1940-30712_192": (2, 2, 1),
+    "485586100": (1, 1, 0),
+    "816179183-1983-98963_912": (2, 1, 0),
+    "BUY:00036189167VFRM7": (1, 1, 0),
+    "BUY:00037497066VFRM7": (3, 3, 2),
+    "BUY:00057637971VFRM7": (2, 1, 0),
+    "BUY:00084776691VFRM7": (4, 4, 2),
+    "BUY:20260814_DT6_PGYVLK_8840": (1, 1, 0),
+    "BUY:ExecID=00030561317VOJO7": (1, 1, 0),
+    "BUY:ExecID=00062178347VOJO7": (1, 1, 0),
+    "BUY:ExecID=00069354334VOJO7": (1, 1, 0),
+    "BUY:ExecID=00071435545VOJO7": (2, 1, 0),
+    "BUY:ExecID=00089357553VOJO7": (2, 2, 0),
+    "BUY:ExecID=3494": (1, 1, 0),
+    "BUY:KL3RCZUA564": (1, 1, 0),
+    "BUY:KL3RCZUA620": (1, 1, 0),
+    "SELL:816179183-1983-98963_912": (2, 2, 1),
 }
 
 #: How many rows a table keyed on `curruuid` holds after the whole capture,
@@ -877,7 +877,7 @@ def test_the_walk_reads_the_row_and_never_the_capture_beside_it(raw, refined) ->
     A line's text is not content here. The walk reads only the native row,
     whose `srcuuids` name the stored lines it joins back to.
     """
-    chain = "BUY:00079132557GLXC0"
+    chain = "BUY:00084776691VFRM7"
     assert _chains(refined)[chain] == CHAINS[chain] == (4, 4, 2)
     assert refined.column_names == raw.column_names
     assert set(_sources(refined)) <= set(_sources(raw))
