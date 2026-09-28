@@ -22,8 +22,9 @@ count read these bytes, and the digest below is what pins them.
 Every order, execution, trade and venue identifier, account, party, comp id,
 conversation id, person, counterparty and host in it is a pseudonym: one per
 value, of its length and character classes, so every frame keeps its
-`BodyLength(9)` and every chain joins as it did. Instruments, prices,
-quantities and clocks are the market's own. Every task lands the rows the
+`BodyLength(9)` and every chain joins as it did, and every `CheckSum(10)` is
+the sum of the bytes published. Instruments, prices, quantities and clocks
+are the market's own. Every task lands the rows the
 original bytes landed, identities aside: party ids keep the order a message
 sorts them in, and the pseudonyms were drawn so that the messages of one
 instant, which the walk and the book fold order by identity, still arrive in
@@ -32,7 +33,7 @@ the order they did.
 Its content SHA-256, as `sha256sum` prints it, is:
 
 ```text
-7e89482019f0b9a47cf4c9dcfb912c1750d706d8372f807b4acc003c88034a44
+a86eebbea2a32427965094f0d7b336becf4c3e3050c72c1ebf98a5819713f7e0
 ```
 
 Every line sits under the bridge's bracket and is dated 2026-08-14 by the
