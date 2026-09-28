@@ -106,6 +106,7 @@ sources:
           - 3001
           - 3002
           - 3003
+          - 3004
           - 4000
           - 4001
           - 4002
@@ -306,7 +307,9 @@ sources:
       description: Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted)
     - name: msgcat
       data_type: int
-      description: The stable integer code for the message type's business category.
+      description: 'The business category of the message type, as the member of the marketdatakind enum:
+        the dictionary''s FIX:msgcat for the type, UNKN where it files none; a row stating one is the
+        row''s word.'
     - name: msgseqnum
       data_type: long
       description: Integer message sequence number.
@@ -362,6 +365,11 @@ sources:
     - name: isincode
       data_type: string
       description: The normalized ISIN the message identifies.
+    - name: forexcode
+      data_type: string
+      description: 'The currency pair the message is about, canonical CCY1/CCY2: the FOREX entry of the
+        message''s security identifiers, a view of get_securityids(); detected off Symbol(55) where the
+        message states no other class; row-stated when written.'
     - name: bloombergcode
       data_type: string
       description: The normalized Bloomberg identifier the message identifies.
@@ -373,6 +381,10 @@ sources:
       description: 'The normalized market MIC the message identifies: LastMkt, else ExDestination, the
         market a bridge''s instrument key names or SecurityExchange, the first an ISO 10383 MIC or a Reuters
         mnemonic resolving to one; a bridge''s INSTRUMENT[EXCHANGE] states it.'
+    - name: strikepx
+      data_type: decimal(38, 18)
+      description: 'The option strike price the message identifies: StrikePrice, as the decimal leaf;
+        a row stating one is the row''s word.'
     - name: securitytype
       data_type: string
       description: 'Indicates type of security. Security type enumerations are grouped by Product(460)
@@ -463,8 +475,30 @@ sources:
       data_type: string
       description: Message reference for Quote Response
     - name: side
-      data_type: string
+      data_type: int
       description: 'Side of order (see Volume : "Glossary" for value definitions)'
+      data_tests:
+      - accepted_values:
+          values:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 9
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 17
+          quote: false
     - name: price
       data_type: decimal(38, 18)
       description: Price per unit of quantity (e.g. per share)
@@ -576,6 +610,7 @@ sources:
           - 3001
           - 3002
           - 3003
+          - 3004
           - 4000
           - 4001
           - 4002
@@ -753,14 +788,10 @@ sources:
         Always defined as three characters. (Always unencrypted)'
     - name: metadata
       data_type: map<string, string>
-      description: What a bridge stated under its own namespaces - a `TECH.` or an `AMON.` key - each
-        under the key as the bridge spelled it, folded, in sorted order.
-    - name: nofixentries
-      data_type: int
-      description: How many residual entries remain outside the row's projected columns.
+      description: 'What a message stated that is no field: a bridge''s namespaced keys - a `TECH.` or
+        an `AMON.` key - and every key no dictionary resolved, each under the key as it was spelled, folded,
+        in sorted order.'
     - name: fixentries
-      data_type: 'list<struct<tag: int, name: string, value: string, fixentries: list<struct<tag: int,
-        name: string, value: string, fixentries: list<struct<tag: int, name: string, value: string, fixentries:
-        string>>>>>>'
-      description: Content not represented by another column, in arrival order, beside what the dictionary
-        made of it.
+      data_type: map<string, string>
+      description: 'Content no other column represents, keyed by each field''s tag:name: a scalar''s wire
+        text, a group or a component as the JSON of what it holds, keyed the same way.'

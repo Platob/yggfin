@@ -75,10 +75,10 @@ with storages:
     first = run(storages, "file:data/capture/ulbridge.log", window)
     assert {task: landed.written for task, landed in first.items()} == {
         "parse_log_messages": 128,
-        "parse_fix_messages_raw": 41,
-        "parse_fix_messages_refined": 14,
-        "parse_books": 6,
-        "parse_orders": 1,
+        "parse_fix_messages_raw": 74,
+        "parse_fix_messages_refined": 49,
+        "parse_books": 29,
+        "parse_orders": 9,
         "parse_quotes": 0,
         "parse_executions": 7,
     }
@@ -140,8 +140,9 @@ delivery dated three hours apart do not fold.
 `parse_fix_messages_refined` reads its window and one hour before it
 (`HISTORY`) and writes the events the walk dates inside its window, so an
 event lands only in a window that holds both its bronze row and the instant
-it is walked to. Hourly windows over the capture's day land fewer events than
-one window over the day does:
+it is walked to. Counted in events -- `snapshot_millis=0`, so no hourly view
+is landed beside them -- hourly windows over the capture's day land fewer
+than one window over the day does:
 
 ```python
 import datetime
@@ -174,15 +175,17 @@ hours = [
 with storages:
     parse_log_messages("file:data/capture/ulbridge.log", storages, day)
     parse_fix_messages_raw(storages, day)
-    hourly = sum(parse_fix_messages_refined(storages, hour).written for hour in hours)
-    daily = parse_fix_messages_refined(storages, day).written
-    assert (hourly, daily) == (16, 19)
+    hourly = sum(
+        parse_fix_messages_refined(storages, hour, snapshot_millis=0).written for hour in hours
+    )
+    daily = parse_fix_messages_refined(storages, day, snapshot_millis=0).written
+    assert (hourly, daily) == (23, 27)
 ```
 
 Read in the bridge's zone, the same capture lands every event hour by hour
 but one: an expiry whose order began more than `HISTORY` before it, which only
 a window holding the whole chain places. The duplicate observations fold too,
-so the day holds 16 events rather than 19:
+so the day holds 23 events rather than 27:
 
 ```python
 import datetime
@@ -217,9 +220,11 @@ with storages:
         "file:data/capture/ulbridge.log", storages, day, timezone="Europe/Zurich"
     )
     parse_fix_messages_raw(storages, day)
-    hourly = sum(parse_fix_messages_refined(storages, hour).written for hour in hours)
-    daily = parse_fix_messages_refined(storages, day).written
-    assert (hourly, daily) == (15, 16)
+    hourly = sum(
+        parse_fix_messages_refined(storages, hour, snapshot_millis=0).written for hour in hours
+    )
+    daily = parse_fix_messages_refined(storages, day, snapshot_millis=0).written
+    assert (hourly, daily) == (22, 23)
 ```
 
 Schedule for it:
@@ -240,8 +245,9 @@ Every scan hands the window to Iceberg as a predicate on `currunix`, which
 Iceberg projects through the hour transform, so a task plans only the
 partitions its window covers: `parse_fix_messages_raw` the window's hours of
 bronze `log_messages` and the epoch hour, `parse_fix_messages_refined` those
-of bronze `fix_messages` and the hour before, `parse_books` and the
-flatteners exactly the window's hours of silver. `IcebergDataset.scan_plan`
+of bronze `fix_messages` and the hour before, `parse_books` those of silver
+`fix_messages` and the hour before, and the flatteners exactly the window's
+hours of silver `books`. `IcebergDataset.scan_plan`
 shows what a predicate plans without reading it:
 
 ```python

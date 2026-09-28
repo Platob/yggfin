@@ -12,7 +12,7 @@ and wrote. `parse_log_messages` takes the capture it reads first.
 | [`parse_log_messages`](parse-log-messages.md) | a capture `IOBase` or URI | `bronze.record_keeping.log_messages` | on `curruuid` within its hour |
 | [`parse_fix_messages_raw`](parse-fix-messages-raw.md) | `bronze.record_keeping.log_messages` | `bronze.record_keeping.fix_messages` | on `curruuid` within its hour |
 | [`parse_fix_messages_refined`](parse-fix-messages-refined.md) | `bronze.record_keeping.fix_messages`, from `HISTORY` before the window | `silver.record_keeping.fix_messages` | on `curruuid` within its hour |
-| [`parse_books`](parse-books.md) | `silver.record_keeping.fix_messages` | `silver.record_keeping.books` | the exact window, in one snapshot |
+| [`parse_books`](parse-books.md) | `silver.record_keeping.fix_messages`, from `HISTORY` before the window | `silver.record_keeping.books` | the exact window, in one snapshot |
 | [`parse_orders`](parse-orders-quotes-executions.md) | one `silver.record_keeping.books` snapshot | `silver.record_keeping.orders` | the exact window, in one snapshot |
 | [`parse_quotes`](parse-orders-quotes-executions.md) | one `silver.record_keeping.books` snapshot | `silver.record_keeping.quotes` | the exact window, in one snapshot |
 | [`parse_executions`](parse-orders-quotes-executions.md) | one `silver.record_keeping.books` snapshot | `silver.record_keeping.executions` | the exact window, in one snapshot |
@@ -98,7 +98,7 @@ is published. Its refusals:
 | `row header captures nothing for ...` | a `rowheader` that renames or drops a capture |
 | `FIX registry contains no specification fields` | a codec over an empty dictionary |
 | `FixCodec.__new__() got an unexpected keyword argument` | a codec pin the native codec does not declare |
-| `ArrowInvalid ... expected a bid or ask side` / `expected a symbol outside global mode` | `parse_books` met an admitted message the book fold cannot read; it is an error, never a skipped row |
+| `ArrowInvalid ... expected a bid or ask operation` | `parse_books` met an admitted message the book fold cannot read, such as one stating no `Side(54)` whose order has no live side to lend it one; it is an error, never a skipped row |
 | `expected a nonnegative book snapshot_id or None` | a flattening task handed a bad snapshot |
 | `... has no snapshot N: table is missing` | a flattening task pinned to a snapshot of a books table that does not exist; nothing was written |
 | `unable to open database file` | a SQLite catalog whose folder does not exist |

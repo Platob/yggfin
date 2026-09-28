@@ -31,12 +31,12 @@ that holds it, and `<namespace>.<table>` its name in that catalog.
 | table | written by | columns |
 | --- | --- | ---: |
 | `bronze.record_keeping.log_messages` | `parse_log_messages` | 23 |
-| `bronze.record_keeping.fix_messages` | `parse_fix_messages_raw` | 132 |
-| `silver.record_keeping.fix_messages` | `parse_fix_messages_refined` | 132 |
-| `silver.record_keeping.books` | `parse_books` | 59 |
-| `silver.record_keeping.orders` | `parse_orders` | 49 |
-| `silver.record_keeping.quotes` | `parse_quotes` | 49 |
-| `silver.record_keeping.executions` | `parse_executions` | 49 |
+| `bronze.record_keeping.fix_messages` | `parse_fix_messages_raw` | 133 |
+| `silver.record_keeping.fix_messages` | `parse_fix_messages_refined` | 133 |
+| `silver.record_keeping.books` | `parse_books` | 53 |
+| `silver.record_keeping.orders` | `parse_orders` | 48 |
+| `silver.record_keeping.quotes` | `parse_quotes` | 48 |
+| `silver.record_keeping.executions` | `parse_executions` | 48 |
 
 Every table is keyed on `curruuid`, partitioned by `hour(currunix)` and sorted
 by `currunix, seqnum, curruuid`. The column meanings are on the
@@ -95,7 +95,7 @@ source per layer and namespace, named as the layer:
 | `tables[].name` | the table, as a model names it |
 | `tables[].meta` | the task that writes it, and its `primary_key`, `partitioned_by` and `sorted_by` |
 | `columns[].data_type` | the column's Iceberg type |
-| `columns[].data_tests` | `not_null` on a required column, `unique` on the key, and `accepted_values` with every state code on `state` |
+| `columns[].data_tests` | `not_null` on a required column, `unique` on the key, and `accepted_values` with every state code on `state`, every side code on `side` and every market data kind on `marketdatakind` |
 
 Copy a layer's file under a dbt project's model paths, or point
 `model-paths` at it, and a model selects a table by the source name and the

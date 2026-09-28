@@ -108,7 +108,7 @@ def test_a_fix_table_is_deployed_in_the_shape_its_codec_types(
         schema = storages.catalog(layer).load_table(name).schema()
         columns = [column.name for column in schema.fields]
         assert "symbol" in columns and "msgtype" not in columns, table
-        assert len(columns) == 33, table
+        assert len(columns) == 34, table
     assert sorted(storages.tables()) == [FIX_MESSAGES_RAW, FIX_MESSAGES]
 
 

@@ -32,7 +32,7 @@ assert side.name == "side"
 assert side.display == "Side"
 assert side.fix.tag == 54
 assert side.fix.branches == []
-assert str(side.dtype.into_arrow()) == "string"
+assert str(side.dtype.into_arrow()) == "int32"
 assert codes[0]["value"] == "1"
 assert codes[0]["name"] == "Buy"
 ```
@@ -149,12 +149,13 @@ assert {"value": "D", "name": "NewOrderSingle"}.items() <= codes[
 
 ## Crate fields
 
-Every registry starts with 40 crate definitions, 38 scalar and two nested --
-`metadata` and `srcuuids` -- at tags 65003 to 65077. They cover the event
-clocks and identities, the lifecycle `state` and `msgcat`, the capture
-context a bridge's row header fills, the residual entry count, the
-normalized instrument codes `isincode`, `bloombergcode`, `figicode` and
-`miccode`, and the bridge's own order and instrument identifiers. They are
+Every registry starts with 41 crate definitions, 39 scalar and two nested --
+`srcuuids` and `metadata` -- at tags 65001 to 65041, numbered in the order
+the fixed row states them. They cover the event clocks and identities, the
+lifecycle `state` and `msgcat`, the capture context a bridge's row header
+fills, the normalized instrument codes `isincode`, `forexcode`,
+`bloombergcode`, `figicode` and `miccode`, the option's `strikepx`, and the
+bridge's own order and instrument identifiers. They are
 derived facts rather than copies of dictionary shards.
 
 ```python
@@ -163,9 +164,9 @@ from rekep.fix import fix_crate_fields
 fields = fix_crate_fields()
 tags = [field.fix.tag for field in fields]
 
-assert len(tags) == 40
-assert min(tags) == 65003 and max(tags) == 65077
-assert [field.name for field in fields if field.dtype.is_nested] == ["metadata", "srcuuids"]
+assert len(tags) == 41
+assert min(tags) == 65001 and max(tags) == 65041
+assert [field.name for field in fields if field.dtype.is_nested] == ["srcuuids", "metadata"]
 ```
 
 ## Iterate, filter, and export
@@ -197,7 +198,7 @@ so a task never creates a narrow table.
 
 ## Browser
 
-Search the same 7,789 definitions here, by tag, name, spelling or description:
+Search the same 7,790 definitions here, by tag, name, spelling or description:
 
 <div data-fix="registry"></div>
 

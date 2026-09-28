@@ -20,7 +20,7 @@ from pyiceberg.partitioning import PartitionSpec
 from pyiceberg.schema import Schema
 from pyiceberg.table.sorting import SortOrder
 
-from rekep import State
+from rekep import MarketDataKind, Side, State
 from rekep.deploy import TABLES, Deployed
 from rekep.iceberg import (
     CONTRACT_KEYS,
@@ -213,9 +213,16 @@ def test_a_source_table_is_its_contract(table: Deployed, dump: ModuleType) -> No
         tests = column.get("data_tests", [])
         assert ("not_null" in tests) is member["required"], column["name"]
         assert ("unique" in tests) is (column["name"] == "curruuid"), column["name"]
-    (state,) = [column for column in declared["columns"] if column["name"] == "state"]
-    (accepted,) = [test for test in state["data_tests"] if isinstance(test, dict)]
-    assert accepted["accepted_values"]["values"] == [int(member) for member in State]
+    enums = {"state": State, "side": Side, "marketdatakind": MarketDataKind}
+    assert "state" in [column["name"] for column in declared["columns"]]
+    for column in declared["columns"]:
+        accepted = [test for test in column.get("data_tests", []) if isinstance(test, dict)]
+        if column["name"] not in enums:
+            assert not accepted, column["name"]
+            continue
+        (held,) = accepted
+        values = [int(member) for member in enums[column["name"]]]
+        assert held["accepted_values"]["values"] == values, column["name"]
 
 
 def test_gold_declares_its_source_and_no_table() -> None:

@@ -9,6 +9,7 @@ are written into silver directly to pin replacement and snapshot pinning.
 
 from __future__ import annotations
 
+import collections
 import concurrent.futures
 import datetime
 import uuid
@@ -18,17 +19,19 @@ from typing import Any
 import pyarrow
 import pytest
 
-from rekep import Storages
+from rekep import Side, State, Storages, pipeline
 from rekep.fields import stored_arrow_reader
 from rekep.fix import EVENT_CLOCK, FixCodec, fix_message_field, fix_parse_field
 from rekep.iceberg import IcebergDataset
-from rekep.market import EVENT_KINDS, SIDES, book_event_arrow_reader, market_window_filter
+from rekep.market import EVENT_KINDS, book_event_arrow_reader, market_window_filter
 from rekep.pipeline import (
     BOOKS,
     EVENTS,
     FIX_MESSAGES,
     FLATTENED,
     FLATTENERS,
+    HISTORY,
+    SNAPSHOT_MILLIS,
     Landed,
     parse_books,
     parse_fix_messages_raw,
@@ -75,7 +78,9 @@ def refined(storages: Storages, frames: tuple[bytes, ...]) -> None:
     """Replace `FRAMES_WINDOW` of silver `fix_messages` with `frames`, parsed and stored."""
     codec = FixCodec.from_env(batch_row_size=2)
     field = fix_message_field(codec)
-    native = codec.arrow_reader(fix_parse_field(codec), map(codec.parse_fix_line, frames))
+    # The line door splits a trade report into the executions it states.
+    messages = [message for frame in frames for message in codec.parse_line(frame)]
+    native = codec.arrow_reader(fix_parse_field(codec), messages)
     reader = stored_arrow_reader(native, field)
     try:
         dataset = storages.dataset(FIX_MESSAGES, field=field)
@@ -105,21 +110,28 @@ def fanout(storages: Storages, books: Landed) -> dict[str, pyarrow.Table]:
 def test_every_flattened_event_is_a_book_delta_folded_from_one_silver_event(
     landing: Landing,
 ) -> None:
-    """An order or a quote is a delta of one book side, an execution one of a
+    """An order or a quote is a delta of one book, an execution one of a
     book's executions; each names the lines of the silver event it was folded
-    from, and carries that event's instrument: its ticker is the symbol and
-    its ISIN the one the event states."""
+    from, and carries that event's instrument: its ISIN the one the event
+    states, and its category the key of the book it stands in, since every
+    book is a `MIC:CFI` category and no event states a ticker."""
     books = landing.table(BOOKS).to_pylist()
     assert books, "the window's events fold into books"
     carried: dict[str, dict[bytes, dict[str, Any]]] = {kind: {} for kind in EVENTS}
     for book in books:
-        for side in SIDES:
-            for delta in (book[side] or {}).get("deltas") or ():
-                kind = next(kind for kind, leaf in EVENT_KINDS.items() if leaf == delta["kind"])
-                carried[kind][delta["curruuid"]] = book
+        for delta in book["deltas"] or ():
+            kind = next(
+                kind for kind, code in EVENT_KINDS.items() if code == delta["marketdatakind"]
+            )
+            carried[kind][delta["curruuid"]] = book
         for execution in book["executions"] or ():
             carried["executions"][execution["curruuid"]] = book
-    silver = [row for row in landing.table(FIX_MESSAGES).to_pylist() if row["recdunix"]]
+    # A grid view names the lines of the event it restates: only events fold.
+    silver = [
+        row
+        for row in landing.table(FIX_MESSAGES).to_pylist()
+        if row["recdunix"] and row["snapunix"] is None
+    ]
     folded = {tuple(sorted(row["srcuuids"])): row for row in silver}
 
     print()
@@ -130,18 +142,21 @@ def test_every_flattened_event_is_a_book_delta_folded_from_one_silver_event(
             book = carried[kind][event["curruuid"]]
             source = folded[tuple(sorted(event["srcuuids"]))]
             securities = dict(event["securityids"] or ())
+            category = f"{event['miccode'] or 'XXXX'}:{event['cficode'] or 'XXXXXX'}"
             print(
-                f"{table:<34} ..{short(event['curruuid'])} {event['kind']:<15} "
-                f"{event['ticker']:<12} {securities.get('ISIN')} "
+                f"{table:<34} ..{short(event['curruuid'])} {event['marketdatakind']:<3} "
+                f"{category:<12} {securities.get('ISIN')} "
                 f"in book ..{short(book['curruuid'])} "
                 f"folded from silver ..{short(source['curruuid'])} {source['crosscode']}"
             )
-            assert event["kind"] == EVENT_KINDS[kind]
+            assert event["marketdatakind"] == EVENT_KINDS[kind]
             assert event[EVENT_CLOCK] == source[EVENT_CLOCK]
             assert event["crosscode"] == source["crosscode"]
             assert event["state"] == source["state"]
-            assert event["ticker"] == source["symbol"] == book["ticker"]
-            assert securities.get("ISIN") == source["isincode"]
+            assert event["side"] == source["side"]
+            assert event["ticker"] is None and book["ticker"] is None
+            assert book["crosscode"] == category
+            assert event["isincode"] == securities.get("ISIN") == source["isincode"]
 
 
 def test_the_flatteners_side_by_side_land_what_they_land_in_turn(landing: Landing) -> None:
@@ -163,26 +178,245 @@ def test_the_flatteners_side_by_side_land_what_they_land_in_turn(landing: Landin
         assert landing.table(table).equals(held), table
 
 
-def test_books_refuse_a_trade_report_whose_side_states_no_side(storages: Storages) -> None:
-    """The capture's 16:52 line carries a trade report dated 14:52:55 whose
-    side group states no `Side(54)`. The fold admits it and refuses it by
-    path, so a window holding it lands no book: an invalid admitted message
-    stays an error, and the books keep what they held."""
-    window = (
+#: The order the capture's cancel reject answers, under the side the walk gives it.
+CANCELLED = "SELL:931070583-1940-30712_192"
+
+
+def test_books_fold_a_cancel_reject_under_the_side_of_its_order(storages: Storages) -> None:
+    """The trade report of 14:52:55, whose side group states no `Side(54)`,
+    splits off no execution and so books nothing: the window's books are the
+    hourly restatements of the order the walk left alive. The capture's last
+    order message is a cancel reject at 21:59:46 that states no `Side(54)`
+    either; the walk joins it to the one live side of its order, the sell,
+    and writes that side into its silver row, so the fold books it beside the
+    cancel request it answers and the books outside its window stay."""
+    parse_log_messages(CAPTURE.as_uri(), storages, DAY)
+    traded = (
         datetime.datetime(2026, 8, 14, 14, tzinfo=UTC),
         datetime.datetime(2026, 8, 14, 17, tzinfo=UTC),
     )
-    parse_log_messages(CAPTURE.as_uri(), storages, DAY)
-    parse_fix_messages_raw(storages, window)
+    parse_fix_messages_raw(storages, traded)
+    parse_fix_messages_refined(storages, traded)
+    assert "AE" in read(storages, FIX_MESSAGES).column("msgtype").to_pylist()
+    assert parse_books(storages, traded).written == 3
+    booked = read(storages, BOOKS).to_pylist()
+    assert [book[EVENT_CLOCK].hour for book in booked] == [14, 15, 16]
+    for book in booked:
+        assert book["snapunix"] == book[EVENT_CLOCK]
+        assert not book["deltas"] and not book["executions"]
+        assert (book["crosscode"], len(book["alive"])) == ("XXXX:XXXXXX", 1)
+
+    window = (
+        datetime.datetime(2026, 8, 14, 21, tzinfo=UTC),
+        datetime.datetime(2026, 8, 14, 22, tzinfo=UTC),
+    )
+    parse_fix_messages_raw(storages, DAY)
     walked = parse_fix_messages_refined(storages, window)
-    held = read(storages, FIX_MESSAGES).select((EVENT_CLOCK, "msgtype", "state", "crosscode"))
-    print(f"\nrefined over [14:00, 17:00): {walked}\n{held.to_pylist()}")
-    assert "AE" in held.column("msgtype").to_pylist()
+    held = read(storages, FIX_MESSAGES).select((EVENT_CLOCK, "msgtype", "side", "crosscode"))
+    print(f"\nrefined over [21:00, 22:00): {walked}\n{held.to_pylist()}")
+    rejected = datetime.datetime(2026, 8, 14, 21, 59, 46, tzinfo=UTC)
+    assert [row for row in held.to_pylist() if row["msgtype"] == "9"] == [
+        {EVENT_CLOCK: rejected, "msgtype": "9", "side": Side.SELL, "crosscode": CANCELLED}
+    ]
 
-    with pytest.raises(pyarrow.ArrowInvalid, match=r"NoSides\(552\)\[0\]\.Side\(54\)"):
-        parse_books(storages, window)
+    # The window's three silver rows: the reject, the cancel request it
+    # answers, and the bridge's restatement of the reject, which keeps the
+    # bare code and books nothing.
+    landed = parse_books(storages, window)
+    print(f"books over [21:00, 22:00): {landed}")
+    assert (landed.read, landed.written) == (3, 1)
+    stored = read(storages, BOOKS).to_pylist()
+    assert stored[:-1] == booked, "the books outside the window stay"
+    book = stored[-1]
+    assert (book[EVENT_CLOCK], book["snapunix"], book["crosscode"]) == (
+        rejected,
+        None,
+        "XXXX:XXXXXX",
+    )
+    # One instant's steps of the chain fold in the chain's order whatever
+    # order silver reads them back in: the cancel request, then the reject,
+    # which states the order rejected, so the order leaves the book.
+    assert [
+        (delta["crosscode"], delta["side"], State(delta["state"]).name) for delta in book["deltas"]
+    ] == [(CANCELLED, Side.SELL, "PENDING_CANCEL"), (CANCELLED, Side.SELL, "REJECTED")]
+    assert not book["alive"]
+    assert not book["executions"]
 
-    assert BOOKS not in storages.tables() or read(storages, BOOKS).num_rows == 0
+
+#: The capture's day up to the window's end: the report of 01:03 and the
+#: events of 12:46, in two categories, and nothing the fold refuses.
+MORNING = (
+    datetime.datetime(2026, 8, 14, tzinfo=UTC),
+    datetime.datetime(2026, 8, 14, 16, 30, tzinfo=UTC),
+)
+
+#: The whole hour after the 01:03 report: its window opens on the book that
+#: report left, which only the hour before `start` holds.
+OPENED = (datetime.datetime(2026, 8, 14, 2, tzinfo=UTC), MORNING[1])
+
+
+def stored_books(storages: Storages, table: str, since: datetime.datetime) -> list:
+    """The books of `table` dated at or after `since`, as rows."""
+    held = read(storages, table)
+    return [row for row in held.to_pylist() if row[EVENT_CLOCK] >= since]
+
+
+def test_a_window_opens_on_the_book_its_hour_before_left(
+    storages: Storages, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The fold reads `HISTORY` before `start` and writes only the window, and
+    its hourly grid restates each book at every whole hour: so the window
+    opening at 02:00 opens on the book the 01:03 report left, and every book
+    it lands is the one the fold over the whole morning lands at that
+    instant. Silver holds the trade the report left alive restated on every
+    hour, so even without the hour before the window opens on that book."""
+    assert SNAPSHOT_MILLIS == HISTORY / datetime.timedelta(milliseconds=1) == 3_600_000
+    parse_log_messages(CAPTURE.as_uri(), storages, DAY)
+    parse_fix_messages_raw(storages, MORNING)
+    parse_fix_messages_refined(storages, MORNING)
+    whole = parse_books(storages, MORNING)
+    opened = parse_books(storages, OPENED, target="silver.record_keeping.opened_books")
+
+    expected = stored_books(storages, BOOKS, OPENED[0])
+    found = stored_books(storages, "silver.record_keeping.opened_books", OPENED[0])
+    print(f"\nwhole morning {whole}\nfrom 02:00    {opened}")
+    for book in found:
+        print(f"{book[EVENT_CLOCK]:%H:%M:%S.%f} {book['snapunix']} {book['crosscode']}")
+    assert opened.read == whole.read == 49, "the hour before 02:00 holds the 01:03 report"
+    assert found == expected
+    first = found[0]
+    assert first[EVENT_CLOCK] == first["snapunix"] == OPENED[0]
+    assert first["crosscode"] == "RJEA:XXXXXX"
+    assert [entry["state"] for entry in first["alive"]] == [4002]
+    assert not first["deltas"] and not first["executions"], "a grid book restates no event"
+
+    monkeypatch.setattr(pipeline, "HISTORY", datetime.timedelta(0))
+    cold = parse_books(storages, OPENED, target="silver.record_keeping.cold_books")
+    held = stored_books(storages, "silver.record_keeping.cold_books", OPENED[0])
+    assert cold.read == whole.read - 2, "the 01:03 report and the execution split out of it"
+    assert held == expected, "the view of 02:00 carries the book the report left"
+
+
+def test_books_at_a_window_start_are_the_books_the_whole_history_holds(
+    storages: Storages,
+) -> None:
+    """Every event of the capture's afternoon is dated 12:46, so a window
+    opening at 13:00 or 14:00 reads none of them: what its books hold at
+    `start` comes from the views the walk restated on the hour, which
+    silver holds. Each book it lands is the one the fold over the whole
+    morning lands at that instant -- but a book the morning's fills left
+    empty, which the whole fold keeps restating with nothing in it, names no
+    live chain a view could carry, so a window opening after it emptied
+    does not know it."""
+    parse_log_messages(CAPTURE.as_uri(), storages, DAY)
+    parse_fix_messages_raw(storages, MORNING)
+    parse_fix_messages_refined(storages, MORNING)
+    parse_books(storages, MORNING)
+    for hour, read_rows, emptied in ((13, 37, 0), (14, 17, 3)):
+        start = datetime.datetime(2026, 8, 14, hour, tzinfo=UTC)
+        target = f"silver.record_keeping.books_from_{hour}"
+        landed = parse_books(storages, (start, MORNING[1]), target=target)
+        found = stored_books(storages, target, start)
+        expected = stored_books(storages, BOOKS, start)
+        print(f"\nfrom {hour}:00 {landed}: {len(found)} of the whole fold's {len(expected)}")
+        assert landed.read == read_rows
+        assert found == [book for book in expected if book in found]
+        missing = [book for book in expected if book not in found]
+        assert len(missing) == emptied
+        for book in missing:
+            assert book["snapunix"] == book[EVENT_CLOCK]
+            assert (book["crosscode"], book["alive"], book["deltas"], book["executions"]) == (
+                "XSWX:ESVTFR",
+                [],
+                [],
+                [],
+            )
+            assert not book["bidlimits"] and not book["asklimits"]
+        standing = [book for book in found if book[EVENT_CLOCK] == start and book["alive"]]
+        assert sorted((book["crosscode"], len(book["alive"])) for book in standing) == [
+            ("RJEA:XXXXXX", 1),
+            ("XXXX:XXXXXX", 1),
+        ]
+
+
+#: The keys every event kind is matched to the silver event it flattens by.
+MATCHED = (EVENT_CLOCK, "crosscode", "state")
+
+
+def test_the_book_grid_flattens_every_event_once(storages: Storages) -> None:
+    """Neither grid adds an event: a lifecycle view is folded as its book's
+    membership at its instant and a grid book restates what its book holds,
+    each answering no delta or execution, so the event tables flattened from
+    the hourly silver and books are exactly those flattened with no grid at
+    all. Every order is one silver event, the two reports of one fill logged
+    at one instant included, which share one key; the executions split out
+    of those two are one execution."""
+    parse_log_messages(CAPTURE.as_uri(), storages, DAY)
+    parse_fix_messages_raw(storages, MORNING)
+    walked = parse_fix_messages_refined(storages, MORNING)
+    events = parse_fix_messages_refined(
+        storages, MORNING, snapshot_millis=0, target="silver.record_keeping.plain_fix_messages"
+    )
+    gridded = parse_books(storages, MORNING)
+    plain = parse_books(
+        storages,
+        MORNING,
+        snapshot_millis=0,
+        source="silver.record_keeping.plain_fix_messages",
+        target="silver.record_keeping.plain_books",
+    )
+    grid = [row for row in read(storages, BOOKS).to_pylist() if row["snapunix"] is not None]
+    print(f"\nhourly {walked} {gridded}\nnone   {events} {plain}")
+    assert (walked.written, events.written) == (49, 22)
+    assert gridded.written == plain.written + len(grid) == 29
+    assert all(not row["deltas"] and not row["executions"] for row in grid)
+    for kind, task in FLATTENERS.items():
+        hourly = task(storages, MORNING, snapshot_id=gridded.snapshot_id)
+        flat = task(
+            storages,
+            MORNING,
+            snapshot_id=plain.snapshot_id,
+            source="silver.record_keeping.plain_books",
+            target=f"silver.record_keeping.plain_{kind}",
+        )
+        assert hourly.written == flat.written, kind
+        assert (
+            read(storages, EVENTS[kind]).to_pylist()
+            == read(storages, f"silver.record_keeping.plain_{kind}").to_pylist()
+        ), kind
+
+    silver = [row for row in read(storages, FIX_MESSAGES).to_pylist() if row["snapunix"] is None]
+    matched = collections.Counter(tuple(row[key] for key in MATCHED) for row in silver)
+    flattened = set()
+    for kind, (landed, keys) in {"orders": (9, 8), "executions": (7, 7)}.items():
+        held = read(storages, EVENTS[kind]).to_pylist()
+        found = collections.Counter(tuple(row[key] for key in MATCHED) for row in held)
+        identities = {row["curruuid"] for row in held}
+        print(f"{kind}: {len(held)} rows, {len(identities)} keys, off {sum(found.values())} events")
+        assert (len(held), len(identities)) == (landed, keys), kind
+        assert all(row["snapunix"] is None for row in held), "no view is an event"
+        for key, count in found.items():
+            # An order is one delta per event; an execution is one per fill,
+            # however many reports of that fill the walk kept apart.
+            assert count == (matched[key] if kind == "orders" else 1), (kind, key)
+        flattened |= set(found)
+    left = collections.Counter(
+        (row["msgtype"], State(row["state"]).name)
+        for row in silver
+        if tuple(row[key] for key in MATCHED) not in flattened
+    )
+    print(f"not a book input: {dict(left)}")
+    # Administration, the one message the bridge sent as XML, and the chain
+    # of an order only ever acknowledged -- its acknowledgement, its restated
+    # acknowledgement and the expiry that ends it -- execute nothing, so the
+    # fold admits none of them; every other event is flattened, once.
+    assert left == {
+        ("A", "UNKNOWN"): 1,
+        ("n", "FILLED"): 1,
+        ("8", "NEW"): 1,
+        ("8", "UPDATED"): 1,
+        ("8", "EXPIRED"): 1,
+    }
 
 
 # -- books over frames -----------------------------------------------------------
@@ -193,15 +427,16 @@ def test_books_replace_their_window_and_a_pinned_fanout_reads_its_snapshot(
 ) -> None:
     refined(storages, FRAMES)
     first = parse_books(storages, FRAMES_WINDOW)
-    assert (first.read, first.written) == (5, 4)
+    assert (first.read, first.written) == (6, 4)
     original = fanout(storages, first)
     executions = original["executions"].to_pylist()
-    # The update's trade entry states its quantity; the report decomposes into
-    # one execution per side, each at the quantity that side filled.
+    # The update's trade entry states its quantity; the report was split into
+    # one execution per side when it was parsed, each at the quantity that
+    # side filled.
     assert [row["quantity"] for row in executions if row["lastqty"] is None] == [2]
     assert {(row["side"], row["lastqty"]) for row in executions if row["lastqty"]} == {
-        ("BUY", 4),
-        ("SELL", 6),
+        (int(Side.BUY), 4),
+        (int(Side.SELL), 6),
     }
 
     changed = tuple(frame.replace(b"44=99|", b"44=98|") for frame in FRAMES)
@@ -225,6 +460,27 @@ def test_books_replace_their_window_and_a_pinned_fanout_reads_its_snapshot(
         landed = task(storages, FRAMES_WINDOW, snapshot_id=empty.snapshot_id)
         assert (landed.read, landed.written) == (0, 0)
         assert read(storages, EVENTS[kind]).num_rows == 0
+
+
+def test_an_order_stating_no_side_is_refused_and_the_books_keep_their_snapshot(
+    storages: Storages,
+) -> None:
+    """A new order that states no `Side(54)`, with no chain before it to take
+    one from, is admitted and refused by path: an invalid admitted message is
+    an error, never a skipped row, and the books keep what they held."""
+    refined(storages, FRAMES)
+    held = parse_books(storages, FRAMES_WINDOW)
+    booked = read(storages, BOOKS)
+    sideless = b"8=FIX.4.4|35=D|52=20260921-10:00:05|11=O2|55=AAPL|38=5|44=99|10=0|"
+    refined(storages, (*FRAMES, sideless))
+    with pytest.raises(pyarrow.ArrowInvalid, match=r"operation\.side: expected a bid or ask"):
+        parse_books(storages, FRAMES_WINDOW)
+    assert read(storages, BOOKS).equals(booked)
+    dataset = storages.dataset(BOOKS)
+    try:
+        assert dataset.iceberg_table.current_snapshot().snapshot_id == held.snapshot_id
+    finally:
+        dataset.close()
 
 
 def test_an_absent_snapshot_does_not_follow_newly_created_books(storages: Storages) -> None:
@@ -298,8 +554,8 @@ def test_order_and_quote_tasks_read_only_the_nested_deltas(
     refined(storages, FRAMES)
     committed = parse_books(storages, FRAMES_WINDOW)
     books = read(storages, BOOKS)
-    sides = books.select(SIDES)
-    columns = tuple(f"{side}.deltas" for side in SIDES)
+    depth = books.select(("alive", "deltas"))
+    columns = ("deltas",)
     assert FLATTENED["orders"] == FLATTENED["quotes"] == columns
     dataset = storages.dataset(BOOKS)
     try:
@@ -310,9 +566,8 @@ def test_order_and_quote_tasks_read_only_the_nested_deltas(
     finally:
         dataset.close()
     assert projected.num_rows == books.num_rows == 4
-    assert projected.nbytes < sides.nbytes, "the scan must not materialize repeated live depth"
-    for side in projected.schema:
-        assert [member.name for member in side.type] == ["deltas"]
+    assert projected.nbytes < depth.nbytes, "the scan must not materialize repeated live depth"
+    assert projected.schema.names == list(columns)
 
     scans = []
     scan = IcebergDataset.read_arrow_reader
@@ -325,7 +580,7 @@ def test_order_and_quote_tasks_read_only_the_nested_deltas(
 
     monkeypatch.setattr(IcebergDataset, "read_arrow_reader", observed)
     for kind in ("orders", "quotes"):
-        with book_event_arrow_reader(sides.to_reader(), kind) as reader:
+        with book_event_arrow_reader(depth.to_reader(), kind) as reader:
             reference = reader.read_all().sort_by("curruuid")
         landed = FLATTENERS[kind](storages, FRAMES_WINDOW, snapshot_id=committed.snapshot_id)
         assert landed.written == COUNTS[kind]
@@ -337,9 +592,7 @@ def test_order_and_quote_tasks_read_only_the_nested_deltas(
     for selected, snapshot_id, schema in scans:
         assert selected == columns
         assert snapshot_id == committed.snapshot_id
-        assert schema.names == list(SIDES)
-        for side in schema:
-            assert [member.name for member in side.type] == ["deltas"]
+        assert schema.names == list(columns)
 
 
 # -- the whole graph over a market capture -----------------------------------------
@@ -359,13 +612,14 @@ CAPTURED = (
 )
 
 #: Every task over `CAPTURED`'s day: the log lands every line; the parse
-#: leaves the heartbeat out, and the four market frames walk, fold into four
-#: books and flatten into one order, three quotes and three executions.
+#: leaves the heartbeat out and splits the trade report into the two
+#: executions it states, and the six messages walk, fold into four books and
+#: flatten into one order, three quotes and three executions.
 LANDED = {
     "parse_log_messages": Landed(read=5, written=5),
-    "parse_fix_messages_raw": Landed(read=5, written=4),
-    "parse_fix_messages_refined": Landed(read=4, written=4),
-    "parse_books": Landed(read=4, written=4),
+    "parse_fix_messages_raw": Landed(read=5, written=6),
+    "parse_fix_messages_refined": Landed(read=6, written=6),
+    "parse_books": Landed(read=6, written=4),
     "parse_orders": Landed(read=4, written=1),
     "parse_quotes": Landed(read=4, written=3),
     "parse_executions": Landed(read=4, written=3),

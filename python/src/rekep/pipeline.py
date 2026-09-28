@@ -52,9 +52,12 @@ from rekep.fix import (
 )
 from rekep.iceberg import window_filter
 from rekep.market import (
+    FLATTENED_COLUMNS,
+    SNAPSHOT_MILLIS,
     book_arrow_reader,
     book_event_arrow_reader,
     book_field,
+    categorized_symbol_reader,
     market_event_field,
     market_window_filter,
     market_window_reader,
@@ -76,14 +79,11 @@ EXECUTIONS = "silver.record_keeping.executions"
 EVENTS = {"orders": ORDERS, "quotes": QUOTES, "executions": EXECUTIONS}
 
 #: The book columns each event kind flattens; the scan opens no other.
-FLATTENED = {
-    "orders": ("bidside.deltas", "askside.deltas"),
-    "quotes": ("bidside.deltas", "askside.deltas"),
-    "executions": ("executions",),
-}
+FLATTENED = {kind: (column,) for kind, column in FLATTENED_COLUMNS.items()}
 
-#: How far before its window the walk reads: a chain that began in the hour
-#: before `start` is placed, and none of that hour is written.
+#: How far before its window the walk and the book fold read: a chain that
+#: began in the hour before `start` is placed, a book standing at `start`
+#: holds what that hour left resting, and none of that hour is written.
 HISTORY = datetime.timedelta(hours=1)
 
 #: The snapshot summary property that names the `parse_books` write that
@@ -238,19 +238,30 @@ def parse_fix_messages_refined(
     window: Window,
     *,
     codec: FixCodec | None = None,
+    snapshot_millis: int = SNAPSHOT_MILLIS,
     source: str = FIX_MESSAGES_RAW,
     target: str = FIX_MESSAGES,
 ) -> Landed:
     """Walk the bronze `fix_messages` rows of `window` into silver, warmed by `HISTORY` before it.
 
     The walk reads the window and the hour before it in `SORT_COLUMNS` order,
-    undated rows included, and only the events it places in the window --
-    undated ones included -- are written: the hour before warms the chains
-    without replacing their history with a truncated replay, and an expiry
-    the walk generates past `end` waits for its own window. `codec` must be
-    the one the raw rows were parsed with, `FixCodec.from_env()` when None.
+    undated rows included, one hour partition after another, and walks them
+    as they arrive, holding an hour at a time rather than the whole read.
+    Only the rows it places in the window -- undated ones included -- are
+    written: the hour before warms the chains without replacing their
+    history with a truncated replay, and an expiry the walk generates past
+    `end` waits for its own window. `codec` must be the one the raw rows were
+    parsed with, `FixCodec.from_env()` when None.
+
+    `snapshot_millis` is the walk's epoch-aligned grid, `SNAPSHOT_MILLIS`
+    unless stated and zero for none, whatever `codec.snapshot_ns` says: at
+    every grid instant each chain still alive is restated as of it, dated
+    there -- `currunix` and `snapunix` both the tick -- under the identity
+    that instant derives, so a view is a row of its own beside its event.
+    The rows at `start` are the chains the hour before left alive.
     """
-    codec = _codec_or_env(codec)
+    grid = snapshot_millis * 1_000_000 if snapshot_millis > 0 else None
+    codec = _codec_or_env(codec).with_snapshot_ns(grid).with_sorted_lifecycle(True)
     history = (window[0] - HISTORY, window[1])
     with contextlib.ExitStack() as opened:
         field = fix_message_field(codec)
@@ -290,29 +301,50 @@ def parse_books(
     window: Window,
     *,
     codec: FixCodec | None = None,
-    snapshot_millis: int = 0,
+    snapshot_millis: int = SNAPSHOT_MILLIS,
     source: str = FIX_MESSAGES,
     target: str = BOOKS,
 ) -> Landed:
     """Replace `window` of silver `books` and answer the snapshot it committed.
 
-    The book folds the silver `fix_messages` rows of the strict window from no depth
-    before `start`, and every book it answers in the window replaces the
-    window's rows in one commit -- an empty window too, which removes the
-    window's earlier rows. `snapshot_id` is that commit, and is what
-    `parse_orders`, `parse_quotes` and `parse_executions` pin their reads to.
-    `snapshot_millis` above zero emits owned snapshots on that grid.
+    The fold reads the silver `fix_messages` rows of `[start - HISTORY, end)`
+    in `SORT_COLUMNS` order, one book per `MIC:CFI` category -- each row's
+    `symbol` is cleared first, so the fold books it by category -- and only
+    the books it answers in the strict window replace the window's rows, in
+    one commit -- an empty window too, which removes the window's earlier
+    rows. The hour before warms the books, so an entry it left resting is
+    in the book at `start`; an entry older than `HISTORY` is there only
+    through the hourly views of its chain silver holds.
+    `snapshot_id` is that commit, and is what `parse_orders`, `parse_quotes`
+    and `parse_executions` pin their reads to.
+
+    `snapshot_millis` is the fold's epoch-aligned grid, `SNAPSHOT_MILLIS`
+    unless stated and zero for none: at every grid instant each book is
+    restated whole, `snapunix` set, and a delta or an execution is answered
+    once, so a flattener reads every event once. The grid views
+    `parse_fix_messages_refined` lands are folded at their instant as the
+    whole membership of their book there, adding no delta, so the book at
+    `start` holds every chain the walk that landed them saw alive.
     """
     codec = _codec_or_env(codec)
+    history = (window[0] - HISTORY, window[1])
     selected = market_window_filter(window)
     with contextlib.ExitStack() as opened:
         fixed = fix_message_field(codec)
         refined = storages.dataset(source, field=fixed)
         opened.callback(refined.close)
         read = _Count()
-        scanned = read(refined.read_arrow_reader(fixed, row_filter=selected, order_by=SORT_COLUMNS))
+        scanned = read(
+            refined.read_arrow_reader(
+                fixed,
+                row_filter=market_window_filter(history),
+                order_by=SORT_COLUMNS,
+            )
+        )
         opened.callback(scanned.close)
-        folded = book_arrow_reader(codec, scanned, snapshot_millis=snapshot_millis)
+        categorized = categorized_symbol_reader(scanned)
+        opened.callback(categorized.close)
+        folded = book_arrow_reader(codec, categorized, snapshot_millis=snapshot_millis)
         opened.callback(folded.close)
         bounded = market_window_reader(folded, window)
         opened.callback(bounded.close)
@@ -450,6 +482,7 @@ __all__ = [
     "LOG_MESSAGES",
     "ORDERS",
     "QUOTES",
+    "SNAPSHOT_MILLIS",
     "Landed",
     "Storages",
     "parse_books",

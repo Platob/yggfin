@@ -8,8 +8,9 @@ landed as small tables a reader checks a column's meaning against:
 - `docs/samples/<layer>/<table>.md`, representative rows of one table.
 
 The rows follow one story through the layers: the lines of one execution, the
-frames the parse read off them and folded by identity, the one event the walk
-merged them into, and the execution leaf the book fold answered for it.
+frames the parse read off them -- each report of the fill with the execution
+it splits off -- and folded by identity, the events the walk merged them
+into, and the execution leaf the book fold answered for it.
 
 The capture is read as `file:data/capture/ulbridge.log` from the repository
 root, so every identity printed is the one a reader's own run from there lands.
@@ -34,7 +35,7 @@ import uuid
 from collections.abc import Iterator, Sequence
 from typing import Any
 
-from rekep import State, Storages
+from rekep import MarketDataKind, Side, State, Storages
 from rekep.fix import (
     EVENT_CLOCK,
     PARSE_COLUMNS,
@@ -72,17 +73,17 @@ CAPTURE = "file:data/capture/ulbridge.log"
 #: The one window every task runs over. It opens at midnight, so the early
 #: trade of 01:03 is in it, and closes at 16:30: past 14:46, where the bridge
 #: printed the day's order flow, and past 16:25, where the walk expires the
-#: day's open order -- and before 16:52, the line carrying the trade report
-#: whose side states no `Side(54)`, which the book fold refuses.
+#: day's open order.
 WINDOW = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 
 #: The execution the pages follow through every layer: the fill that closed
 #: order `00079132557GLXC0`, logged at every hop it passed.
 EXECID = "00064703468GBYZ0"
 
-#: The chains the silver page shows walked: an order filled in three steps,
-#: and one left open that the walk expires at its deadline.
-CHAINS = ("00079132557GLXC0", "00079132559GLXC0")
+#: The chains the silver page shows walked, as their side-prefixed cross
+#: codes: an order filled in three steps, and one left open that the walk
+#: restates on every hour and expires at its deadline.
+CHAINS = ("BUY:00079132557GLXC0", "BUY:00079132559GLXC0")
 
 #: The lines the log page shows: the first ones the capture holds.
 FIRST_LINES = 8
@@ -166,6 +167,14 @@ def parsed(storages: Storages) -> list[dict[str, Any]]:
 # -- cells --------------------------------------------------------------------
 
 
+def line_of(by_line: dict[uuid.UUID | None, dict[str, Any]], row: dict[str, Any]) -> dict[str, Any]:
+    """The one line a parsed message names, whatever report it names beside it."""
+    (line,) = [
+        by_line[identity(source)] for source in row["srcuuids"] if identity(source) in by_line
+    ]
+    return line
+
+
 def identity(value: Any) -> uuid.UUID | None:
     """An identity as a table holds it (sixteen bytes) or as a read states it."""
     if value is None or isinstance(value, uuid.UUID):
@@ -190,6 +199,16 @@ def instant(value: Any) -> str:
 def state(code: int | None) -> str:
     """A `state` code with the name of the member it stores."""
     return "" if code is None else f"`{State(code).name}` ({code})"
+
+
+def side(code: int | None) -> str:
+    """A `side` code with the name of the member it stores."""
+    return "" if code is None else f"`{Side(code).name}` ({code})"
+
+
+def marketdatakind(code: int | None) -> str:
+    """A `marketdatakind` code with the name of the member it stores."""
+    return "" if code is None else f"`{MarketDataKind(code).name}` ({code})"
 
 
 def number(value: Any) -> str:
@@ -365,9 +384,7 @@ def index_page(landed: dict[str, Landed], stored: dict[str, list[dict[str, Any]]
             "",
             "It opens at midnight, so the trade of 01:03 is in it, and closes at 16:30:",
             "after 14:46, where the bridge printed the day's order flow, and after 16:25,",
-            "where the walk expires the day's open order -- and before 16:52, the line",
-            "carrying the one trade report whose side states no `Side(54)`, which",
-            "[`parse_books`](../tasks/parse-books.md) refuses. The bridge prints its lines",
+            "where the walk expires the day's open order. The bridge prints its lines",
             "two hours ahead of the UTC its FIX frames state, which is why bronze",
             "`log_messages` holds hour 14 where silver holds hour 12:",
             "[DAGs](../dags/index.md#late-events) says what that means for a schedule.",
@@ -472,17 +489,19 @@ def raw_page(
     execution = [row for row in raw if row["execid"] == EXECID]
     if not execution:
         raise ValueError(f"the capture carries no bronze row of execution {EXECID}")
-    # What the parse answered off each line, before the key folded restatements.
+    # What the parse answered off each line, before the key folded restatements:
+    # an execution split out of a report names the report beside the line.
     frames: dict[int, list[uuid.UUID | None]] = collections.defaultdict(list)
     for message in answered:
         for source in message["srcuuids"]:
-            frames[by_line[identity(source)]["seqnum"]].append(identity(message["curruuid"]))
+            if identity(source) in by_line:
+                frames[by_line[identity(source)]["seqnum"]].append(identity(message["curruuid"]))
     held = {identity(row["curruuid"]) for row in execution}
     carrying = [seqnum for seqnum, messages in frames.items() if held & set(messages)]
     first, last = min(carrying), max(carrying)
     stored_from: dict[int, set[uuid.UUID | None]] = collections.defaultdict(set)
     for row in raw:
-        stored_from[by_line[identity(row["srcuuids"][0])]["seqnum"]].add(identity(row["curruuid"]))
+        stored_from[line_of(by_line, row)["seqnum"]].add(identity(row["curruuid"]))
     around = [line for line in sorted(lines, key=lambda line: line["seqnum"])]
     around = [line for line in around if first <= line["seqnum"] <= last]
     walked = []
@@ -522,7 +541,8 @@ def raw_page(
             "",
             f"Execution `{EXECID}` closed order `{CHAINS[0]}`. The bridge logged it on",
             f"lines {first} to {last}, once per plugin it passed, and wrote prose between.",
-            "The parse answers a message per frame a line carries; a frame that restates",
+            "The parse answers a message per frame a line carries, and a report of a fill",
+            "answers the execution it splits off beside it; a message that restates",
             "another under the same identity is folded by the key and counted in",
             f"`skipped` -- {folded} of them here.",
             "",
@@ -534,11 +554,14 @@ def raw_page(
             "A message stating its own `SendingTime` is dated by the transaction clock",
             "standing within `official_time_delay_ms` of it, here its `TransactTime`; one",
             "stating none is dated by the line it was read off, until the walk dates it",
-            "by its `TransactTime`. Each row names the one line it was parsed from.",
+            "by its `TransactTime`. Each row names the one line it was parsed from, and",
+            "the execution a report splits off names that report beside it, `FILLED`:",
+            "one fill, complete in itself, whatever the report's own state.",
             "",
             *table(
                 [
                     "currunix",
+                    "msgcat",
                     "curruuid",
                     "state",
                     "sendingtime",
@@ -548,11 +571,12 @@ def raw_page(
                 [
                     [
                         instant(row["currunix"]),
+                        marketdatakind(row["msgcat"]),
                         short(row["curruuid"]),
                         state(row["state"]),
                         instant(row["sendingtime"]),
                         instant(row["transacttime"]),
-                        str(by_line[identity(row["srcuuids"][0])]["seqnum"]),
+                        str(line_of(by_line, row)["seqnum"]),
                     ]
                     for row in execution
                 ],
@@ -576,13 +600,31 @@ def raw_page(
 
 def refined_page(lines: list[dict[str, Any]], refined: list[dict[str, Any]]) -> str:
     by_line = {identity(line["curruuid"]): line for line in lines}
+    events = [row for row in refined if row["snapunix"] is None]
+    views = [row for row in refined if row["snapunix"] is not None]
+
+    def restated(view: dict[str, Any]) -> dict[str, Any]:
+        """The live event a view restates: its chain's step, as it stood."""
+        (event,) = [
+            row
+            for row in events
+            if row["crossuuid"] == view["crossuuid"]
+            and row["seqnum"] == view["seqnum"]
+            and row["prevuuid"] == view["prevuuid"]
+            and row["state"] == view["state"]
+        ]
+        return event
 
     def named(row: dict[str, Any]) -> list[int]:
-        return sorted(by_line[identity(source)]["seqnum"] for source in row["srcuuids"] or [])
+        return sorted(
+            by_line[identity(source)]["seqnum"]
+            for source in row["srcuuids"] or []
+            if identity(source) in by_line
+        )
 
     chains = []
     for chain in CHAINS:
-        rows = walked([row for row in refined if row["crosscode"] == chain])
+        rows = walked([row for row in events if row["crosscode"] == chain])
         if not rows:
             raise ValueError(f"the walk answers no chain {chain}")
         chains += [
@@ -613,15 +655,22 @@ def refined_page(lines: list[dict[str, Any]], refined: list[dict[str, Any]]) -> 
             ),
             "",
         ]
-    (event,) = [row for row in refined if row["execid"] == EXECID]
-    sources = [by_line[identity(source)] for source in event["srcuuids"]]
+    (event,) = [
+        row
+        for row in events
+        if row["execid"] == EXECID and row["msgcat"] == int(MarketDataKind.EXEC)
+    ]
+    sources = [
+        by_line[identity(source)] for source in event["srcuuids"] if identity(source) in by_line
+    ]
     states = collections.Counter(row["state"] for row in refined)
     return page(
         "silver.record_keeping.fix_messages",
         [
             f"{len(refined)} rows: the bronze messages of {window_text()} walked into",
-            "the events they are, each placed in its chain and naming every line it was",
-            f"logged on. Columns: {table_link(FIX_MESSAGES, 2)}.",
+            f"the {len(events)} events they are, each placed in its chain and naming",
+            f"every line it was logged on, and {len(views)} hourly views of the chains",
+            f"alive. Columns: {table_link(FIX_MESSAGES, 2)}.",
         ],
         [
             "## Two chains",
@@ -633,13 +682,37 @@ def refined_page(lines: list[dict[str, Any]], refined: list[dict[str, Any]]) -> 
             *chains,
         ],
         [
+            "## Every chain alive on the hour",
+            "",
+            f"{len(views)} rows are views: at every whole hour the walk crosses, each chain",
+            "still alive is restated as it stands, dated at the tick -- `currunix` and",
+            "`snapunix` both -- under the identity that instant derives, which opens",
+            "with the tick's millisecond. It repeats the event's place, state and",
+            "lines and moves no chain on.",
+            "",
+            *table(
+                ["snapunix", "crosscode", "state", "curruuid", "restates"],
+                [
+                    [
+                        instant(row["snapunix"]),
+                        code(row["crosscode"]),
+                        state(row["state"]),
+                        f"`{identity(row['curruuid'])}`",
+                        f"`{identity(restated(row)['curruuid'])}`",
+                    ]
+                    for row in views
+                ],
+            ),
+        ],
+        [
             "## One event, every line it was logged on",
             "",
             f"Execution `{EXECID}` is one event, {short(event['curruuid'])}, dated",
             f"{instant(event['currunix'])} by its `TransactTime` and recorded first at",
             f"{instant(event['recdunix'])}; `srcuuids` names the {len(sources)} lines",
             "whose frames the walk merged into it, each joining to a",
-            "`bronze.record_keeping.log_messages.curruuid`:",
+            "`bronze.record_keeping.log_messages.curruuid`, beside the reports it was",
+            "split out of:",
             "",
             *table(
                 ["line:", "curruuid", "msgpluginid", "body"],
@@ -684,31 +757,27 @@ def walked(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def books_page(lines: list[dict[str, Any]], books: list[dict[str, Any]]) -> str:
-    def depth(side: dict[str, Any] | None, part: str) -> str:
-        return str(len((side or {}).get(part) or []))
+    def count(row: dict[str, Any], part: str) -> str:
+        return str(len(row[part] or []))
 
-    deep = [row for row in books if any((row[side] or {}).get("live") for side in SIDES)]
+    deep = [row for row in books if row["alive"]]
     detail: list[str] = []
     if deep:
         book = deep[0]
-        entries = [
-            (side, entry) for side in SIDES for entry in (book[side] or {}).get("live") or []
-        ]
-        limits = [
-            (side, limit) for side in SIDES for limit in (book[side] or {}).get("limits") or []
-        ]
+        levels = [(column, level) for column in LIMITS for level in book[column] or []]
         detail = [
             "## One book with depth",
             "",
-            f"The first book standing any depth is {code(book['ticker'])} at",
-            f"{instant(book['currunix'])}. `live` is what stands on a side, `deltas` what",
-            "changed it since the book before, and `limits` the price levels `live`",
-            "aggregates to.",
+            f"The first book standing any depth is {code(book['crosscode'])} at",
+            f"{instant(book['currunix'])}. `alive` is what stands on either side, `deltas`",
+            "what changed since the book before, `executions` what traded, and",
+            "`bidlimits` and `asklimits` the price levels `alive` aggregates to, best",
+            "first; `bidpx` and `askpx` are the best tradable level of each.",
             "",
             *table(
                 [
+                    "marketdatakind",
                     "side",
-                    "kind",
                     "crosscode",
                     "state",
                     "price:",
@@ -717,28 +786,29 @@ def books_page(lines: list[dict[str, Any]], books: list[dict[str, Any]]) -> str:
                 ],
                 [
                     [
-                        f"`{side}.live`",
-                        code(entry["kind"]),
+                        marketdatakind(entry["marketdatakind"]),
+                        side(entry["side"]),
                         code(entry["crosscode"]),
                         state(entry["state"]),
                         number(entry["price"]),
                         number(entry["quantity"]),
                         short(entry["curruuid"]),
                     ]
-                    for side, entry in entries
+                    for entry in book["alive"]
                 ],
             ),
             "",
             *table(
-                ["side", "price:", "quantity:", "orders:"],
+                ["levels", "price:", "quantity:", "orders:", "tradable"],
                 [
                     [
-                        f"`{side}.limits`",
-                        number(limit["price"]),
-                        number(limit["quantity"]),
-                        str(len(limit["uuids"] or [])),
+                        f"`{column}`",
+                        number(level["price"]),
+                        number(level["quantity"]),
+                        str(len(level["uuids"] or [])),
+                        code(str(level["tradable"]).lower()),
                     ]
-                    for side, limit in limits
+                    for column, level in levels
                 ],
             ),
         ]
@@ -746,8 +816,12 @@ def books_page(lines: list[dict[str, Any]], books: list[dict[str, Any]]) -> str:
         "silver.record_keeping.books",
         [
             f"{len(books)} rows: one per book the fold answered over the silver events of",
-            f"{window_text()}, from no depth before its start. Columns:",
-            f"{table_link(BOOKS, 2)}.",
+            f"{window_text()}, read from the hour before its start,",
+            "and every book again on each whole hour between the fold's first and last",
+            "operation, `snapunix` set and no event restated: the views silver holds",
+            "there are the book's membership, never a delta. A book is one `MIC:CFI`",
+            "category per instant, so `crosscode` is the category and no book states a",
+            f"ticker. Columns: {table_link(BOOKS, 2)}.",
         ],
         [
             "## Every book",
@@ -755,24 +829,28 @@ def books_page(lines: list[dict[str, Any]], books: list[dict[str, Any]]) -> str:
             *table(
                 [
                     "currunix",
-                    "ticker",
+                    "crosscode",
                     "curruuid",
+                    "alive:",
+                    "deltas:",
                     "executions:",
-                    "bid live:",
-                    "bid deltas:",
-                    "ask live:",
-                    "ask deltas:",
+                    "bidlimits:",
+                    "asklimits:",
+                    "bidpx:",
+                    "askpx:",
                 ],
                 [
                     [
                         instant(row["currunix"]),
-                        code(row["ticker"]),
+                        code(row["crosscode"]),
                         short(row["curruuid"]),
-                        str(len(row["executions"] or [])),
-                        depth(row["bidside"], "live"),
-                        depth(row["bidside"], "deltas"),
-                        depth(row["askside"], "live"),
-                        depth(row["askside"], "deltas"),
+                        count(row, "alive"),
+                        count(row, "deltas"),
+                        count(row, "executions"),
+                        count(row, "bidlimits"),
+                        count(row, "asklimits"),
+                        number(row["bidpx"]),
+                        number(row["askpx"]),
                     ]
                     for row in books
                 ],
@@ -782,8 +860,8 @@ def books_page(lines: list[dict[str, Any]], books: list[dict[str, Any]]) -> str:
     )
 
 
-#: The book sides, as the book row names them.
-SIDES = ("bidside", "askside")
+#: A book's price levels, as the book row names them: its bids, then its asks.
+LIMITS = ("bidlimits", "asklimits")
 
 
 def events_page(
@@ -798,8 +876,8 @@ def events_page(
         rows = table(
             [
                 "currunix",
-                "kind",
-                "ticker",
+                "marketdatakind",
+                "isincode",
                 "crosscode",
                 "side",
                 "state",
@@ -812,10 +890,10 @@ def events_page(
             [
                 [
                     instant(row["currunix"]),
-                    code(row["kind"]),
-                    code(row["ticker"]),
+                    marketdatakind(row["marketdatakind"]),
+                    code(row["isincode"]),
                     code(row["crosscode"]),
-                    code(row["side"]),
+                    side(row["side"]),
                     state(row["state"]),
                     number(row["price"]),
                     number(row["quantity"]),

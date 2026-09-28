@@ -32,7 +32,7 @@ step leaves the published pages showing the previous dictionary.
 
 The [registry search](registry.md#browser) covers canonical tags, alternate
 tags, storage and display names, the other spellings the dictionary keeps,
-and descriptions, over the 7,789 definitions -- 6,280 scalar fields, 928
+and descriptions, over the 7,790 definitions -- 6,281 scalar fields, 928
 components and 581 repeating groups -- and the 737 code sets, `statecodeset`
 among them. What the search does not show -- a definition's complete
 metadata and Field JSON, or the fixed row a codec lands -- the Python API
@@ -47,7 +47,7 @@ parties = registry.field_by_name("parties")
 
 assert registry.field_by_tag(55).name == "symbol"
 assert registry.msgtype("D").name == "newordersingle"
-assert len(fix_message_field()) == 132
+assert len(fix_message_field()) == 133
 print([member.name for member in parties.explode_fields()])
 print(parties.into_json(indent=2))
 ```

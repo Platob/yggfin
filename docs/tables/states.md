@@ -27,6 +27,7 @@ stored code moves.
 | 3001 | `STATUS` | 30 | A status report: working, with nothing new to say. |
 | 3002 | `TRIGGERED` | 30 | Triggered or activated by the system. |
 | 3003 | `ACTIVE` | 30 | A quote standing in the market. |
+| 3004 | `UPDATED` | 30 | Stated anew over a live predecessor, and carrying on. |
 | 4000 | `IN_PROGRESS` | 40 | Working, with some of it done. |
 | 4001 | `PARTIALLY_FILLED` | 40 | Some of the order filled. |
 | 4002 | `TRADE` | 40 | A report of one trade. |

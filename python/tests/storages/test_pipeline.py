@@ -24,7 +24,7 @@ from pyiceberg.io.pyarrow import expression_to_pyarrow
 from pyiceberg.schema import Schema
 from pyiceberg.types import IntegerType, NestedField, TimestamptzType
 
-from rekep import State, scalar
+from rekep import Side, State, scalar
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.fields import partition_key
 from rekep.fix import (
@@ -76,40 +76,49 @@ UTC = datetime.timezone.utc
 LOG = Landed(read=144, written=144)
 
 #: What every later task answers over `EARLY`: the sixteen lines of 03:00
-#: carry one trade capture logged at three hops -- its receipt, dated by its
-#: own clock, and two restatements dated by their lines' -- which the walk
-#: merges into one event, folded into one book and one execution.
+#: carry one fill report logged at three hops -- its receipt, dated by its
+#: own clock, and two restatements dated by their lines' -- and each copy
+#: splits off the execution it reports. The walk merges the observations
+#: into the report's event and the execution's, folded into one book holding
+#: one order delta and one execution.
 EARLY_LANDED = {
-    "parse_fix_messages_raw": Landed(read=16, written=3),
-    "parse_fix_messages_refined": Landed(read=3, written=1),
-    "parse_books": Landed(read=1, written=1),
-    "parse_orders": Landed(read=1, written=0),
+    "parse_fix_messages_raw": Landed(read=16, written=6),
+    "parse_fix_messages_refined": Landed(read=6, written=2),
+    "parse_books": Landed(read=2, written=1),
+    "parse_orders": Landed(read=1, written=1),
     "parse_quotes": Landed(read=1, written=0),
     "parse_executions": Landed(read=1, written=1),
 }
 
 #: What every later task answers over `WINDOW`. The 112 lines of 14:46 carry
-#: 65 messages; bronze keeps 38 keys and folds 27 restatements; the walk reads
-#: those 38 rows -- the hour before `START` holds none -- and merges the
-#: observations of one event into 12 rows, plus the expiry it emits at 16:25.
-#: The books fold those 13 into 5 books, whose deltas and executions are one
-#: order, no quote and six executions.
+#: 65 frames, and every fill report among them splits off the execution it
+#: reports, so the parse answers 118 messages; bronze keeps 68 keys and folds
+#: 50 restatements; the walk reads those 68 rows -- the hour before `START`
+#: holds none -- and merges the observations of one event into 19 rows, plus
+#: the expiry it emits at 16:25, and restates the three chains still alive
+#: after 12:46 -- the logon, the new order and the acknowledged order that
+#: expires -- at 13:00, 14:00, 15:00 and 16:00: 20 events and 12 views, each
+#: a row of its own, so the key folds nothing. The books fold those 32 into 5
+#: books of events and the two categories' books on each of the four hours,
+#: 13; their deltas and executions are eight orders -- every report an order
+#: delta, beside the execution split out of it -- no quote and six
+#: executions, the hourly books adding none.
 LANDED = {
-    "parse_fix_messages_raw": Landed(read=112, written=38, skipped=27),
-    "parse_fix_messages_refined": Landed(read=38, written=13),
-    "parse_books": Landed(read=13, written=5),
-    "parse_orders": Landed(read=5, written=1),
-    "parse_quotes": Landed(read=5, written=0),
-    "parse_executions": Landed(read=5, written=6),
+    "parse_fix_messages_raw": Landed(read=112, written=68, skipped=50),
+    "parse_fix_messages_refined": Landed(read=68, written=32),
+    "parse_books": Landed(read=32, written=13),
+    "parse_orders": Landed(read=13, written=8),
+    "parse_quotes": Landed(read=13, written=0),
+    "parse_executions": Landed(read=13, written=6),
 }
 
 #: Rows each table holds after both windows. The gold catalog holds no table.
 STORED = {
     LOG_MESSAGES: 144,
-    FIX_MESSAGES_RAW: 41,
-    FIX_MESSAGES: 14,
-    BOOKS: 6,
-    EVENTS["orders"]: 1,
+    FIX_MESSAGES_RAW: 74,
+    FIX_MESSAGES: 34,
+    BOOKS: 14,
+    EVENTS["orders"]: 9,
     EVENTS["quotes"]: 0,
     EVENTS["executions"]: 7,
 }
@@ -118,14 +127,20 @@ STORED = {
 #: the table holds -- `EARLY`'s among them. The window's hours are 12 to 16,
 #: and the walk's scan reaches `HISTORY` before them, to 11. `log_messages`
 #: holds a line in hour 16, the 16:52 trade report, which the window's hour
-#: covers and its end does not: the file's bounds prune it.
+#: covers and its end does not: the file's bounds prune it. Silver and the
+#: books hold every hour from 12 to 16, the hourly views and books among them.
 READS = {
     "parse_fix_messages_raw": (LOG_MESSAGES, ["14"], ["03", "14", "16", "23"]),
     "parse_fix_messages_refined": (FIX_MESSAGES_RAW, ["12", "14"], ["01", "03", "12", "14"]),
-    "parse_books": (FIX_MESSAGES, ["12", "16"], ["01", "12", "16"]),
-    "parse_orders": (BOOKS, ["12"], ["01", "12"]),
-    "parse_quotes": (BOOKS, ["12"], ["01", "12"]),
-    "parse_executions": (BOOKS, ["12"], ["01", "12"]),
+    "parse_books": (
+        FIX_MESSAGES,
+        ["12", "13", "14", "15", "16"],
+        ["01", "12", "13", "14", "15", "16"],
+    ),
+    **{
+        task: (BOOKS, ["12", "13", "14", "15", "16"], ["01", "12", "13", "14", "15", "16"])
+        for task in ("parse_orders", "parse_quotes", "parse_executions")
+    },
 }
 
 #: The identifiers `crosscode` takes the first non-empty one of, in order.
@@ -157,6 +172,11 @@ def clock(instant: datetime.datetime | None) -> str:
     return "-" if instant is None else f"{instant:%H:%M:%S.%f}"
 
 
+def events(table: pyarrow.Table) -> list[dict[str, Any]]:
+    """The rows of a silver table that are events, not a grid view of one."""
+    return [row for row in table.to_pylist() if row["snapunix"] is None]
+
+
 def settled(state: State) -> bool:
     """Whether a state ends its chain: done, cancelled or failed."""
     return state.is_done() or state.is_cancelled() or state.is_failed()
@@ -172,9 +192,28 @@ def stated(row: dict[str, Any]) -> State:
     return State.from_fix_msgtype(row["msgtype"] or "") or State.UNKNOWN
 
 
-def cross_code(row: dict[str, Any]) -> str | None:
-    """The identifier `crosscode` takes, per the rule it is read by."""
-    return next((row[name] for name in CROSS_IDENTIFIERS if row[name]), None)
+def cross_code(row: dict[str, Any], split: bool) -> str | None:
+    """The identifier `crosscode` takes, per the rule it is read by: an
+    execution split out of a report chains on its `ExecID`, and a message
+    stating a side is prefixed with it."""
+    if split:
+        code = f"ExecID={row['execid']}"
+    else:
+        code = next((row[name] for name in CROSS_IDENTIFIERS if row[name]), None)
+    side = Side(row["side"] or Side.UNKNOWN)
+    return code if code is None or side is Side.UNKNOWN else f"{side.name}:{code}"
+
+
+def split_off(rows: list[dict[str, Any]], reports: set[bytes]) -> list[bool]:
+    """Whether each row is an execution split out of a report: it names the
+    report among its sources, beside the lines."""
+    return [bool(reports.intersection(row["srcuuids"])) for row in rows]
+
+
+def line_of(row: dict[str, Any], reports: set[bytes]) -> bytes:
+    """The one line a parsed message names, whatever report it names beside it."""
+    (line,) = [source for source in row["srcuuids"] if source not in reports]
+    return line
 
 
 # -- what each task answered ---------------------------------------------------
@@ -210,7 +249,7 @@ def test_each_task_opens_only_the_hours_its_window_covers(landing: Landing) -> N
     predicates = {
         "parse_fix_messages_raw": window_filter(EVENT_CLOCK, WINDOW),
         "parse_fix_messages_refined": fix_window_filter((START - HISTORY, END)),
-        "parse_books": market_window_filter(WINDOW),
+        "parse_books": market_window_filter((START - HISTORY, END)),
         **{task.__name__: market_window_filter(WINDOW) for task in FLATTENERS.values()},
     }
     covered = {f"{hour:02d}" for hour in range(START.hour - 1, END.hour + 1)}
@@ -240,8 +279,9 @@ def test_the_walk_links_each_chain_and_expires_the_order_left_open(landing: Land
     """Every step follows a row this table holds, one place after it, at the
     instant it states; a step never moves its chain back; creation is carried
     forward; and the one order still open at its expiry gets the row that
-    ends it, at that instant, recorded by no line."""
-    silver = landing.table(FIX_MESSAGES).to_pylist()
+    ends it, at that instant, recorded by no line. The hourly views are the
+    walk's restatements and follow no step, so a chain is its events."""
+    silver = events(landing.table(FIX_MESSAGES))
     held = {row["curruuid"]: row for row in silver}
     followed = collections.defaultdict(list)
     for row in silver:
@@ -314,9 +354,12 @@ def test_a_message_logged_at_every_hop_is_one_silver_row(landing: Landing) -> No
     lines = {row["curruuid"]: row for row in landing.table(LOG_MESSAGES).to_pylist()}
     bronze = in_window(landing.table(FIX_MESSAGES_RAW), (START - HISTORY, END))
     silver = in_window(landing.table(FIX_MESSAGES), WINDOW)
-    recorded = [row for row in silver if row["recdunix"] is not None]
-    assert all(len(row["srcuuids"]) == 1 for row in bronze), "a parsed message names one line"
-    kept = {row["srcuuids"][0] for row in bronze}
+    # A view names the lines of the event it restates, so only events count.
+    recorded = [row for row in silver if row["recdunix"] and row["snapunix"] is None]
+    reports = {row["curruuid"] for row in landing.table(FIX_MESSAGES_RAW).to_pylist()}
+    # A parsed message names one line, and an execution split out of a
+    # report names the report beside it.
+    kept = {line_of(row, reports) for row in bronze}
 
     # The window's lines parsed again, as the raw task parsed them.
     codec = FixCodec.from_env(default_sending_time=UNDATED)
@@ -330,6 +373,7 @@ def test_a_message_logged_at_every_hop_is_one_silver_row(landing: Landing) -> No
         parsed = fix_parse_arrow_reader(codec, scan).read_all()
     finally:
         dataset.close()
+    identities = {held.bytes for held in parsed.column("curruuid").to_pylist()}
     keys = collections.defaultdict(list)
     for identity, instant, sources in zip(
         parsed.column("curruuid").to_pylist(),
@@ -338,20 +382,40 @@ def test_a_message_logged_at_every_hop_is_one_silver_row(landing: Landing) -> No
         strict=True,
     ):
         hour = instant.replace(minute=0, second=0, microsecond=0)
-        keys[(identity.bytes, hour)].append(sources[0].bytes)
+        (line,) = [held.bytes for held in sources if held.bytes not in identities]
+        keys[(identity.bytes, hour)].append(line)
     raw = landing.landed["parse_fix_messages_raw"]
     assert parsed.num_rows == raw.written + raw.skipped
     assert len(keys) == raw.written
     for sources in keys.values():
         assert len(kept.intersection(sources)) == 1, "bronze keeps one line per key"
+    assert sum(len(sources) - 1 for sources in keys.values()) == raw.skipped
     folded = {line for sources in keys.values() for line in sources} - kept
-    assert len(folded) == raw.skipped
 
-    named = collections.Counter(line for row in recorded for line in row["srcuuids"])
+    # A line is named by the one event it reports, and an execution split
+    # out of that report names the same lines beside the report.
+    split = split_off(recorded, reports)
+    named = collections.Counter(
+        line
+        for row, held in zip(recorded, split, strict=True)
+        if not held
+        for line in row["srcuuids"]
+    )
     assert set(named.values()) == {1}, "a line is named by one event"
     assert set(named) == kept, "every line bronze keeps is named, and no line it folded"
+    executed = {
+        line
+        for row, held in zip(recorded, split, strict=True)
+        if held
+        for line in row["srcuuids"]
+        if line not in reports
+    }
+    assert executed and executed <= kept
 
-    widest = max(recorded, key=lambda row: len(row["srcuuids"]))
+    widest = max(
+        (row for row, held in zip(recorded, split, strict=True) if not held),
+        key=lambda row: len(row["srcuuids"]),
+    )
     hops = sorted((lines[line] for line in widest["srcuuids"]), key=lambda line: line["seqnum"])
     restated = sorted(
         lines[line]["seqnum"]
@@ -371,7 +435,7 @@ def test_a_message_logged_at_every_hop_is_one_silver_row(landing: Landing) -> No
     print(f"  and restating one of them identically, folded in bronze: lines {restated}")
     assert len(hops) > 2
     assert len({line["msgpluginid"] for line in hops}) > 2, "logged at several hops"
-    observed = [row for row in bronze if row["srcuuids"][0] in set(widest["srcuuids"])]
+    observed = [row for row in bronze if line_of(row, reports) in set(widest["srcuuids"])]
     assert {row["execid"] for row in observed} == {widest["execid"]}, "one message, restated"
 
 
@@ -393,22 +457,35 @@ def test_the_walk_folds_state_creation_and_recording(landing: Landing) -> None:
         codes = collections.Counter(State(code).name for code in held.column("state").to_pylist())
         print(f"\n{table} states: {dict(sorted(codes.items()))}")
 
+    parsed = bronze.to_pylist()
+    reports = {row["curruuid"] for row in parsed}
     observations = collections.defaultdict(list)
-    for row in bronze.to_pylist():
-        assert row["state"] == stated(row), (row["msgtype"], row["ordstatus"], row["exectype"])
-        assert row["crosscode"] == cross_code(row)
-        assert row["recdunix"] == lines[row["srcuuids"][0]][EVENT_CLOCK], "the line's own clock"
-        observations[row["srcuuids"][0]].append(row)
-    orders = [row for row in bronze.to_pylist() if row["msgtype"] == "D"]
+    for row, split in zip(parsed, split_off(parsed, reports), strict=True):
+        # An execution split out of a report is one fill, complete in itself,
+        # whatever state the report it was split out of reached.
+        expected = State.FILLED if split else stated(row)
+        assert row["state"] == expected, (row["msgtype"], row["ordstatus"], row["exectype"])
+        assert row["crosscode"] == cross_code(row, split)
+        line = line_of(row, reports)
+        assert row["recdunix"] == lines[line][EVENT_CLOCK], "the line's own clock"
+        observations[(line, split)].append(row)
+    orders = [row for row in parsed if row["msgtype"] == "D"]
     assert orders and {State(row["state"]) for row in orders} == {State.PENDING_NEW}
 
-    for row in silver.to_pylist():
-        assert row["crosscode"] == cross_code(row)
+    walked = silver.to_pylist()
+    for row, split in zip(walked, split_off(walked, reports), strict=True):
+        assert row["crosscode"] == cross_code(row, split)
         assert row["creaunix"] is not None and row["creaunix"] <= row[EVENT_CLOCK]
         if row["recdunix"] is None:
             continue
-        seen = [held for line in row["srcuuids"] for held in observations[line]]
-        assert State(row["state"]).rank == max(State(held["state"]).rank for held in seen)
+        seen = [held for line in row["srcuuids"] for held in observations[(line, split)]]
+        furthest = max(State(held["state"]).rank for held in seen)
+        if row["state"] == State.UPDATED:
+            # A `NEW` stated over a live predecessor that is new itself is the
+            # order stated anew and carrying on, which the walk says.
+            assert furthest == State.NEW.rank and row["prevuuid"] is not None
+        else:
+            assert State(row["state"]).rank == furthest
         assert row["recdunix"] == min(held["recdunix"] for held in seen)
         assert row["creaunix"] <= min(held["creaunix"] for held in seen)
         if row["msgtype"] == "D":

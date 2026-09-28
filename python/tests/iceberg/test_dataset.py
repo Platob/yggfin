@@ -485,6 +485,92 @@ def test_hour_partition_paths_are_chronological_across_day_and_month(
 
 
 @scalar
+class Chained:
+    """One walked event, stored the way the lifecycle tables store theirs."""
+
+    at: Annotated[datetime.datetime, partition_key("hour"), sort_key()]
+    """Its instant, whose hour is its partition."""
+
+    seq: Annotated[int, sort_key()]
+    """Its place in its chain."""
+
+    identity: Annotated[int, primary_key(), sort_key()]
+    """Its own identity, the last tie breaker."""
+
+
+def test_an_hourly_read_streams_one_hour_at_a_time_in_global_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The lifecycle reads: `(currunix, seqnum, curruuid)` over `hour(currunix)`.
+
+    Each hour holds files whose ranges overlap, committed out of order, so
+    every hour is a merge; the reader yields the first hour's rows before it
+    opens a file of the second, and what it yields is the whole table in
+    order -- nothing collects the scan to sort it.
+    """
+    from pyiceberg.io.pyarrow import PyArrowFile
+
+    catalog = IcebergCatalog(name="hourly", properties=catalog_properties(tmp_path))
+    chained = catalog.dataset("trading.chained", field=Chained.into_field())
+    schema = Chained.into_field().into_arrow_schema()
+    ten = datetime.datetime(2026, 8, 14, 10, tzinfo=UTC)
+    eleven = ten + datetime.timedelta(hours=1)
+
+    def at(hour: datetime.datetime, minute: int) -> datetime.datetime:
+        return hour + datetime.timedelta(minutes=minute)
+
+    commits = [
+        [(0, at(eleven, 5), 0), (1, at(eleven, 30), 1)],
+        [(2, at(ten, 10), 0), (3, at(ten, 40), 0)],
+        [(4, at(eleven, 5), 1), (5, at(eleven, 50), 0)],
+        [(6, at(ten, 10), 1), (7, at(ten, 20), 0), (8, at(ten, 55), 2)],
+    ]
+    for rows in commits:
+        identity, instant, seq = zip(*rows, strict=True)
+        chained.append_arrow_table(
+            pyarrow.Table.from_pydict(
+                {"identity": list(identity), "at": list(instant), "seq": list(seq)},
+                schema=schema,
+            ),
+            commit_row_size=1_000_000,
+        )
+    expected = sorted(
+        ((instant, seq, identity) for rows in commits for identity, instant, seq in rows),
+    )
+
+    events: list[tuple[str, int]] = []
+    original = PyArrowFile.open
+
+    def recorded(self: PyArrowFile, *args: object, **kwargs: object) -> object:
+        if self.location.endswith(".parquet"):
+            events.append(("open", 10 if "2026-08-14-10" in self.location else 11))
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(PyArrowFile, "open", recorded)
+    found = []
+    with chained.read_arrow_reader(order_by=("at", "seq", "identity")) as reader:
+        for batch in reader:
+            rows = list(
+                zip(
+                    batch.column("at").to_pylist(),
+                    batch.column("seq").to_pylist(),
+                    batch.column("identity").to_pylist(),
+                    strict=True,
+                )
+            )
+            events.extend(("row", instant.hour) for instant, _, _ in rows)
+            found.extend(rows)
+
+    assert found == expected, "every row once, in `(at, seq, identity)` order across both hours"
+    assert [hour for kind, hour in events if kind == "open"].count(10) == 2
+    assert [hour for kind, hour in events if kind == "open"].count(11) == 2
+    first_eleven = events.index(("open", 11))
+    assert all(event != ("row", 11) for event in events[:first_eleven])
+    assert ("row", 10) not in events[first_eleven:], "hour 10 is finished before 11 opens"
+    assert ("open", 10) not in events[first_eleven:]
+
+
+@scalar
 class Sequenced:
     """One event ordered by clock and its source sequence."""
 

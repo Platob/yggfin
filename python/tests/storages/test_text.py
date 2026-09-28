@@ -131,17 +131,20 @@ def test_a_bridge_printing_local_time_is_read_in_its_zone(storages: Storages) ->
     assert {hour: hours.count(hour) for hour in set(hours)} == {1: 16, 12: 112, 14: 1, 21: 15}
 
     parse_fix_messages_raw(storages, DAY)
+    # Counted in events: no hourly view is landed beside them.
     hourly = [
         parse_fix_messages_refined(
             storages,
             (DAY[0] + datetime.timedelta(hours=hour), DAY[0] + datetime.timedelta(hours=hour + 1)),
+            snapshot_millis=0,
         ).written
         for hour in range(24)
     ]
-    daily = parse_fix_messages_refined(storages, DAY).written
+    daily = parse_fix_messages_refined(storages, DAY, snapshot_millis=0).written
     # Every event lands hour by hour but the one expiry whose order began
-    # more than `HISTORY` before it: a walk's history is bounded.
-    assert (sum(hourly), daily) == (15, 16)
+    # more than `HISTORY` before it: a walk's history is bounded. An
+    # execution split out of a report is an event of its own.
+    assert (sum(hourly), daily) == (22, 23)
 
 
 def test_a_window_replaces_only_the_lines_it_covers(storages: Storages) -> None:

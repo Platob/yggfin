@@ -109,23 +109,28 @@ window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 with storages:
     capture = "file:data/capture/ulbridge.log"
     assert parse_log_messages(capture, storages, window) == Landed(read=128, written=128)
-    assert parse_fix_messages_raw(storages, window) == Landed(read=128, written=41, skipped=27)
-    assert parse_fix_messages_refined(storages, window) == Landed(read=41, written=14)
+    assert parse_fix_messages_raw(storages, window) == Landed(read=128, written=74, skipped=50)
+    assert parse_fix_messages_refined(storages, window) == Landed(read=74, written=49)
     books = parse_books(storages, window)
-    assert (books.read, books.written) == (14, 6)
+    assert (books.read, books.written) == (49, 29)
     with ThreadPoolExecutor(max_workers=len(FLATTENERS)) as pool:
         running = {
             kind: pool.submit(task, storages, window, snapshot_id=books.snapshot_id)
             for kind, task in FLATTENERS.items()
         }
         written = {kind: future.result().written for kind, future in running.items()}
-    assert written == {"orders": 1, "quotes": 0, "executions": 7}
+    assert written == {"orders": 9, "quotes": 0, "executions": 7}
 ```
 
-The window holds 128 of the capture's 144 lines. They carry 68 FIX messages,
-which the key folds to 41 -- 27 restate a message another hop already logged
--- and the walk settles those as 14 events, which the book fold makes into 6
-books holding 1 order and 7 executions. [Data samples](samples/index.md) shows
+The window holds 128 of the capture's 144 lines. They carry 68 FIX frames,
+and every report of a fill splits off the execution it reports, so the parse
+answers 124 messages, which the key folds to 74 -- 50 restate a message
+another hop already logged -- and the walk settles those as 22 events and
+restates every chain still alive on each whole hour, 27 views, 49 rows. The
+book fold makes them into 29 books, one `MIC:CFI` category per instant --
+6 an event moved and 23 restated on the hour between 02:00 and 16:00 --
+holding 9 orders and 7 executions: a view is its book's membership at its
+hour, never an event of its own. [Data samples](samples/index.md) shows
 the rows, and says why the window closes at 16:30.
 
 ## Where to go
@@ -133,6 +138,7 @@ the rows, and says why the window closes at 16:30.
 | you want | read |
 | --- | --- |
 | to configure the three catalogs | [Storages](storages/index.md) |
+| to query the landed tables from Excel or another XMLA client | [XMLA endpoint](storages/xmla.md) |
 | what one task reads, writes and answers | [Tasks](tasks/index.md) |
 | to schedule the graph, with Airflow or without | [DAGs](dags/index.md) |
 | what a column means | [Tables](tables/index.md) |

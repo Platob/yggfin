@@ -1,10 +1,18 @@
 # silver.record_keeping.orders
 
-1 row: the order deltas of the one book snapshot `parse_books` committed
+9 rows: the order deltas of the one book snapshot `parse_books` committed
 over `[2026-08-14 00:00, 2026-08-14 16:30)` UTC. Columns: [silver.record_keeping.orders](../../tables/silver/orders.md).
 
 ## Every row
 
-| currunix | kind | ticker | crosscode | side | state | price | quantity | lastpx | lastqty | lines |
+| currunix | marketdatakind | isincode | crosscode | side | state | price | quantity | lastpx | lastqty | lines |
 | --- | --- | --- | --- | --- | --- | :---: | :---: | :---: | :---: | --- |
-| `2026-08-14 12:46:40.02` | `order_event` | `HOLN` | `XM8NNITE383` | `BUY` | `PENDING_NEW` (1001) | 72.3 | 50 |  |  | 107, 108 |
+| `2026-08-14 01:03:17` | `ORDR` (10) | `TW0001605004` | `BUY:20260814_CQ9_LIAPUS_9623` | `BUY` (1) | `TRADE` (4002) |  | 3000000 | 39.9 | 24000 | 123, 124, 126 |
+| `2026-08-14 12:46:39.743` | `ORDR` (10) | `CH0012214059` | `BUY:00079132558GLXC0` | `BUY` (1) | `FILLED` (8003) | 72.28 | 300 | 72.28 | 235 | 5 |
+| `2026-08-14 12:46:39.743` | `ORDR` (10) | `CH0012214059` | `BUY:00079132558GLXC0` | `BUY` (1) | `FILLED` (8003) | 72.28 | 300 | 72.28 | 235 | 2 |
+| `2026-08-14 12:46:39.743016` | `ORDR` (10) | `CH0012221716` | `BUY:00079132557GLXC0` | `BUY` (1) | `PARTIALLY_FILLED` (4001) | 83.08 | 600 | 83.08 | 57 | 56, 57, 58, 60, 64, 71 |
+| `2026-08-14 12:46:39.743016` | `ORDR` (10) | `CH0012221716` | `BUY:00079132557GLXC0` | `BUY` (1) | `FILLED` (8003) | 83.08 | 600 | 83.08 | 75 | 73, 74, 75, 77, 82, 83, 91 |
+| `2026-08-14 12:46:39.743016` | `ORDR` (10) | `CH0012221716` | `BUY:00079132557GLXC0` | `BUY` (1) | `PARTIALLY_FILLED` (4001) | 83.08 | 600 | 83.08 | 21 | 6, 7, 8, 9, 11, 15, 22 |
+| `2026-08-14 12:46:39.762` | `ORDR` (10) | `CH0012221716` | `BUY:00079132557GLXC0` | `BUY` (1) | `FILLED` (8003) | 83.08 | 600 | 83.08 | 57 | 35, 36, 37, 39, 44, 45, 53 |
+| `2026-08-14 12:46:40.02` | `ORDR` (10) |  | `BUY:XM8NNITE383` | `BUY` (1) | `PENDING_NEW` (1001) | 72.3 | 50 |  |  | 107, 108 |
+| `2026-08-14 12:46:58.453` | `ORDR` (10) |  | `BUY:00079132541GLXC0` | `BUY` (1) | `FILLED` (8003) | 83.04 | 36 | 83.04 | 36 | 105 |

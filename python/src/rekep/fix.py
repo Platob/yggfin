@@ -248,9 +248,10 @@ def fix_lifecycle_arrow_reader(
     """Walk native FIX rows, merging every observation's `srcuuids` as capture provenance.
 
     Stored rows are widened to the dictionary's types before the native
-    lifecycle dates, stably sorts, deduplicates and folds them. Its finite
-    input is the preceding hour plus the job window, bounded by the caller.
-    Only native message columns are passed into and returned from the walk.
+    lifecycle dates, sorts, deduplicates and folds them: the whole input at
+    once, or, where `codec.sorted_lifecycle` states the rows arrive in instant
+    order, one epoch hour at a time as they come. Only native message
+    columns are passed into and returned from the walk.
     """
     return codec.lifecycle_arrow_reader(_dictionary_rows(codec, source))
 

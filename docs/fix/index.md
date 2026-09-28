@@ -17,7 +17,7 @@ from rekep import FixCodec, FixRegistry
 registry = FixRegistry.from_env()
 codec = FixCodec.from_env(threads=2)
 
-assert len(registry) == 7789
+assert len(registry) == 7790
 assert codec.registry == registry
 
 message = next(iter(codec.parse_line(b"Sending : 8=FIX.4.4|35=D|11=ORD-1|55=AAPL|54=1|38=12|10=000|")))
@@ -33,13 +33,13 @@ rules and [Encode](encode.md) the way back.
 
 | shape | count | read by |
 | --- | ---: | --- |
-| definitions in all | 7,789 | `len(registry)` |
-| scalar fields | 6,280 | iterating the registry |
+| definitions in all | 7,790 | `len(registry)` |
+| scalar fields | 6,281 | iterating the registry |
 | components | 928 | the `components` array of `registry.into_json()` |
 | repeating groups | 581 | the `groups` array of the same document |
 | message types | 181 | the components carrying `FIX:msgtype`; `registry.msgtype("D")` |
 | code sets | 737 | `registry.codeset_names()` |
-| crate fields | 40 | `rekep.fix.fix_crate_fields()`, tags 65003 to 65077 |
+| crate fields | 41 | `rekep.fix.fix_crate_fields()`, tags 65001 to 65041 |
 
 The crate fields are the columns every registry holds from construction: the
 event clocks and identities, the lifecycle `state`, the capture context the
@@ -57,12 +57,12 @@ registry = FixRegistry.from_env()
 document = json.loads(registry.into_json())
 tags = [field.fix.tag for field in fix_crate_fields()]
 
-assert sum(1 for _ in registry) == 6280
+assert sum(1 for _ in registry) == 6281
 assert (len(document["components"]), len(document["groups"])) == (928, 581)
 assert registry.msgtype("D").name == "newordersingle"
-assert len(tags) == 40 and (min(tags), max(tags)) == (65003, 65077)
-assert registry.field_by_tag(65052).name == "state"
-assert registry.field_by_tag(65053).name == "exprunix"
+assert len(tags) == 41 and (min(tags), max(tags)) == (65001, 65041)
+assert registry.field_by_tag(65029).name == "state"
+assert registry.field_by_tag(65007).name == "exprunix"
 ```
 
 ## Code sets
@@ -77,8 +77,8 @@ Two sets are intrinsic to every registry and cannot be changed or removed:
 
 | code set | field | codes |
 | --- | --- | --- |
-| `statecodeset` | `state` (65052), `int32` | the 60 lifecycle states `rekep.State` enumerates, by code |
-| `msgcatcodeset` | `msgcat` (65054), `int32` | the business category of a message type |
+| `statecodeset` | `state` (65029), `int32` | the 61 lifecycle states `rekep.State` enumerates, by code |
+| `msgcatcodeset` | `msgcat` (65016), `int32` | the business category of a message type, the codes `rekep.MarketDataKind` enumerates |
 
 ```python
 from rekep import FixRegistry, State
@@ -127,7 +127,7 @@ FixRegistry.from_env().write_into(folder)
 
 registry = FixRegistry.from_handle(folder)
 codec = FixCodec(registry, default_sending_time=UNDATED, threads=4)
-assert len(registry) == 7789
+assert len(registry) == 7790
 
 try:
     FixRegistry.install_env(registry)
@@ -154,5 +154,5 @@ same dictionary wrote.
 
 ## Browse it
 
-[Definitions and lookups](registry.md) searches the 7,789 definitions in the
+[Definitions and lookups](registry.md) searches the 7,790 definitions in the
 browser, and [Registry assets](assets.md) says how that search is published.

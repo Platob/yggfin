@@ -29,8 +29,8 @@ becomes one `log_messages` row whose `msgthreadid`, `msgsessionid`,
 and whose `body` is `Receiving : 8=FIX.4.4|35=8|55=ABBN.S|...`.
 [`parse_log_messages`](../tasks/parse-log-messages.md#the-row) documents the
 row; `msgsessionid` is the session *instance* the bridge handled the line on
-(65032) and not the counterparty session a message names, `msgpluginid` the
-plugin that wrote the line (65009), and `msgseqnum` fills `MsgSeqNum(34)`
+(65020) and not the counterparty session a message names, `msgpluginid` the
+plugin that wrote the line (65017), and `msgseqnum` fills `MsgSeqNum(34)`
 where a frame stated none.
 
 ## Payload location and syntax choice
@@ -155,20 +155,21 @@ MSGTYPE=executionreport|SYMBOL=HOLN|SIDE=buy|LASTSHARES=235|LASTPX=72.28|
 | --- | --- | --- |
 | `MSGTYPE=executionreport` | canonical `msgtype`, tag 35; code name to `8` | `msgtype = "8"` |
 | `SYMBOL=HOLN` | canonical `symbol`, tag 55 | `symbol = "HOLN"` |
-| `SIDE=buy` | canonical `side`, tag 54; the event's own spelling | `side = "BUY"` |
+| `SIDE=buy` | canonical `side`, tag 54; stored as its code | `side = 1`, `Side.BUY` |
 | `LASTSHARES=235` | another spelling of `lastqty`, tag 32 | `lastqty = 235`, an exact decimal |
 | `LASTPX=72.28` | canonical `lastpx`, tag 31 | `lastpx = 72.28`, an exact decimal |
 
 ```python
 from decimal import Decimal
 
-from rekep import FixCodec
+from rekep import FixCodec, Side
 
 body = b"MSGTYPE=executionreport|SYMBOL=HOLN|SIDE=buy|LASTSHARES=235|LASTPX=72.28|"
 message = next(iter(FixCodec.from_env().parse_line(body)))
 
 assert message.by_tag(35).as_py() == "8"
-assert message.by_name("side").as_py() == "BUY"
+# `Side(54)` is stored as its code, which reads back as its member.
+assert message.by_name("side").as_py() is Side.BUY
 assert message.by_name("lastqty").as_py() == 235
 assert message.by_name("lastpx").as_py() == Decimal("72.28")
 # `price` is Price(44) alone, which this row does not state.
@@ -185,7 +186,11 @@ assert [(tag, name) for tag, name, _, _ in message.entries()] == [
 
 The typed message retains its protocol entries in memory. In a fixed Arrow
 row, `fixentries` is residual: fields and complete groups represented by
-lifted columns are omitted from that second representation.
+lifted columns are omitted from that second representation. It is a sorted
+map keyed `tag:name` as the dictionary spells the field, `55:symbol`, whose
+value is a field's wire text or a group's entries as JSON keyed the same way;
+a pair no dictionary definition names is no entry of it but a key of
+`metadata`, spelled as the message spelled it.
 
 ## JSON configuration and FIXML
 
@@ -239,7 +244,7 @@ means one) and `snapshot_ns`. Prefix stripping belongs to the text read's
 ## Dates, identities and derived values
 
 Resolved children are ordered as FIX header, body, trailer, then the crate's
-own fields, and the row ends `metadata`, `nofixentries`, `fixentries`.
+own fields, and the row ends `metadata`, `fixentries`.
 `beginstring` is supplied when the input did not state one.
 
 The parse dates a message by the official transaction clock standing within
@@ -310,8 +315,8 @@ assert table.column("srcuuids").to_pylist() == [
     [uuid.UUID(int=3)],
     [uuid.UUID(int=3)],
 ]
-assert table.num_columns == 132
-assert table.schema.names[-3:] == ["metadata", "nofixentries", "fixentries"]
+assert table.num_columns == 133
+assert table.schema.names[-2:] == ["metadata", "fixentries"]
 ```
 
 The input is the stored `log_messages` row projected to
@@ -342,15 +347,16 @@ try:
 finally:
     source.close()
 
-assert len(messages) == 79
+assert len(messages) == 135
 assert messages[0].field.name == "8"
 assert messages[0].by_name("msgpluginid").as_py() == "ULBridge"
 ```
 
-The capture's 144 lines answer 79 messages, because a row is a message and
-not a line. `fix_parse_arrow_reader` is the batch door the task uses, over a
-stored table; over the capture's day it answers the same 79 messages, which
-the key folds to 48 bronze rows.
+The capture's 144 lines carry 79 frames and answer 135 messages, because a
+row is a message and not a line, and each of the 56 reports of a fill answers
+the execution it reports beside itself. `fix_parse_arrow_reader` is the batch
+door the task uses, over a stored table; over the capture's day it answers
+the same 135 messages, which the key folds to 81 bronze rows.
 
 ## Failure behavior
 

@@ -2,7 +2,17 @@
 
 from importlib.metadata import version as package_version
 
-from yggdryl import DataType, IOBase, Scalar, State, TextOptions, Uri, Url
+from yggdryl import (
+    DataType,
+    IOBase,
+    MarketDataKind,
+    Scalar,
+    Side,
+    State,
+    TextOptions,
+    Uri,
+    Url,
+)
 
 from rekep.dataset import Dataset
 from rekep.fields import Field, scalar
@@ -20,7 +30,9 @@ __all__ = [
     "FixMsg",
     "FixRegistry",
     "IOBase",
+    "MarketDataKind",
     "Scalar",
+    "Side",
     "State",
     "Storages",
     "TextOptions",
