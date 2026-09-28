@@ -23,12 +23,16 @@ Every order, execution, trade and venue identifier, account, party, comp id,
 conversation id, person, counterparty and host in it is a pseudonym: one per
 value, of its length and character classes, so every frame keeps its
 `BodyLength(9)` and every chain joins as it did. Instruments, prices,
-quantities and clocks are the market's own.
+quantities and clocks are the market's own. Every task lands the rows the
+original bytes landed, identities aside: party ids keep the order a message
+sorts them in, and the pseudonyms were drawn so that the messages of one
+instant, which the walk and the book fold order by identity, still arrive in
+the order they did.
 
 Its content SHA-256, as `sha256sum` prints it, is:
 
 ```text
-4c77c257b1c9235698d348b6e0e6382ee90d294cd146da268e7ff90b3125533e
+7e89482019f0b9a47cf4c9dcfb912c1750d706d8372f807b4acc003c88034a44
 ```
 
 Every line sits under the bridge's bracket and is dated 2026-08-14 by the

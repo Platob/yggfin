@@ -275,7 +275,7 @@ with storages:
     assert later == books(BOOKS)
     first = later[0]
     assert first["currunix"] == first["snapunix"] == opened[0]
-    assert (first["crosscode"], len(first["alive"])) == ("PUMA:XXXXXX", 1)
+    assert (first["crosscode"], len(first["alive"])) == ("JOVM:XXXXXX", 1)
 ```
 
 ## The row
