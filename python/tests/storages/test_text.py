@@ -1,10 +1,11 @@
 """`parse_log_messages`: the capture's lines into bronze `log_messages`, by the read's own field.
 
 A line is an event the native text read settles: dated by the row header's
-`mtime` capture, else by the modification time of the object it was read
-from, keyed on its own identity and laid out by the hour of that instant. The
-window is the read's own `where`, so the task lands the lines it covers and
-leaves every other line where it was.
+`mtime` capture, read in the zone its bridge prints in, else by the
+modification time of the object it was read from, keyed on its own identity
+and laid out by the hour of that instant. The window is the read's own
+`where`, so the task lands the lines it covers and leaves every other line
+where it was.
 """
 
 from __future__ import annotations
@@ -39,8 +40,13 @@ pytestmark = pytest.mark.integration
 
 UTC = datetime.timezone.utc
 
-#: How many of the capture's 144 lines the bridge printed in each hour.
-HOURS = {3: 16, 14: 112, 16: 1, 23: 15}
+#: How many of the capture's 144 lines fall in each UTC hour, read in the
+#: bridge's zone: two hours before the Central European summer clock it
+#: prints, 03, 14, 16 and 23, so each line lands in the hour of its message.
+HOURS = {1: 16, 12: 112, 14: 1, 21: 15}
+
+#: The same lines read as UTC: each two hours after the message it carries.
+HOURS_READ_AS_UTC = {3: 16, 14: 112, 16: 1, 23: 15}
 
 #: One dated ULBridge line, on the capture's day.
 LINE = b"2026-08-14 12:46:39.769 [1] [ULBridge] (INFO)   --> 8=FIX.4.4|35=0|10=000|\n"
@@ -63,19 +69,21 @@ def closed(monkeypatch: pytest.MonkeyPatch) -> list[IOBase]:
 def test_the_log_holds_every_line_once_dated_by_its_header(landing: Landing) -> None:
     """The native read's own row, keyed on each line's identity: the shipped
     header dates all 144 lines -- the fifteen that group their micros too --
-    so none takes the file's modification time and none sits at the pin, and
-    three lines repeating another's bytes are three rows, because the content
-    code digests the line's row number and object beside its bytes."""
+    in the bridge's zone, so none takes the file's modification time and none
+    sits at the pin, and three lines repeating another's bytes are three rows,
+    because the content code digests the line's row number and object beside
+    its bytes."""
     lines = landing.table(LOG_MESSAGES)
 
     assert lines.schema.equals(log_message_field().into_arrow_schema(), check_metadata=False)
     assert lines.schema.field(EVENT_CLOCK).type == pyarrow.timestamp("us", tz="UTC")
     instants = {row["seqnum"]: row[EVENT_CLOCK] for row in lines.to_pylist()}
     assert set(instants) == set(range(1, 145)), "the row number the read counts from 1"
-    assert instants[1] == datetime.datetime(2026, 8, 14, 14, 46, 39, 769000, tzinfo=UTC)
+    # Printed `2026-08-14 14:46:39.769`, two hours ahead of UTC.
+    assert instants[1] == datetime.datetime(2026, 8, 14, 12, 46, 39, 769000, tzinfo=UTC)
     assert EPOCH not in instants.values()
     by_hour = {hour: sum(1 for at in instants.values() if at.hour == hour) for hour in HOURS}
-    print(f"\nlines by the hour the bridge printed them: {by_hour}")
+    print(f"\nlines by UTC hour: {by_hour}")
     assert by_hour == HOURS
 
     identities = lines.column("curruuid").to_pylist()
@@ -120,17 +128,41 @@ def test_a_window_the_capture_falls_outside_reads_nothing_and_writes_none(
     assert held.column(EVENT_CLOCK).to_pylist() != [EPOCH]
 
 
-def test_a_bridge_printing_local_time_is_read_in_its_zone(storages: Storages) -> None:
-    """The capture's bridge prints its clock two hours ahead of the UTC its
-    FIX frames state: read in its zone, a line lands in the hour of the
-    message it carries, so hourly silver windows place every event whose
-    chain their history holds, and two observations of one delivery fold."""
-    parse_log_messages(f"file:{CAPTURE}", storages, DAY, timezone="Europe/Zurich")
-    lines = read(storages, LOG_MESSAGES)
-    hours = pyarrow.compute.hour(lines.column("currunix")).to_pylist()
-    assert {hour: hours.count(hour) for hour in set(hours)} == {1: 16, 12: 112, 14: 1, 21: 15}
+@pytest.mark.parametrize(
+    ("zone", "hours", "bronze", "events"),
+    [
+        pytest.param({}, HOURS, (77, 58), (22, 23), id="default"),
+        pytest.param({"timezone": "UTC"}, HOURS_READ_AS_UTC, (81, 54), (23, 27), id="utc"),
+    ],
+)
+def test_a_line_is_read_in_the_zone_its_bridge_prints(
+    storages: Storages,
+    zone: dict[str, str],
+    hours: dict[int, int],
+    bronze: tuple[int, int],
+    events: tuple[int, int],
+) -> None:
+    """The capture's bridge prints a Central European summer clock, two hours
+    ahead of the UTC its FIX frames state, and `rekep.times.TIMEZONE` reads
+    it there unless a task states another zone. Read in its zone, a line
+    lands in the hour of the message it carries: the key folds the
+    observations of one delivery, and hourly silver windows place every
+    event the day's walk does but the one expiry whose order began more than
+    `HISTORY` before it.
 
-    parse_fix_messages_raw(storages, DAY)
+    Read as UTC, each line is dated two hours after its message, past the
+    delay a transaction clock is trusted within: a copy stating no
+    `SendingTime` is dated by its line, two hours from a copy stating one, so
+    the key folds neither into the other and the day's walk answers both.
+    An hourly window holds such a copy's bronze row or the instant the walk
+    dates it at, never both, and drops it."""
+    parse_log_messages(f"file:{CAPTURE}", storages, DAY, **zone)
+    lines = read(storages, LOG_MESSAGES)
+    stamped = pyarrow.compute.hour(lines.column(EVENT_CLOCK)).to_pylist()
+    assert {hour: stamped.count(hour) for hour in set(stamped)} == hours
+
+    raw = parse_fix_messages_raw(storages, DAY)
+    assert (raw.written, raw.skipped) == bronze
     # Counted in events: no hourly view is landed beside them.
     hourly = [
         parse_fix_messages_refined(
@@ -141,19 +173,18 @@ def test_a_bridge_printing_local_time_is_read_in_its_zone(storages: Storages) ->
         for hour in range(24)
     ]
     daily = parse_fix_messages_refined(storages, DAY, snapshot_millis=0).written
-    # Every event lands hour by hour but the one expiry whose order began
-    # more than `HISTORY` before it: a walk's history is bounded. An
-    # execution split out of a report is an event of its own.
-    assert (sum(hourly), daily) == (22, 23)
+    # An execution split out of a report is an event of its own.
+    assert (sum(hourly), daily) == events
 
 
 def test_a_window_replaces_only_the_lines_it_covers(storages: Storages) -> None:
     """A run over the whole day and then one over its first part leave every
     line once: the second run replaces the lines its window covers and no
-    other. The capture's lines straddle one second, which is where it cuts."""
+    other. The capture's 112 lines of 12:46 straddle one second, which is
+    where it cuts."""
     parse_log_messages(CAPTURE.as_uri(), storages, DAY)
     stored = read(storages, LOG_MESSAGES)
-    cut = datetime.datetime(2026, 8, 14, 14, 46, 40, tzinfo=UTC)
+    cut = datetime.datetime(2026, 8, 14, 12, 46, 40, tzinfo=UTC)
     later = stored.filter(pyarrow.compute.greater_equal(stored.column(EVENT_CLOCK), cut)).num_rows
     assert 0 < later < stored.num_rows, "the capture straddles this cut"
 
@@ -172,6 +203,32 @@ def test_an_empty_capture_is_read_and_produces_nothing(storages: Storages, tmp_p
 
     assert parse_log_messages(empty.as_uri(), storages, DAY) == Landed(read=0, written=0)
     assert rows(storages) == {LOG_MESSAGES: 0}
+
+
+def test_no_window_lands_every_line_and_infers_the_whole_hours_they_span(
+    storages: Storages,
+) -> None:
+    """Given no window, every line lands, and the window the stages after it
+    run over is the whole hours from the first line's to past the last's --
+    the same rows those stages would read under the day."""
+    landed = parse_log_messages(CAPTURE.as_uri(), storages)
+
+    # 01:03 to 21:59 UTC, the bridge's 03:03 to 23:59 read in its zone.
+    start = datetime.datetime(2026, 8, 14, 1, tzinfo=UTC)
+    assert landed == Landed(
+        read=144, written=144, window=(start, datetime.datetime(2026, 8, 14, 22, tzinfo=UTC))
+    )
+    assert rows(storages) == {LOG_MESSAGES: 144}
+    assert parse_fix_messages_raw(storages, landed.window) == parse_fix_messages_raw(storages, DAY)
+
+
+def test_no_window_over_undated_lines_infers_none(storages: Storages, tmp_path: Path) -> None:
+    """An empty capture dates nothing, so it lands nothing and infers no window."""
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    (empty / "quiet.log").write_text("", encoding="utf-8")
+
+    assert parse_log_messages(empty.as_uri(), storages) == Landed(read=0, written=0)
 
 
 def test_several_files_are_one_capture(storages: Storages, tmp_path: Path) -> None:
@@ -231,7 +288,8 @@ def test_lines_stream_through_hour_partitions(
     storages: Storages, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The task hands Iceberg a reader under the read's own field, and a read
-    of one instant plans the one hour holding it."""
+    of one instant plans the one hour holding it. The bridge prints 14:46
+    and 15:46, which its zone reads two hours earlier."""
     capture = tmp_path / "hourly"
     capture.mkdir()
     line = CAPTURE.read_bytes().split(b"\n", 1)[0] + b"\n"
@@ -251,8 +309,8 @@ def test_lines_stream_through_hour_partitions(
     assert parse_log_messages(capture.as_uri(), storages, DAY) == Landed(read=2, written=2)
     assert handed_to_iceberg == [log_message_field().into_arrow_schema()]
 
-    first = datetime.datetime(2026, 8, 14, 14, 46, 39, 769000, tzinfo=UTC)
-    second = datetime.datetime(2026, 8, 14, 15, 46, 39, 769000, tzinfo=UTC)
+    first = datetime.datetime(2026, 8, 14, 12, 46, 39, 769000, tzinfo=UTC)
+    second = datetime.datetime(2026, 8, 14, 13, 46, 39, 769000, tzinfo=UTC)
     lines = storages.dataset(LOG_MESSAGES, field=log_message_field())
     try:
         spec = lines.iceberg_table.spec()

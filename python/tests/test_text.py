@@ -19,10 +19,14 @@ from rekep.text import (
     log_message_field,
     text_options,
 )
-from rekep.times import ULBRIDGE_ROWHEADER
+from rekep.times import TIMEZONE, ULBRIDGE_ROWHEADER
 
 #: The zone every instant here is spelled in.
 UTC = datetime.timezone.utc
+
+#: The offset `TIMEZONE` stands at on every date these tests print: August,
+#: the Central European summer clock, two hours ahead of UTC.
+CEST = datetime.timezone(datetime.timedelta(hours=2), "CEST")
 
 #: The sixteen columns the native read states over every line, in its order:
 #: the line as the event it is, `currunix` first and `state` last.
@@ -65,11 +69,12 @@ SAMPLE = Path(__file__).resolve().parents[2] / "data" / "capture" / "ulbridge.lo
 #: it: the modification time a line the header did not match is dated by.
 WRITTEN_AT = datetime.datetime(2026, 8, 14, 18, 0, tzinfo=UTC)
 
-#: The same header with its fraction widened past what the shipped one reads:
-#: six digits straight on, which this bridge never writes. The names it
-#: captures are unchanged, which is the whole rule.
+#: A header of a bridge's own, its fraction widened past the shipped one's:
+#: under a comma as well as a point, or absent, and six digits straight on as
+#: well as grouped. The names it captures are unchanged, which is the whole
+#: rule.
 WIDENED = ULBRIDGE_ROWHEADER.replace(
-    r"(?:[.,]\d{3}(?:_\d{3})?)?",
+    r"\.\d{3}(?:_\d{3})?",
     r"(?:[.,]\d{3}(?:_?\d{3})?)?",
 )
 
@@ -109,17 +114,27 @@ def test_the_options_own_the_complete_native_read() -> None:
     assert options.parse_mtime is True
     assert RECORD_CLOCK not in options.source_field().into_arrow_schema().names
     assert options.rowheader == ULBRIDGE_ROWHEADER
-    assert str(options.timezone) == "UTC"
+    assert str(options.timezone) == TIMEZONE == "Europe/Zurich"
     assert options.safe is False
     # No field is declared: the read states its own, which is the table's.
     assert options.field is None
 
 
-def test_the_record_clock_is_read_in_the_zone_the_bridge_prints() -> None:
-    """A bridge printing local time is read in its zone; UTC otherwise."""
-    assert str(text_options().timezone) == "UTC"
-    assert str(text_options(timezone="Europe/Zurich").timezone) == "Europe/Zurich"
-    assert text_options(WIDENED, "Europe/Zurich").rowheader == WIDENED
+def test_the_record_clock_is_read_in_the_zone_the_bridge_prints(tmp_path) -> None:
+    """The header's clock states no offset, so the read takes the zone the
+    bridge prints in: `TIMEZONE` unless stated. A Central European bridge read
+    as UTC dates every line two hours after the message it carries in summer,
+    which moves its lines out of their messages' hour."""
+    source = tmp_path / "bridge.log"
+    source.write_bytes(b"2026-08-14 14:05:01.147 [250] [ULBridge] (INFO) body\n")
+
+    zoned = _read(source).column("currunix")[0].as_py()
+    utc = _read(source, text_options(timezone="UTC")).column("currunix")[0].as_py()
+
+    assert str(text_options(timezone="UTC").timezone) == "UTC"
+    assert zoned == datetime.datetime(2026, 8, 14, 12, 5, 1, 147000, tzinfo=UTC)
+    assert utc - zoned == datetime.timedelta(hours=2)
+    assert text_options(WIDENED, "UTC").rowheader == WIDENED
 
 
 def test_the_row_header_defaults_to_the_bridge_s_own() -> None:
@@ -184,7 +199,7 @@ def test_the_text_reader_produces_rows_without_a_python_row_pass(tmp_path) -> No
     assert table.select(settled + bracket).to_pylist() == [
         {
             "seqnum": 1,
-            "currunix": datetime.datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC),
+            "currunix": datetime.datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=CEST),
             "msgthreadid": 250,
             "state": State.UNKNOWN.value,
             "msgsessionid": "e7256476",
@@ -195,7 +210,7 @@ def test_the_text_reader_produces_rows_without_a_python_row_pass(tmp_path) -> No
         },
         {
             "seqnum": 2,
-            "currunix": datetime.datetime(2026, 8, 14, 0, 5, 1, 148000, tzinfo=UTC),
+            "currunix": datetime.datetime(2026, 8, 14, 0, 5, 1, 148000, tzinfo=CEST),
             "msgthreadid": 653,
             "state": State.UNKNOWN.value,
             "msgsessionid": None,
@@ -310,46 +325,62 @@ def test_a_body_is_decoded_per_run_and_never_papered_over(payload, text, tmp_pat
 def test_the_shipped_header_dates_every_fraction_this_bridge_writes() -> None:
     """One capture, several loggers, two spellings of one clock -- and one
     header that reads them both, because a line the header misses is a line
-    the walk cannot fold, not merely a line without a clock."""
+    the walk cannot fold, not merely a line without a clock. Read in the
+    bridge's own zone, each line lands in the hour of the message it carries."""
     sample = _read(SAMPLE)
 
     assert sample.num_rows == 144
     assert sample.column("msgpluginid").null_count == 0, "the header matched every line"
-    micros = [instant.microsecond % 1000 for instant in sample.column("currunix").to_pylist()]
+    instants = sample.column("currunix").to_pylist()
+    micros = [instant.microsecond % 1000 for instant in instants]
     assert sum(1 for micro in micros if micro) == 15, "the grouped micros, read to the micro"
-    hours = sorted(instant.hour for instant in sample.column("currunix").to_pylist())
-    assert {hour: hours.count(hour) for hour in set(hours)} == {3: 16, 14: 112, 16: 1, 23: 15}
+    hours = sorted(instant.hour for instant in instants)
+    assert {hour: hours.count(hour) for hour in set(hours)} == {1: 16, 12: 112, 14: 1, 21: 15}
+    # The second line is printed at `14:46:39.769` Central European time and
+    # carries the bridge's own UTC stamp of the order's reception, 54 ms
+    # before it: read in the bridge's zone, the line and its message share
+    # their hour.
+    assert instants[1] == datetime.datetime(2026, 8, 14, 12, 46, 39, 769000, tzinfo=UTC)
+    assert "TRDREGTIMESTAMP=20260814124639715000" in sample.column("body")[1].as_py()
 
 
 def test_a_header_of_its_own_reads_a_bridge_that_writes_the_clock_differently(tmp_path) -> None:
-    """What the parameter is for: a bridge writing a fraction this one never
-    does -- six digits straight on -- is read by naming its own header, and
-    the columns are the same columns either way. The width types nothing: the
-    `mtime` capture is consumed into `currunix` at the read's own precision,
-    whatever the expression admits."""
+    """What the parameter is for: a bridge writing a fraction the shipped
+    header leaves unmatched -- under a comma, none at all, six digits straight
+    on -- is read by naming its own header, and the columns are the same
+    columns either way. The width types nothing: the `mtime` capture is
+    consumed into `currunix` at the read's own precision, whatever the
+    expression admits."""
     source = tmp_path / "micros.log"
     source.write_bytes(
-        b"2026-08-14 00:05:01.147250 [250-e7256476:9effef3e6a:72504] [ULBridge] (INFO) one\n"
-        b"2026-08-14 00:05:01.147_250 [77] [ULBridge] (INFO) two\n"
-        b"2026-08-14 00:05:01.147 [77] [ULBridge] (INFO) three\n"
+        b"2026-08-14 00:05:01,148 [250-e7256476:9effef3e6a:72504] [ULBridge] (INFO) comma\n"
+        b"2026-08-14 00:05:01 [77] [ULBridge] (INFO) seconds\n"
+        b"2026-08-14 00:05:01.147250 [77] [ULBridge] (INFO) micros\n"
+        b"2026-08-14 00:05:01.147_250 [77] [ULBridge] (INFO) grouped\n"
+        b"2026-08-14 00:05:01.147 [77] [ULBridge] (INFO) millis\n"
     )
+    os.utime(source, (WRITTEN_AT.timestamp(), WRITTEN_AT.timestamp()))
 
     plain = _read(source)
     widened = _read(source, text_options(WIDENED))
 
     # A header frames every physical line either way -- what changes is how
     # many of them it could date -- and answers the same schema either way.
-    assert plain.num_rows == widened.num_rows == 3
+    assert plain.num_rows == widened.num_rows == 5
     assert plain.schema.equals(widened.schema, check_metadata=True)
     assert log_message_field(WIDENED) == log_message_field()
-    assert plain.column("msgpluginid").null_count == 1, "the first line is under no bracket"
+    # The shipped header leaves the first three under no bracket, dated by
+    # the object they were read from.
+    assert plain.column("msgpluginid").null_count == 3
+    assert plain.column("currunix").to_pylist()[:3] == [WRITTEN_AT] * 3
     assert widened.column("msgpluginid").null_count == 0
-    assert widened.column("currunix")[0].as_py() == datetime.datetime(
-        2026, 8, 14, 0, 5, 1, 147250, tzinfo=UTC
-    )
+    assert widened.column("currunix").to_pylist() == [
+        datetime.datetime(2026, 8, 14, 0, 5, 1, micro, tzinfo=CEST)
+        for micro in (148000, 0, 147250, 147250, 147000)
+    ]
     # The two agree on every line both could date, the clock read to the
     # microsecond the bridge wrote.
-    assert plain.slice(1).equals(widened.slice(1))
+    assert plain.slice(3).equals(widened.slice(3))
 
 
 # -- the row --------------------------------------------------------------------

@@ -2729,7 +2729,9 @@ def test_a_text_row_round_trips_through_iceberg(tmp_path: Path) -> None:
     held = reopened.read_arrow_table(field)
     assert held.equals(stored)
     row = held.to_pylist()[0]
-    assert row["currunix"] == datetime.datetime(2026, 8, 14, 9, 30, 0, 123000, tzinfo=UTC)
+    # The header's `09:30`, read in the zone the bridge prints in, two hours
+    # ahead of UTC in the Central European summer.
+    assert row["currunix"] == datetime.datetime(2026, 8, 14, 7, 30, 0, 123000, tzinfo=UTC)
     assert (row["body"], row["msgthreadid"], row["msgpluginid"]) == ("opaque", 250, "ULBridge")
     assert row["seqnum"] == 1 and row["state"] == 0
     projected = reopened.read_arrow_reader(field, columns=["currunix"])

@@ -14,7 +14,7 @@ from yggdryl import TextOptions
 
 from rekep.fields import Field
 from rekep.fix import iceberg_event_field
-from rekep.times import ULBRIDGE_ROWHEADER
+from rekep.times import TIMEZONE, ULBRIDGE_ROWHEADER
 
 #: The capture the read settles `currunix` from rather than storing it: the
 #: record clock, which `parse_mtime` consumes at its native default.
@@ -41,7 +41,7 @@ CAPTURES = frozenset(
 LOG_MESSAGES_NAME = "log_messages"
 
 
-def text_options(rowheader: str | None = None, timezone: str = "UTC") -> TextOptions:
+def text_options(rowheader: str | None = None, timezone: str = TIMEZONE) -> TextOptions:
     """The bridge read: the row header, the record clock and the line numbering.
 
     `rowheader` reads a bridge writing the same facts in a layout of its own:
@@ -53,9 +53,10 @@ def text_options(rowheader: str | None = None, timezone: str = "UTC") -> TextOpt
 
     `parse_mtime` stays at its native default, on: the header's `mtime`
     capture dates the line into `currunix`, read in `timezone` -- the zone
-    the bridge prints its clock in, an IANA name -- and a line the header did
-    not date takes its object's modification time. `start_rownum` numbers the
-    first line 1, which is what `seqnum` states.
+    the bridge prints its clock in, an IANA name, `rekep.times.TIMEZONE`
+    unless stated -- and a line the header did not date takes its object's
+    modification time. `start_rownum` numbers the first line 1, which is
+    what `seqnum` states.
     """
     options = TextOptions()
     options.start_rownum = 1

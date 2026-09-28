@@ -17,11 +17,13 @@ from typing import Any
 import pyarrow
 import pyarrow.compute
 from yggdryl import Filter
+from yggdryl.fix import ULBRIDGE_ROWHEADER as _CORE_ROWHEADER
 
-#: The one zone this package reads and writes instants in. `datetime.UTC` is
-#: 3.11's alias for this very object, so the two are the same singleton where
-#: both exist and this is the spelling the oldest supported interpreter has.
-#: Nothing else names the zone: a module wanting it imports it from here.
+#: The one zone this package stores and compares instants in; a bridge's
+#: clock, which states no offset, is read in `TIMEZONE` instead. `datetime.UTC`
+#: is 3.11's alias for this very object, so the two are the same singleton
+#: where both exist and this is the spelling the oldest supported interpreter
+#: has. Nothing else names the zone: a module wanting it imports it from here.
 UTC = datetime.timezone.utc
 
 #: The epoch in the three shapes a caller needs it in, and only here: an aware
@@ -54,11 +56,9 @@ NAMED: dict[str, Any] = {
 
 
 #: How an instant is spelled with a date, a clock and an optional fraction --
-#: the three shapes a capture writes, declared once for both readings of them.
-#:
-#: One declaration because the set of accepted spellings is *one behavior*
-#: even where the execution is two: this module reads configuration with
-#: `strptime`, while the row header expression uses the same shapes.
+#: the shapes a configured instant may take, which `datetime_of` and
+#: `window_of` read. A line's clock is matched by `ULBRIDGE_ROWHEADER`
+#: instead, which spells it the core's way.
 @dataclasses.dataclass(frozen=True)
 class Stamp:
     """One accepted spelling of an instant, and where its parts sit in it."""
@@ -238,50 +238,37 @@ COMPACT = Stamp(
 SHAPES: tuple[Stamp, ...] = (ISO, FIX, COMPACT)
 
 
-#: What a bridge may write after the seconds: nothing, or a separator and the
-#: three digits of its millisecond, and after those the three more digits some
-#: of its loggers group under a `_`. The separator is `.` or `,`, because a
-#: bridge under a comma locale writes the one its runtime prints and the
-#: native instant parser reads both -- and it reads `.524_315` too, since `_`
-#: groups a fraction's digits in the core. `_` never *opens* a fraction there,
-#: so a bracket spelling `01_147` stays unmatched rather than matched into a
-#: located refusal that fails the batch.
-#:
-#: The width admitted here does not type a column: the capture is named
-#: `mtime`, which the read consumes into `currunix` at nanoseconds UTC
-#: whatever the expression spells, so admitting the grouped micros costs no
-#: unit. What the width decides is which lines the header matches at all -- a
-#: line it misses keeps its whole text as its body, is dated by its object's
-#: modification time with every capture null, and reaches the walk with no
-#: session, context or sequence to fold on.
-_FRACTION = r"(?:[.,]\d{3}(?:_\d{3})?)?"
+#: The zone a bridge prints its clock in unless a caller states another: the
+#: header's clock states no offset, and the shipped capture's bridge prints a
+#: Central European clock, two hours ahead of its frames' UTC in summer.
+TIMEZONE = "Europe/Zurich"
 
-ULBRIDGE_ROWHEADER = (
-    rf"^(?P<mtime>\d{{4}}-\d{{2}}-\d{{2}} \d{{2}}:\d{{2}}:\d{{2}}{_FRACTION}) "
-    r"\[(?P<msgthreadid>[1-9]\d*)"
-    r"(?:-(?P<msgsessionid>[0-9a-f]{8}):(?P<msgctxid>[0-9a-f]{10}):(?P<msgseqnum>\d+))?\] "
-    r"\[(?P<msgpluginid>[^\]]+)\] \((?P<loglevel>[A-Z]+)\) "
+#: The core's capture names this package reads under another: the clock the
+#: read consumes into `currunix` is `mtime`, and the level `log_messages`
+#: keeps is `loglevel`.
+_RENAMED = {"timestamp": "mtime", "level": "loglevel"}
+
+ULBRIDGE_ROWHEADER = re.sub(
+    r"\(\?P<(\w+)>",
+    lambda found: f"(?P<{_RENAMED.get(found[1], found[1])}>",
+    _CORE_ROWHEADER,
 )
 """The ULBridge row-header expression for physical message records.
 
-The same bracket as `yggdryl.fix.ULBRIDGE_ROWHEADER`, part for part, and
-spelled here rather than imported because the native one dates nothing: it
-names its clock `timestamp` and its level `level`, and a capture reaches a
-column by being called what the column is called. `mtime` is the one name the
-read consumes -- the record clock it settles `currunix` from, at nanoseconds
-UTC whatever the fraction spells -- and `loglevel` is the column
-`log_messages` keeps. `test_times.py` pins those two renames and the fraction
-against the native text, so every other character is still the core's.
+`yggdryl.fix.ULBRIDGE_ROWHEADER` character for character but two capture
+names, because a capture reaches a column by being called what the column is
+called and the native one dates nothing: it names its clock `timestamp` and
+its level `level`. `mtime` is the one name the read consumes -- the record
+clock it settles `currunix` from, at nanoseconds UTC -- and `loglevel` is the
+column `log_messages` keeps.
 
-The fraction reads what this bridge writes: three digits, under a point or a
-comma or not at all, and the grouped micros its other loggers append. A
-bracket the expression does not match is not a line lost: the read dates that
-line by the modification time of the object it was read from, keeps its whole
-text as its body, and leaves the captures empty -- and the walk then has no
-session, context or sequence to fold that line's message on, so the count of
-lines a header matched moves the count of events a walk answers. That is why
-the shipped header admits every fraction the bundled capture spells rather
-than leaving a width to a header of its own.
+The clock takes the core's fraction: three digits under a point, and the
+micros some loggers group after them as `.524_315`. A bracket the expression
+does not match is not a line lost: the read dates that line by the
+modification time of the object it was read from, keeps its whole text as its
+body, and leaves the captures empty -- and the walk then has no session,
+context or sequence to fold that line's message on. A bridge writing another
+fraction is read by naming its header as the `rowheader` a task takes.
 
 Every capture is named for the column the native read fills from it, which is
 the whole of how a bracket part is told from another: `msgpluginid`,
@@ -397,6 +384,32 @@ def window_of(start: Any = None, end: Any = None) -> tuple[datetime.datetime, da
             f"window [{lower.isoformat()}, {upper.isoformat()}) is empty; start must be before end"
         )
     return lower, upper
+
+
+#: The grain an inferred window is aligned to: the tables partition by the
+#: hour of `currunix`, so a window of whole hours plans whole partitions.
+HOUR = datetime.timedelta(hours=1)
+
+
+def hour_window(first: int, last: int) -> tuple[datetime.datetime, datetime.datetime]:
+    """The whole-hour window a span of instants spells, from nanoseconds since the epoch.
+
+    `start` is `first` truncated to its hour. `end` is `last` truncated to its
+    hour, one hour later unless `last` already stands on a whole hour distinct
+    from `start` -- so a span within one hour, even a single whole-hour
+    instant, covers that hour, and a `last` on a whole hour past `start` ends
+    the window there.
+    """
+    if last < first:
+        raise ValueError(f"span [{first}, {last}] is inverted")
+    grain = HOUR // datetime.timedelta(microseconds=1) * 1000
+    start, end = first - first % grain, last - last % grain
+    if end != last or end == start:
+        end += grain
+    return (
+        EPOCH + datetime.timedelta(microseconds=start // 1000),
+        EPOCH + datetime.timedelta(microseconds=end // 1000),
+    )
 
 
 def within(

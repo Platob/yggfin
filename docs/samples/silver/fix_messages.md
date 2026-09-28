@@ -1,7 +1,7 @@
 # silver.record_keeping.fix_messages
 
-49 rows: the bronze messages of `[2026-08-14 00:00, 2026-08-14 16:30)` UTC walked into
-the 22 events they are, each placed in its chain and naming
+47 rows: the bronze messages of `[2026-08-14 00:00, 2026-08-14 16:30)` UTC walked into
+the 20 events they are, each placed in its chain and naming
 every line it was logged on, and 27 hourly views of the chains
 alive. Columns: [silver.record_keeping.fix_messages](../../tables/silver/fix_messages.md).
 
@@ -11,22 +11,28 @@ alive. Columns: [silver.record_keeping.fix_messages](../../tables/silver/fix_mes
 event stands at and `prevuuid` the event it follows. An expiry is an event
 the walk generates at the deadline the chain stated: no line recorded it.
 
+The fills of `BUY:00084776691VFRM7` are dated at one instant, and the walk takes
+the rows of one instant in `curruuid` order rather than in the order they
+happened: here the last fill, execution `00030561317VOJO7`, comes first and stands
+as a head of its own, while the first two chain on to the bridge's later
+`FILLED` restatement, so [the books](books.md) hold the order resting
+between the two.
+
 ### `BUY:00084776691VFRM7`
 
 | seqnum | currunix | state | curruuid | prevuuid | prevunix | lines |
 | :---: | --- | --- | --- | --- | --- | --- |
 |  | `2026-08-14 12:46:39.743016` | `PARTIALLY_FILLED` (4001) | `…83cc77` |  |  | 6, 7, 8, 9, 11, 15, 22 |
-| 1 | `2026-08-14 12:46:39.743016` | `PARTIALLY_FILLED` (4001) | `…09f7dc` | `…83cc77` | `2026-08-14 12:46:39.743016` | 56, 57, 58, 60, 64, 71 |
-| 2 | `2026-08-14 12:46:39.743016` | `FILLED` (8003) | `…5cd406` | `…09f7dc` | `2026-08-14 12:46:39.743016` | 73, 74, 75, 77, 82, 83, 91 |
-|  | `2026-08-14 12:46:39.762` | `FILLED` (8003) | `…7bd718` |  |  | 35, 36, 37, 39, 44, 45, 53 |
+| 1 | `2026-08-14 12:46:39.743016` | `PARTIALLY_FILLED` (4001) | `…43228a` | `…83cc77` | `2026-08-14 12:46:39.743016` | 56, 57, 58, 60, 64, 71 |
+| 2 | `2026-08-14 12:46:39.762` | `FILLED` (8003) | `…02853b` | `…43228a` | `2026-08-14 12:46:39.743016` | 35, 36, 37, 39, 44, 45, 53 |
+|  | `2026-08-14 12:46:39.743016` | `FILLED` (8003) | `…3777b5` |  |  | 73, 74, 75, 77, 82, 83, 91 |
 
 ### `BUY:00037497066VFRM7`
 
 | seqnum | currunix | state | curruuid | prevuuid | prevunix | lines |
 | :---: | --- | --- | --- | --- | --- | --- |
-|  | `2026-08-14 12:46:39.757` | `NEW` (2001) | `…1fa272` |  |  | 34 |
-| 1 | `2026-08-14 12:46:39.757079` | `UPDATED` (3004) | `…df3e87` | `…1fa272` | `2026-08-14 12:46:39.757` | 24, 25, 26 |
-| 2 | `2026-08-14 16:25:00` | `EXPIRED` (9500) | `…a94adb` | `…df3e87` | `2026-08-14 12:46:39.757079` | 24, 25, 26 |
+|  | `2026-08-14 12:46:39.757079` | `NEW` (2001) | `…25cae8` |  |  | 24, 25, 26 |
+| 1 | `2026-08-14 16:25:00` | `EXPIRED` (9500) | `…8509a1` | `…25cae8` | `2026-08-14 12:46:39.757079` | 24, 25, 26 |
 
 ## Every chain alive on the hour
 
@@ -49,20 +55,20 @@ lines and moves no chain on.
 | `2026-08-14 10:00:00` | `BUY:20260814_DT6_PGYVLK_8840` | `TRADE` (4002) | `019fffb6-d500-7000-b3ad-c4d85b041947` | `019ffdcb-7408-7000-b3ad-c4d85b041947` |
 | `2026-08-14 11:00:00` | `BUY:20260814_DT6_PGYVLK_8840` | `TRADE` (4002) | `019fffed-c380-7000-b3ad-c4d85b041947` | `019ffdcb-7408-7000-b3ad-c4d85b041947` |
 | `2026-08-14 12:00:00` | `BUY:20260814_DT6_PGYVLK_8840` | `TRADE` (4002) | `01a00024-b200-7000-b3ad-c4d85b041947` | `019ffdcb-7408-7000-b3ad-c4d85b041947` |
-| `2026-08-14 13:00:00` | `BUY:00037497066VFRM7` | `UPDATED` (3004) | `01a0005b-a080-7001-ba20-a36568df3e87` | `01a0004f-6a8d-7001-ba20-a36568df3e87` |
 | `2026-08-14 13:00:00` |  | `UNKNOWN` (0) | `01a0005b-a080-7000-98ba-20ee319b978b` | `01a0004f-6b8c-7000-b93c-b9c562ad26cf` |
+| `2026-08-14 13:00:00` | `BUY:00037497066VFRM7` | `NEW` (2001) | `01a0005b-a080-7000-ab52-77bbc825cae8` | `01a0004f-6a8d-7000-ab52-77bbc825cae8` |
 | `2026-08-14 13:00:00` | `BUY:20260814_DT6_PGYVLK_8840` | `TRADE` (4002) | `01a0005b-a080-7000-b3ad-c4d85b041947` | `019ffdcb-7408-7000-b3ad-c4d85b041947` |
 | `2026-08-14 13:00:00` | `BUY:KL3RCZUA564` | `PENDING_NEW` (1001) | `01a0005b-a080-7000-b5fd-3d0df9f16c28` | `01a0004f-6b94-7000-b5fd-3d0df9f16c28` |
-| `2026-08-14 14:00:00` | `BUY:00037497066VFRM7` | `UPDATED` (3004) | `01a00092-8f00-7001-ba20-a36568df3e87` | `01a0004f-6a8d-7001-ba20-a36568df3e87` |
 | `2026-08-14 14:00:00` |  | `UNKNOWN` (0) | `01a00092-8f00-7000-98ba-20ee319b978b` | `01a0004f-6b8c-7000-b93c-b9c562ad26cf` |
+| `2026-08-14 14:00:00` | `BUY:00037497066VFRM7` | `NEW` (2001) | `01a00092-8f00-7000-ab52-77bbc825cae8` | `01a0004f-6a8d-7000-ab52-77bbc825cae8` |
 | `2026-08-14 14:00:00` | `BUY:20260814_DT6_PGYVLK_8840` | `TRADE` (4002) | `01a00092-8f00-7000-b3ad-c4d85b041947` | `019ffdcb-7408-7000-b3ad-c4d85b041947` |
 | `2026-08-14 14:00:00` | `BUY:KL3RCZUA564` | `PENDING_NEW` (1001) | `01a00092-8f00-7000-b5fd-3d0df9f16c28` | `01a0004f-6b94-7000-b5fd-3d0df9f16c28` |
-| `2026-08-14 15:00:00` | `BUY:00037497066VFRM7` | `UPDATED` (3004) | `01a000c9-7d80-7001-ba20-a36568df3e87` | `01a0004f-6a8d-7001-ba20-a36568df3e87` |
 | `2026-08-14 15:00:00` |  | `UNKNOWN` (0) | `01a000c9-7d80-7000-98ba-20ee319b978b` | `01a0004f-6b8c-7000-b93c-b9c562ad26cf` |
+| `2026-08-14 15:00:00` | `BUY:00037497066VFRM7` | `NEW` (2001) | `01a000c9-7d80-7000-ab52-77bbc825cae8` | `01a0004f-6a8d-7000-ab52-77bbc825cae8` |
 | `2026-08-14 15:00:00` | `BUY:20260814_DT6_PGYVLK_8840` | `TRADE` (4002) | `01a000c9-7d80-7000-b3ad-c4d85b041947` | `019ffdcb-7408-7000-b3ad-c4d85b041947` |
 | `2026-08-14 15:00:00` | `BUY:KL3RCZUA564` | `PENDING_NEW` (1001) | `01a000c9-7d80-7000-b5fd-3d0df9f16c28` | `01a0004f-6b94-7000-b5fd-3d0df9f16c28` |
-| `2026-08-14 16:00:00` | `BUY:00037497066VFRM7` | `UPDATED` (3004) | `01a00100-6c00-7001-ba20-a36568df3e87` | `01a0004f-6a8d-7001-ba20-a36568df3e87` |
 | `2026-08-14 16:00:00` |  | `UNKNOWN` (0) | `01a00100-6c00-7000-98ba-20ee319b978b` | `01a0004f-6b8c-7000-b93c-b9c562ad26cf` |
+| `2026-08-14 16:00:00` | `BUY:00037497066VFRM7` | `NEW` (2001) | `01a00100-6c00-7000-ab52-77bbc825cae8` | `01a0004f-6a8d-7000-ab52-77bbc825cae8` |
 | `2026-08-14 16:00:00` | `BUY:20260814_DT6_PGYVLK_8840` | `TRADE` (4002) | `01a00100-6c00-7000-b3ad-c4d85b041947` | `019ffdcb-7408-7000-b3ad-c4d85b041947` |
 | `2026-08-14 16:00:00` | `BUY:KL3RCZUA564` | `PENDING_NEW` (1001) | `01a00100-6c00-7000-b5fd-3d0df9f16c28` | `01a0004f-6b94-7000-b5fd-3d0df9f16c28` |
 
@@ -70,7 +76,7 @@ lines and moves no chain on.
 
 Execution `00030561317VOJO7` is one event, `…64383a`, dated
 `2026-08-14 12:46:39.743016` by its `TransactTime` and recorded first at
-`2026-08-14 14:46:39.771`; `srcuuids` names the 7 lines
+`2026-08-14 12:46:39.771`; `srcuuids` names the 7 lines
 whose frames the walk merged into it, each joining to a
 `bronze.record_keeping.log_messages.curruuid`, beside the reports it was
 split out of:
@@ -94,9 +100,8 @@ split out of:
 | --- | :---: |
 | `UNKNOWN` (0) | 5 |
 | `PENDING_NEW` (1001) | 5 |
-| `NEW` (2001) | 1 |
-| `UPDATED` (3004) | 5 |
+| `NEW` (2001) | 5 |
 | `PARTIALLY_FILLED` (4001) | 2 |
 | `TRADE` (4002) | 16 |
-| `FILLED` (8003) | 14 |
+| `FILLED` (8003) | 13 |
 | `EXPIRED` (9500) | 1 |

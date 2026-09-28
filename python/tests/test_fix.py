@@ -40,6 +40,7 @@ from rekep.fix import (
 )
 from rekep.iceberg import partition_keys, primary_keys, sort_keys
 from rekep.text import log_message_field, text_options
+from rekep.times import TIMEZONE
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "data" / "capture" / "ulbridge.log"
@@ -92,21 +93,35 @@ EVENTS = sum(events for _, events, _ in CHAINS.values())
 #: The native row is the only FIX row shape at every stage.
 ROW = 133
 CRATE = 41
-PARSED_EVENTS = 81
 
-#: The messages of the capture stating no `SendingTime(52)`: the parse dates
-#: each by the line it was read out of, and the walk by its `TransactTime`.
-#: An execution states what the report it was split out of states.
+#: The event identities the parse answers over the capture's 135 messages: a
+#: message logged at several hops restates one identity, and a copy stating
+#: no `SendingTime` is dated by the `TransactTime` its line stands within
+#: `official_time_delay_ms` of, so it settles on the identity a copy stating
+#: `SendingTime` does.
+PARSED_EVENTS = 77
+
+#: The same parse over the capture read as UTC, which dates every line two
+#: hours after the message it carries: a copy stating no `SendingTime` is
+#: then dated by its line, two hours from the `TransactTime` a copy stating
+#: one is dated by, so four events logged both ways answer two identities
+#: each.
+PARSED_EVENTS_READ_AS_UTC = 81
+
+#: The messages of the capture stating no `SendingTime(52)`. Read in the zone
+#: its bridge prints in, each line stands 13 to 911 ms after the
+#: `TransactTime` it logs, so the parse dates every one by that clock. An
+#: execution states what the report it was split out of states.
 UNSENT = 112
 
-#: Two lines the bridge header matches, one under a point and one under a
-#: comma, and two messages, neither stating a `SendingTime` of its own: each
-#: is dated by the clock of the line it was read out of, which is also the
-#: instant it was recorded at.
+#: Two lines the bridge header matches, one under a point and one with the
+#: micros grouped after it, and two messages stating neither a `SendingTime`
+#: nor a `TransactTime`: each is dated by the clock of the line it was read
+#: out of, which is also the instant it was recorded at.
 BRIEF = (
     b"2026-08-14 00:05:01.147 [250-e7256476:9effef3e6a:72504] [ULBridge] (INFO) "
     b"Sending : 8=FIX.4.4|35=D|11=A1|55=AAPL|10=0|\n"
-    b"2026-08-14 00:05:01,148 [77] [FixSession_XPAR] (INFO) "
+    b"2026-08-14 00:05:01.148_250 [77] [FixSession_XPAR] (INFO) "
     b"sending >> 8=FIX.4.2|35=D|11=A2|55=TTF|10=0|\n"
 )
 
@@ -161,10 +176,10 @@ def _parsed_fixture() -> pyarrow.Table:
         handle.close()
 
 
-def _raw(handle: IOBase) -> pyarrow.Table:
+def _raw(handle: IOBase, timezone: str = TIMEZONE) -> pyarrow.Table:
     """One capture through the first stage, as bronze `fix_messages` stores it."""
     codec = _codec()
-    reader = handle.read_arrow_reader(options=text_options())
+    reader = handle.read_arrow_reader(options=text_options(timezone=timezone))
     return stored_arrow_reader(
         fix_parse_arrow_reader(codec, reader), fix_message_field(codec)
     ).read_all()
@@ -560,10 +575,12 @@ def test_a_message_stating_no_clock_answers_the_same_identity_on_every_read(tmp_
     assert len(set(first.column(MESSAGE_KEY).to_pylist())) == 2
     # Neither message states a clock, so each is dated by the line it was read
     # out of -- the instant it was recorded at, and never one the message
-    # states -- rather than by the instant the parse ran.
+    # states -- rather than by the instant the parse ran. The line's clock is
+    # read in the zone its bridge prints in: `00:05` of a Central European
+    # summer night is `22:05` UTC the day before.
     lines = [
-        datetime.datetime(2026, 8, 14, 0, 5, 1, 147000, tzinfo=UTC),
-        datetime.datetime(2026, 8, 14, 0, 5, 1, 148000, tzinfo=UTC),
+        datetime.datetime(2026, 8, 13, 22, 5, 1, 147000, tzinfo=UTC),
+        datetime.datetime(2026, 8, 13, 22, 5, 1, 148250, tzinfo=UTC),
     ]
     assert first.column(EVENT_CLOCK).to_pylist() == first.column("recdunix").to_pylist() == lines
     assert first.column("sendingtime").null_count == 2
@@ -584,7 +601,7 @@ def test_a_frame_read_off_no_line_takes_the_codecs_pin() -> None:
 
 
 def test_the_capture_answers_a_message_per_frame_and_not_a_row_per_line(raw) -> None:
-    """144 lines, 79 frames, 135 messages, and 81 parsed event identities."""
+    """144 lines, 79 frames, 135 messages, and 77 parsed event identities."""
     assert raw.num_rows == MESSAGES
     assert len(set(raw.column(MESSAGE_KEY).to_pylist())) == PARSED_EVENTS
 
@@ -805,16 +822,21 @@ def test_the_walk_reads_the_chains_the_capture_describes(refined) -> None:
 def test_the_walk_restates_the_events_and_adds_none(raw, refined) -> None:
     """A silver row differs from its bronze twin in what the walk filled --
     its place, its lineage, the folded state and clocks -- and in the identity
-    those re-settle to. A message stating no sending clock is dated at the
-    parse by the line it was read out of, which is when it was recorded and
-    not when it happened; the walk dates it by its transaction time, so it
-    leaves the line's hour for the hour it happened in and settles a new
-    identity there. What the walk never does is add an event."""
+    those re-settle to. A message stating no sending clock happened at its
+    transaction time and was recorded on its line after it: the parse dates
+    it by that transaction time where the line stands within
+    `official_time_delay_ms` of it, as every line of this capture does, and
+    the walk dates it there wherever the parse could not. What the walk never
+    does is add an event."""
     assert len(set(refined.column(MESSAGE_KEY).to_pylist())) == EVENTS
     columns = (EVENT_CLOCK, "recdunix", "sendingtime", TRANSACTION_CLOCK)
     unsent = [row for row in raw.select(columns).to_pylist() if row["sendingtime"] is None]
+    delay = datetime.timedelta(milliseconds=_codec().official_time_delay_ms)
     assert len(unsent) == UNSENT
-    assert all(row[EVENT_CLOCK] == row["recdunix"] for row in unsent), "dated by the line"
+    assert all(
+        row[EVENT_CLOCK] == row[TRANSACTION_CLOCK] < row["recdunix"] <= row[EVENT_CLOCK] + delay
+        for row in unsent
+    ), "dated by the transaction its line logged within the delay"
     assert not any(instant == UNDATED for instant in raw.column(EVENT_CLOCK).to_pylist())
     walked = [row for row in refined.select(columns).to_pylist() if row["sendingtime"] is None]
     assert walked and all(row[EVENT_CLOCK] == row[TRANSACTION_CLOCK] for row in walked)
@@ -823,6 +845,36 @@ def test_the_walk_restates_the_events_and_adds_none(raw, refined) -> None:
     assert refined.column(CHAIN_STEP).null_count < refined.num_rows
     # Provenance is never moved by a walk: each row still names its line.
     assert set(_sources(refined)) <= set(_sources(raw))
+
+
+def test_a_bridge_read_as_utc_dates_its_unsent_messages_by_the_line(refined) -> None:
+    """This bridge prints a Central European summer clock, so reading it as
+    UTC dates every line two hours after the message it carries, and no line
+    stands within `official_time_delay_ms` of the transaction it logs. The
+    parse then dates each unsent message by its line, two hours from the
+    `TransactTime` that dates a copy stating `SendingTime`, so the copies of
+    an event logged both ways stop folding. The walk dates them by their
+    transaction time and settles the same events."""
+    handle = IOBase.from_uri(FIXTURE.as_uri())
+    try:
+        misread = _raw(handle, timezone="UTC")
+    finally:
+        handle.close()
+    columns = (EVENT_CLOCK, "recdunix", "sendingtime", TRANSACTION_CLOCK)
+    unsent = [row for row in misread.select(columns).to_pylist() if row["sendingtime"] is None]
+    offset = datetime.timedelta(hours=2)
+    delay = datetime.timedelta(milliseconds=_codec().official_time_delay_ms)
+
+    assert len(unsent) == UNSENT
+    assert all(
+        row[EVENT_CLOCK] == row["recdunix"]
+        and offset < row["recdunix"] - row[TRANSACTION_CLOCK] <= offset + delay
+        for row in unsent
+    ), "dated by the line, two hours after its transaction"
+    assert len(set(misread.column(MESSAGE_KEY).to_pylist())) == PARSED_EVENTS_READ_AS_UTC
+    walked = _refined(misread)
+    assert walked.column(MESSAGE_KEY).to_pylist() == refined.column(MESSAGE_KEY).to_pylist()
+    assert walked.column(EVENT_CLOCK).to_pylist() == refined.column(EVENT_CLOCK).to_pylist()
 
 
 def test_a_refined_message_follows_the_messages_before_it(refined) -> None:
@@ -869,6 +921,24 @@ def test_a_duplicate_is_not_a_successor(refined) -> None:
     assert len(copies) == EVENTS
     assert all(len(places) == 1 for places in held.values())
     assert sum(1 for identity in refined.column(MESSAGE_KEY).to_pylist()) > len(held)
+
+
+def test_a_new_stated_over_a_live_new_is_updated(raw, refined) -> None:
+    """A `NEW` stated over a live predecessor that is new itself is the order
+    stated anew and carrying on, which the walk says with `UPDATED`. The
+    capture logs the acknowledgement of `00037497066VFRM7` under two bracket
+    sequences, so walked unfolded it is two events, the second over the first.
+    The first shares its identity with copies of the second, so a table keyed
+    on `curruuid` folds it into them, and the pipeline walks one `NEW`."""
+    chain = [row for row in refined.to_pylist() if row["crosscode"] == "BUY:00037497066VFRM7"]
+    assert [State(row["state"]) for row in chain] == [State.NEW, State.UPDATED, State.EXPIRED]
+    new, updated, _ = chain
+    assert updated["prevuuid"] == new[MESSAGE_KEY]
+    sequences = {
+        row["msgsesseventid"] for row in raw.to_pylist() if row[MESSAGE_KEY] == new[MESSAGE_KEY]
+    }
+    assert sequences == {new["msgsesseventid"], updated["msgsesseventid"]}
+    assert new["msgsesseventid"] != updated["msgsesseventid"]
 
 
 def test_the_walk_reads_the_row_and_never_the_capture_beside_it(raw, refined) -> None:

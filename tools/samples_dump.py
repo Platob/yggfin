@@ -32,6 +32,7 @@ import os
 import pathlib
 import tempfile
 import uuid
+import zoneinfo
 from collections.abc import Iterator, Sequence
 from typing import Any
 
@@ -62,7 +63,7 @@ from rekep.pipeline import (
 )
 from rekep.storages import LAYERS
 from rekep.text import log_message_field
-from rekep.times import window_of
+from rekep.times import TIMEZONE, window_of
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 PAGES = ROOT / "docs" / "samples"
@@ -70,19 +71,22 @@ PAGES = ROOT / "docs" / "samples"
 #: The capture, as a reader's run from the repository root addresses it.
 CAPTURE = "file:data/capture/ulbridge.log"
 
-#: The one window every task runs over. It opens at midnight, so the early
-#: trade of 01:03 is in it, and closes at 16:30: past 14:46, where the bridge
-#: printed the day's order flow, and past 16:25, where the walk expires the
-#: day's open order.
+#: The one window every task runs over. The capture is read in its bridge's
+#: zone, so a line lands in the hour of the message it carries. The window
+#: opens at midnight, so the early trade of 01:03 is in it, and closes at
+#: 16:30: past 12:46, the day's order flow, past 14:52, its one trade report,
+#: and past 16:25, where the walk expires the day's open order.
 WINDOW = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 
-#: The execution the pages follow through every layer: the fill that closed
-#: order `00084776691VFRM7`, logged at every hop it passed.
+#: The execution the pages follow through every layer: the last fill of order
+#: `00084776691VFRM7`, logged at every hop it passed.
 EXECID = "00030561317VOJO7"
 
 #: The chains the silver page shows walked, as their side-prefixed cross
-#: codes: an order filled in three steps, and one left open that the walk
-#: restates on every hour and expires at its deadline.
+#: codes: an order filled at one instant, whose fills the walk takes in
+#: `curruuid` order rather than in the order they happened, so its last fill
+#: stands as a head of its own; and one left open that the walk restates on
+#: every hour and expires at its deadline.
 CHAINS = ("BUY:00084776691VFRM7", "BUY:00037497066VFRM7")
 
 #: The lines the log page shows: the first ones the capture holds.
@@ -383,11 +387,14 @@ def index_page(landed: dict[str, Landed], stored: dict[str, list[dict[str, Any]]
             "## The window",
             "",
             "It opens at midnight, so the trade of 01:03 is in it, and closes at 16:30:",
-            "after 14:46, where the bridge printed the day's order flow, and after 16:25,",
-            "where the walk expires the day's open order. The bridge prints its lines",
-            "two hours ahead of the UTC its FIX frames state, which is why bronze",
-            "`log_messages` holds hour 14 where silver holds hour 12:",
-            "[DAGs](../dags/index.md#late-events) says what that means for a schedule.",
+            "after 12:46, the day's order flow, after 14:52, its one trade report, and",
+            "after 16:25, where the walk expires the day's open order. The bridge prints",
+            "a Central European summer clock, two hours ahead of the UTC its FIX frames",
+            f"state, and every line is read in `{TIMEZONE}`, the zone `parse_log_messages`",
+            "reads unless told another, so a line lands in the hour of the message it",
+            "carries: bronze `log_messages` and silver both hold hour 12.",
+            "[DAGs](../dags/index.md#late-events) says what a window must hold, and what",
+            "a capture read in another zone lands.",
         ],
         ["## What each task answered", "", *answered],
         ["## What each table holds", "", *held],
@@ -408,7 +415,11 @@ def task_page(task: str) -> str:
 
 
 def log_page(lines: list[dict[str, Any]]) -> str:
-    hours = collections.Counter(line["currunix"].strftime("%H:00") for line in lines)
+    bridge = zoneinfo.ZoneInfo(TIMEZONE)
+    hours = collections.Counter(
+        (line["currunix"].strftime("%H:00"), line["currunix"].astimezone(bridge).strftime("%H:00"))
+        for line in lines
+    )
     first = sorted(lines, key=lambda line: line["seqnum"])[:FIRST_LINES]
     shared = first[0]
     return page(
@@ -420,12 +431,17 @@ def log_page(lines: list[dict[str, Any]]) -> str:
         [
             "## Lines per hour",
             "",
-            "A line is dated by its row header, as the bridge printed it, so the table is",
-            "laid out by the hour of the bridge's own clock.",
+            "A line is dated by its row header, whose clock states no offset and is read",
+            f"in the zone the bridge prints in, `{TIMEZONE}`, so the table is laid out by",
+            "the UTC hour each line was printed at: the hour of the messages the lines",
+            "carry, two hours before the one the bridge's own clock spells.",
             "",
             *table(
-                ["hour of `currunix`", "lines:"],
-                [[f"`{hour}`", str(count)] for hour, count in sorted(hours.items())],
+                ["hour of `currunix`", "on the bridge's clock", "lines:"],
+                [
+                    [f"`{hour}`", f"`{printed}`", str(count)]
+                    for (hour, printed), count in sorted(hours.items())
+                ],
             ),
         ],
         [
@@ -539,8 +555,9 @@ def raw_page(
         [
             "## One execution, logged at every hop",
             "",
-            f"Execution `{EXECID}` closed order `{CHAINS[0]}`. The bridge logged it on",
-            f"lines {first} to {last}, once per plugin it passed, and wrote prose between.",
+            f"Execution `{EXECID}` is the last fill of order `{CHAINS[0]}`. The bridge",
+            f"logged it on lines {first} to {last}, once per plugin it passed, and wrote",
+            "prose between.",
             "The parse answers a message per frame a line carries, and a report of a fill",
             "answers the execution it splits off beside it; a message that restates",
             "another under the same identity is folded by the key and counted in",
@@ -553,10 +570,12 @@ def raw_page(
             "",
             "A message stating its own `SendingTime` is dated by the transaction clock",
             "standing within `official_time_delay_ms` of it, here its `TransactTime`; one",
-            "stating none is dated by the line it was read off, until the walk dates it",
-            "by its `TransactTime`. Each row names the one line it was parsed from, and",
-            "the execution a report splits off names that report beside it, `FILLED`:",
-            "one fill, complete in itself, whatever the report's own state.",
+            "stating none is measured against the line it was read off, which, read in",
+            "the bridge's zone, stands within that delay of its `TransactTime`, so it is",
+            "dated by that clock too, at the precision its frame spells. Each row names",
+            "the one line it was parsed from, and the execution a report splits off",
+            "names that report beside it, `FILLED`: one fill, complete in itself,",
+            "whatever the report's own state.",
             "",
             *table(
                 [
@@ -678,6 +697,13 @@ def refined_page(lines: list[dict[str, Any]], refined: list[dict[str, Any]]) -> 
             "`crosscode` is the business identifier a chain shares, `seqnum` the step an",
             "event stands at and `prevuuid` the event it follows. An expiry is an event",
             "the walk generates at the deadline the chain stated: no line recorded it.",
+            "",
+            f"The fills of `{CHAINS[0]}` are dated at one instant, and the walk takes",
+            "the rows of one instant in `curruuid` order rather than in the order they",
+            f"happened: here the last fill, execution `{EXECID}`, comes first and stands",
+            "as a head of its own, while the first two chain on to the bridge's later",
+            "`FILLED` restatement, so [the books](books.md) hold the order resting",
+            "between the two.",
             "",
             *chains,
         ],

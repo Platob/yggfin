@@ -51,27 +51,28 @@ DAY = window_of("2026-08-14", "2026-08-14")
 
 #: The main window every task after the log runs over.
 #:
-#: The bridge prints a line at its own clock, two hours ahead of the UTC its
-#: FIX frames state: the 112 lines printed at 14:46 carry the events of 12:46.
-#: So the window opens at 12:00, where those events are, runs past 14:46,
-#: where their lines are, and past 16:25, where the walk expires the day's
-#: open order -- and closes before 16:52, the line carrying the day's one
-#: trade report, so the window's last hour holds a line its end does not. That
-#: report's side group states no `Side(54)`, so it splits off no execution and
-#: books nothing, which
+#: The bridge prints a Central European summer clock, two hours ahead of the
+#: UTC its FIX frames state, and the read takes that zone by default: the 112
+#: lines printed at 14:46 are dated 12:46, the hour of the events they carry.
+#: So the window opens at 12:00, where both are, holds the day's one trade
+#: report, whose line and message are dated 14:52, runs past 16:25, where the
+#: walk expires the day's open order, and closes inside that hour, so no
+#: task's window ends on a partition's bound. The trade report's side group
+#: states no `Side(54)`, so it splits off no execution and books nothing,
+#: which
 #: `test_market.py::test_books_fold_a_cancel_reject_under_the_side_of_its_order`
 #: pins.
 START = datetime.datetime(2026, 8, 14, 12, tzinfo=UTC)
 END = datetime.datetime(2026, 8, 14, 16, 30, tzinfo=UTC)
 WINDOW = (START, END)
 
-#: The window landed before it: the capture's sixteen lines of 03:00 and the
-#: events of 01:00 they carry. Landed first, so every table a main-window task
-#: reads holds a partition its window does not cover, and a main-window rerun
-#: has neighbours to leave alone.
+#: The window landed before it: the capture's sixteen lines of 01:00 and the
+#: events they carry, dated in the same hour. Landed first, so every table a
+#: main-window task reads holds a partition its window does not cover, and a
+#: main-window rerun has neighbours to leave alone.
 EARLY = (
     datetime.datetime(2026, 8, 14, tzinfo=UTC),
-    datetime.datetime(2026, 8, 14, 4, tzinfo=UTC),
+    datetime.datetime(2026, 8, 14, 2, tzinfo=UTC),
 )
 
 #: The columns every table is sorted by within a partition, and read back in.

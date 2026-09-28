@@ -75,10 +75,11 @@ UTC = datetime.timezone.utc
 #: What `parse_log_messages` answers over the capture's day: every line, once.
 LOG = Landed(read=144, written=144)
 
-#: What every later task answers over `EARLY`: the sixteen lines of 03:00
-#: carry one fill report logged at three hops -- its receipt, dated by its
-#: own clock, and two restatements dated by their lines' -- and each copy
-#: splits off the execution it reports. The walk merges the observations
+#: What every later task answers over `EARLY`: the sixteen lines of 01:00
+#: carry one fill report logged at three hops -- its receipt and two
+#: restatements, each dated 01:03:17 by the transaction clock it states --
+#: and each copy splits off the execution it reports. The restatements differ
+#: from the receipt, so bronze folds none. The walk merges the observations
 #: into the report's event and the execution's, folded into one book holding
 #: one order delta and one execution.
 EARLY_LANDED = {
@@ -90,24 +91,29 @@ EARLY_LANDED = {
     "parse_executions": Landed(read=1, written=1),
 }
 
-#: What every later task answers over `WINDOW`. The 112 lines of 14:46 carry
-#: 65 frames, and every fill report among them splits off the execution it
-#: reports, so the parse answers 118 messages; bronze keeps 68 keys and folds
-#: 50 restatements; the walk reads those 68 rows -- the hour before `START`
-#: holds none -- and merges the observations of one event into 19 rows, plus
-#: the expiry it emits at 16:25, and restates the three chains still alive
+#: What every later task answers over `WINDOW`. Its 113 lines are the 112 of
+#: 12:46, carrying 65 frames, and the trade report's of 14:52; every fill
+#: report splits off the execution it reports -- the trade report, stating no
+#: `Side(54)`, splits off none -- so the parse answers 119 messages. A
+#: restatement states no `SendingTime`, and its line stands within
+#: `official_time_delay_ms` of the `TransactTime` it states, so it is dated
+#: by that clock, in the hour of the message it restates: bronze keeps 66 keys
+#: and folds 53 identical restatements. The walk reads those 66 rows -- the
+#: hour before `START` holds none -- and merges the observations of one event
+#: into 17 rows, the trade report among them, plus the expiry it emits at
+#: 16:25, and restates the three chains still alive
 #: after 12:46 -- the logon, the new order and the acknowledged order that
-#: expires -- at 13:00, 14:00, 15:00 and 16:00: 20 events and 12 views, each
-#: a row of its own, so the key folds nothing. The books fold those 32 into 5
+#: expires -- at 13:00, 14:00, 15:00 and 16:00: 18 events and 12 views, each
+#: a row of its own, so the key folds nothing. The books fold those 30 into 5
 #: books of events and the two categories' books on each of the four hours,
-#: 13; their deltas and executions are eight orders -- every report an order
-#: delta, beside the execution split out of it -- no quote and six
-#: executions, the hourly books adding none.
+#: 13; their deltas and executions are seven orders -- the new order and six
+#: fill reports -- no quote and six executions, one split out of each fill
+#: report, the hourly books adding none.
 LANDED = {
-    "parse_fix_messages_raw": Landed(read=112, written=68, skipped=50),
-    "parse_fix_messages_refined": Landed(read=68, written=32),
-    "parse_books": Landed(read=32, written=13),
-    "parse_orders": Landed(read=13, written=8),
+    "parse_fix_messages_raw": Landed(read=113, written=66, skipped=53),
+    "parse_fix_messages_refined": Landed(read=66, written=30),
+    "parse_books": Landed(read=30, written=13),
+    "parse_orders": Landed(read=13, written=7),
     "parse_quotes": Landed(read=13, written=0),
     "parse_executions": Landed(read=13, written=6),
 }
@@ -115,23 +121,24 @@ LANDED = {
 #: Rows each table holds after both windows. The gold catalog holds no table.
 STORED = {
     LOG_MESSAGES: 144,
-    FIX_MESSAGES_RAW: 74,
-    FIX_MESSAGES: 34,
+    FIX_MESSAGES_RAW: 72,
+    FIX_MESSAGES: 32,
     BOOKS: 14,
-    EVENTS["orders"]: 9,
+    EVENTS["orders"]: 8,
     EVENTS["quotes"]: 0,
     EVENTS["executions"]: 7,
 }
 
 #: The table each task scans, the hours of it that scan plans, and every hour
 #: the table holds -- `EARLY`'s among them. The window's hours are 12 to 16,
-#: and the walk's scan reaches `HISTORY` before them, to 11. `log_messages`
-#: holds a line in hour 16, the 16:52 trade report, which the window's hour
-#: covers and its end does not: the file's bounds prune it. Silver and the
-#: books hold every hour from 12 to 16, the hourly views and books among them.
+#: and the walk's scan reaches `HISTORY` before them, to 11. A line is dated
+#: in the hour of the message it carries, so `log_messages` and bronze
+#: `fix_messages` hold the same hours in the window: 12, the events of 12:46,
+#: and 14, the trade report of 14:52. Silver and the books hold every hour
+#: from 12 to 16, the hourly views and books among them.
 READS = {
-    "parse_fix_messages_raw": (LOG_MESSAGES, ["14"], ["03", "14", "16", "23"]),
-    "parse_fix_messages_refined": (FIX_MESSAGES_RAW, ["12", "14"], ["01", "03", "12", "14"]),
+    "parse_fix_messages_raw": (LOG_MESSAGES, ["12", "14"], ["01", "12", "14", "21"]),
+    "parse_fix_messages_refined": (FIX_MESSAGES_RAW, ["12", "14"], ["01", "12", "14"]),
     "parse_books": (
         FIX_MESSAGES,
         ["12", "13", "14", "15", "16"],
@@ -270,6 +277,21 @@ def test_each_task_opens_only_the_hours_its_window_covers(landing: Landing) -> N
         assert opened == expected, "a task opens what its scan planned and nothing else"
         assert len(scanned) < len(every), "the plan leaves the other hours' files unread"
         assert landing.opened[task] == set(scanned), "the very files the plan names"
+
+
+def test_a_file_of_the_windows_last_hour_past_its_end_is_left_unplanned(
+    landing: Landing,
+) -> None:
+    """A partition is planned by the bounds of its files, not by its hour: a
+    window ending at 14:30 covers hour 14, which holds only the trade
+    report's line of 14:52, so its scan plans hour 12 alone and reads the 112
+    lines of 12:46."""
+    cut = (START, datetime.datetime(2026, 8, 14, 14, 30, tzinfo=UTC))
+    predicate = window_filter(EVENT_CLOCK, cut)
+    storages = landing.storages
+    assert hours(planned(storages, LOG_MESSAGES), LOG_MESSAGES) == ["01", "12", "14", "21"]
+    assert hours(planned(storages, LOG_MESSAGES, predicate), LOG_MESSAGES) == ["12"]
+    assert read(storages, LOG_MESSAGES, row_filter=predicate).num_rows == 112
 
 
 # -- what the walk settled -----------------------------------------------------
@@ -479,13 +501,7 @@ def test_the_walk_folds_state_creation_and_recording(landing: Landing) -> None:
         if row["recdunix"] is None:
             continue
         seen = [held for line in row["srcuuids"] for held in observations[(line, split)]]
-        furthest = max(State(held["state"]).rank for held in seen)
-        if row["state"] == State.UPDATED:
-            # A `NEW` stated over a live predecessor that is new itself is the
-            # order stated anew and carrying on, which the walk says.
-            assert furthest == State.NEW.rank and row["prevuuid"] is not None
-        else:
-            assert State(row["state"]).rank == furthest
+        assert State(row["state"]).rank == max(State(held["state"]).rank for held in seen)
         assert row["recdunix"] == min(held["recdunix"] for held in seen)
         assert row["creaunix"] <= min(held["creaunix"] for held in seen)
         if row["msgtype"] == "D":
@@ -497,8 +513,10 @@ def test_the_walk_folds_state_creation_and_recording(landing: Landing) -> None:
 
 
 def test_no_parsed_message_sits_at_the_pin(landing: Landing) -> None:
-    """A message stating no sending clock takes its line's, so a text read
-    leaves nothing at `UNDATED` for the walk to place by transaction time."""
+    """A message stating no sending clock is dated by the transaction clock
+    standing within `official_time_delay_ms` of its line, else by its line,
+    so a text read leaves nothing at `UNDATED` for the walk to place by
+    transaction time."""
     bronze = landing.table(FIX_MESSAGES_RAW).to_pylist()
     assert not [row for row in bronze if row[EVENT_CLOCK] == UNDATED]
     silver = landing.table(FIX_MESSAGES).column(EVENT_CLOCK).to_pylist()

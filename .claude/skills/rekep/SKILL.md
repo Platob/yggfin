@@ -80,15 +80,15 @@ storages = Storages.from_dict({layer: {"name": layer, "properties": {
     for layer in ("bronze", "silver", "gold")})
 window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 with storages:
-    assert parse_log_messages("file:data/capture/ulbridge.log", storages, window) == Landed(128, 128)
-    assert parse_fix_messages_raw(storages, window) == Landed(read=128, written=74, skipped=50)
-    assert parse_fix_messages_refined(storages, window) == Landed(read=74, written=49)
+    assert parse_log_messages("file:data/capture/ulbridge.log", storages, window) == Landed(129, 129)
+    assert parse_fix_messages_raw(storages, window) == Landed(read=129, written=72, skipped=53)
+    assert parse_fix_messages_refined(storages, window) == Landed(read=72, written=47)
     books = parse_books(storages, window)
     with ThreadPoolExecutor(max_workers=3) as pool:
         running = {kind: pool.submit(task, storages, window, snapshot_id=books.snapshot_id)
                    for kind, task in FLATTENERS.items()}
     written = {kind: future.result().written for kind, future in running.items()}
-    assert (books.written, written) == (29, {"orders": 9, "quotes": 0, "executions": 7})
+    assert (books.written, written) == (29, {"orders": 8, "quotes": 0, "executions": 7})
 ```
 
 Order matters: each task reads only the table before it. Every task creates
@@ -98,7 +98,7 @@ is running it again. A task per process is fine: open `Storages`, run, close.
 
 `Landed` holds `read` (source rows the window selected), `written` (target
 rows carried into the table), `skipped` (answered rows the key folded into a
-written one: 50 bronze FIX messages restate another hop's exactly) and
+written one: 53 bronze FIX messages restate another hop's exactly) and
 `snapshot_id` (the books snapshot `parse_books` committed or a flattener
 read; None for the others). Tasks log to the `rekep.*` loggers and configure
 nothing: `INFO` shows each table created and each commit, `DEBUG` adds scans
@@ -125,18 +125,22 @@ and files.
   nanoseconds (`int`) or `now`/`today`/`yesterday`/`tomorrow`/`epoch`; a date
   `end` is the end of that day; neither bound is the last day up to now.
 - Each table is windowed on its own clock: the line's printed instant on
-  `log_messages`, the message's own on FIX rows. The capture's bridge prints
-  local time, two hours ahead of UTC, so its lines of 14:46 carry messages of
-  12:46.
+  `log_messages`, read in `timezone` (`Europe/Zurich` unless stated), the
+  message's own on FIX rows. The capture's bridge prints a Central European
+  clock, two hours ahead of UTC in summer, so its lines printed 14:46 are
+  dated 12:46 UTC, the hour of the messages they carry. Read as UTC they
+  would sit two hours after their messages, and one delivery's copies would
+  stop folding.
 - `parse_fix_messages_refined` reads `HISTORY` (one hour) before its window,
   hour partition by hour partition in instant order, walks it an hour at a
   time (never collecting the read) and writes only the rows the walk dates
   inside the window -- at `start` the views of every chain the hour before
-  left alive; an event whose bronze
-  row sits in a later hour than its walked instant lands only in a window
-  holding both. Run silver behind bronze, over wide windows (a day), and
-  rerun a wider window to reconcile. `docs/dags/index.md#late-events` has the
-  numbers.
+  left alive. An event lands only in a window holding both the bronze rows it
+  is walked from and the instant it is walked to: an expiry more than
+  `HISTORY` after its order began, or any message of a capture read in a zone
+  other than its bridge's. Run silver behind bronze, over wide windows (a
+  day), and rerun a wider window to reconcile.
+  `docs/dags/index.md#late-events` has the numbers.
 - `parse_books` and the flatteners replace exactly `[start, end)`. The fold
   reads `HISTORY` before `start` too, so a book standing at `start` holds what
   that hour left resting, and every hourly view silver holds there is its
@@ -171,11 +175,20 @@ Never put credentials in a mapping. `docs/storages/` is the full reference.
 
 ## Task parameters worth knowing
 
-- `parse_log_messages(source, storages, window, *, rowheader=None, target=LOG_MESSAGES)`:
+- `parse_log_messages(source, storages, window=None, *, rowheader=None, timezone=TIMEZONE, target=LOG_MESSAGES)`:
   `source` is a file, folder or prefix URI (`file:data/capture`,
   `s3://bucket/prefix?region=eu-west-1`) or an `IOBase` the caller keeps open.
-  `rowheader=None` is `ULBRIDGE_ROWHEADER`; another must keep
-  `rekep.text.CAPTURES`.
+  `rowheader=None` is `rekep.times.ULBRIDGE_ROWHEADER`, whose clock takes
+  three fraction digits after a point, optionally grouped micros
+  (`.524_315`): a line spelling a comma or no fraction is left unmatched,
+  dated by its object's modification time with every capture null, and needs
+  a header of its own, which must keep `rekep.text.CAPTURES`.
+  `timezone` is the IANA zone the bridge prints its clock in,
+  `rekep.times.TIMEZONE` = `Europe/Zurich` unless stated; pass another for a
+  bridge printing elsewhere, or its lines are dated hours from their
+  messages. `window=None` lands every line, staged in a local Arrow stream
+  file, and answers `Landed.window`, the whole hours its dated lines span,
+  for the next tasks: `[2026-08-14 01:00, 22:00)` UTC for the capture.
 - `parse_fix_messages_raw`, `parse_fix_messages_refined`, `parse_books`:
   `codec=None` is `FixCodec.from_env(default_sending_time=UNDATED)`. Hand all
   three the same codec.

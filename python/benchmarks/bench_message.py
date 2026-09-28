@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import datetime
 import gzip
 import pathlib
 import sys
 import tempfile
+import zoneinfo
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 
@@ -35,7 +37,8 @@ SCHEMA = FIELD.into_arrow_schema()
 
 
 def mtime(index: int) -> str:
-    """The deterministic source spelling for one row's record clock."""
+    """The deterministic source spelling for one row's record clock, in the
+    bridge's zone."""
     return f"2026-08-14 00:05:{index % 60:02d}.{index % 1_000:03d}"
 
 
@@ -75,6 +78,8 @@ RAW_OPTIONS = TextOptions()
 RAW_OPTIONS.start_rownum = OPTIONS.start_rownum
 RAW_OPTIONS.rowheader = OPTIONS.rowheader
 RAW_OPTIONS.timezone = OPTIONS.timezone
+#: The zone the read takes a spelled clock in, as the reference reads it.
+ZONE = zoneinfo.ZoneInfo(OPTIONS.timezone.key)
 
 
 @dataclass(frozen=True)
@@ -130,7 +135,7 @@ UNWALKED = ("creaunix", "execunix", "recdunix", "exprunix", "prevunix", "snapuni
 def expected(index: int) -> dict[str, object]:
     """The endpoint values independent of the resource's diagnostic URL."""
     return {
-        "currunix": datetime_of(mtime(index)),
+        "currunix": datetime_of(datetime.datetime.fromisoformat(mtime(index)).replace(tzinfo=ZONE)),
         **dict.fromkeys(UNWALKED),
         "prevuuid": None,
         "srcuuids": None,

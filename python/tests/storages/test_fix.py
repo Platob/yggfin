@@ -79,9 +79,13 @@ COLUMNS = 133
 DAY_MESSAGES = 84
 
 #: How many messages the parse dates by their sending clock, and how many by
-#: their transaction clock, over the capture's day, per delay pin. An
+#: their transaction clock, over the capture's day, per delay pin. A message
+#: stating no `SendingTime` is measured against its line's clock: read in the
+#: bridge's zone, that stands within the default second of the venue's clock
+#: but never on it, so the default dates 58 such messages by their
+#: transaction clock and the nought pin dates them by their line. An
 #: execution split out of a report is dated as the report is.
-DELAYS = {"default": (8, 19), "nought": (23, 4)}
+DELAYS = {"default": (8, 73), "nought": (23, 4)}
 
 #: The narrow dictionary's row: the crate's own columns, its clock and symbol.
 NARROW_COLUMNS = 34
@@ -256,8 +260,9 @@ def test_the_official_clock_delay_is_a_codec_pin(tmp_path: Path) -> None:
     not when the thing it reports happened. The parse dates the message by the
     official transaction clock standing within `official_time_delay_ms` of
     that sending clock, and falls back to the sending clock where none stands
-    that near. Each pin gets catalogs of its own, because the instant a
-    message settles on is what its identity is derived from.
+    that near; a message stating none is measured against its line's clock.
+    Each pin gets catalogs of its own, because the instant a message settles
+    on is what its identity is derived from.
     """
 
     def dated_by(name: str, **pinned: Any) -> tuple[int, int]:
@@ -280,11 +285,12 @@ def test_the_official_clock_delay_is_a_codec_pin(tmp_path: Path) -> None:
     # The core's own second, which is what a codec takes when it pins nothing.
     assert default == DELAYS["default"]
     # A nonpositive delay admits only a clock equal to the sending one, so
-    # every event a venue stamped a little apart falls back to the wire.
+    # every event a venue stamped a little apart falls back to the wire, or
+    # to its line where it states no sending clock.
     assert nought == DELAYS["nought"]
     # And a wide one admits the clocks the default already did and no more:
     # no transaction clock in this capture stands between a second and ten
-    # minutes from its wire.
+    # minutes from the clock it is measured against.
     assert wide == default
 
 
@@ -561,7 +567,7 @@ def test_the_walk_restates_every_chain_alive_on_each_whole_hour(landing: Landing
     events, views = split(silver.to_pylist())
     refined = landing.landed["parse_fix_messages_refined"]
     print(f"\n{len(events)} events and {len(views)} views: {refined}")
-    assert (len(events), len(views)) == (20, 12)
+    assert (len(events), len(views)) == (18, 12)
     assert refined.written == silver.num_rows and refined.skipped == 0
     assert all(view[EVENT_CLOCK] == view["snapunix"] for view in views)
     ticks = sorted({view["snapunix"] for view in views})
@@ -608,14 +614,14 @@ def test_the_rows_at_start_are_the_chains_the_hour_before_left_alive(
     stored = held.filter(within(held.column(EVENT_CLOCK), later))
     at_start = [row for row in stored.to_pylist() if row[EVENT_CLOCK] == later[0]]
     print(f"\nfrom 13:00 {landed}: {len(at_start)} rows at 13:00")
-    assert landed == Landed(read=68, written=stored.num_rows)
+    assert landed == Landed(read=66, written=stored.num_rows)
     assert len(at_start) == 3 and all(row["snapunix"] == later[0] for row in at_start)
     assert read(storages, FIX_MESSAGES).equals(held)
 
     plain = parse_fix_messages_refined(
         storages, WINDOW, snapshot_millis=0, target="silver.record_keeping.plain_fix_messages"
     )
-    assert plain == Landed(read=68, written=20)
+    assert plain == Landed(read=66, written=18)
     events, _ = split(held.to_pylist())
     assert read(storages, "silver.record_keeping.plain_fix_messages").to_pylist() == events
 
@@ -623,7 +629,7 @@ def test_the_rows_at_start_are_the_chains_the_hour_before_left_alive(
     pinned = parse_fix_messages_refined(
         storages, WINDOW, codec=minute, target="silver.record_keeping.pinned_fix_messages"
     )
-    assert pinned == Landed(read=68, written=32)
+    assert pinned == Landed(read=66, written=30)
     assert read(storages, "silver.record_keeping.pinned_fix_messages").equals(held)
 
 
@@ -653,7 +659,7 @@ def test_a_sorted_walk_answers_what_the_whole_walk_does(landing: Landing) -> Non
     hourly = walked(True)
     whole = walked(False)
     print(f"\nthe hourly walk answers {hourly.num_rows} rows, the whole walk {whole.num_rows}")
-    assert hourly.num_rows == whole.num_rows == 32
+    assert hourly.num_rows == whole.num_rows == 30
     assert hourly.equals(whole)
 
 

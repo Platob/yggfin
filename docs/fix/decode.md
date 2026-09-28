@@ -250,12 +250,13 @@ own fields, and the row ends `metadata`, `fixentries`.
 The parse dates a message by the official transaction clock standing within
 `official_time_delay_ms` of the `SendingTime(52)` it stated --
 `TransactTime(60)`, else a `TrdRegTimestamp(769)` about the event or a hop --
-and by that `SendingTime` otherwise. One stating no `SendingTime` is dated by
-the line it was read off, and one read off no line at all takes the codec's
-`default_sending_time`, which the tasks pin at `rekep.fix.UNDATED`, the
-epoch, so a replay of the same bytes answers the same identity. The walk then
-dates a message by the `TransactTime(60)` it states where the parse could
-not.
+and by that `SendingTime` otherwise. One stating no `SendingTime` measures
+its transaction clock against the line it was read off the same way, and is
+dated by the line where none stands that near; one read off no line at all
+takes the codec's `default_sending_time`, which the tasks pin at
+`rekep.fix.UNDATED`, the epoch, so a replay of the same bytes answers the
+same identity. The walk then dates a message by the `TransactTime(60)` it
+states where the parse could not.
 
 `currhashcode` is the content code over the event's facts, its text, its
 metadata, the stated header cells and the entry tree; `curruuid` the identity
@@ -356,7 +357,7 @@ The capture's 144 lines carry 79 frames and answer 135 messages, because a
 row is a message and not a line, and each of the 56 reports of a fill answers
 the execution it reports beside itself. `fix_parse_arrow_reader` is the batch
 door the task uses, over a stored table; over the capture's day it answers
-the same 135 messages, which the key folds to 81 bronze rows.
+the same 135 messages, which the key folds to 77 bronze rows.
 
 ## Failure behavior
 

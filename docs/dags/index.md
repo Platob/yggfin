@@ -74,11 +74,11 @@ window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 with storages:
     first = run(storages, "file:data/capture/ulbridge.log", window)
     assert {task: landed.written for task, landed in first.items()} == {
-        "parse_log_messages": 128,
-        "parse_fix_messages_raw": 74,
-        "parse_fix_messages_refined": 49,
+        "parse_log_messages": 129,
+        "parse_fix_messages_raw": 72,
+        "parse_fix_messages_refined": 47,
         "parse_books": 29,
-        "parse_orders": 9,
+        "parse_orders": 8,
         "parse_quotes": 0,
         "parse_executions": 7,
     }
@@ -128,21 +128,20 @@ the one first run is always safe: it lands what it finds.
 
 Each table is windowed on its own clock. Bronze `log_messages` is dated by the
 instant a line was printed at, read in the `timezone` `parse_log_messages`
-is given (UTC unless stated); a FIX table by the instant a message states; a
-book by the instant the fold reached. A bridge that prints its local time
-must be read in its zone: read as UTC, a line runs ahead of the message it
-carries by the zone's offset -- the shipped capture's lines of 14:46 carry
-messages of 12:46 UTC -- so a message's bronze row sits in an earlier hour
-than its line, a message stating no `SendingTime` sits at its line's hour
-until the walk dates it at its `TransactTime`, and two observations of one
-delivery dated three hours apart do not fold.
+is given: the zone the bridge prints its clock in, `rekep.times.TIMEZONE`
+(`Europe/Zurich`) unless stated. That is the shipped capture's zone, so its
+lines of 14:46 are dated 12:46 UTC, the hour of the messages they carry. A
+FIX table is dated by the instant a message states, and a book by the
+instant the fold reached.
 
 `parse_fix_messages_refined` reads its window and one hour before it
 (`HISTORY`) and writes the events the walk dates inside its window, so an
 event lands only in a window that holds both its bronze row and the instant
 it is walked to. Counted in events -- `snapshot_millis=0`, so no hourly view
-is landed beside them -- hourly windows over the capture's day land fewer
-than one window over the day does:
+is landed beside them -- hourly windows over the capture's day land all but
+one of the events one window over the day does: an expiry whose order began
+more than `HISTORY` before it, which only a window holding the whole chain
+places:
 
 ```python
 import datetime
@@ -179,13 +178,18 @@ with storages:
         parse_fix_messages_refined(storages, hour, snapshot_millis=0).written for hour in hours
     )
     daily = parse_fix_messages_refined(storages, day, snapshot_millis=0).written
-    assert (hourly, daily) == (23, 27)
+    assert (hourly, daily) == (22, 23)
 ```
 
-Read in the bridge's zone, the same capture lands every event hour by hour
-but one: an expiry whose order began more than `HISTORY` before it, which only
-a window holding the whole chain places. The duplicate observations fold too,
-so the day holds 23 events rather than 27:
+A capture read in a zone other than its bridge's dates every line hours away
+from the message it carries. Read as UTC, the shipped capture's lines are
+dated 14:46 and carry messages of 12:46, so the line of a message stating no
+`SendingTime` no longer stands within `official_time_delay_ms` of its
+`TransactTime`: the parse dates the message by its line, two hours after the
+instant the walk dates it at, and no hourly window holds both. Copies of one
+message the parse dated by different clocks settle on different identities
+and no longer fold, so the day holds 27 events rather than 23, and hourly
+windows land four fewer:
 
 ```python
 import datetime
@@ -216,21 +220,20 @@ hours = [
     for hour in range(24)
 ]
 with storages:
-    parse_log_messages(
-        "file:data/capture/ulbridge.log", storages, day, timezone="Europe/Zurich"
-    )
+    parse_log_messages("file:data/capture/ulbridge.log", storages, day, timezone="UTC")
     parse_fix_messages_raw(storages, day)
     hourly = sum(
         parse_fix_messages_refined(storages, hour, snapshot_millis=0).written for hour in hours
     )
     daily = parse_fix_messages_refined(storages, day, snapshot_millis=0).written
-    assert (hourly, daily) == (22, 23)
+    assert (hourly, daily) == (23, 27)
 ```
 
 Schedule for it:
 
 - Run the bronze tasks per interval, as captures arrive.
-- Read every capture in the zone its bridge prints, `timezone=`.
+- Read every capture in the zone its bridge prints: `timezone=` wherever that
+  is not `Europe/Zurich`.
 - Run the silver tasks behind them, over windows that end where bronze has
   landed every line that can date into them -- lag them by the bridge's
   delivery delay -- and, where a chain outlives `HISTORY`, wide enough to hold
@@ -277,7 +280,7 @@ with storages:
     parse_log_messages("file:data/capture/ulbridge.log", storages, window_of("2026-08-14", "2026-08-14"))
     lines = storages.dataset(LOG_MESSAGES)
     try:
-        hour = window_of("2026-08-14T14:00:00Z", "2026-08-14T15:00:00Z")
+        hour = window_of("2026-08-14T12:00:00Z", "2026-08-14T13:00:00Z")
         plan = lines.scan_plan(window_filter("currunix", hour))
     finally:
         lines.close()

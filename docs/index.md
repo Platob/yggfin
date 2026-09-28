@@ -108,30 +108,32 @@ storages = Storages.from_dict(
 window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 with storages:
     capture = "file:data/capture/ulbridge.log"
-    assert parse_log_messages(capture, storages, window) == Landed(read=128, written=128)
-    assert parse_fix_messages_raw(storages, window) == Landed(read=128, written=74, skipped=50)
-    assert parse_fix_messages_refined(storages, window) == Landed(read=74, written=49)
+    assert parse_log_messages(capture, storages, window) == Landed(read=129, written=129)
+    assert parse_fix_messages_raw(storages, window) == Landed(read=129, written=72, skipped=53)
+    assert parse_fix_messages_refined(storages, window) == Landed(read=72, written=47)
     books = parse_books(storages, window)
-    assert (books.read, books.written) == (49, 29)
+    assert (books.read, books.written) == (47, 29)
     with ThreadPoolExecutor(max_workers=len(FLATTENERS)) as pool:
         running = {
             kind: pool.submit(task, storages, window, snapshot_id=books.snapshot_id)
             for kind, task in FLATTENERS.items()
         }
         written = {kind: future.result().written for kind, future in running.items()}
-    assert written == {"orders": 9, "quotes": 0, "executions": 7}
+    assert written == {"orders": 8, "quotes": 0, "executions": 7}
 ```
 
-The window holds 128 of the capture's 144 lines. They carry 68 FIX frames,
-and every report of a fill splits off the execution it reports, so the parse
-answers 124 messages, which the key folds to 74 -- 50 restate a message
-another hop already logged -- and the walk settles those as 22 events and
-restates every chain still alive on each whole hour, 27 views, 49 rows. The
-book fold makes them into 29 books, one `MIC:CFI` category per instant --
-6 an event moved and 23 restated on the hour between 02:00 and 16:00 --
-holding 9 orders and 7 executions: a view is its book's membership at its
-hour, never an event of its own. [Data samples](samples/index.md) shows
-the rows, and says why the window closes at 16:30.
+The window holds 129 of the capture's 144 lines -- all but the evening's 15,
+which the bridge printed at 23:59 on its Central European clock, 21:59 UTC.
+They carry 69 FIX frames, and every report of a fill splits off the
+execution it reports, so the parse answers 125 messages, which the key folds
+to 72 -- 53 restate a message another hop already logged -- and the walk
+settles those as 20 events and restates every chain still alive on each
+whole hour, 27 views, 47 rows. The book fold makes them into 29 books, one
+`MIC:CFI` category per instant -- 6 an event moved and 23 restated on the
+hour between 02:00 and 16:00 -- holding 8 orders and 7 executions: a view is
+its book's membership at its hour, never an event of its own.
+[Data samples](samples/index.md) shows the rows, and says why the window
+closes at 16:30.
 
 ## Where to go
 

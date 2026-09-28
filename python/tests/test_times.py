@@ -9,16 +9,17 @@ from pathlib import Path
 
 import pyarrow
 import pytest
-from yggdryl import IOBase
+from yggdryl import IOBase, TextOptions
 from yggdryl.fix import ULBRIDGE_ROWHEADER as CORE_ROWHEADER
 
-from rekep.text import text_options
+from rekep.text import CAPTURES, RECORD_CLOCK, text_options
 from rekep.times import (
     EPOCH,
     ULBRIDGE_ROWHEADER,
     UTC,
     WINDOW,
     datetime_of,
+    hour_window,
     unix_of,
     where_within,
     window_of,
@@ -29,17 +30,29 @@ from rekep.times import (
 #: expression names after the bracket rather than after the column: the clock
 #: the read consumes into `currunix`, and the level `log_messages` keeps. A
 #: capture reaches a column by being called what the column is called, so
-#: these two are renames and the rest is the core's text -- the core's own
-#: header dates nothing, because it names its clock `timestamp`.
+#: these two are renames and the rest is the core's text.
 RENAMED = {"timestamp": "mtime", "level": "loglevel"}
 
-#: The one part of the bracket this package reads wider than the core's own
-#: expression does, as `core: ours`. The core requires the bridge's
-#: millisecond fraction, under a point, and admits the grouped micros; this
-#: package makes the fraction optional and reads it under a comma too, which
-#: is what `times.ISO` already declares a fraction may be spelled with. Stated
-#: here so the rest of the bracket is still compared character for character.
-WIDENED = {r"\d{2}:\d{2}:\d{2}\.\d{3}(?:_\d{3})?": r"\d{2}:\d{2}:\d{2}(?:[.,]\d{3}(?:_\d{3})?)?"}
+#: The offset `TIMEZONE` stands at on every date these tests print: August,
+#: the Central European summer clock, two hours ahead of UTC.
+CEST = datetime.timezone(datetime.timedelta(hours=2), "CEST")
+
+#: An instant a capture object may have been written at, as `os.utime` takes
+#: it: the modification time a line the header did not date is dated by.
+WRITTEN_AT = datetime.datetime(2026, 8, 14, 18, 0, tzinfo=UTC)
+
+
+def _read_line(tmp_path: Path, line: str, options: TextOptions | None = None) -> pyarrow.Table:
+    """`line` as the read answers it, from an object written at `WRITTEN_AT`."""
+    source = tmp_path / "bridge.log"
+    source.write_bytes(f"{line}\n".encode())
+    os.utime(source, (WRITTEN_AT.timestamp(), WRITTEN_AT.timestamp()))
+    reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=options or text_options())
+    try:
+        return reader.read_all()
+    finally:
+        reader.close()
+
 
 #: 2026-08-14 09:30:00.123456 UTC, in the nanoseconds every `*unix` holds.
 STAMP = 1_786_699_800_123_456_000
@@ -174,24 +187,38 @@ def test_a_wrapped_value_is_asked_what_it_holds() -> None:
 
 
 def test_the_bridge_row_header_is_the_layout_the_core_states() -> None:
-    """The bracket this reads is the bracket the installed core reads, part
-    for part, and every difference is declared -- what two of those parts are
-    called, because a capture reaches its column by being called what the
-    column is called, and how wide the clock reads. Compared against the
-    constant the extension exports, so the check runs wherever the tests do."""
-    held = CORE_ROWHEADER
-    for core, ours in WIDENED.items():
-        assert held.count(core) == 1, f"the core no longer spells {core}"
-        held = held.replace(core, ours)
-    renamed = re.sub(
-        r"\(\?P<([A-Za-z]+)>",
-        lambda found: f"(?P<{RENAMED.get(found[1], found[1])}>",
-        held,
-    )
-    assert ULBRIDGE_ROWHEADER == renamed
+    """The bracket this reads is the core's own, character for character, but
+    for what two of its parts are called -- clock and fraction included.
+    Compared against the constant the extension exports, so the check runs
+    wherever the tests do."""
+    held = ULBRIDGE_ROWHEADER
+    for core, ours in RENAMED.items():
+        assert held.count(f"(?P<{ours}>") == 1, f"the header no longer captures {ours}"
+        held = held.replace(f"(?P<{ours}>", f"(?P<{core}>")
+    assert held == CORE_ROWHEADER
     # A rename nobody made is a rename nobody needs: each one has to be a
     # capture the core actually states, or this table is stale.
     assert set(RENAMED) <= set(re.findall(r"\(\?P<([A-Za-z]+)>", CORE_ROWHEADER))
+
+
+def test_the_core_s_own_header_dates_nothing(tmp_path) -> None:
+    """Why the two renames stay: under the core's verbatim header the read
+    consumes no clock. Its `timestamp` lands as a column of its own and every
+    line takes its object's modification time -- one instant for lines
+    printed a second apart, with no error anywhere."""
+    options = TextOptions()
+    options.rowheader = CORE_ROWHEADER
+    line = "2026-08-14 14:05:01.147 [250] [ULBridge] (INFO) body"
+
+    verbatim = _read_line(tmp_path, line, options)
+    renamed = _read_line(tmp_path, line)
+
+    assert verbatim.column("currunix").to_pylist() == [WRITTEN_AT]
+    assert "timestamp" in verbatim.column_names
+    assert renamed.column("currunix").to_pylist() == [
+        datetime.datetime(2026, 8, 14, 14, 5, 1, 147000, tzinfo=CEST)
+    ]
+    assert RECORD_CLOCK not in renamed.column_names
 
 
 def test_every_bridge_capture_is_named_for_the_column_it_fills() -> None:
@@ -212,70 +239,56 @@ def test_every_bridge_capture_is_named_for_the_column_it_fills() -> None:
     [
         # What the bridge this package was written against writes.
         (".147", ".147000"),
-        # The same clock under a comma locale, which the core's instant parser
-        # reads and the old expression dropped.
-        (",148", ".148000"),
-        # A bridge that states seconds and stops.
-        ("", ""),
         # The grouped micros some of this bridge's loggers append, which the
         # core reads as a digit group inside the fraction: fifteen lines of
         # the bundled capture spell their clock this way.
         (".524_315", ".524315"),
     ],
+    ids=["millis", "grouped"],
 )
-def test_the_bridge_clock_reads_every_fraction_the_core_parses(
+def test_the_bridge_clock_reads_the_fractions_the_core_header_states(
     tmp_path, fraction: str, settled: str
 ) -> None:
-    """A bracket the expression refuses is a line the header does not date: it
-    takes its object's modification time with every capture empty, and reaches
-    the walk with no session, context or sequence to fold on -- so the clock
-    reads every fraction this bridge writes: absent, under a comma, and with
-    the micros grouped under a `_`."""
-    line = f"2026-08-14 00:05:01{fraction} [250] [ULBridge] (INFO) body\n"
-    source = tmp_path / "bridge.log"
-    source.write_bytes(line.encode())
+    """The clock takes the core's fraction: three digits under a point, and
+    the micros grouped after them under a `_`. The clock states no offset, so
+    it is read in `TIMEZONE`, the Central European clock the bridge prints --
+    `00:05:01` on the 14th is `22:05:01` UTC on the 13th."""
+    line = f"2026-08-14 00:05:01{fraction} [250] [ULBridge] (INFO) body"
+    row = _read_line(tmp_path, line).to_pylist()[0]
 
-    reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=text_options())
-    try:
-        row = reader.read_all().to_pylist()[0]
-    finally:
-        reader.close()
-
-    assert row["currunix"] == datetime.datetime.fromisoformat(f"2026-08-14 00:05:01{settled}+00:00")
+    assert row["currunix"] == datetime.datetime.fromisoformat(f"2026-08-14 00:05:01{settled}+02:00")
     # A dated line is a matched bracket, so every capture beside it is filled.
     assert (row["msgthreadid"], row["msgpluginid"], row["loglevel"]) == (250, "ULBridge", "INFO")
 
 
-@pytest.mark.parametrize("fraction", ["_147", ".", ";147", ".147258"])
+@pytest.mark.parametrize(
+    "fraction",
+    [",148", "", "_147", ".", ";147", ".147258"],
+    ids=["comma", "none", "underscore", "point", "semicolon", "micros"],
+)
 def test_a_fraction_this_header_does_not_read_leaves_the_line_unmatched(
     tmp_path, fraction: str
 ) -> None:
     """What this header does not read, and the one outcome.
 
-    `_` groups a fraction's digits in the core and never opens one, so
-    matching `01_147` would hand the instant parser a value it refuses -- and
-    a located refusal fails the whole batch the line arrived in, which is
-    worse than not reading the clock. A fraction this bridge does not write --
-    six digits straight on, a lone point, a stray separator -- is left to a
+    The clock requires the core's fraction, so a bridge under a comma locale
+    (`01,148`) and one that stops at the seconds are left unmatched, as is a
+    fraction no bridge of this capture writes -- six digits straight on, a
+    lone point, a stray separator. `_` groups a fraction's digits in the core
+    and never opens one, so matching `01_147` would hand the instant parser a
+    value it refuses -- and a located refusal fails the whole batch the line
+    arrived in, which is worse than not reading the clock. Each is left to a
     header of its own, which is what `text_options` takes one for.
 
     Unmatched, the line is not lost: it keeps its whole text as its body,
     states every capture null, and is dated by the object it was read from --
     its modification time, the one clock the read has left for it."""
-    source = tmp_path / "bridge.log"
-    source.write_bytes(f"2026-08-14 00:05:01{fraction} [250] [ULBridge] (INFO) body\n".encode())
-    written = datetime.datetime(2026, 8, 14, 18, 0, tzinfo=UTC)
-    os.utime(source, (written.timestamp(), written.timestamp()))
+    line = f"2026-08-14 00:05:01{fraction} [250] [ULBridge] (INFO) body"
+    row = _read_line(tmp_path, line).to_pylist()[0]
 
-    reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=text_options())
-    try:
-        row = reader.read_all().to_pylist()[0]
-    finally:
-        reader.close()
-
-    assert row["currunix"] == written
-    assert row["msgpluginid"] is None
-    assert row["body"] == f"2026-08-14 00:05:01{fraction} [250] [ULBridge] (INFO) body"
+    assert row["currunix"] == WRITTEN_AT
+    assert all(row[capture] is None for capture in CAPTURES - {RECORD_CLOCK})
+    assert row["body"] == line
 
 
 # -- the window a run covers -------------------------------------------------
@@ -371,11 +384,12 @@ def test_the_window_is_the_reads_own_where_and_not_a_mask_over_its_answer() -> N
     window, the read handed the clause answers fewer rows than the read
     handed none, and exactly the rows between the two bounds -- so
     `parse_log_messages` reads the window's lines and never the rest. The decode itself still
-    cuts every line: the clause is the record surface's."""
-    window = window_of("2026-08-14", "2026-08-14T14:46:40")
+    cuts every line: the clause is the record surface's. The end falls inside
+    the 112 lines of 12:46, so the clause cuts them in two."""
+    window = window_of("2026-08-14", "2026-08-14T12:46:40")
     clause = where_within("currunix", window)
     assert str(clause) == (
-        "currunix >= '2026-08-14T00:00:00+00:00' and currunix < '2026-08-14T14:46:40+00:00'"
+        "currunix >= '2026-08-14T00:00:00+00:00' and currunix < '2026-08-14T12:46:40+00:00'"
     )
     handle = IOBase.from_uri(FIXTURE.as_uri())
     try:
@@ -397,6 +411,9 @@ def test_the_window_is_the_reads_own_where_and_not_a_mask_over_its_answer() -> N
     assert every.num_rows == cut == 144, "the decode yields every line either way"
     assert 0 < answered.num_rows < every.num_rows, "the read answered the window alone"
     assert answered.equals(between), "and exactly the rows between the two bounds"
+    burst = [instant for instant in clock.to_pylist() if (instant.hour, instant.minute) == (12, 46)]
+    assert len(burst) == 112
+    assert 0 < sum(instant < window[1] for instant in burst) < len(burst), "cut in two"
 
 
 def test_a_line_no_clock_dates_is_outside_every_window_but_the_epochs() -> None:
@@ -416,3 +433,34 @@ def test_a_line_no_clock_dates_is_outside_every_window_but_the_epochs() -> None:
     assert every.column("currunix").to_pylist() == [EPOCH]
     assert answered.num_rows == 0
     assert answered.schema.equals(every.schema, check_metadata=True)
+
+
+def _nanos(*parts: int) -> int:
+    at = datetime.datetime(*parts, tzinfo=UTC)
+    return int(at.timestamp()) * 10**9
+
+
+@pytest.mark.parametrize(
+    ("first", "last", "window"),
+    [
+        # `start` truncates; `end` truncates and adds an hour past a partial hour.
+        (_nanos(2026, 8, 14, 3, 15), _nanos(2026, 8, 14, 23, 5), ((8, 14, 3), (8, 15, 0))),
+        # A `last` standing on a whole hour past `start` ends the window there.
+        (_nanos(2026, 8, 14, 3, 15), _nanos(2026, 8, 14, 5), ((8, 14, 3), (8, 14, 5))),
+        # A span within one hour, and one whole-hour instant, cover that hour.
+        (_nanos(2026, 8, 14, 3, 15), _nanos(2026, 8, 14, 3, 45), ((8, 14, 3), (8, 14, 4))),
+        (_nanos(2026, 8, 14, 3), _nanos(2026, 8, 14, 3), ((8, 14, 3), (8, 14, 4))),
+        # One nanosecond past the hour is not the hour.
+        (_nanos(2026, 8, 14, 3), _nanos(2026, 8, 14, 5) + 1, ((8, 14, 3), (8, 14, 6))),
+    ],
+)
+def test_hour_window_truncates_start_and_rounds_end_up_to_the_hour(
+    first: int, last: int, window: tuple[tuple[int, int, int], tuple[int, int, int]]
+) -> None:
+    expected = tuple(datetime.datetime(2026, *bound, tzinfo=UTC) for bound in window)
+    assert hour_window(first, last) == expected
+
+
+def test_hour_window_refuses_an_inverted_span() -> None:
+    with pytest.raises(ValueError, match="inverted"):
+        hour_window(1, 0)

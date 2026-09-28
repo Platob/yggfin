@@ -5,7 +5,8 @@ production order. Each is `(storages, window, *, ...) -> Landed`: it opens its
 source and its target through the [`Storages`](../storages/index.md) it is
 handed, reads one window of its source, writes its target the way that table
 is replaced, creates the target where it is missing, and answers what it read
-and wrote. `parse_log_messages` takes the capture it reads first.
+and wrote. `parse_log_messages` takes the capture it reads first, and given
+no window lands every line and answers the whole hours they span.
 
 | task | reads | writes | replaces |
 | --- | --- | --- | --- |
@@ -48,10 +49,11 @@ except ValueError as refusal:
 
 Every table is laid out by the hour of `currunix`, and every scan hands the
 window to Iceberg as a predicate on it, so a task plans only the hour
-partitions its window covers. What `currunix` is differs by table: the
-instant a line was printed at on `log_messages`, the instant a message states
-on a FIX row, the instant a book was folded at. [DAGs](../dags/index.md#late-events)
-says what that means when windows are scheduled one after another.
+partitions its window covers. What `currunix` is differs by table: on
+`log_messages` the instant a line was printed at, read in the zone its bridge
+prints in; on a FIX row the instant a message states; on a book the instant
+it was folded at. [DAGs](../dags/index.md#late-events) says what that means
+when windows are scheduled one after another.
 
 ## What a task answers
 
@@ -63,6 +65,7 @@ Every task returns `Landed`:
 | `written` | target rows the task carried into the table |
 | `skipped` | rows the task answered that the target's key folded into a written one |
 | `snapshot_id` | the `books` snapshot `parse_books` committed, or the one a flattening task read; None for the other tasks |
+| `window` | the whole-hour window `parse_log_messages` inferred from the lines it landed when given none, for the tasks after it; None otherwise |
 
 `written` is what a run carried, not what it changed: a run over a window
 already landed answers the same numbers and leaves each table holding each

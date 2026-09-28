@@ -119,13 +119,15 @@ state however the table moves between them.
 
 Airflow names each run's interval `[data_interval_start, data_interval_end)`,
 aware UTC instants, which `window_of` reads as they are. The bronze tasks run
-over that interval. The silver tasks run over the interval `SETTLE` before
-it: a line may be printed hours after the event it carries -- the shipped
-capture's bridge prints its local time, two hours ahead of UTC -- so a window
-is walked once bronze holds every line that can date an event into it.
-[Late events](index.md#late-events) says why, and what a window must hold. A
-DAG that trails by a whole interval has nothing to walk on its first run;
-`catchup` walks each day as the next one lands.
+over that interval, and `parse_log_messages` reads each line's clock in
+`Europe/Zurich`, the zone the shipped capture's bridge prints in: a bridge
+printing in another zone is read by passing it its `timezone`. The silver
+tasks run over the interval `SETTLE` before it: a line reaches bronze only
+once its capture has landed, which may be long after the event it carries,
+so a window is walked once bronze holds every line that can date an event
+into it. [Late events](index.md#late-events) says why, and what a window
+must hold. A DAG that trails by a whole interval has nothing to walk on its
+first run; `catchup` walks each day as the next one lands.
 
 ## Retries, reruns and backfills
 
