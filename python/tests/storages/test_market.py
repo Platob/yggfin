@@ -179,7 +179,7 @@ def test_the_flatteners_side_by_side_land_what_they_land_in_turn(landing: Landin
 
 
 #: The order the capture's cancel reject answers, under the side the walk gives it.
-CANCELLED = "SELL:931070583-1940-30712_192"
+CANCELLED = "SELL:816179183-1983-98963_912"
 
 
 def test_books_fold_a_cancel_reject_under_the_side_of_its_order(storages: Storages) -> None:
@@ -286,7 +286,7 @@ def test_a_window_opens_on_the_book_its_hour_before_left(
     assert found == expected
     first = found[0]
     assert first[EVENT_CLOCK] == first["snapunix"] == OPENED[0]
-    assert first["crosscode"] == "RJEA:XXXXXX"
+    assert first["crosscode"] == "PUMA:XXXXXX"
     assert [entry["state"] for entry in first["alive"]] == [4002]
     assert not first["deltas"] and not first["executions"], "a grid book restates no event"
 
@@ -334,7 +334,7 @@ def test_books_at_a_window_start_are_the_books_the_whole_history_holds(
             assert not book["bidlimits"] and not book["asklimits"]
         standing = [book for book in found if book[EVENT_CLOCK] == start and book["alive"]]
         assert sorted((book["crosscode"], len(book["alive"])) for book in standing) == [
-            ("RJEA:XXXXXX", 1),
+            ("PUMA:XXXXXX", 1),
             ("XXXX:XXXXXX", 1),
         ]
 

@@ -19,10 +19,16 @@ separators and control-byte separators, with several messages logged again at
 every hop they passed. The examples, the test suite and every documented
 count read these bytes, and the digest below is what pins them.
 
+Every order, execution, trade and venue identifier, account, party, comp id,
+conversation id, person, counterparty and host in it is a pseudonym: one per
+value, of its length and character classes, so every frame keeps its
+`BodyLength(9)` and every chain joins as it did. Instruments, prices,
+quantities and clocks are the market's own.
+
 Its content SHA-256, as `sha256sum` prints it, is:
 
 ```text
-2825a01694662924696abd0ebff116d64971ac3a8a5ce35dbfcddb1abb1c9e4b
+4c77c257b1c9235698d348b6e0e6382ee90d294cd146da268e7ff90b3125533e
 ```
 
 Every line sits under the bridge's bracket and is dated 2026-08-14 by the
