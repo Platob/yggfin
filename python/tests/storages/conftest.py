@@ -6,8 +6,9 @@ after the test. `landing` is the capture landed once for the session: bronze
 `log_messages` for its whole day, then every later task over `EARLY` and over
 the main window `[START, END)`, with the data files each main-window task
 opened. A test reading `landing` may rerun a task over the window it ran
-over, because a rerun lands the rows it replaces again; nothing else writes
-to it.
+over, because a rerun leaves the rows it answers as they were -- a keyed
+task appends no key its table holds, and a market task replaces its window
+with the same rows; nothing else writes to it.
 """
 
 from __future__ import annotations
@@ -193,21 +194,23 @@ def graph(
     storages: Storages,
     window: tuple[datetime.datetime, datetime.datetime],
     opened: Opened | None = None,
+    **options: Any,
 ) -> dict[str, Landed]:
     """Every task after the log over `window`, in production order, by task name.
 
-    The flatteners run one after another against the one snapshot the books
+    `options` go to every task, so each takes only what all of them do. The
+    flatteners run one after another against the one snapshot the books
     committed; `test_market.py` runs them side by side and compares.
     """
     run = (opened or Opened()).run
     landed = {
-        "parse_fix_messages_raw": run(parse_fix_messages_raw, storages, window),
-        "parse_fix_messages_refined": run(parse_fix_messages_refined, storages, window),
-        "parse_books": run(parse_books, storages, window),
+        "parse_fix_messages_raw": run(parse_fix_messages_raw, storages, window, **options),
+        "parse_fix_messages_refined": run(parse_fix_messages_refined, storages, window, **options),
+        "parse_books": run(parse_books, storages, window, **options),
     }
     books = landed["parse_books"].snapshot_id
     for task in FLATTENERS.values():
-        landed[task.__name__] = run(task, storages, window, snapshot_id=books)
+        landed[task.__name__] = run(task, storages, window, snapshot_id=books, **options)
     return landed
 
 

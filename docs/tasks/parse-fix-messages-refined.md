@@ -1,6 +1,6 @@
 # parse_fix_messages_refined
 
-`parse_fix_messages_refined(storages, window, *, codec=None, snapshot_millis=SNAPSHOT_MILLIS, source=FIX_MESSAGES_RAW, target=FIX_MESSAGES)`
+`parse_fix_messages_refined(storages, window, *, codec=None, snapshot_millis=SNAPSHOT_MILLIS, commit_row_size=COMMIT_ROW_SIZE, source=FIX_MESSAGES_RAW, target=FIX_MESSAGES)`
 reads the bronze FIX messages of the window and the hour before it, walks
 them into the lifecycle chains they belong to, and lands the events the walk
 places in the window -- and, on every whole hour, a view of each chain still
@@ -127,12 +127,15 @@ not with the window. [The table page](../tables/silver/fix_messages.md) lists ev
 ## Write
 
 The walk's output is filtered to the rows it placed in `[start, end)`: the
-hour before warms the chains without replacing its own history with a
-truncated replay, and an expiry the walk generates past `end` waits for its
-own window. The write replaces the window's keys within their hour, adds any
-column a newer dictionary declares, and a rerun lands the same rows again.
-Silver is written from bronze and never in place, because a walked key is not
-always the key of the bronze row it restates.
+hour before warms the chains without writing a truncated replay of its own
+history, and an expiry the walk generates past `end` waits for its own
+window. The write merges the rows into the table on `curruuid` within their
+hour, at most `commit_row_size` rows a commit ([commits](index.md#commits)):
+a key the hour lacks is inserted, and one it holds with other values
+replaced. It adds any column a newer dictionary declares; a rerun writes none
+and counts every row it placed `skipped`. Silver is written from bronze and
+never in place, because a walked key is not always the key of the bronze row
+it restates.
 
 An event is written by the run whose window holds the instant the walk dated
 it at, and read by the runs whose window, or the hour before it, holds its

@@ -23,51 +23,56 @@ messages = catalog.dataset("record_keeping.log_messages", field=log_message_fiel
 ## Stream writes
 
 ```python
-written = messages.overwrite_arrow_reader(
-    reader,
-    log_message_field(),
-    merge_by=True,
-)
+written = messages.merge_arrow_reader(reader, log_message_field())
 ```
 
-`merge_by=True` uses the primary key declared on the native Field. It is
-`curruuid` alone on every table of the graph: on bronze `log_messages` it
-identifies a line, on both `fix_messages` tables a settled event. A parse
-answers one row per message; the object a line was read from stays on
-`log_messages` and identifies no event row. A missing table is created.
-Without `row_filter`, `commit_batch_num` and the optional `commit_row_size`
-bound each storage commit independently from input batch size, however many partitions the
-bounded chunk spans: its parts are staged one at a time and committed together.
+Three verbs write a stream. Each creates a missing table and returns the rows
+it wrote:
 
-Two verbs, and each returns the rows it wrote:
+- `append_arrow_reader` appends the differences: under a key, only the rows
+  whose key their transformed partition does not hold. It never rewrites or
+  deletes a stored file, so a stored row holding other values stays as it
+  is. It returns the rows added.
+- `merge_arrow_reader` upserts the differences under a key: a row whose key
+  is absent is inserted, one whose stored row holds other values replaces it,
+  and one stored as it is is left alone. Only a file holding a replaced row
+  is rewritten, and a key stored twice is collapsed into one row. Values are
+  compared as a staged file would hold them: PyIceberg stores a null list of structs as
+  an empty one, so the two are the same row. It returns the rows inserted or
+  replaced.
+- `overwrite_arrow_reader` replaces and takes no key: given a `row_filter`,
+  exactly the rows it selects, in one commit
+  ([below](#atomic-predicate-replacement)); without one, every row of the
+  partitions the stream touches, each emptied once per write and only added
+  to after that. An unpartitioned table needs a `row_filter`.
 
-- `append_arrow_reader` is blind: every row lands, whatever the table holds.
-- `overwrite_arrow_reader` replaces. Without `row_filter`, each bounded chunk is written to the
-  store one partition at a time, the stored rows it replaces are taken out,
-  and the written files are appended in the same commit. Under `merge_by`
-  those rows are the ones carrying the chunk's keys in the same transformed
-  partition -- the same key on two days is two rows, and a null partition
-  value is a partition of its own; with `merge_by=False` on a partitioned
-  table they are every row of the partitions the chunk touches, emptied once
-  per write and only added to after that.
+`merge_by` names the key. None is the primary key declared on the native
+Field, and an append to a field declaring none is blind; True requires that
+key, a list of columns names another, and `False` makes an append blind. A
+merge requires a key. The primary key is `curruuid` alone on every keyed
+table of the graph: on bronze `log_messages` it identifies a line, on both
+`fix_messages` tables a settled event. A key is scoped to its transformed
+partition -- the same key on two days is two rows, and a null partition value
+is a partition of its own. A key that recurs within the stream keeps its
+first row in the table's sort order -- across commits too, because a merge
+carries the keys it settled in the partition it is writing to that
+partition's next chunk -- and a null or NaN key is refused,
+because no join matches it. So a replay through a keyed append or a merge
+writes nothing, commits nothing and returns 0, and the table holds each key
+once however often a window runs. Iceberg identifier fields describe identity
+but do not enforce uniqueness: a blind append of a replay duplicates it.
 
-Both APIs require a schema-bearing `RecordBatchReader` and consume one batch
-at a time. The batch and table helpers build that reader.
+Every verb takes a schema-bearing `RecordBatchReader` and consumes it one
+batch at a time; the `*_arrow_batch` and `*_arrow_table` helpers build that
+reader.
 
-A keyed replay lands the same rows: the table
-holds each key once however often the window runs, and `written` reports what
-the run carried rather than what it changed. A key that recurs within a chunk
-keeps its first row; one that recurs in a later chunk replaces the row the
-earlier chunk landed. A null or NaN key is refused, because no join finds the
-row it would replace.
-
-The keyed replace path is also the optimized append path. It prunes manifests and
-files with the incoming partition and `curruuid` bounds. If none contains a
-matching key, the commit is an Iceberg append; only an actual match becomes an
-overwrite that rewrites the affected file. This keeps first-seen windows on
-the cheap append operation without making retries blind. Iceberg identifier
-fields describe identity but do not enforce uniqueness, so calling blind
-`append_arrow_reader` for an idempotent pipeline would duplicate a replay.
+A commit holds `commit_row_size` rows or the rows of `commit_batch_num` input
+batches, whichever bound is reached first, however many partitions they
+span. Each defaults to the dataset's own -- eight batches and no row bound
+unless configured -- either may be None, and with neither the whole stream is
+one commit. The tasks cut by `commit_row_size` alone
+([commits](../tasks/index.md#commits)). Under a `row_filter` the bounds size
+staging chunks instead, as the next section says.
 
 ### Atomic predicate replacement
 
@@ -96,63 +101,94 @@ Rows outside the predicate survive, including those in the same hour
 partition. Concurrent changes inside the selected predicate cause a commit
 conflict rather than a partial replacement.
 
-This mode ignores `merge_by` and retains source duplicates. It replaces the
-selected row set, not individual incoming keys. `commit_batch_num` and
-`commit_row_size` bound staging chunks rather than the number of commits:
-completed chunks reside in the table's `FileIO`, and only file metadata is
-retained until the single removal-and-addition commit. Whole-hour keyless
-replacement and ordinary keyed replay do not provide these partial-window
-semantics.
+This mode retains source duplicates. It replaces the selected row set, not
+individual incoming keys. `commit_batch_num` and `commit_row_size` bound
+staging chunks rather than the number of commits: completed chunks reside in
+the table's `FileIO`, and only file metadata is retained until the single
+removal-and-addition commit. Whole-hour replacement and keyed writes do not
+provide these partial-window semantics.
 
 ### What a commit holds
 
-Every verb stages a bounded chunk by splitting it into its transformed
-partitions, and each partition is taken out of the chunk, streamed through
-PyIceberg's Parquet writer into the table's configured `FileIO`, then published
-by path. Ordinary writes commit each chunk; predicate replacement commits
-the complete staged selection atomically. What the write holds past the chunk it was handed is one partition
-rather than every partition's rows, and nothing touches local disk on the
-way: the writer opens the store's own output stream, and the statistics the
-commit records are what it answers on closing the file rather than what a
-second read of the file would find.
+Every write lays its rows out in the table's order before it commits any of
+them. The stream is spilled to a local Arrow IPC folder under the dataset's
+`spill_directory` -- None is the system's temporary directory, which
+`TMPDIR` moves -- as one sorted run per bounded chunk and transformed
+partition, in one folder per partition. Each partition is then merged back,
+at most 16 runs open at once, in partition order, and cut again into commits
+of `commit_row_size` rows, or of the largest chunk spilled when only
+`commit_batch_num` bounds them. So:
 
-A keyed replace plans the stored files to read from the chunk's key bounds --
-between each key column's least and greatest value, and between the partition
-source's, widened to the hours or days a time transform partitions by -- keeps
-the ones in the partitions the chunk carries, and reads each one a batch at a
-time, writing it back through the same stager without the rows an Arrow
-anti-join on the keys drops. A file every row of which survives stands
-as it was; one that loses rows is replaced by its rewrite; one that loses
-every row is deleted unread the next time round. One commit per chunk carries
-the deletions, the rewrites and the chunk together.
+- each partition's files hold disjoint ranges in the table's sort order,
+  which an ordered read concatenates rather than merges and a filter on a
+  sort column prunes by row group;
+- memory holds one chunk and one merge step of at most half a chunk, never
+  the stream: each step sorts a window of every run, so overlapping runs do
+  not add up -- 300 overlapping runs of one partition held 1.8 chunks;
+- the stream is consumed before the first commit, so a producer that fails
+  commits nothing.
 
-Measured on pyiceberg 0.12 over 20,000 rows of 200-byte payload in eight
-batches, as the Arrow high-water mark over one commit divided by the chunk:
+A table with neither partitions nor a sort order has nothing to lay out: its
+stream goes straight to its commits.
 
-| verb | 1 partition | 2 partitions | 4 partitions | 16 partitions |
+The merge takes a block at a time: from every run's current batch, the rows
+that sort no later than the least of those batches' last rows, sorted once, so
+the work in Python is per batch whatever the input order. Measured on 300,000
+rows of 200-byte payload over 48 hour partitions, a keyed first write took
+1.1 s from sorted input and 1.0 s from shuffled input, against 1.0 s and 1.7 s
+for the previous direct chunked write, and an ordered read of the shuffled
+landing took 0.9 s against 15.9 s, because its files no longer overlap.
+
+Each commit stages its chunk one transformed partition at a time, streamed
+through PyIceberg's Parquet writer into the table's configured `FileIO`, then
+published by path. What the write holds past the chunk is one partition
+rather than every partition's rows, and no data file touches local disk: the
+writer opens the store's own output stream, and the statistics the commit
+records are what it answers on closing the file rather than what a second
+read of the file would find.
+
+A keyed write never scans the table. Each chunk plans once, over one range
+per transformed partition it carries -- the partition source's, widened to
+the hours or days a time transform partitions by, and that partition's least
+and greatest key -- so it opens no partition between two it carries and,
+within each, only the files whose key bounds overlap that partition's keys.
+Of each planned file it reads the key columns first, a batch at a time: an
+append drops the rows whose key the file holds and stops once no row is left
+to decide. A merge reads a file whole only where it holds a key the chunk
+carries, to compare those rows, and rewrites it only where it holds a row the
+chunk replaces: streamed back through the same stager without those keys, a
+batch at a time, and published in the chunk's commit. A file the chunk
+replaces nothing in stands as it was.
+
+Measured on pyiceberg 0.12 and pyarrow 25 over eight batches of 20,000 rows
+of 200-byte payload, written as one commit, as the Arrow high-water mark over
+the write divided by the chunk:
+
+| write | 1 partition | 2 partitions | 4 partitions | 16 partitions |
 | --- | ---: | ---: | ---: | ---: |
-| `append_arrow_*` | 1.55 | 1.06 | 0.80 | 0.55 |
-| `overwrite_arrow_*`, `merge_by`, replaying every row | 1.55 | 1.11 | 1.11 | 1.11 |
+| `append_arrow_*`, `merge_arrow_*` or `overwrite_arrow_*` of new keys | 1.05 | 2.01 | 1.52 | 1.14 |
+| `merge_arrow_*` replaying every row | 2.23 | 2.01 | 1.52 | 1.14 |
 
-Under 2.25 chunks in every case, which is what
-`test_a_bounded_write_holds_a_bounded_multiple_of_its_chunk` pins. A chunk
-that overlaps what is stored reads the keys of each stored file it plans
-first, so a file it replaces whole is never decoded past them; one it keeps
-part of is then streamed one batch at a time, so what it holds beside the
-chunk is one batch of that file rather than the file.
+Every write holds under 2.25 chunks, worst where a chunk splits into two
+interleaved halves, which is what
+`test_a_bounded_write_holds_a_bounded_multiple_of_its_chunk` pins. A merge
+replaying every row also holds a batch of the stored rows its keys match, and
+compares them `COMPARE_ROW_SIZE` (16,384) pairs at a time: compared all at
+once, one stored partition holding the whole chunk measured 3.66 chunks.
 
 Staged files record the order they were written in, which is what lets
 `order_by` read them back without sorting each one again. A table whose
 recorded order the shape cannot hold -- a transformed sort field, a
 nulls-first one, a nested column -- is written unsorted and says so. A file that does not record an order
 is sorted on every read, through Arrow IPC runs on local disk; over four files
-of that same 524,288-row table, dropping that pass took a warm ordered read
+of a 524,288-row table, dropping that pass took a warm ordered read
 from 85 ms to 62 ms and wrote no temporary file at all.
 
-One file is open at a time, and it is the table's own: a warehouse on local
-disk writes each byte once, and a write needs no temporary space for its data
-files. The one local stage left is the external sort above, which an ordered
-read makes of a file that does not record its order.
+One data file is open at a time, and it is the table's own: a warehouse on
+local disk writes each data byte once. The local stages are Arrow IPC, never
+Parquet: a write's spill, which holds the stream's rows once, and the
+external sort above, which an ordered read makes of files that do not record
+their order.
 
 A commit's files are encoded one after another, on the thread that called the
 write, each streamed to the store as its row groups close -- so on an object
@@ -170,19 +206,24 @@ lost leaves its files for the orphan sweep to settle rather than deleting rows
 that may be live.
 
 A commit another writer beats is retried by PyIceberg against the refreshed
-head, and the retry is validated against what landed in between. An
-overwrite declares the rows it takes out -- the key bounds a keyed replace
-planned by, the partitions a keyless one empties, the predicate a delete
-names -- and a commit since the plan that added or deleted rows under that
-predicate is a conflict: the write raises `CommitFailedException` for a fresh
-plan, with nothing of its own left behind. A commit anywhere else in the
-table is not, and the retry lands; two windows replayed side by side land
-whichever order their commits arrive in. A blind append conflicts with
-nothing.
+head, and the retry is validated against what landed in between. Every write
+but a blind append declares a predicate: a keyed write the partition and key
+ranges it planned by, an overwrite the rows it takes out -- the partitions it
+empties, or its `row_filter`. A commit since the plan that added or removed
+rows under that predicate is a conflict: the write raises
+`CommitFailedException` for a fresh plan, with nothing of its own left
+behind, so no key lands twice. Added rows are judged under the table's
+`write.delete.isolation-level`: `serializable`, Iceberg's default, refuses
+them; `snapshot` admits them, and with them a concurrent writer's row of the
+same key. A keyed chunk that finds nothing to commit still checks the head it
+read, and raises the same way where it moved under it. A commit anywhere else
+in the table is no conflict, and the retry lands; two windows run side by
+side land whichever order their commits arrive in. A blind append declares
+nothing and conflicts with nothing.
 
-Set `merge_schema=True` on a dataset, or on an `append_arrow_*` or
-`overwrite_arrow_*` write, to add columns from its authoritative write Field
-before the first batch is consumed:
+Set `merge_schema=True` on a dataset, or on an `append_arrow_*`,
+`merge_arrow_*` or `overwrite_arrow_*` write, to add columns from its
+authoritative write Field before the first batch is consumed:
 
 ```python
 from rekep import Field
@@ -270,8 +311,8 @@ and removes scratch files. This bounds open-file fan-in without collecting the
 whole scan into a table before its first output batch.
 
 Identifier behavior does not depend on a column spelling or value type. UUID,
-integer, and string identifiers all follow the declared Iceberg field:
-`append_arrow_reader` is blind, while overwrite-by-key replaces matches only
+integer, and string identifiers all follow the declared Iceberg field: a
+keyed append skips, and a merge replaces where it differs, a match only
 inside the affected partition. FIX happens to declare `curruuid`; the storage
 layer has no FIX-specific key or merge branch.
 

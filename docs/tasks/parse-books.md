@@ -1,6 +1,6 @@
 # parse_books
 
-`parse_books(storages, window, *, codec=None, snapshot_millis=SNAPSHOT_MILLIS, source=FIX_MESSAGES, target=BOOKS)`
+`parse_books(storages, window, *, codec=None, snapshot_millis=SNAPSHOT_MILLIS, commit_row_size=COMMIT_ROW_SIZE, source=FIX_MESSAGES, target=BOOKS)`
 folds the silver FIX events of `[start - HISTORY, end)` into order books --
 one per `MIC:CFI` category and instant, and every book again on each whole
 hour -- replaces the window `[start, end)` of `silver.record_keeping.books`
@@ -308,10 +308,10 @@ to the same strict window before it is written.
 
 ## Write
 
-The write stages bounded chunks and replaces exactly `[start, end)` in one
-Iceberg snapshot: rows outside the window survive, those sharing its hour
-partition included, an empty rerun clears the window, and a failure leaves
-the previous snapshot visible.
+The write stages chunks of `commit_row_size` rows and replaces exactly
+`[start, end)` in one Iceberg snapshot: rows outside the window survive, those
+sharing its hour partition included, an empty rerun clears the window, and a
+failure leaves the previous snapshot visible.
 
 `snapshot_id` is the snapshot this call committed, found by the
 `rekep.books-run-id` summary property (`BOOKS_RUN`) the write records with a

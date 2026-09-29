@@ -65,17 +65,20 @@ class Dataset(abc.ABC):
         return self.into_struct_field() if schema is None else field_of(schema)
 
     def merge_columns(self, merge_by: bool | Sequence[str] | None) -> list[str]:
-        """Columns a write replaces on: the primary key for True, else what is named.
+        """Columns a keyed write matches on: the primary key, else what is named.
 
-        `False`/`None`/`[]` all name nothing, which is what makes `merge_by` a
-        single argument rather than a flag and a list; what a store does with
-        an overwrite that names nothing is the store's to say.
+        None is the primary key when the shape declares one and nothing when
+        it does not; True requires one. `False` and `[]` name nothing, which
+        is what makes `merge_by` a single argument rather than a flag and a
+        list; what a write that names nothing does is the verb's to say.
         """
+        from rekep.iceberg.fields import primary_keys
+
+        if merge_by is None:
+            return list(primary_keys(self.into_struct_field()))
         if not merge_by:
             return []
         if merge_by is True:
-            from rekep.iceberg.fields import primary_keys
-
             keys = primary_keys(self.into_struct_field())
             if not keys:
                 raise ValueError(
@@ -160,22 +163,18 @@ class Dataset(abc.ABC):
         self,
         source: pyarrow.RecordBatchReader,
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
+        **kwargs: Any,
     ) -> int:
-        """Replace what the stream carries, and return the rows it wrote.
+        """Replace what the stream covers, and return the rows it wrote.
 
-        The stored rows whose keys match are taken out and every row of the
-        stream lands, so a replay of the same rows leaves the store holding
-        them once. Creates the dataset if it is not there. `schema` is the
-        shape to cast onto on the way in, defaulting to this dataset's own.
-        `merge_by` is True to match on the primary key or a list of column
-        names to match on those; a store may give a `merge_by` naming nothing
-        a bounded meaning of its own -- Iceberg replaces the partitions the
-        stream touches -- and otherwise refuses it, because `append_arrow_*`
-        is the blind write. `commit_row_size` bounds how many rows one commit
-        carries. None uses the store's default; a store with no configured
-        default writes the whole stream as one.
+        What it covers is the store's to say -- Iceberg replaces the rows a
+        `row_filter` selects, or the partitions the stream touches -- and
+        every row of the stream lands. Creates the dataset if it is not there.
+        `schema` is the shape to cast onto on the way in, defaulting to this
+        dataset's own. `commit_row_size` bounds how many rows one commit
+        carries; None uses the store's default. A write matched row by row on
+        a key is `merge_arrow_reader`.
         """
 
     def overwrite_arrow(self, source: Any, *args: Any, **kwargs: Any) -> int:
@@ -191,19 +190,17 @@ class Dataset(abc.ABC):
         self,
         batch: pyarrow.RecordBatch,
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
         **kwargs: Any,
     ) -> int:
         """`overwrite_arrow_reader` for one batch."""
         reader = pyarrow.RecordBatchReader.from_batches(batch.schema, [batch])
-        return self.overwrite_arrow_reader(reader, schema, merge_by, commit_row_size, **kwargs)
+        return self.overwrite_arrow_reader(reader, schema, commit_row_size, **kwargs)
 
     def overwrite_arrow_table(
         self,
         table: pyarrow.Table,
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
         **kwargs: Any,
     ) -> int:
@@ -213,9 +210,51 @@ class Dataset(abc.ABC):
         -- goes straight through, so the generic `overwrite_arrow` can hand any
         shape to any dataset without knowing what it supports.
         """
-        return self.overwrite_arrow_reader(
-            table.to_reader(), schema, merge_by, commit_row_size, **kwargs
-        )
+        return self.overwrite_arrow_reader(table.to_reader(), schema, commit_row_size, **kwargs)
+
+    # -- merging -------------------------------------------------------------
+
+    @abc.abstractmethod
+    def merge_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader,
+        schema: Any = None,
+        commit_row_size: int | None = None,
+        **kwargs: Any,
+    ) -> int:
+        """Upsert a stream by key, and return the rows it inserted or replaced.
+
+        `merge_by` -- the primary key unless it names other columns -- matches
+        each row to the stored row of its key: a row no stored row matches is
+        inserted, one whose stored row holds other values replaces it, and one
+        whose stored row holds the same values is left as it is, so a replay
+        writes nothing.
+        """
+
+    def merge_arrow(self, source: Any, *args: Any, **kwargs: Any) -> int:
+        """Merge the inferred Arrow shape and return the rows it wrote."""
+        return getattr(self, f"merge_{_stem_of(source, _OVERWRITES)}")(source, *args, **kwargs)
+
+    def merge_arrow_batch(
+        self,
+        batch: pyarrow.RecordBatch,
+        schema: Any = None,
+        commit_row_size: int | None = None,
+        **kwargs: Any,
+    ) -> int:
+        """`merge_arrow_reader` for one batch."""
+        reader = pyarrow.RecordBatchReader.from_batches(batch.schema, [batch])
+        return self.merge_arrow_reader(reader, schema, commit_row_size, **kwargs)
+
+    def merge_arrow_table(
+        self,
+        table: pyarrow.Table,
+        schema: Any = None,
+        commit_row_size: int | None = None,
+        **kwargs: Any,
+    ) -> int:
+        """`merge_arrow_reader` for a table already in memory."""
+        return self.merge_arrow_reader(table.to_reader(), schema, commit_row_size, **kwargs)
 
     # -- appending -----------------------------------------------------------
 
@@ -227,10 +266,13 @@ class Dataset(abc.ABC):
         commit_row_size: int | None = None,
         **kwargs: Any,
     ) -> int:
-        """Append a stream blindly, and return how many rows it added.
+        """Append a stream, and return how many rows it added.
 
-        Every row lands, whatever the store already holds; a write that has to
-        replace what it carries is `overwrite_arrow_reader`.
+        A store may take a `merge_by` naming a key -- the primary key when it
+        names nothing and the shape declares one -- and then append only the
+        rows whose key it does not hold, so a replay adds nothing; one that
+        names nothing, or a store that takes none, appends every row. A write
+        that also replaces the stored rows that differ is `merge_arrow_reader`.
         """
 
     def append_arrow(self, source: Any, *args: Any, **kwargs: Any) -> int:
@@ -354,6 +396,22 @@ def sort_order_fields(
         else (str(column[0]), sort_direction(column[1]))
         for column in columns
     )
+
+
+def sorted_rows(
+    rows: pyarrow.Table, columns: Sequence[str] | Sequence[tuple[str, str]]
+) -> pyarrow.Table:
+    """`rows` in the directional, null-last order `columns` name, ties in their own order.
+
+    Ordered as `in_sort_order` reads them, on `comparable` values, because a
+    column of an extension type -- a UUID key -- has no sort kernel of its own.
+    """
+    fields = sort_order_fields(columns)
+    keys = pyarrow.table(
+        {f"key_{index}": comparable(rows.column(name)) for index, (name, _) in enumerate(fields)}
+    )
+    order = [(f"key_{index}", direction) for index, (_, direction) in enumerate(fields)]
+    return rows.take(pyarrow.compute.sort_indices(keys, sort_keys=order))
 
 
 def one_array(column: Any) -> Any:
@@ -506,6 +564,42 @@ def anti_join(rows: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) 
     if matched.num_rows == 0 or rows.num_rows == 0:
         return rows
     stored = keys_of(rows, join, SOURCE_INDEX)
+    wanted = _keys_onto(stored, matched, join)
+    fresh = stored.join(wanted, keys=list(join), join_type="left anti")
+    if fresh.num_rows == rows.num_rows:
+        return rows
+    return rows.take(_in_order(fresh.column(SOURCE_INDEX)))
+
+
+def semi_join(rows: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
+    """The rows of `rows` some row of `matched` shares a key with, in their own order.
+
+    `anti_join`'s complement, typed the same way: `matched`'s keys are brought
+    onto `rows`' types first.
+    """
+    if matched.num_rows == 0 or rows.num_rows == 0:
+        return rows.slice(0, 0)
+    stored = keys_of(rows, join, SOURCE_INDEX)
+    found = stored.join(_keys_onto(stored, matched, join), keys=list(join), join_type="left semi")
+    if found.num_rows == rows.num_rows:
+        return rows
+    return rows.take(_in_order(found.column(SOURCE_INDEX)))
+
+
+def key_pairs(rows: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> tuple[Any, Any]:
+    """`(rows index, matched index)` of every pair of rows sharing a key.
+
+    Typed as `anti_join` is: `matched`'s keys are brought onto `rows`' types.
+    """
+    left = keys_of(rows, join, SOURCE_INDEX)
+    right = keys_of(matched, join, TARGET_INDEX)
+    right = _keys_onto(left, right, join).append_column(TARGET_INDEX, right.column(TARGET_INDEX))
+    pairs = left.join(right, keys=list(join), join_type="inner")
+    return one_array(pairs.column(SOURCE_INDEX)), one_array(pairs.column(TARGET_INDEX))
+
+
+def _keys_onto(stored: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
+    """`matched`'s key columns alone, cast onto the types `stored` holds them in."""
     wanted = keys_of(matched, join, TARGET_INDEX).select(list(join))
     for index, name in enumerate(join):
         kind = stored.schema.field(name).type
@@ -513,10 +607,115 @@ def anti_join(rows: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) 
             wanted = wanted.set_column(
                 index, wanted.schema.field(index).with_type(kind), wanted.column(name).cast(kind)
             )
-    fresh = stored.join(wanted, keys=list(join), join_type="left anti")
-    if fresh.num_rows == rows.num_rows:
-        return rows
-    return rows.take(_in_order(fresh.column(SOURCE_INDEX)))
+    return wanted
+
+
+def equal_rows(left: pyarrow.Table, right: pyarrow.Table) -> Any:
+    """Which rows of two aligned tables hold the same values, column by column.
+
+    Columns are `left`'s, matched by name: one `right` lacks is equal only
+    where `left` is null, which is what writing `right` over `left` leaves.
+    Two nulls are equal and so are two NaNs; a nested value is equal when
+    every value inside it is. A pair no kernel can compare is unequal, the
+    direction that rewrites a row rather than keeps a stale one.
+    """
+    compute = pyarrow.compute
+    same = _constant(left.num_rows, True)
+    for name in left.column_names:
+        column = one_array(left.column(name))
+        if name in right.column_names:
+            equal = _equal_values(column, one_array(right.column(name)))
+        else:
+            equal = compute.is_null(column)
+        same = compute.and_(same, equal)
+    return same
+
+
+def _row_numbers(rows: int) -> Any:
+    from rekep.fields import arrays
+
+    return arrays.sequence(rows)
+
+
+def _constant(rows: int, value: bool) -> Any:
+    """`rows` booleans, every one `value`."""
+    return pyarrow.compute.fill_null(pyarrow.nulls(rows, pyarrow.bool_()), value)
+
+
+#: What refusing a comparison looks like in Arrow's kernels.
+_INCOMPARABLE = (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, pyarrow.ArrowTypeError)
+
+
+def _equal_values(left: Any, right: Any) -> Any:
+    """Which values of two aligned arrays are the same, nulls and NaNs included."""
+    compute = pyarrow.compute
+    try:
+        left, right = _comparable_pair(left, right)
+        kind = left.type
+        both_null = compute.and_(compute.is_null(left), compute.is_null(right))
+        if pyarrow.types.is_null(kind):
+            return compute.is_null(left)
+        valid = compute.and_(compute.is_valid(left), compute.is_valid(right))
+        if pyarrow.types.is_struct(kind):
+            same = valid
+            for index in range(kind.num_fields):
+                same = compute.and_(same, _equal_values(left.field(index), right.field(index)))
+            return compute.or_(both_null, same)
+        if _is_listlike(kind):
+            return compute.or_(both_null, _equal_lists(left, right, valid))
+        equal = compute.fill_null(compute.equal(left, right), False)
+        if pyarrow.types.is_floating(kind):
+            equal = compute.or_(
+                equal,
+                compute.and_(
+                    compute.fill_null(compute.is_nan(left), False),
+                    compute.fill_null(compute.is_nan(right), False),
+                ),
+            )
+        return compute.or_(both_null, equal)
+    except _INCOMPARABLE:
+        return _constant(len(left), False)
+
+
+def _equal_lists(left: Any, right: Any, valid: Any) -> Any:
+    """Which of two aligned list arrays' valid values hold equal elements in order."""
+    compute = pyarrow.compute
+    lengths = compute.fill_null(
+        compute.equal(compute.list_value_length(left), compute.list_value_length(right)), False
+    )
+    candidates = compute.and_(valid, lengths)
+    if not compute.any(candidates, min_count=0).as_py():
+        return candidates
+    shortlist, versus = left.filter(candidates), right.filter(candidates)
+    elements = _equal_values(compute.list_flatten(shortlist), compute.list_flatten(versus))
+    parents = compute.list_parent_indices(shortlist)
+    unequal = compute.unique(parents.filter(compute.invert(elements)))
+    kept = compute.invert(compute.is_in(_row_numbers(len(shortlist)), value_set=unequal))
+    return compute.replace_with_mask(candidates, candidates, kept)
+
+
+def _is_listlike(kind: Any) -> bool:
+    """Whether `kind` holds a sequence of values per row."""
+    kinds = pyarrow.types
+    return kinds.is_list(kind) or kinds.is_large_list(kind) or kinds.is_fixed_size_list(kind)
+
+
+def _comparable_pair(left: Any, right: Any) -> tuple[Any, Any]:
+    """Two arrays on one type Arrow's kernels compare: storage, decoded, `right` cast to `left`."""
+    left, right = storage_of(left), storage_of(right)
+    if pyarrow.types.is_dictionary(left.type):
+        left = left.dictionary_decode()
+    if pyarrow.types.is_dictionary(right.type):
+        right = right.dictionary_decode()
+    if right.type != left.type:
+        right = right.cast(left.type, safe=False)
+    if pyarrow.types.is_map(left.type):
+        # A map is a list of its entries, and no list kernel takes one as a
+        # map: one of them aborts the interpreter rather than raising.
+        entry = pyarrow.struct([left.type.key_field, left.type.item_field])
+        entries = pyarrow.list_(pyarrow.field("entries", entry, nullable=False))
+        left, right = left.cast(entries), right.cast(entries)
+    return left, right
 
 
 def _in_order(taken: Any) -> Any:
@@ -533,7 +732,7 @@ def _in_order(taken: Any) -> Any:
 def first_rows(table: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
     """One row per distinct key -- the first -- in the table's own order.
 
-    What makes a keyed replace idempotent *within* a chunk: a stream that
+    What makes a keyed write idempotent *within* a chunk: a stream that
     carries a line twice means the line once, and the first row is the one
     an earlier write of the same stream would have landed.
 

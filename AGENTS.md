@@ -113,22 +113,58 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
 
 - Primary APIs consume and return `RecordBatchReader`; table helpers explicitly
   require memory-sized data.
-- `append_*` is blind; `overwrite_*` replaces: each bounded chunk is staged
-  locally, the stored rows it replaces are taken out -- those carrying its keys
-  in the same transformed partition, or every row of the partitions it touches
-  when `merge_by` names nothing -- and the staged files are appended, in one
-  commit. Both create a missing table and return the rows they wrote.
-- `merge_by=True` means the native Field's declared primary key. A key is
-  scoped to its partition: the same key on two days is two rows.
-- Commit after `commit_batch_num` input batches or the earlier optional
-  `commit_row_size` bound.
-- Every write streams one transformed partition at a time through PyIceberg's
-  file-format writer on the table's `FileIO` and commits it by path, so a
-  commit holds its chunk and not a multiple of it, and no data file touches
-  local disk. Never hand a whole chunk to a writer that splits it.
-- An overwrite declares the rows it takes out as a predicate. PyIceberg
-  validates a retried commit against it, so a concurrent commit elsewhere in
-  the table lands and one under it is handed back for a fresh plan.
+- Three verbs write; each creates a missing table and returns the rows it
+  wrote. `append_*` appends the differences: the rows whose key their
+  transformed partition does not hold, by default whenever the field declares
+  a primary key (`merge_by=None`); `merge_by=False`, or no primary key, is a
+  blind append. It never rewrites or deletes a stored file, and returns the
+  rows added.
+- `merge_*` upserts the differences, keyed by the required `merge_by` -- the
+  primary key unless it names other columns: a row whose key is absent is
+  inserted, one whose stored row holds other values replaces it, rewriting
+  only the files holding such a row, and one stored as it is is left alone. A
+  key stored twice is collapsed. Values are compared as a staged file would
+  hold them: PyIceberg stores a null list of structs as an empty one, so the two are
+  equal. It returns the rows inserted or replaced.
+- `overwrite_*` replaces and takes no `merge_by`: `row_filter` replaces
+  exactly the predicate's rows in one commit; without one, every row of the
+  partitions the stream touches. An unpartitioned table needs `row_filter`.
+- `merge_by=True` means the native Field's declared primary key, and a list
+  names columns. A key is scoped to its partition: the same key on two days is
+  two rows. A key that recurs within a stream keeps its first row in the
+  table's sort order, across chunks too: a merge carries the keys it settled
+  in the partition it is writing to the next chunk of that partition. A keyed
+  append or merge of a replay writes nothing and commits nothing.
+- Commit after `commit_row_size` rows or `commit_batch_num` input batches,
+  whichever comes first. Either may be None, and with neither a stream is one
+  commit. Under `row_filter` the bounds size staging chunks, not commits.
+- Every write spills its stream to a local Arrow IPC folder under the
+  dataset's `spill_directory` (None: the system temporary directory) -- one
+  sorted run per bounded chunk and partition, one folder per partition --
+  then merges each partition back, at most 16 runs open and a window of each
+  sorted per step, in partition order, and re-cuts it into commits of
+  `commit_row_size` rows, or of the largest spilled chunk when only
+  `commit_batch_num` bounds. So each partition's files hold disjoint ranges
+  in the table's sort order, memory holds one chunk and one merge step of at
+  most half a chunk however many runs overlap, and a stream is consumed
+  before its first commit. Dictionary columns spill as their values. A table
+  with no partitions and no sort order streams through.
+- Every commit streams one transformed partition at a time through
+  PyIceberg's file-format writer on the table's `FileIO` and commits it by
+  path, so a commit holds its chunk and not a multiple of it, and no data file
+  touches local disk. Never hand a whole chunk to a writer that splits it.
+- A keyed write never scans the table: one plan per chunk over the
+  partitions it carries, each bounded by its own key range, reading key
+  columns first and whole rows only of the files holding a carried key, and
+  only to merge.
+- Every write but a blind append declares what it read or takes out as a
+  predicate -- a keyed write its partition and key ranges, an overwrite its
+  partitions or `row_filter` -- and PyIceberg validates a retried commit
+  against it: a concurrent commit elsewhere lands, and one under it is a
+  conflict, `CommitFailedException`, for a fresh plan, under the table's
+  `write.delete.isolation-level` -- `serializable` by default, where
+  `snapshot` admits a concurrent same key. A keyed chunk that commits nothing
+  still validates the head it read.
 - Push filters, projections, ordering, and limits into storage planning.
 - Every verb accepts `branch`; every read accepts `snapshot_id`.
 - Preserve supplied Iceberg ids and assign missing ids.
@@ -195,15 +231,25 @@ A task writes its `target`, and every task after `parse_log_messages` reads a
 `FIX_MESSAGES_RAW`, `FIX_MESSAGES`, `BOOKS`, `ORDERS`, `QUOTES`,
 `EXECUTIONS`; `EVENTS` and `FLATTENERS` by kind). It opens and closes its
 datasets through the `Storages` it is handed, never closes a catalog, creates
-a missing target, and answers `Landed`. `rekep.deploy.deploy(storages)`
-creates the tables ahead of a first run, for catalogs the runner may not
-create tables in; `TABLES` is that layout.
+a missing target, and answers `Landed`. Each takes `commit_row_size`,
+`COMMIT_ROW_SIZE` (128 Ki rows) unless stated -- at most that many rows per
+commit of a keyed task, staging chunks of that size for a market task -- and
+opens its target with `commit_batch_num=None`, so rows alone cut its commits.
+`rekep.deploy.deploy(storages)` creates the tables ahead of a first run, for
+catalogs the runner may not create tables in; `TABLES` is that layout.
 
 Every task takes the window `[start, end)` over `currunix`, as
 `rekep.times.window_of` answers it -- given neither bound, the last day up to
 now -- and every scan hands it to Iceberg as a predicate on that column, so a
-task plans only the hour partitions of its window. A run over a window
-replaces what an earlier run of it landed.
+task plans only the hour partitions of its window. The three tasks keyed on
+`curruuid` -- `parse_log_messages`, `parse_fix_messages_raw` and
+`parse_fix_messages_refined` -- write with one `merge_arrow_reader`, upserting
+the differences: a replay of a window writes nothing and commits no
+snapshot, a row whose content changed under the same identity is replaced,
+and a task whose write fails after a commit keeps it for its rerun to
+complete. The market tasks write with one
+`overwrite_arrow_reader(row_filter=...)`: a run over a window replaces what an
+earlier run of it landed, so a replay commits one snapshot per market table.
 
 `parse_log_messages(source, storages, window)` takes the capture first: it
 binds a URI with `IOBase.from_uri` or reads the `IOBase` it is handed, frames
@@ -223,8 +269,9 @@ where it was read, never from a copy. The table is keyed on `curruuid` alone,
 the line identity the read states; `currhashcode` is its exact-content code
 and not a second key. A text row names its source through the read's own
 `crosscode` and `seqnum`, and its `state` is `UNKNOWN`. Given no window, it
-reads every line, stages them in a local Arrow stream file, lands them, and
-answers `Landed.window` -- `rekep.times.hour_window` over the earliest and
+reads every line, observes the span of their `currunix` as they stream past
+-- the write's spill is the only local stage -- lands them, and answers
+`Landed.window` -- `rekep.times.hour_window` over the earliest and
 latest `currunix` not pinned at `EPOCH`: `start` truncated to its hour, `end`
 truncated and one hour later unless it already stands on a whole hour past
 `start` -- the window the tasks after it run over.
@@ -246,8 +293,10 @@ parse -> bronze.record_keeping.fix_messages, lifecycle -> silver.record_keeping.
 ```
 
 `parse_fix_messages_raw` reads the stored lines of the window off `currunix`,
-with the epoch-pinned lines beside them, projected to `PARSE_COLUMNS`, the
-seven a parse consumes, and parses them, and only that: a bronze row is what
+with the epoch-pinned lines beside them, in the table's `SORT_COLUMNS` order
+-- the order they were printed in, so which hop's copy of a restated message
+bronze keeps never depends on file layout -- hands the parse `PARSE_COLUMNS`,
+the seven it consumes, and parses them, and only that: a bronze row is what
 the message implied about itself, and `seqnum`, `prevuuid` and `prevunix` are
 empty on every one because nothing has walked yet. The parse dates a message
 by the transaction clock standing within `official_time_delay_ms` of the
@@ -358,13 +407,16 @@ fixed FIX row, the book, the market event -- make the seven tables.
 The market tasks atomically replace exactly their strict window using bounded
 staging and one Iceberg snapshot commit. An empty rerun removes old rows in
 the window; a failure leaves the prior snapshot visible; rows outside it are
-preserved. Partition-scoped keyed merge and whole-hour replacement do not
+preserved. A partition-scoped keyed merge and whole-hour replacement do not
 implement this contract for partial-hour windows.
 
 Every task answers `Landed`: `read` source rows its window selected,
-`written` target rows, `skipped` answered rows the target's key folded into a
-written one, and `snapshot_id` the books snapshot `parse_books` committed or
-a flattener read. Records go to the `rekep.*` loggers -- INFO for each
+`written` target rows -- those a keyed task inserted or replaced, 0 on a
+replay, or those a market task replaced its window with -- `skipped` answered
+rows the target's key folded into a stored one, a restatement or a row an
+earlier run already landed as it is, and `snapshot_id` the books snapshot
+`parse_books` committed or a
+flattener read. Records go to the `rekep.*` loggers -- INFO for each
 completed operation, DEBUG for scans and files -- and the caller configures
 `logging`; nothing here configures it.
 

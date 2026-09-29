@@ -31,7 +31,7 @@ changing code. This skill is the operating manual.
 
 | path | what |
 | --- | --- |
-| `python/src/rekep/pipeline.py` | the tasks, `Landed`, the table names (`LOG_MESSAGES`, `FIX_MESSAGES_RAW`, `FIX_MESSAGES`, `BOOKS`, `ORDERS`, `QUOTES`, `EXECUTIONS`), `EVENTS`, `FLATTENERS`, `FLATTENED`, `HISTORY`, `SNAPSHOT_MILLIS` |
+| `python/src/rekep/pipeline.py` | the tasks, `Landed`, the table names (`LOG_MESSAGES`, `FIX_MESSAGES_RAW`, `FIX_MESSAGES`, `BOOKS`, `ORDERS`, `QUOTES`, `EXECUTIONS`), `EVENTS`, `FLATTENERS`, `FLATTENED`, `HISTORY`, `SNAPSHOT_MILLIS`, `COMMIT_ROW_SIZE` |
 | `python/src/rekep/storages.py` | `Storages`: one catalog per layer, `dataset("<layer>.<ns>.<table>")` |
 | `python/src/rekep/deploy.py` | `deploy(storages)` and `TABLES`: the graph's tables, created ahead of a run |
 | `python/src/rekep/text.py` | the bridge read: `text_options`, `log_message_field`, `CAPTURES`, `RECORD_CLOCK` |
@@ -92,17 +92,22 @@ with storages:
 ```
 
 Order matters: each task reads only the table before it. Every task creates
-its target where it is missing, never closes the catalogs, and replaces its
-window, so a rerun lands the same rows and answers the same numbers: a retry
-is running it again. A task per process is fine: open `Storages`, run, close.
+its target where it is missing and never closes the catalogs. The three keyed
+tasks merge on `curruuid`: a row their table lacks is inserted, one it holds
+with other values replaced, one it holds as it is left alone, so a rerun
+writes none, commits nothing and answers `written=0`; `parse_books` and the
+flatteners replace their window, so a rerun writes the same rows again in a
+new snapshot. Either way a retry is running it again. A task per process is
+fine: open `Storages`, run, close.
 
 `Landed` holds `read` (source rows the window selected), `written` (target
-rows carried into the table), `skipped` (answered rows the key folded into a
-written one: 53 bronze FIX messages restate another hop's exactly) and
-`snapshot_id` (the books snapshot `parse_books` committed or a flattener
-read; None for the others). Tasks log to the `rekep.*` loggers and configure
-nothing: `INFO` shows each table created and each commit, `DEBUG` adds scans
-and files.
+rows written: inserted or replaced by a keyed task, the window's rows for the
+others), `skipped` (answered rows the key folded into a stored one: 53 bronze
+FIX messages restate another hop's exactly, and on a rerun every row a keyed
+task answers) and `snapshot_id` (the books snapshot `parse_books` committed
+or a flattener read; None for the others). Tasks log to the `rekep.*`
+loggers and configure nothing: `INFO` shows each table created and each
+commit, `DEBUG` adds scans and files.
 
 ## When a task fails
 
@@ -175,7 +180,7 @@ Never put credentials in a mapping. `docs/storages/` is the full reference.
 
 ## Task parameters worth knowing
 
-- `parse_log_messages(source, storages, window=None, *, rowheader=None, timezone=TIMEZONE, target=LOG_MESSAGES)`:
+- `parse_log_messages(source, storages, window=None, *, rowheader=None, timezone=TIMEZONE, commit_row_size=COMMIT_ROW_SIZE, target=LOG_MESSAGES)`:
   `source` is a file, folder or prefix URI (`file:data/capture`,
   `s3://bucket/prefix?region=eu-west-1`) or an `IOBase` the caller keeps open.
   `rowheader=None` is `rekep.times.ULBRIDGE_ROWHEADER`, whose clock takes
@@ -186,9 +191,9 @@ Never put credentials in a mapping. `docs/storages/` is the full reference.
   `timezone` is the IANA zone the bridge prints its clock in,
   `rekep.times.TIMEZONE` = `Europe/Zurich` unless stated; pass another for a
   bridge printing elsewhere, or its lines are dated hours from their
-  messages. `window=None` lands every line, staged in a local Arrow stream
-  file, and answers `Landed.window`, the whole hours its dated lines span,
-  for the next tasks: `[2026-08-14 01:00, 22:00)` UTC for the capture.
+  messages. `window=None` lands every line and answers `Landed.window`, the
+  whole hours its dated lines span, for the next tasks:
+  `[2026-08-14 01:00, 22:00)` UTC for the capture.
 - `parse_fix_messages_raw`, `parse_fix_messages_refined`, `parse_books`:
   `codec=None` is `FixCodec.from_env(default_sending_time=UNDATED)`. Hand all
   three the same codec.
@@ -204,6 +209,12 @@ Never put credentials in a mapping. `docs/storages/` is the full reference.
   the head found; pass the one `parse_books` answered.
 - Every task takes a `target` table name, and every task after the first a
   `source`, defaulted to the constants above.
+- Every task takes `commit_row_size=COMMIT_ROW_SIZE` (131,072 rows), and rows
+  alone cut its commits: a keyed task commits per that many rows it answers,
+  only the ones it inserts or replaces, so a write that fails after a commit
+  keeps it; `parse_books` and the flatteners stage that many at a time and
+  commit their window once. Every write spills its rows to the system
+  temporary directory first and lays them out in the table's sort order.
 
 ## Deploying tables ahead of a run
 
@@ -305,12 +316,13 @@ over Arrow data; prefer deleting to compatibility layers.
 To add or change a task:
 
 1. A function in `python/src/rekep/pipeline.py`, in graph order, taking
-   `(storages, window, *, source=..., target=...)` after any leading input and
-   answering `Landed`. It opens its datasets through `storages` and closes
-   them, never closes a catalog, pushes the window into its scan, and writes
-   with one `overwrite_arrow_reader`: `merge_by=True` for a keyed table,
-   `row_filter` for an exact-window replacement. Its table name is a constant
-   beside the others and in `__all__`.
+   `(storages, window, *, commit_row_size=COMMIT_ROW_SIZE, source=..., target=...)`
+   after any leading input and answering `Landed`. It opens its datasets
+   through `storages` and closes them, never closes a catalog, pushes the
+   window into its scan, opens its target with `_target`, so rows alone cut
+   its commits, and writes a keyed table with one `merge_arrow_reader`, an
+   exact-window replacement with one `overwrite_arrow_reader(row_filter=...)`.
+   Its table name is a constant beside the others and in `__all__`.
 2. Its table in `rekep.deploy.TABLES`, with a description and writer in
    `tools/schemas_dump.py`; regenerate `schemas/` and `docs/tables/`.
 3. Tests: unit tests beside the module's own (`tests/test_<module>.py`); the

@@ -70,9 +70,11 @@ with storages:
     assert (books.written, events) == (29, {"orders": 8, "quotes": 0, "executions": 7})
 ```
 
-Every task replaces its window of the table it writes, so a rerun lands the
-same rows again. A line's clock states no offset: `parse_log_messages` reads
-it in `timezone`, `Europe/Zurich` unless stated -- the Central European clock
+A rerun of a task over its window leaves the table it writes holding each row
+once: the three keyed tasks merge on `curruuid`, writing only the rows their
+table lacks or holds with other values, and the book and event tasks replace
+their window. A line's clock states no offset: `parse_log_messages` reads it
+in `timezone`, `Europe/Zurich` unless stated -- the Central European clock
 the shipped capture's bridge prints -- so each line is dated in the hour of
 the message it carries. The FIX dictionary ships inside the package and is
 the process default: `rekep.FixRegistry.from_env()` answers it and

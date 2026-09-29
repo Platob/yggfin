@@ -70,10 +70,13 @@ replays the bronze FIX rows without reading the capture again.
 
 ## Replays are ordinary runs
 
-The first three tasks replace on the `curruuid` key within its hour; the book
-and event tasks replace exactly their window. So a task run again over a
-window lands the rows it landed before, and a table holds each row once
-however often a window runs. A scheduler retries a task by running it again.
+The first three tasks merge their rows into their table on `curruuid`
+within its hour -- a row it lacks is inserted, one it holds with other values
+replaced, one it holds as it is left alone -- and the book and event tasks
+replace exactly their window. So a task run again over a window writes
+nothing, or replaces the rows it landed before with the same rows, and a
+table holds each row once however often a window runs. A scheduler retries a
+task by running it again.
 
 ## Documentation names contracts
 

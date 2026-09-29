@@ -14,6 +14,7 @@ import random
 import sys
 import tempfile
 import time
+import types
 import uuid
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
@@ -31,11 +32,15 @@ from rekep.dataset import (
     anti_join,
     arrow_chunks,
     comparable,
+    equal_rows,
     first_rows,
     in_sort_order,
+    key_pairs,
     normalised_keys,
+    semi_join,
     sort_direction,
     sort_order_fields,
+    sorted_rows,
 )
 from rekep.fields import (
     Field,
@@ -116,6 +121,20 @@ STAGE_PIECE_ROW_GAIN = 8192
 #: run contributes one scan batch, so the fan-in bounds memory independently
 #: of how many row groups or files a partition holds.
 SORT_MERGE_FAN_IN = 16
+
+#: Rows one step of a k-way merge sorts at once, shared among its streams: a
+#: step never takes more than its share of a stream's batch, so a merge holds
+#: this many rows beside one batch per stream however large a spilled run's
+#: batch is. Taken whole, a run's batch -- a chunk -- let overlapping runs
+#: grow one step's block toward the whole partition: 300 runs held 300 chunks.
+MERGE_BLOCK_ROWS = 64 * 1024
+
+#: Matched rows a merge compares at once. A stored batch is a row group --
+#: 131,072 rows -- and comparing all of its matches together copied the
+#: stored rows, the arriving ones and their stored form beside it: a replay
+#: of one partition held 3.66x its chunk. Compared this many at a time, what
+#: a comparison adds is a slice of that.
+COMPARE_ROW_SIZE = 16_384
 
 #: Source batches a commit carries when nothing says otherwise. Eight amortizes
 #: snapshot and file overhead while bounding memory in the units the producer
@@ -215,11 +234,13 @@ class IcebergDataset(Dataset):
     merge_schema: bool = False
 
     #: Source batches one commit carries; the producer's batch size bounds the
-    #: retained bytes without guessing how wide a row is.
-    commit_batch_num: int = DEFAULT_COMMIT_BATCH_NUM
+    #: retained bytes without guessing how wide a row is. None leaves
+    #: `commit_row_size` alone to cut commits.
+    commit_batch_num: int | None = DEFAULT_COMMIT_BATCH_NUM
 
     #: Optional row cap applied with `commit_batch_num`; the first bound reached
-    #: commits. None leaves batch count as the default boundary.
+    #: commits. None leaves batch count as the default boundary, and with no
+    #: batch bound either the whole stream is one commit.
     commit_row_size: int | None = None
 
     #: Columns each chunk is sorted by before it is written. None means the
@@ -238,6 +259,10 @@ class IcebergDataset(Dataset):
     #: table's `history.expire.max-snapshot-age-ms`, including Iceberg's
     #: default when the property is absent.
     snapshot_expiry: SnapshotExpiry = None
+
+    #: The local folder a write spills its sorted runs under; None is the
+    #: system's temporary directory. See `_sorted_chunks`.
+    spill_directory: str | None = None
 
     #: Only used when the table is created: where it lives and what it carries.
     location: str | None = None
@@ -262,7 +287,8 @@ class IcebergDataset(Dataset):
         if field.dtype.id != "struct":
             raise TypeError("an Iceberg dataset field must be a struct")
         self.field = replace_field(field, name=self.name)
-        self.commit_batch_num = _positive_int(self.commit_batch_num, "commit_batch_num")
+        if self.commit_batch_num is not None:
+            self.commit_batch_num = _positive_int(self.commit_batch_num, "commit_batch_num")
         if self.commit_row_size is not None:
             self.commit_row_size = _positive_int(self.commit_row_size, "commit_row_size")
         if self.commit_retries < 0:
@@ -650,7 +676,6 @@ class IcebergDataset(Dataset):
         self,
         source: pyarrow.RecordBatchReader,
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
         *,
         row_filter: Any = None,
@@ -660,33 +685,23 @@ class IcebergDataset(Dataset):
         properties: dict[str, str] | None = None,
         snapshot_expiry: SnapshotExpiry = None,
     ) -> int:
-        """Replace what a stream carries, then expire snapshots under the configured cutoff.
+        """Replace what a stream covers, then expire snapshots under the configured cutoff.
 
         A given `row_filter` (SQL or PyIceberg expression) replaces exactly
         its matching rows in one atomic snapshot, even for an empty source.
         Every incoming row must match; a source or validation error publishes
-        nothing. This mode ignores `merge_by` and retains source duplicates.
-        Commit limits bound staging chunks, not commits: completed chunks
-        live in the table's FileIO, with only their file metadata retained.
+        nothing, and source duplicates are retained. Commit limits bound
+        staging chunks, not commits: completed chunks live in the table's
+        FileIO, with only their file metadata retained.
 
-        Otherwise, one commit per bounded chunk, and every commit is the same three
-        steps: the chunk is written to the table's store as Parquet, one
-        transformed partition at a time; the stored rows it replaces are
-        taken out -- the rows carrying its keys under `merge_by`, or every
-        row of the partitions it touches when `merge_by` names nothing; and
-        the written files are appended. A replay of the same rows leaves the
-        table holding them once.
-
-        Under keys a stored row is the one in the same transformed partition
-        carrying the same key -- the same symbol on two days is two rows, and
-        a null partition value is a partition of its own. The stored files of
-        the partitions the chunk touches whose key bounds overlap the chunk's
-        are read and written back without those keys. A key that recurs within
-        a chunk's partition keeps its first row, which is what a stream that
-        carries a line twice means; one that recurs in a later chunk replaces
-        the row the earlier chunk landed. Keyless, a partition is emptied once
-        per write and only added to after that, so a partition split across
-        two chunks is not emptied again by the second of them.
+        Otherwise every row of the partitions the stream touches is replaced,
+        one commit per bounded chunk: the chunk is written to the table's
+        store one transformed partition at a time, the stored files of the
+        partitions it touches first are taken out, and the written files are
+        appended. A partition is emptied once per write and only added to
+        after that, so a partition split across two chunks is not emptied
+        again by the second of them. An unpartitioned table is refused: a
+        write matched on a key is `merge_arrow_reader`.
 
         Returns the rows the stream carried into the table.
         """
@@ -695,7 +710,6 @@ class IcebergDataset(Dataset):
             return self._overwrite_arrow_reader(
                 source,
                 schema,
-                merge_by,
                 commit_row_size,
                 row_filter=row_filter,
                 commit_batch_num=commit_batch_num,
@@ -708,7 +722,6 @@ class IcebergDataset(Dataset):
         self,
         source: pyarrow.RecordBatchReader,
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
         *,
         row_filter: Any = None,
@@ -724,44 +737,236 @@ class IcebergDataset(Dataset):
             table = self.get_or_create_table()
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
-            join = [] if row_filter is not None else self.merge_columns(merge_by)
             target = self._write_field(schema, merge_schema)
             table = self.iceberg_table
             partitions = _partition_columns(table)
-            if row_filter is None and not join and not partitions:
+            if row_filter is None and not partitions:
                 raise ValueError(
-                    f"merge_by={merge_by!r} names nothing to match on and the table is not "
-                    "partitioned, so nothing says which stored rows this replaces -- pass True "
-                    "for the primary key or the columns to match on, or use append_arrow_* to "
-                    "add rows blindly"
+                    "the table is not partitioned, so nothing says which stored rows this "
+                    "replaces -- pass row_filter, use merge_arrow_* to upsert by key, or "
+                    "append_arrow_* to add rows"
                 )
-            if row_filter is None and not join:
+            if row_filter is None:
                 source = _requiring_columns(
                     source, [column.source for column in partitions], derived_keys(target)
                 )
             reader = target.apply_arrow_reader(source, safe=False)
             snapshot = properties or {}
-            if row_filter is not None:
-                return self._replace_where(
-                    table,
-                    arrow_chunks(reader, rows, batches),
-                    _delete_expression(row_filter),
-                    reference,
-                    snapshot,
+            with self._sorted_chunks(reader, table, rows, batches) as chunks:
+                if row_filter is not None:
+                    return self._replace_where(
+                        table, chunks, _delete_expression(row_filter), reference, snapshot
+                    )
+                replaced: set[tuple[Any, ...]] = set()
+                written = 0
+                for chunk in chunks:
+                    table, landed = self._replace_chunk(table, chunk, reference, snapshot, replaced)
+                    written += landed
+                    # The chunker accumulates the next chunk while this name
+                    # still holds the last one.
+                    del chunk
+                return written
+        finally:
+            _close_write_source(source, reader)
+
+    def merge_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader,
+        schema: Any = None,
+        commit_row_size: int | None = None,
+        *,
+        merge_by: bool | Sequence[str] | None = None,
+        commit_batch_num: int | None = None,
+        merge_schema: bool | None = None,
+        branch: str | None = None,
+        properties: dict[str, str] | None = None,
+        snapshot_expiry: SnapshotExpiry = None,
+    ) -> int:
+        """Upsert a stream by key, then expire snapshots under the configured cutoff.
+
+        `merge_by` -- the primary key unless it names other columns -- matches
+        a row to the stored rows of its key in its transformed partition: the
+        same key on two days is two rows. A row no stored row matches is
+        inserted; one whose stored row holds other values replaces it; one
+        whose stored row holds the same values is left as it is, so a replay
+        writes nothing and commits nothing. A key stored twice is replaced
+        wherever it is, and the partition holds it once after. A key that
+        recurs within the stream keeps its first row in the table's sort
+        order; a null or NaN key is refused.
+
+        One commit per bounded chunk. What is stored is read by partition,
+        never by table: one plan over the partitions the chunk carries, each
+        bounded by its own key range; of each planned file its key columns
+        first, then whole only when it holds a key the chunk carries, and it
+        is rewritten only when one of those rows changes. The rows written
+        land in the table's sort order. The commit declares the partitions
+        and key ranges it read, so a concurrent commit under them is a
+        conflict raised for a fresh plan, under the table's isolation level as
+        `append_arrow_reader` says.
+
+        Returns the rows inserted or replaced.
+        """
+        create_with = schema if self._merge_schema_enabled(merge_schema) else None
+        with self._write(snapshot_expiry, create_with=create_with):
+            return self._merge_arrow_reader(
+                source,
+                schema,
+                commit_row_size,
+                merge_by=merge_by,
+                commit_batch_num=commit_batch_num,
+                merge_schema=merge_schema,
+                branch=branch,
+                properties=properties,
+            )
+
+    def _merge_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader,
+        schema: Any = None,
+        commit_row_size: int | None = None,
+        *,
+        merge_by: bool | Sequence[str] | None = None,
+        commit_batch_num: int | None = None,
+        merge_schema: bool | None = None,
+        branch: str | None = None,
+        properties: dict[str, str] | None = None,
+    ) -> int:
+        """Upsert a stream, one commit per bounded chunk: the rows it inserted or replaced."""
+        reader: pyarrow.RecordBatchReader | None = None
+        try:
+            rows, batches = self._commit_limits(commit_row_size, commit_batch_num)
+            table = self.get_or_create_table()
+            reference = self._branch_name(branch)
+            self._branch_head(table, reference)
+            join = self.merge_columns(True if merge_by is None else merge_by)
+            if not join:
+                raise ValueError(
+                    f"merge_by={merge_by!r} names nothing to match on -- pass True for the "
+                    "primary key or the columns to match on; append_arrow_* adds rows and "
+                    "overwrite_arrow_* replaces partitions or a row_filter"
                 )
-            replaced: set[tuple[Any, ...]] = set()
-            written = 0
-            for chunk in arrow_chunks(reader, rows, batches):
-                table, landed = self._replace_chunk(
-                    table, chunk, join, reference, snapshot, replaced
-                )
-                written += landed
-                # `arrow_chunks` accumulates the next chunk while this name
-                # still holds the last one.
-                del chunk
+            target = self._write_field(schema, merge_schema)
+            table = self.iceberg_table
+            reader = target.apply_arrow_reader(source, safe=False)
+            snapshot = properties or {}
+            with self._sorted_chunks(reader, table, rows, batches) as chunks:
+                written = 0
+                decided: _Decided | None = None
+                for chunk in chunks:
+                    table, landed, decided = self._merge_chunk(
+                        table, chunk, join, reference, snapshot, decided
+                    )
+                    written += landed
+                    del chunk
+            self.__dict__["iceberg_table"] = table
             return written
         finally:
             _close_write_source(source, reader)
+
+    def _merge_chunk(
+        self,
+        table: Any,
+        chunk: pyarrow.Table,
+        join: Sequence[str],
+        reference: str,
+        properties: Mapping[str, str],
+        decided: _Decided | None,
+    ) -> tuple[Any, int, _Decided | None]:
+        """One chunk's differences, staged one partition at a time and committed together.
+
+        `(the table after the commit, the rows written, the keys decided)`.
+        `decided` is the keys an earlier chunk of this write settled -- wrote,
+        or found stored as they are -- in the partition this chunk opens with:
+        chunks arrive in partition order, so it is the only one that can
+        continue, and a key that recurs there keeps what was settled. What it
+        holds is that partition's keys, and it is dropped when the partition
+        ends.
+        """
+        if not chunk.num_rows:
+            return table, 0, decided
+        runs, bounds, stored = self._keyed_plan(table, chunk, join, reference)
+        keys, rows = _key_sampler(table, join), _row_sampler(table)
+        written = 0
+        with _PartitionStager(table, self.sort_fields(), _target_file_rows(table, chunk)) as stager:
+            staged: list[_StagedPartition] = []
+            originals: list[Any] = []
+            rewritten: list[_StagedPartition] = []
+            for partition, run in runs:
+                run = _checked_keys(run, join)
+                identity = _partition_identity(_partition_key(table, partition).partition)
+                carried = (
+                    decided.keys if decided is not None and decided.identity == identity else None
+                )
+                if carried is not None:
+                    # The carried keys are scanned against the run's, whose
+                    # table is the one hashed: hashing every key the partition
+                    # settled for each chunk made a long partition quadratic.
+                    run = anti_join(run, semi_join(carried, run, join), join)
+                settled = _key_columns(run, join)
+                decided = _Decided(
+                    identity,
+                    settled if carried is None else pyarrow.concat_tables([carried, settled]),
+                )
+                fresh, changed, replaced, emptied = _changed_rows(
+                    table, keys, rows, run, stored.pop(identity, ()), join
+                )
+                if changed:
+                    # Every file here holds a row the chunk replaces, and
+                    # `emptied` names those it replaces whole, so none is read
+                    # by its keys again first.
+                    deleted, kept = self._rewritten_without(
+                        table,
+                        changed,
+                        stager,
+                        lambda held, replaced=replaced: anti_join(held, replaced, join),
+                        doomed=lambda data_file, emptied=emptied: data_file.file_path in emptied,
+                    )
+                    originals.extend(deleted)
+                    rewritten.extend(kept)
+                if fresh.num_rows:
+                    staged.append(_stage_partition(stager, partition, fresh))
+                    written += fresh.num_rows
+                del run, fresh
+            table = self._commit_replacement(
+                table,
+                stager,
+                originals,
+                [*rewritten, *staged],
+                reference,
+                properties,
+                rebuild=False,
+                conflicts=bounds,
+            )
+        LOGGER.debug(
+            "%s merged %d of a chunk's %d rows, rewriting %d files",
+            self.identifier,
+            written,
+            chunk.num_rows,
+            len(originals),
+        )
+        return table, written, decided
+
+    def _keyed_plan(
+        self, table: Any, chunk: pyarrow.Table, join: Sequence[str], reference: str
+    ) -> tuple[Iterator[tuple[dict[str, Any], Any]], Any, dict[tuple[Any, ...], list[Any]]]:
+        """What a keyed chunk reads: its partitions, their key bounds, their stored files.
+
+        `(runs, bounds, stored files by partition)`, planned once for the
+        chunk by `_partition_key_bounds` on the head as it is now: the stream
+        was spilled whole before the first chunk, and a head read before that
+        would call a commit landed meanwhile under these bounds a conflict.
+        """
+        _reloaded(table)
+        runs = _partition_runs(table, chunk)
+        # Refused before anything is planned: a null or NaN key has no bound
+        # and no match, and each partition's rows are checked again as they
+        # are staged, where a key that recurs keeps its first row.
+        _validate_merge_keys(chunk, join)
+        bounds = _partition_key_bounds(
+            chunk, _partition_columns(table), _partition_sources(table, chunk), join
+        )
+        scan = self._branch_scan(table, table.scan(row_filter=bounds), reference)
+        return runs, bounds, _tasks_by_partition(table, scan.plan_files())
 
     def _replace_where(
         self,
@@ -819,119 +1024,43 @@ class IcebergDataset(Dataset):
         self,
         table: Any,
         chunk: pyarrow.Table,
-        join: Sequence[str],
         reference: str,
         properties: Mapping[str, str],
         replaced: set[tuple[Any, ...]],
     ) -> tuple[Any, int]:
-        """One chunk staged, its stored rows taken out, and both committed.
+        """One chunk staged, the partitions it first touches emptied, and both committed.
 
         `(the table after the commit, the rows landed)`. `replaced` is what
-        this write has already emptied, so a keyless chunk empties a partition
-        the first time it touches it and adds to it after that.
+        this write has already emptied, so a chunk empties a partition the
+        first time it touches it and adds to it after that.
         """
         if not chunk.num_rows:
             return table, 0
+        # Planned on the head as it is now, for the reason `_keyed_plan` gives.
+        _reloaded(table)
         with _PartitionStager(table, self.sort_fields(), _target_file_rows(table, chunk)) as stager:
-            if join:
-                staged, originals, rewritten, landed, conflicts = self._replace_keys(
-                    table, chunk, join, reference, stager
-                )
-            else:
-                staged = list(_stage_chunk(table, chunk, stager))
-                fresh = [
-                    part for part in staged if _partition_identity(part.partition) not in replaced
-                ]
-                originals = _partition_data_files(table, fresh, reference) if fresh else []
-                replaced.update(_partition_identity(part.partition) for part in fresh)
-                rewritten = []
-                landed = chunk.num_rows
-                # The partitions this chunk empties, as the rows they hold: a
-                # bound on each partition source, widened to the hours or days
-                # a time transform partitions by, and no term at all for a
-                # source no range can name, which is the safe direction.
-                sources = _partition_sources(table, chunk)
-                conflicts = _key_bounds(
-                    chunk, list(sources), {column: unit for column, unit in sources.items() if unit}
-                )
+            staged = list(_stage_chunk(table, chunk, stager))
+            fresh = [part for part in staged if _partition_identity(part.partition) not in replaced]
+            originals = _partition_data_files(table, fresh, reference) if fresh else []
+            replaced.update(_partition_identity(part.partition) for part in fresh)
+            # The partitions this chunk empties, as the rows they hold: a
+            # bound on each partition's sources, widened to the hours or days
+            # a time transform partitions by, and no term at all for a source
+            # no range can name, which is the safe direction.
+            conflicts = _partition_key_bounds(
+                chunk, _partition_columns(table), _partition_sources(table, chunk), ()
+            )
             table = self._commit_replacement(
                 table,
                 stager,
                 originals,
-                [*rewritten, *staged],
+                staged,
                 reference,
                 properties,
                 rebuild=False,
                 conflicts=conflicts,
             )
-        return table, landed
-
-    def _replace_keys(
-        self,
-        table: Any,
-        chunk: pyarrow.Table,
-        join: Sequence[str],
-        reference: str,
-        stager: _PartitionStager,
-    ) -> tuple[list[_StagedPartition], list[Any], list[_StagedPartition], int, Any]:
-        """Stage a keyed chunk one partition at a time, taking its keys out as it goes.
-
-        `(staged, originals, rewritten, landed, bounds)`: the chunk's files,
-        the stored files to delete, the files that stand in for them, the rows
-        the chunk lands, and the predicate the stored files were planned by --
-        which is also what a concurrent commit is checked against, since a
-        row landed under it since the plan is one this chunk may have had to
-        replace. A key is scoped to its transformed partition, so the
-        files a partition's keys are taken out of are that partition's own,
-        planned once for the chunk: only files whose key bounds overlap the
-        chunk's are planned, and only the partitions the chunk carries are
-        read. What this holds at once is one partition of the chunk and one
-        stored file of it, never the table.
-        """
-        partitions = _partition_columns(table)
-        if partitions:
-            runs = _partition_run_tables(chunk, partitions)
-        else:
-            if not table.spec().is_unpartitioned():
-                raise ValueError(
-                    f"{table.spec()} names a transform with no Arrow form, so this write "
-                    "cannot tell which partition a row belongs to"
-                )
-            runs = iter([({}, chunk)])
-        # Refused before anything is planned: a null or NaN key has no bound
-        # and no match, and each partition's rows are checked again as they
-        # are staged, where a key that recurs keeps its first row.
-        _validate_merge_keys(chunk, join)
-        sources = _partition_sources(table, chunk)
-        widen = {column: unit for column, unit in sources.items() if unit}
-        bounds = _key_bounds(chunk, list(dict.fromkeys([*sources, *join])), widen)
-        scan = self._branch_scan(table, table.scan(row_filter=bounds), reference)
-        stored = _tasks_by_partition(table, scan.plan_files())
-        staged: list[_StagedPartition] = []
-        originals: list[Any] = []
-        rewritten: list[_StagedPartition] = []
-        landed = 0
-        for partition, run in runs:
-            run = _checked_keys(run, join)
-            if not run.num_rows:
-                continue
-            staged.append(_stage_partition(stager, partition, run))
-            landed += run.num_rows
-            identity = _partition_identity(_partition_key(table, partition).partition)
-            tasks = stored.pop(identity, ())
-            if tasks:
-                keys = run.select(list(join))
-                deleted, replaced = self._rewritten_without(
-                    table,
-                    tasks,
-                    stager,
-                    lambda rows, keys=keys: anti_join(rows, keys, join),
-                    needs=join,
-                )
-                originals.extend(deleted)
-                rewritten.extend(replaced)
-            del run
-        return staged, originals, rewritten, landed, bounds
+        return table, chunk.num_rows
 
     def _rewritten_without(
         self,
@@ -1050,8 +1179,14 @@ class IcebergDataset(Dataset):
         one day fails because another day landed beside it. The same
         predicate's partition projection is what prunes the manifests the
         overwrite rewrites, beside the partitions of the files it deletes.
+        An append that declares one -- the rows a keyed append read to decide
+        what it adds -- is validated the same way, and is still an append. A
+        write that read the table and found nothing to commit is validated
+        too, against the head it is about to report success on.
         """
         if not force_overwrite and not originals and not any(part.data_files for part in additions):
+            if conflicts is not None:
+                _unchanged_since_plan(table, reference, conflicts)
             return table
 
         def commit(current: Any, summary: Mapping[str, str]) -> None:
@@ -1071,7 +1206,7 @@ class IcebergDataset(Dataset):
                                 for data_file in part.data_files:
                                     overwrite.append_data_file(data_file)
                     else:
-                        with _append_files(transaction, reference, summary) as append:
+                        with _append_files(transaction, reference, summary, conflicts) as append:
                             for part in additions:
                                 for data_file in part.data_files:
                                     append.append_data_file(data_file)
@@ -1120,6 +1255,7 @@ class IcebergDataset(Dataset):
         schema: Any = None,
         commit_row_size: int | None = None,
         *,
+        merge_by: bool | Sequence[str] | None = None,
         commit_batch_num: int | None = None,
         merge_schema: bool | None = None,
         branch: str | None = None,
@@ -1128,8 +1264,25 @@ class IcebergDataset(Dataset):
     ) -> int:
         """Append a stream, then expire snapshots under the configured cutoff.
 
-        Blind: every row lands, whatever the table already holds. A write that
-        has to replace what it carries is `overwrite_arrow_reader`.
+        Only the differences: `merge_by` -- the primary key when the shape
+        declares one and nothing names another, True to require it, or the
+        columns to match on -- lands only the rows whose key their transformed
+        partition does not hold, and never rewrites or deletes a stored file;
+        a stored row whose values differ stays as it is, which is what
+        `merge_arrow_reader` replaces. A key that recurs within the stream
+        keeps its first row in the table's sort order, and a replay appends
+        nothing and commits nothing. `merge_by=False`, or a shape with no
+        primary key, appends every row blindly. Returns the rows added.
+
+        One commit per bounded chunk. What is stored is read by partition,
+        never by table: one plan over the partitions the chunk carries, each
+        bounded by its own key range, and of each planned file only the key
+        columns, until no row is left to decide. The rows added land in the
+        table's sort order. The commit declares the partitions and key ranges
+        it read: a concurrent commit that landed or removed rows under them is
+        a conflict raised for a fresh plan -- under the table's serializable
+        isolation, Iceberg's default; a table declaring `snapshot` isolation
+        in `write.delete.isolation-level` accepts the concurrent key beside it.
         """
         create_with = schema if self._merge_schema_enabled(merge_schema) else None
         with self._write(snapshot_expiry, create_with=create_with):
@@ -1137,6 +1290,7 @@ class IcebergDataset(Dataset):
                 source,
                 schema,
                 commit_row_size,
+                merge_by=merge_by,
                 commit_batch_num=commit_batch_num,
                 merge_schema=merge_schema,
                 branch=branch,
@@ -1149,6 +1303,7 @@ class IcebergDataset(Dataset):
         schema: Any = None,
         commit_row_size: int | None = None,
         *,
+        merge_by: bool | Sequence[str] | None = None,
         commit_batch_num: int | None = None,
         merge_schema: bool | None = None,
         branch: str | None = None,
@@ -1161,39 +1316,147 @@ class IcebergDataset(Dataset):
             table = self.get_or_create_table()
             reference = self._branch_name(branch)
             self._branch_head(table, reference)
+            join = self.merge_columns(merge_by)
             target = self._write_field(schema, merge_schema)
             table = self.iceberg_table
             reader = target.apply_arrow_reader(source, safe=False)
             snapshot = properties or {}
-            inserted = 0
-            for chunk in arrow_chunks(reader, rows, batches):
-                table = self._append_chunk(table, chunk, reference, snapshot)
-                inserted += chunk.num_rows
-                # `arrow_chunks` accumulates the next chunk while this name
-                # still holds the last one.
-                del chunk
-            return inserted
+            with self._sorted_chunks(reader, table, rows, batches) as chunks:
+                if join:
+                    return self._append_keys(table, chunks, join, reference, snapshot)
+                inserted = 0
+                for chunk in chunks:
+                    table = self._append_chunk(table, chunk, reference, snapshot)
+                    inserted += chunk.num_rows
+                    # The chunker accumulates the next chunk while this name
+                    # still holds the last one.
+                    del chunk
+                return inserted
         finally:
             _close_write_source(source, reader)
+
+    def _append_keys(
+        self,
+        table: Any,
+        chunks: Iterable[pyarrow.Table],
+        join: Sequence[str],
+        reference: str,
+        properties: Mapping[str, str],
+    ) -> int:
+        """Append each chunk's rows whose key their partition does not hold: the rows added.
+
+        A chunk's commit is stored before the next chunk plans, so a key an
+        earlier chunk appended is one the later chunk finds held, and a key
+        keeps its first row in the table's sort order.
+        """
+        appended = 0
+        for chunk in chunks:
+            table, added = self._append_key_chunk(table, chunk, join, reference, properties)
+            appended += added
+            # The chunker accumulates the next chunk while this name still
+            # holds the last one.
+            del chunk
+        self.__dict__["iceberg_table"] = table
+        return appended
+
+    def _append_key_chunk(
+        self,
+        table: Any,
+        chunk: pyarrow.Table,
+        join: Sequence[str],
+        reference: str,
+        properties: Mapping[str, str],
+    ) -> tuple[Any, int]:
+        """One chunk's absent keys, staged one partition at a time and appended in one commit.
+
+        `(the table after the commit, the rows added)`. The stored files are
+        planned once for the chunk, by `_partition_key_bounds`, and a
+        partition reads only its own: what this holds at once is one
+        partition of the chunk and one batch of one stored file's keys.
+        """
+        if not chunk.num_rows:
+            return table, 0
+        runs, bounds, stored = self._keyed_plan(table, chunk, join, reference)
+        sampler = _key_sampler(table, join)
+        appended = 0
+        with _PartitionStager(table, self.sort_fields(), _target_file_rows(table, chunk)) as stager:
+            staged: list[_StagedPartition] = []
+            for partition, run in runs:
+                run = _checked_keys(run, join)
+                identity = _partition_identity(_partition_key(table, partition).partition)
+                fresh = _absent_rows(sampler, table.io, run, stored.pop(identity, ()), join)
+                if fresh.num_rows:
+                    staged.append(_stage_partition(stager, partition, fresh))
+                    appended += fresh.num_rows
+                del run, fresh
+            table = self._commit_replacement(
+                table, stager, [], staged, reference, properties, rebuild=False, conflicts=bounds
+            )
+        LOGGER.debug(
+            "%s appended %d of a chunk's %d rows", self.identifier, appended, chunk.num_rows
+        )
+        return table, appended
 
     def sorted(self, chunk: pyarrow.Table) -> pyarrow.Table:
         """`chunk` in `sort_by` order, or exactly as it came when nothing says."""
         fields = self.sort_fields()
         if not fields or chunk.num_rows < 2 or in_sort_order(chunk, fields):
             return chunk
-        return chunk.sort_by(fields)
+        return sorted_rows(chunk, fields)
 
     def _commit_limits(
         self,
         requested_rows: int | None,
         requested_batches: int | None,
-    ) -> tuple[int | None, int]:
-        """The row and batch bounds one streaming commit may retain."""
+    ) -> tuple[int | None, int | None]:
+        """The row and batch bounds one streaming commit may retain; None bounds nothing."""
         rows = self.commit_row_size if requested_rows is None else requested_rows
         batches = self.commit_batch_num if requested_batches is None else requested_batches
         if rows is not None:
             rows = _positive_int(rows, "commit_row_size")
-        return rows, _positive_int(batches, "commit_batch_num")
+        if batches is not None:
+            batches = _positive_int(batches, "commit_batch_num")
+        return rows, batches
+
+    @contextmanager
+    def _sorted_chunks(
+        self,
+        reader: pyarrow.RecordBatchReader,
+        table: Any,
+        rows: int | None,
+        batches: int | None,
+    ) -> Iterator[Iterator[pyarrow.Table]]:
+        """`reader` as bounded chunks in partition order, each partition in the table's sort order.
+
+        Every write lays its rows out this way, whatever order its producer
+        hands them over in, so each partition's files hold disjoint, ordered
+        ranges: an ordered read concatenates them rather than merging them,
+        and a filter on a sort column skips row groups. The stream is spilled
+        to a local Arrow folder dataset under `spill_directory` -- one sorted
+        IPC run per bounded chunk and partition, in one folder per partition
+        -- and read back one partition at a time, its runs merged with at
+        most `SORT_MERGE_FAN_IN` open, and cut into chunks of `rows` rows, or
+        of the largest chunk spilled when only `batches` bounds them. What
+        this holds is one chunk and one merge step, never the stream. A
+        dictionary column is spilled as the values it encodes, which is what
+        Iceberg stores. A table with neither partitions nor a sort order has
+        nothing to lay out and streams through.
+        """
+        sort_fields = self.sort_fields()
+        partitions = _partition_columns(table)
+        if not partitions and not sort_fields:
+            yield arrow_chunks(reader, rows, batches)
+            return
+        with tempfile.TemporaryDirectory(
+            prefix="rekep-iceberg-spill-", dir=self.spill_directory
+        ) as spill:
+            chunks = _spilled_chunks(reader, spill, partitions, sort_fields, rows, batches)
+            try:
+                yield chunks
+            finally:
+                # Its runs are memory-mapped, and a mapped file is one Windows
+                # will not let the folder's removal delete.
+                chunks.close()
 
     def sort_fields(self) -> list[tuple[str, str]]:
         """Physical Arrow sort fields, with normalized directions."""
@@ -2113,8 +2376,20 @@ def _merge_task_batches(
 def _merge_batch_streams(
     streams: Sequence[Iterator[pyarrow.RecordBatch]],
     columns: Sequence[tuple[str, str]],
+    block_rows: int = MERGE_BLOCK_ROWS,
 ) -> Iterator[pyarrow.RecordBatch]:
-    """K-way merge sorted batch streams without copying their rows."""
+    """K-way merge of sorted batch streams, a block at a time.
+
+    Each step windows every stream's current batch to its share of
+    `block_rows`, takes from each the rows that sort no later than the
+    least of the windows' last rows -- every row that can precede anything
+    still unread -- and sorts that block once with Arrow's stable sort. A step
+    consumes at least one whole window, so the work in Python is per window,
+    never per row, however finely the streams interleave: merged one slice
+    per stream switch, 150,000 shuffled rows cut into 33,000 slices and took
+    7.6 s before anything read them. Equal keys keep stream order, and within
+    a stream their own; memory holds one batch per stream and one block.
+    """
     batches: list[pyarrow.RecordBatch | None] = [None] * len(streams)
     offsets = [0] * len(streams)
 
@@ -2129,27 +2404,53 @@ def _merge_batch_streams(
         return True
 
     try:
-        for index in range(len(streams)):
-            advance(index)
         while True:
             live = [index for index in range(len(streams)) if advance(index)]
             if not live:
                 return
-            starts = {
-                index: _row_key(batches[index], columns, offsets[index])  # type: ignore[arg-type]
+            window = max(1, block_rows // len(live))
+            ends = {
+                index: min(batches[index].num_rows, offsets[index] + window)  # type: ignore[union-attr]
                 for index in live
             }
-            chosen = min(live, key=lambda index: (starts[index], index))
-            others = [starts[index] for index in live if index != chosen]
-            batch = batches[chosen]
-            assert batch is not None
-            stop = (
-                batch.num_rows
-                if not others
-                else _upper_bound(batch, columns, min(others), offsets[chosen])
-            )
-            yield batch.slice(offsets[chosen], stop - offsets[chosen])
-            offsets[chosen] = stop
+            if len(live) == 1:
+                (only,) = live
+                batch = batches[only]
+                assert batch is not None
+                yield batch.slice(offsets[only], ends[only] - offsets[only])
+                offsets[only] = ends[only]
+                continue
+            lasts = {
+                index: _row_key(batches[index], columns, ends[index] - 1)  # type: ignore[arg-type]
+                for index in live
+            }
+            chosen = min(live, key=lambda index: (lasts[index], index))
+            bound = lasts[chosen]
+            pieces = []
+            for index in live:
+                batch = batches[index]
+                assert batch is not None
+                if index == chosen:
+                    stop = ends[index]
+                elif index < chosen:
+                    # Its window's last row sorts after the bound, so every
+                    # row equal to the bound is in the window, and precedes
+                    # the chosen's.
+                    stop = _upper_bound(batch, columns, bound, offsets[index], ends[index])
+                else:
+                    # Rows equal to the bound wait: the chosen stream may hold
+                    # more of them past its window, and those come first.
+                    stop = _lower_bound(batch, columns, bound, offsets[index], ends[index])
+                if stop > offsets[index]:
+                    pieces.append(batch.slice(offsets[index], stop - offsets[index]))
+                    offsets[index] = stop
+            if len(pieces) == 1:
+                yield pieces[0]
+                continue
+            block = pyarrow.Table.from_batches(pieces)
+            if not in_sort_order(block, columns):
+                block = sorted_rows(block, columns)
+            yield from block.to_batches()
     finally:
         for stream in streams:
             close = getattr(stream, "close", None)
@@ -2209,7 +2510,7 @@ def _externally_sorted_task_batches(
                     continue
                 table = pyarrow.Table.from_batches([batch], schema=reader.schema)
                 if not in_sort_order(table, columns):
-                    table = table.sort_by(list(columns))
+                    table = sorted_rows(table, columns)
                 path = os.path.join(directory, f"0-{index}.arrow")
                 _write_ipc_batches(path, reader.schema, table.to_batches())
                 runs.append(path)
@@ -2224,6 +2525,7 @@ def _merged_ipc_batches(
     schema: pyarrow.Schema,
     runs: list[str],
     columns: Sequence[tuple[str, str]],
+    block_rows: int = MERGE_BLOCK_ROWS,
 ) -> Iterator[pyarrow.RecordBatch]:
     """Merge sorted IPC runs with at most `SORT_MERGE_FAN_IN` live batches."""
     generation = 1
@@ -2236,7 +2538,7 @@ def _merged_ipc_batches(
                 continue
             target = os.path.join(directory, f"{generation}-{index // SORT_MERGE_FAN_IN}.arrow")
             streams = [iter(_ipc_batches(path)) for path in group]
-            _write_ipc_batches(target, schema, _merge_batch_streams(streams, columns))
+            _write_ipc_batches(target, schema, _merge_batch_streams(streams, columns, block_rows))
             for path in group:
                 os.unlink(path)
             merged.append(target)
@@ -2246,7 +2548,7 @@ def _merged_ipc_batches(
         yield from _ipc_batches(runs[0])
     elif runs:
         streams = [iter(_ipc_batches(path)) for path in runs]
-        yield from _merge_batch_streams(streams, columns)
+        yield from _merge_batch_streams(streams, columns, block_rows)
 
 
 def _write_ipc_batches(
@@ -2319,12 +2621,31 @@ def _upper_bound(
     columns: Sequence[str] | Sequence[tuple[str, str]],
     sought: tuple[Any, ...],
     start: int,
+    stop: int | None = None,
 ) -> int:
-    """First row whose lexicographic key is strictly greater than `sought`."""
-    low, high = start, batch.num_rows
+    """First row of `[start, stop)` whose lexicographic key is strictly greater than `sought`."""
+    low, high = start, batch.num_rows if stop is None else stop
     while low < high:
         middle = (low + high) // 2
         if _row_key(batch, columns, middle) <= sought:
+            low = middle + 1
+        else:
+            high = middle
+    return low
+
+
+def _lower_bound(
+    batch: pyarrow.RecordBatch,
+    columns: Sequence[str] | Sequence[tuple[str, str]],
+    sought: tuple[Any, ...],
+    start: int,
+    stop: int,
+) -> int:
+    """First row of `[start, stop)` whose lexicographic key is not less than `sought`."""
+    low, high = start, stop
+    while low < high:
+        middle = (low + high) // 2
+        if _row_key(batch, columns, middle) < sought:
             low = middle + 1
         else:
             high = middle
@@ -2440,6 +2761,204 @@ def _kept_of(
         read += rows.num_rows
         kept += keep(rows).num_rows
     return read, kept
+
+
+def _key_sampler(table: Any, join: Sequence[str]) -> Any:
+    """A scan of the key columns alone, which is all a keyed append reads of a stored file."""
+    from pyiceberg.expressions import AlwaysTrue
+    from pyiceberg.io.pyarrow import ArrowScan
+
+    keys = table.schema().select(*join, case_sensitive=True)
+    return ArrowScan(table.metadata, table.io, keys, AlwaysTrue(), True)
+
+
+def _absent_rows(
+    sampler: Any, io: Any, rows: pyarrow.Table, tasks: Iterable[Any], join: Sequence[str]
+) -> pyarrow.Table:
+    """`rows` without the keys `tasks`' files hold, read until no row is left to decide."""
+    from pyiceberg.expressions import AlwaysTrue
+    from pyiceberg.table import FileScanTask
+
+    for task in tasks:
+        if not rows.num_rows:
+            break
+        whole = FileScanTask(task.file, task.delete_files, AlwaysTrue())
+        rows = _without_keys_of(sampler, io, whole, rows, join)
+    return rows
+
+
+def _stored_form(table: Any, schema: pyarrow.Schema) -> Callable[[pyarrow.Table], pyarrow.Table]:
+    """Rows of `schema` as a file of `table` holds them, under the names a scan reads them by.
+
+    The projection `_PartitionStager` writes every batch through, onto the
+    table's schema rather than the file's sanitized one; resolved once, for
+    every batch of `schema` after.
+    """
+    from pyiceberg.io.pyarrow import _to_requested_schema, pyarrow_to_schema
+
+    requested = table.schema()
+    downcast = _downcasts_ns()
+    incoming = pyarrow_to_schema(
+        schema,
+        name_mapping=requested.name_mapping,
+        downcast_ns_timestamp_to_us=downcast,
+        format_version=table.metadata.format_version,
+    )
+
+    def stored(rows: pyarrow.Table) -> pyarrow.Table:
+        return pyarrow.Table.from_batches(
+            [
+                _to_requested_schema(
+                    requested_schema=requested,
+                    file_schema=incoming,
+                    batch=batch,
+                    downcast_ns_timestamp_to_us=downcast,
+                )
+                for batch in rows.to_batches()
+            ]
+        )
+
+    return stored
+
+
+def _row_sampler(table: Any) -> Any:
+    """A scan of whole rows, which is what a merge reads of a file holding a key it carries."""
+    from pyiceberg.expressions import AlwaysTrue
+    from pyiceberg.io.pyarrow import ArrowScan
+
+    return ArrowScan(table.metadata, table.io, table.schema(), AlwaysTrue(), True)
+
+
+@dataclasses.dataclass(frozen=True)
+class _Decided:
+    """The keys one write has settled in one partition, carried to its next chunk."""
+
+    identity: tuple[Any, ...]
+    keys: pyarrow.Table
+
+
+def _changed_rows(
+    table: Any,
+    keys: Any,
+    rows: Any,
+    run: pyarrow.Table,
+    tasks: Iterable[Any],
+    join: Sequence[str],
+) -> tuple[pyarrow.Table, list[Any], pyarrow.Table, set[str]]:
+    """`run`'s differences from one partition's stored files.
+
+    `(rows to write, files to rewrite, keys they are rewritten without, files
+    emptied)`: the rows whose key no stored row holds or whose stored row
+    holds other values, the planned files holding one of those, those keys --
+    as `comparable` storage, since a UUID key has no grouping kernel -- and
+    the paths of the files every row of which they replace, which a rewrite
+    deletes unread. A file is read by its key columns first and whole only
+    when it holds a key `run` carries; a key stored twice, in one file or
+    two, is replaced wherever it is, so the partition holds it once after.
+    """
+    from pyiceberg.expressions import AlwaysTrue
+    from pyiceberg.table import FileScanTask
+
+    held: list[tuple[Any, pyarrow.Table]] = []
+    differing: list[pyarrow.Table] = []
+    stored_form = None
+    for task in tasks:
+        whole = FileScanTask(task.file, task.delete_files, AlwaysTrue())
+        found = _held_keys(keys, table.io, whole, run, join)
+        if found is None:
+            continue
+        held.append((task, found))
+        stored_form = stored_form or _stored_form(table, run.schema)
+        differing.extend(_differing_keys(rows, table.io, whole, run, join, stored_form))
+    if not held:
+        return run, [], _key_columns(run, join).slice(0, 0), set()
+    found = pyarrow.concat_tables([keys for _, keys in held])
+    counted = found.group_by(list(join), use_threads=False).aggregate([([], "count_all")])
+    recurring = counted.filter(pyarrow.compute.greater(counted.column("count_all"), 1))
+    replaced = pyarrow.concat_tables([*differing, recurring.select(list(join))])
+    same = anti_join(counted.select(list(join)), replaced, join)
+    files, emptied = [], set()
+    for task, keys in held:
+        taken = semi_join(keys, replaced, join).num_rows
+        if taken:
+            files.append(task)
+            if taken == task.file.record_count and not task.delete_files:
+                emptied.add(task.file.file_path)
+    return anti_join(run, same, join), files, replaced, emptied
+
+
+def _key_columns(rows: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
+    """`rows`' key columns alone, as the `comparable` storage every key join reads."""
+    return pyarrow.table({name: comparable(rows.column(name)) for name in join})
+
+
+def _held_keys(
+    scan: Any, io: Any, task: Any, run: pyarrow.Table, join: Sequence[str]
+) -> pyarrow.Table | None:
+    """The keys of `run` one planned file holds, once for every row holding one, or None."""
+    held = []
+    batches = _task_batches(scan, io, (task,))
+    try:
+        for batch in batches:
+            found = semi_join(pyarrow.Table.from_batches([batch]), run, join)
+            if found.num_rows:
+                held.append(_key_columns(found, join))
+    finally:
+        batches.close()
+    return pyarrow.concat_tables(held) if held else None
+
+
+def _differing_keys(
+    scan: Any,
+    io: Any,
+    task: Any,
+    run: pyarrow.Table,
+    join: Sequence[str],
+    stored_form: Callable[[pyarrow.Table], pyarrow.Table],
+) -> list[pyarrow.Table]:
+    """The keys of `run` whose row one planned file holds with other values.
+
+    A row is compared as a staged file would hold it rather than as it
+    arrived: PyIceberg's projection onto the table schema is what decides,
+    and it writes a null list of structs as an empty one, so the arriving null and the
+    stored `[]` are the same row. One stored batch at a time, and its matches
+    `COMPARE_ROW_SIZE` at a time.
+    """
+    differing = []
+    batches = _task_batches(scan, io, (task,))
+    try:
+        for batch in batches:
+            stored = pyarrow.Table.from_batches([batch])
+            ours, theirs = key_pairs(stored, run, join)
+            for start in range(0, len(ours), COMPARE_ROW_SIZE):
+                held = ours.slice(start, COMPARE_ROW_SIZE)
+                arriving = theirs.slice(start, COMPARE_ROW_SIZE)
+                same = equal_rows(stored.take(held), stored_form(run.take(arriving)))
+                changed = _key_columns(stored.take(held.filter(pyarrow.compute.invert(same))), join)
+                if changed.num_rows:
+                    differing.append(changed)
+    finally:
+        batches.close()
+    return differing
+
+
+def _without_keys_of(
+    scan: Any, io: Any, task: Any, rows: pyarrow.Table, join: Sequence[str]
+) -> pyarrow.Table:
+    """`rows` without the keys one planned file holds, read a batch at a time.
+
+    A function of its own for the reason `_kept_of` is one: the last batch it
+    read dies with it.
+    """
+    batches = _task_batches(scan, io, (task,))
+    try:
+        for batch in batches:
+            rows = anti_join(rows, pyarrow.Table.from_batches([batch]), join)
+            if not rows.num_rows:
+                break
+    finally:
+        batches.close()
+    return rows
 
 
 def _task_batches(scan: Any, io: Any, tasks: Sequence[Any]) -> Iterator[pyarrow.RecordBatch]:
@@ -2619,6 +3138,193 @@ def _key_bounds(
     if not terms:
         return _always_true()
     return And(*terms) if len(terms) > 1 else terms[0]
+
+
+def _partition_key_bounds(
+    chunk: pyarrow.Table,
+    partitions: Sequence[_PartitionColumn] | None,
+    sources: Mapping[str, str | None],
+    join: Sequence[str],
+) -> Any:
+    """`_key_bounds` taken over each transformed partition `chunk` carries.
+
+    One `Or` term per partition, each bounding the partition's sources and
+    keys by that partition's own rows, so a plan opens the partitions the
+    chunk carries and never one between them -- a chunk holding a pinned
+    epoch hour and a day of 2026 plans those hours, not the fifty years
+    between -- and within each only the files whose key bounds overlap its
+    keys. A source a partition holds only nulls of is `IsNull`. The rules of
+    `_key_bounds` hold per partition: a column no kernel can bound, or a
+    nanosecond instant, contributes no term, which is the wider and safe
+    direction; a kernel that refuses the grouping answers the chunk's bounds.
+    """
+    columns = list(dict.fromkeys([*sources, *join]))
+    widen = {column: unit for column, unit in sources.items() if unit}
+    if not partitions:
+        return _key_bounds(chunk, columns, widen)
+    from pyiceberg.expressions import And, GreaterThanOrEqual, IsNull, LessThan, LessThanOrEqual, Or
+
+    compute = pyarrow.compute
+    names = [f"partition_{index}" for index in range(len(partitions))]
+    arrays = list(_partition_values(chunk, partitions))
+    bounded: list[str] = []
+    for column in columns:
+        values = comparable(chunk.column(column))
+        kind = values.type
+        if not _boundable(kind):
+            continue
+        bounded.append(column)
+        arrays.append(values)
+    labels = [f"bound_{index}" for index in range(len(bounded))]
+    grouped = pyarrow.Table.from_arrays(arrays, names=[*names, *labels])
+    try:
+        totals = grouped.group_by(names, use_threads=False).aggregate(
+            [(label, kernel) for label in labels for kernel in ("min", "max")]
+        )
+        lows, highs = {}, {}
+        for column, label in zip(bounded, labels, strict=True):
+            lower, upper = totals.column(f"{label}_min"), totals.column(f"{label}_max")
+            if unit := widen.get(column):
+                lower = compute.floor_temporal(lower, unit=unit)
+                upper = compute.ceil_temporal(upper, unit=unit, ceil_is_strictly_greater=True)
+            lows[column], highs[column] = lower.to_pylist(), upper.to_pylist()
+    except (pyarrow.ArrowInvalid, pyarrow.ArrowNotImplementedError, pyarrow.ArrowTypeError):
+        return _key_bounds(chunk, columns, widen)
+    ranges = []
+    for index in range(totals.num_rows):
+        terms = []
+        for column in bounded:
+            lower, upper = lows[column][index], highs[column][index]
+            if lower is None or upper is None:
+                if column in sources:
+                    terms.append(IsNull(column))
+                continue
+            above = GreaterThanOrEqual(column, lower)
+            below = LessThan(column, upper) if column in widen else LessThanOrEqual(column, upper)
+            terms.append(And(above, below))
+        if not terms:
+            return _always_true()
+        ranges.append(And(*terms) if len(terms) > 1 else terms[0])
+    if not ranges:
+        return _always_true()
+    # One balanced `Or`, which binds at any width: see `_partition_data_files`.
+    return Or(*ranges) if len(ranges) > 1 else ranges[0]
+
+
+def _spilled_chunks(
+    reader: pyarrow.RecordBatchReader,
+    spill: str,
+    partitions: Sequence[_PartitionColumn] | None,
+    sort_fields: Sequence[tuple[str, str]],
+    rows: int | None,
+    batches: int | None,
+) -> Iterator[pyarrow.Table]:
+    """`reader` through the local Arrow folder dataset under `spill`: see `_sorted_chunks`."""
+    schema = _without_dictionaries(reader.schema)
+    folders: dict[tuple[Any, ...], tuple[dict[str, Any], str, list[str]]] = {}
+    largest = 0
+    for chunk in arrow_chunks(reader, rows, batches):
+        if schema is not reader.schema:
+            # An IPC file holds one dictionary per column, and batches that
+            # each brought their own are refused there.
+            chunk = chunk.cast(schema)
+        largest = max(largest, chunk.num_rows)
+        runs = _partition_run_tables(chunk, partitions) if partitions else iter([({}, chunk)])
+        for partition, run in runs:
+            if sort_fields and not in_sort_order(run, sort_fields):
+                run = sorted_rows(run, sort_fields)
+            identity = _partition_identity(partition)
+            if identity not in folders:
+                folder = os.path.join(spill, str(len(folders)))
+                os.mkdir(folder)
+                folders[identity] = (partition, folder, [])
+            _, folder, paths = folders[identity]
+            path = os.path.join(folder, f"0-{len(paths)}.arrow")
+            _write_ipc_batches(path, schema, run.to_batches())
+            paths.append(path)
+            del run
+        del chunk
+    if not folders:
+        return
+    LOGGER.debug(
+        "spilled %d partitions in %d sorted runs under %s",
+        len(folders),
+        sum(len(paths) for _, _, paths in folders.values()),
+        spill,
+    )
+
+    bound = rows or largest
+    # A merge step of half a chunk: what the merge holds beside the chunk it
+    # is filling is then half of one, whatever the commits are sized at.
+    block = min(MERGE_BLOCK_ROWS, max(1, bound // 2))
+
+    def merged() -> Iterator[pyarrow.RecordBatch]:
+        for _, folder, paths in sorted(
+            folders.values(), key=lambda held: _partition_order(held[0])
+        ):
+            if sort_fields:
+                yield from _merged_ipc_batches(folder, schema, paths, sort_fields, block)
+            else:
+                for path in paths:
+                    yield from _ipc_batches(path)
+
+    yield from arrow_chunks(merged(), bound, None)
+
+
+def _without_dictionaries(schema: pyarrow.Schema) -> pyarrow.Schema:
+    """`schema` with each dictionary column as the values it encodes, or itself when none is."""
+    if not any(pyarrow.types.is_dictionary(field.type) for field in schema):
+        return schema
+    return pyarrow.schema(
+        [
+            field.with_type(field.type.value_type)
+            if pyarrow.types.is_dictionary(field.type)
+            else field
+            for field in schema
+        ],
+        metadata=schema.metadata,
+    )
+
+
+def _partition_order(partition: Mapping[str, Any]) -> tuple[Any, ...]:
+    """A partition's place among the others: its values in spec order, nulls last."""
+    return tuple((value is None, value) for value in partition.values())
+
+
+def _partition_runs(table: Any, chunk: pyarrow.Table) -> Iterator[tuple[dict[str, Any], Any]]:
+    """`chunk` one transformed partition at a time, under the table's current spec."""
+    partitions = _partition_columns(table)
+    if partitions:
+        return _partition_run_tables(chunk, partitions)
+    if not table.spec().is_unpartitioned():
+        raise ValueError(
+            f"{table.spec()} names a transform with no Arrow form, so this write "
+            "cannot tell which partition a row belongs to"
+        )
+    return iter([({}, chunk)])
+
+
+def _boundable(kind: Any) -> bool:
+    """Whether a grouped minimum and maximum of `kind` makes a literal Iceberg keeps exact.
+
+    What `_key_bounds` bounds, spelled as types: no boolean, which is two
+    values and prunes nothing, no nanosecond instant, whose literal Iceberg
+    would round, and nothing nested, which has no order.
+    """
+    kinds = pyarrow.types
+    if (kinds.is_timestamp(kind) or kinds.is_time64(kind)) and kind.unit == "ns":
+        return False
+    return (
+        kinds.is_integer(kind)
+        or kinds.is_floating(kind)
+        or kinds.is_decimal(kind)
+        or kinds.is_temporal(kind)
+        or kinds.is_string(kind)
+        or kinds.is_large_string(kind)
+        or kinds.is_binary(kind)
+        or kinds.is_large_binary(kind)
+        or kinds.is_fixed_size_binary(kind)
+    )
 
 
 #: The Arrow rounding unit of each Iceberg time transform, for a bound on the
@@ -2881,7 +3587,7 @@ def _tasks_by_partition(table: Any, tasks: Iterable[Any]) -> dict[tuple[Any, ...
         spec_id = getattr(task.file, "spec_id", None)
         stored = specs.get(current.spec_id if spec_id is None else int(spec_id))
         if stored is None or not current.compatible_with(stored):
-            raise ValueError("keyed replace cannot mix incompatible live partition specs")
+            raise ValueError("a keyed write cannot mix incompatible live partition specs")
         grouped.setdefault(_partition_identity(task.file.partition), []).append(task)
     return grouped
 
@@ -3164,7 +3870,7 @@ class _PartitionStager:
         if self.partition is None:
             raise RuntimeError("start a staged partition before writing it")
         if self.sort_fields and not in_sort_order(chunk, self.sort_fields):
-            chunk = chunk.sort_by(list(self.sort_fields))
+            chunk = sorted_rows(chunk, self.sort_fields)
         offset = 0
         while offset < chunk.num_rows:
             available = self.file_row_size - self._file_rows
@@ -3356,14 +4062,73 @@ def _track_outputs() -> Any:
     return track_outputs()
 
 
-def _append_files(transaction: Any, reference: str, properties: Mapping[str, str]) -> Any:
+def _reloaded(table: Any) -> Any:
+    """`table` on the catalog's current head, still through the `FileIO` it was loaded with.
+
+    PyIceberg's `refresh` replaces the table's `FileIO` with the catalog's
+    newest, which would drop one a caller configured or injected; only the
+    metadata is taken here.
+    """
+    fresh = table.catalog.load_table(table.name())
+    table.metadata = fresh.metadata
+    table.metadata_location = fresh.metadata_location
+    return table
+
+
+def _unchanged_since_plan(table: Any, reference: str, conflicts: Any) -> None:
+    """Refuse a write that commits nothing when `conflicts` changed since its plan.
+
+    A keyed write that found every row it carries already held has nothing
+    to commit, so no commit validates it; but the head it read may have moved
+    -- a key it found held since deleted, a row since landed beside one it
+    left as it was -- and reporting success would lose a row. The check
+    PyIceberg runs on a retry, over the commits between the planned head and
+    the catalog's, raised as a stale plan. Loaded beside `table`, for the
+    reason `_paths_may_be_live` gives.
+    """
+    from pyiceberg.exceptions import CommitFailedException, ValidationException
+    from pyiceberg.table.snapshots import IsolationLevel, Operation
+    from pyiceberg.table.update.validate import (
+        _validate_added_data_files,
+        _validate_deleted_data_files,
+        _validate_no_new_delete_files,
+    )
+
+    planned = table.metadata.snapshot_by_name(reference)
+    current = table.catalog.load_table(table.name())
+    head = current.metadata.snapshot_by_name(reference)
+    if head is None or (planned is not None and planned.snapshot_id == head.snapshot_id):
+        return
+    try:
+        if current.metadata.isolation_level(Operation.DELETE) == IsolationLevel.SERIALIZABLE:
+            _validate_added_data_files(current, head, conflicts, planned)
+        _validate_no_new_delete_files(current, head, conflicts, None, planned)
+        _validate_deleted_data_files(current, head, conflicts, planned)
+    except ValidationException as error:
+        raise CommitFailedException(
+            f"branch {reference} has changed since this write was planned ({error}); "
+            "refresh and write again"
+        ) from error
+
+
+def _append_files(
+    transaction: Any, reference: str, properties: Mapping[str, str], conflicts: Any = None
+) -> Any:
     """The append producer PyIceberg would pick for this table's properties.
 
     Read from the table and not chosen here, because `MERGE_MANIFESTS` is a
     declaration about how the table commits and every writer through it
     honours the same one.
+
+    PyIceberg retries an append another writer beat without checking what
+    landed in between, which is right for a blind one and wrong for one that
+    decided what to add by reading the table: the retry would land a key the
+    other writer added. Given `conflicts`, the rows that read covered, the
+    retry is validated the way an overwrite's is -- rows added or removed
+    under them since the plan are refused -- and still commits an append.
     """
     from pyiceberg.table import TableProperties
+    from pyiceberg.table.update.snapshot import _SnapshotProducer
     from pyiceberg.utils.properties import property_as_bool
 
     update = transaction.update_snapshot(snapshot_properties=dict(properties), branch=reference)
@@ -3372,7 +4137,14 @@ def _append_files(transaction: Any, reference: str, properties: Mapping[str, str
         TableProperties.MANIFEST_MERGE_ENABLED,
         TableProperties.MANIFEST_MERGE_ENABLED_DEFAULT,
     )
-    return update.merge_append() if merged else update.fast_append()
+    producer = update.merge_append() if merged else update.fast_append()
+    if conflicts is not None:
+        # The predicate only scopes validation here: an append deletes nothing.
+        producer.delete_by_predicate(conflicts)
+        producer._validate_concurrency = types.MethodType(
+            _SnapshotProducer._validate_concurrency, producer
+        )
+    return producer
 
 
 def _target_file_rows(table: Any, rows: pyarrow.Table) -> int:

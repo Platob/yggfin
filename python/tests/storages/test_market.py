@@ -28,9 +28,11 @@ from rekep.pipeline import (
     BOOKS,
     EVENTS,
     FIX_MESSAGES,
+    FIX_MESSAGES_RAW,
     FLATTENED,
     FLATTENERS,
     HISTORY,
+    LOG_MESSAGES,
     SNAPSHOT_MILLIS,
     Landed,
     parse_books,
@@ -522,7 +524,7 @@ def test_books_answer_their_own_commit_even_when_the_cached_head_advances(
             # A retry after a lost acknowledgement can return a refreshed
             # table whose head includes a later writer. The books keep their
             # own commit's marker.
-            dataset.append_arrow_reader(dataset.read_arrow_reader())
+            dataset.append_arrow_reader(dataset.read_arrow_reader(), merge_by=False)
             dataset.refresh()
             assert dataset.iceberg_table.current_snapshot().snapshot_id != committed[-1]
         return count
@@ -630,6 +632,19 @@ LANDED = {
     "parse_executions": Landed(read=4, written=3),
 }
 
+#: Every task replaying that day: the three keyed tasks answer what they
+#: answered, each row a key their table already holds, and append none; the
+#: books and the event tables replace their window with what they wrote.
+REPLAYED = {
+    **LANDED,
+    "parse_log_messages": Landed(read=5, written=0, skipped=5),
+    "parse_fix_messages_raw": Landed(read=5, written=0, skipped=6),
+    "parse_fix_messages_refined": Landed(read=6, written=0, skipped=6),
+}
+
+#: The tables a replay commits nothing to: those keyed on `curruuid`.
+KEYED = (LOG_MESSAGES, FIX_MESSAGES_RAW, FIX_MESSAGES)
+
 
 def graph_over(storages: Storages, capture: Path) -> dict[str, Landed]:
     """Every task over `DAY` in production order, the flatteners pinned to the books."""
@@ -650,11 +665,13 @@ def counted(landed: dict[str, Landed]) -> dict[str, Landed]:
     return {name: Landed(held.read, held.written, held.skipped) for name, held in landed.items()}
 
 
-def test_the_graph_lands_a_market_capture_and_a_replay_lands_it_again(
+def test_the_graph_lands_a_market_capture_and_a_replay_leaves_it_as_landed(
     storages: Storages, tmp_path: Path
 ) -> None:
     """Each kind reads the books once from the same immutable snapshot, and
-    replaying the day replaces every output in one new snapshot per table."""
+    replaying the day leaves every table holding what it held: the keyed
+    tables append nothing and commit nothing, and the books and the event
+    tables replace their window in one new snapshot each."""
     capture = tmp_path / "market.log"
     capture.write_text(
         "".join(
@@ -677,9 +694,9 @@ def test_the_graph_lands_a_market_capture_and_a_replay_lands_it_again(
 
     replayed = graph_over(storages, capture)
 
-    assert counted(replayed) == LANDED
+    assert counted(replayed) == REPLAYED
     assert replayed["parse_books"].snapshot_id != books
     assert rows(storages) == stored
-    assert {table: snapshots(storages, table) for table in stored} == dict.fromkeys(stored, 2), (
-        "a replay replaces its window in one commit per table"
-    )
+    assert {table: snapshots(storages, table) for table in stored} == {
+        table: 1 if table in KEYED else 2 for table in stored
+    }, "a replay appends no key and replaces a market window in one commit"

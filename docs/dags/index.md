@@ -82,17 +82,26 @@ with storages:
         "parse_quotes": 0,
         "parse_executions": 7,
     }
-    # A rerun is a retry: it lands the same rows over the ones it landed.
+    # A rerun is a retry. The keyed tasks find every row they answer held as
+    # it is and write none; the books and the event tables replace their
+    # window again.
     again = run(storages, "file:data/capture/ulbridge.log", window)
-    assert {task: landed.written for task, landed in again.items()} == {
-        task: landed.written for task, landed in first.items()
+    assert {task: (landed.written, landed.skipped) for task, landed in again.items()} == {
+        "parse_log_messages": (0, 129),
+        "parse_fix_messages_raw": (0, 125),
+        "parse_fix_messages_refined": (0, 47),
+        "parse_books": (29, 0),
+        "parse_orders": (8, 0),
+        "parse_quotes": (0, 0),
+        "parse_executions": (7, 0),
     }
 ```
 
 A failure stops the run where it happened: the failed task leaves its table's
 previous snapshot visible, and nothing after it runs over a table it did not
 finish. Retrying is running the task again over the same window, then the
-tasks after it.
+tasks after it: a keyed task keeps the commits it made before it failed, and
+its retry writes the rest ([commits](../tasks/index.md#commits)).
 
 ## Windows
 
@@ -102,7 +111,8 @@ onto whole partitions. Two ways to cover time:
 
 - **Incremental.** Each scheduled interval is one window: an hourly schedule
   runs `[10:00, 11:00)`, then `[11:00, 12:00)`. A rerun of an interval
-  replaces what it landed, so a late retry or a catch-up run is the same call.
+  leaves each table holding what it landed, once, so a late retry or a
+  catch-up run is the same call.
 - **Backfill.** A historical range is a run per interval over it, in time
   order, or one run over a wider window. The bronze log task may also land the
   whole range once, before the later tasks walk it window by window: a later
@@ -120,9 +130,10 @@ for day in days:
     run(storages, "s3://market-capture/ulbridge?region=eu-west-1", window)
 ```
 
-A task over a window replaces that window and nothing else, so two runs over
-different windows may land side by side, and a rerun over a window wider than
-the one first run is always safe: it lands what it finds.
+A task over a window writes that window and nothing else -- a keyed task
+merges its rows into its table, a book or event task replaces it -- so two
+runs over different windows may land side by side, and a rerun over a window
+wider than the one first run is always safe: it lands what it finds.
 
 ## Late events
 
@@ -141,7 +152,8 @@ it is walked to. Counted in events -- `snapshot_millis=0`, so no hourly view
 is landed beside them -- hourly windows over the capture's day land all but
 one of the events one window over the day does: an expiry whose order began
 more than `HISTORY` before it, which only a window holding the whole chain
-places:
+places. A run over the day after them answers all 23, finds the 22 the hours
+landed held as they are, and inserts the expiry:
 
 ```python
 import datetime
@@ -177,8 +189,9 @@ with storages:
     hourly = sum(
         parse_fix_messages_refined(storages, hour, snapshot_millis=0).written for hour in hours
     )
-    daily = parse_fix_messages_refined(storages, day, snapshot_millis=0).written
-    assert (hourly, daily) == (22, 23)
+    daily = parse_fix_messages_refined(storages, day, snapshot_millis=0)
+    assert (hourly, daily.written + daily.skipped) == (22, 23)
+    assert (daily.written, daily.skipped) == (1, 22)
 ```
 
 A capture read in a zone other than its bridge's dates every line hours away
@@ -189,7 +202,10 @@ dated 14:46 and carry messages of 12:46, so the line of a message stating no
 instant the walk dates it at, and no hourly window holds both. Copies of one
 message the parse dated by different clocks settle on different identities
 and no longer fold, so the day holds 27 events rather than 23, and hourly
-windows land four fewer:
+windows land four fewer. An hourly walk also merges only the copies its window
+holds, so an event it lands may settle another identity than the day's walk
+gives it: the day finds 11 of its 27 events held as they are and inserts the
+other 16 beside the hours' rows.
 
 ```python
 import datetime
@@ -225,8 +241,9 @@ with storages:
     hourly = sum(
         parse_fix_messages_refined(storages, hour, snapshot_millis=0).written for hour in hours
     )
-    daily = parse_fix_messages_refined(storages, day, snapshot_millis=0).written
-    assert (hourly, daily) == (23, 27)
+    daily = parse_fix_messages_refined(storages, day, snapshot_millis=0)
+    assert (hourly, daily.written + daily.skipped) == (23, 27)
+    assert (daily.written, daily.skipped) == (16, 11)
 ```
 
 Schedule for it:
@@ -238,9 +255,12 @@ Schedule for it:
   landed every line that can date into them -- lag them by the bridge's
   delivery delay -- and, where a chain outlives `HISTORY`, wide enough to hold
   it.
-- Reconcile by rerunning a wider window: every task replaces its window, so a
-  daily rerun of the silver tasks over yesterday settles whatever the hourly
-  runs could not place.
+- Reconcile by rerunning a wider window: a keyed task merges its rows into
+  its table and a book or event task replaces its window, so a daily rerun of
+  the silver tasks over yesterday inserts whatever the hourly runs could not
+  place and replaces a row it settles otherwise under the same identity. It
+  takes no row back: an event a narrower walk settled under another identity
+  keeps that row beside the wider walk's.
 
 ## Partition pruning
 

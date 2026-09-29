@@ -97,7 +97,7 @@ contract diff `tools/schemas_dump.py` writes before publishing it.
 one line a bronze row was parsed from, every line its event was logged on
 once the walk merged them -- each by the line's own `curruuid`. On a line,
 `crosscode` and `seqnum` are its object and row number; on a FIX row the same
-two columns are the chain and the step. A replay of a window lands the same
-bronze rows and, walked, the same silver rows, and leaves no duplicate,
-because every identity derives from what the bytes state and never from the
-instant a task ran.
+two columns are the chain and the step. A replay of a window answers the same
+bronze rows and, walked, the same silver rows, finds every one held as it is,
+writes none and leaves no duplicate, because every identity derives from what
+the bytes state and never from the instant a task ran.
