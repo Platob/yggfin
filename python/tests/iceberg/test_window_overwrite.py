@@ -162,8 +162,9 @@ def test_multiple_bounded_chunks_publish_one_snapshot_after_the_reader_finishes(
     def source() -> Iterator[pyarrow.RecordBatch]:
         for identity, minute in [(2, 21), (3, 25), (4, 39)]:
             assert dataset.iceberg_table.current_snapshot().snapshot_id == snapshot
-            if identity > 2:
-                assert _artifacts(dataset) - before, "earlier chunks are staged, not held"
+            # Earlier chunks are spilled to local disk to be laid out in the
+            # table's order, and staged in the store only once the stream ends.
+            assert _artifacts(dataset) == before, "nothing is staged while the stream is read"
             yield _rows((identity, minute)).to_batches()[0]
 
     reader = pyarrow.RecordBatchReader.from_batches(_rows().schema, source())
@@ -178,16 +179,9 @@ def test_multiple_bounded_chunks_publish_one_snapshot_after_the_reader_finishes(
     assert _stored(dataset) == _identities(2, 3, 4)
 
 
-def test_predicate_replacement_keeps_source_duplicates_and_ignores_merge_keys(
-    dataset: IcebergDataset,
-) -> None:
+def test_predicate_replacement_keeps_source_duplicates(dataset: IcebergDataset) -> None:
     given = _rows((1, 25), (1, 25))
-    assert (
-        dataset.overwrite_arrow_reader(
-            given.to_reader(), row_filter=_window(), merge_by=["not_a_column"]
-        )
-        == 2
-    )
+    assert dataset.overwrite_arrow_reader(given.to_reader(), row_filter=_window()) == 2
     assert _stored(dataset) == _identities(1, 1)
 
 
@@ -207,12 +201,7 @@ def test_an_unpartitioned_nullable_clock_preserves_nulls_and_refuses_them_as_inp
         {"curruuid": _identities(1), "currunix": [None]}, schema=schema
     )
     dataset.append_arrow_table(pyarrow.concat_tables([undated, _rows((2, 25)).cast(schema)]))
-    assert (
-        dataset.overwrite_arrow_reader(
-            _rows((3, 30)).to_reader(), row_filter=_window(), merge_by=False
-        )
-        == 1
-    )
+    assert dataset.overwrite_arrow_reader(_rows((3, 30)).to_reader(), row_filter=_window()) == 1
     assert _stored(dataset) == _identities(1, 3)
     snapshot = dataset.iceberg_table.current_snapshot().snapshot_id
     with pytest.raises(ValueError, match="outside.*row_filter|row_filter.*outside"):

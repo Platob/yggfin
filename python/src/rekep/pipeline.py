@@ -17,9 +17,13 @@ parse_quotes                silver.record_keeping.books         silver.record_ke
 parse_executions            silver.record_keeping.books         silver.record_keeping.executions
 ```
 
-The first three are keyed on `curruuid` and a replay of their window lands
-the same rows again; the books and the three event tables replace exactly
-their window. A window is `[start, end)` over `currunix` as
+The first three are keyed on `curruuid` and merge the differences into their
+table -- a row it lacks is inserted, one it holds with other values replaced,
+one it holds as it is left alone -- so a replay of their window writes
+nothing; the books and the three event tables replace exactly their window,
+in one commit. Every task lays its rows out in its table's sort order, and
+holds `commit_row_size` rows at once: a keyed task's commit, a market task's
+staged chunk. A window is `[start, end)` over `currunix` as
 `rekep.times.window_of` answers it, and every scan hands it to Iceberg as a
 predicate on that column, so a task opens only the hour partitions its
 window covers. Where a task runs, how often and over which window are the
@@ -32,17 +36,16 @@ from __future__ import annotations
 import contextlib
 import dataclasses
 import datetime
-import os
-import tempfile
 import uuid
+from collections.abc import Sequence
+from typing import Any
 
 import pyarrow
 import pyarrow.compute
-import pyarrow.ipc
 from yggdryl import IOBase
 
 from rekep.arrow_reader import OwnedRecordBatchReader
-from rekep.fields import stored_arrow_reader
+from rekep.fields import Field, stored_arrow_reader
 from rekep.fix import (
     EVENT_CLOCK,
     PARSE_COLUMNS,
@@ -54,7 +57,7 @@ from rekep.fix import (
     fix_parse_arrow_reader,
     fix_window_filter,
 )
-from rekep.iceberg import window_filter
+from rekep.iceberg import IcebergDataset, window_filter
 from rekep.market import (
     FLATTENED_COLUMNS,
     SNAPSHOT_MILLIS,
@@ -94,6 +97,12 @@ HISTORY = datetime.timedelta(hours=1)
 #: committed it, since a recovered commit may refresh to a newer head.
 BOOKS_RUN = "rekep.books-run-id"
 
+#: Rows one commit of a task holds unless stated -- one staged chunk of an
+#: exact-window replacement -- whatever batches its producer hands over: the
+#: row-group limit the tables are created with, about 256 MiB of rows as wide
+#: as the capture's.
+COMMIT_ROW_SIZE = 128 * 1024
+
 Window = tuple[datetime.datetime, datetime.datetime]
 
 
@@ -104,11 +113,13 @@ class Landed:
     #: Source rows the window selected.
     read: int
 
-    #: Target rows the stage wrote.
+    #: Target rows the stage wrote. A keyed stage writes only the rows its
+    #: target lacks or holds with other values, so a replay writes none.
     written: int
 
-    #: Rows the stage answered that the target's key folded into a written
-    #: one: a message logged again at every hop it passed, one row each.
+    #: Rows the stage answered that the target's key folded into a stored
+    #: one: a message logged again at every hop it passed, one row each, and
+    #: a row an earlier run of the window already landed as it is.
     skipped: int = 0
 
     #: The silver `books` snapshot the stage committed (`parse_books`) or read
@@ -120,6 +131,19 @@ class Landed:
     #: landed when it was given none, for the stages after it to run over;
     #: None when a window was given or no line was dated.
     window: Window | None = None
+
+
+def _target(
+    storages: Storages, target: str, field: Field, commit_row_size: int, **kwargs: Any
+) -> IcebergDataset:
+    """The table a task writes, `commit_row_size` rows at a time.
+
+    Rows alone cut its commits: a producer's batches are the reader's to
+    size, and eight of them hold what eight happen to hold.
+    """
+    return storages.dataset(
+        target, field=field, commit_row_size=commit_row_size, commit_batch_num=None, **kwargs
+    )
 
 
 def _codec_or_env(codec: FixCodec | None) -> FixCodec:
@@ -154,6 +178,7 @@ def parse_log_messages(
     *,
     rowheader: str | None = None,
     timezone: str = TIMEZONE,
+    commit_row_size: int = COMMIT_ROW_SIZE,
     target: str = LOG_MESSAGES,
 ) -> Landed:
     """Land the lines of `source` whose `currunix` falls in `window`, or every line.
@@ -165,11 +190,12 @@ def parse_log_messages(
     names must still be `rekep.text.CAPTURES`. `timezone` is the zone the
     bridge prints its clock in, `rekep.times.TIMEZONE` unless stated: a line
     read in its bridge's zone lands in the hour of the message it carries.
+    `commit_row_size` is the most lines one commit appends.
 
-    Given no `window`, every line is read and staged in a local Arrow stream
-    file, and `Landed.window` answers `rekep.times.hour_window` over the
-    earliest and latest `currunix` a line was dated at -- lines pinned at
-    `EPOCH` date nothing -- for the stages after this one to run over.
+    Given no `window`, every line is read, and `Landed.window` answers
+    `rekep.times.hour_window` over the earliest and latest `currunix` a line
+    was dated at -- lines pinned at `EPOCH` date nothing -- for the stages
+    after this one to run over.
     """
     with contextlib.ExitStack() as opened:
         if isinstance(source, str):
@@ -185,15 +211,14 @@ def parse_log_messages(
             # off the header, or off the object's own modification time where
             # the header did not match -- falls in `[start, end)`, and no other.
             options.filter = where_within(EVENT_CLOCK, window)
-        messages = storages.dataset(target, field=field)
+        messages = _target(storages, target, field, commit_row_size)
         opened.callback(messages.close)
         read = _Count()
         lines = read(source.read_arrow_reader(options=options))
         opened.callback(lines.close)
-        inferred = None
+        span = _Span()
         if window is None:
-            staged = opened.enter_context(tempfile.TemporaryDirectory(prefix="rekep-"))
-            lines, inferred = _staged_span(lines, os.path.join(staged, "log_messages.arrows"))
+            lines = span(lines)
             opened.callback(lines.close)
         # The storage boundary: the content codes and the row number are read
         # unsigned and Iceberg's only sixty-four-bit integer is signed, so
@@ -201,40 +226,54 @@ def parse_log_messages(
         # then casts the rest in its native order.
         stored = stored_arrow_reader(lines, field)
         opened.callback(stored.close)
-        # Keyed on `curruuid` within the hour of `currunix`: a replay of the
-        # window lands the same rows again, so the table holds each line once.
-        written = messages.overwrite_arrow_reader(stored, field, merge_by=True)
-        return Landed(read=read.rows, written=written, window=inferred)
+        # Keyed on `curruuid` within the hour of `currunix`: a line the hour
+        # already holds as it is is not written again, so it holds each once.
+        written = messages.merge_arrow_reader(stored, field)
+        return Landed(
+            read=read.rows, written=written, skipped=read.rows - written, window=span.window
+        )
 
 
-def _staged_span(
-    lines: pyarrow.RecordBatchReader, path: str
-) -> tuple[pyarrow.RecordBatchReader, Window | None]:
-    """`lines` written to the Arrow stream file at `path` and read back, with
-    the whole-hour window of the `currunix` they were dated at."""
-    compute = pyarrow.compute
-    nanos = pyarrow.timestamp("ns", tz="UTC")
-    first = last = None
-    with pyarrow.ipc.new_stream(path, lines.schema) as writer:
-        for batch in lines:
-            writer.write_batch(batch)
-            clock = batch.column(EVENT_CLOCK).cast(nanos)
-            dated = clock.filter(compute.not_equal(clock, pyarrow.scalar(EPOCH, nanos)))
-            span = compute.min_max(dated.cast(pyarrow.int64()))
-            low, high = span["min"].as_py(), span["max"].as_py()
-            if low is not None:
-                first = low if first is None else min(first, low)
-                last = high if last is None else max(last, high)
-    lines.close()
-    mapped = pyarrow.memory_map(path)
-    staged = pyarrow.ipc.open_stream(mapped)
+def _selected(source: pyarrow.RecordBatchReader, names: Sequence[str]) -> pyarrow.RecordBatchReader:
+    """`source`'s batches narrowed to `names`, owning it."""
+    schema = pyarrow.schema(
+        [source.schema.field(name) for name in names], metadata=source.schema.metadata
+    )
+    return OwnedRecordBatchReader(
+        schema, (batch.select(list(names)) for batch in source), source.close
+    )
 
-    def close() -> None:
-        staged.close()
-        mapped.close()
 
-    span = None if first is None else hour_window(first, last)
-    return OwnedRecordBatchReader(staged.schema, staged, close), span
+class _Span:
+    """The whole-hour window of the `currunix` a reader's rows were dated at, as they pass.
+
+    Rows pinned at `EPOCH` date nothing; `window` is None until a row is dated.
+    """
+
+    def __init__(self) -> None:
+        self.first: int | None = None
+        self.last: int | None = None
+
+    @property
+    def window(self) -> Window | None:
+        return None if self.first is None else hour_window(self.first, self.last)
+
+    def __call__(self, source: pyarrow.RecordBatchReader) -> pyarrow.RecordBatchReader:
+        compute = pyarrow.compute
+        nanos = pyarrow.timestamp("ns", tz="UTC")
+
+        def batches():
+            for batch in source:
+                clock = batch.column(EVENT_CLOCK).cast(nanos)
+                dated = clock.filter(compute.not_equal(clock, pyarrow.scalar(EPOCH, nanos)))
+                span = compute.min_max(dated.cast(pyarrow.int64()))
+                low, high = span["min"].as_py(), span["max"].as_py()
+                if low is not None:
+                    self.first = low if self.first is None else min(self.first, low)
+                    self.last = high if self.last is None else max(self.last, high)
+                yield batch
+
+        return OwnedRecordBatchReader(source.schema, batches(), source.close)
 
 
 def parse_fix_messages_raw(
@@ -242,6 +281,7 @@ def parse_fix_messages_raw(
     window: Window,
     *,
     codec: FixCodec | None = None,
+    commit_row_size: int = COMMIT_ROW_SIZE,
     source: str = LOG_MESSAGES,
     target: str = FIX_MESSAGES_RAW,
 ) -> Landed:
@@ -261,25 +301,31 @@ def parse_fix_messages_raw(
         carrier = log_message_field()
         lines = storages.dataset(source, field=carrier)
         opened.callback(lines.close)
-        # `[start, end)` over `currunix` with the epoch pin beside it, projected
-        # to what the parse consumes, so the scan opens no other column.
+        # `[start, end)` over `currunix` with the epoch pin beside it, in the
+        # table's sort order -- the order the lines were printed in, so a
+        # message logged at several hops keeps its first copy whatever files
+        # hold the lines -- and projected to what the parse consumes and the
+        # order reads, so the scan opens no other column.
         read = _Count()
         scanned = read(
             lines.read_arrow_reader(
-                carrier, row_filter=window_filter(EVENT_CLOCK, window), columns=PARSE_COLUMNS
+                carrier,
+                row_filter=window_filter(EVENT_CLOCK, window),
+                columns=tuple(dict.fromkeys((*PARSE_COLUMNS, *SORT_COLUMNS))),
+                order_by=SORT_COLUMNS,
             )
         )
         opened.callback(scanned.close)
         answered = _Count()
-        parsed = answered(fix_parse_arrow_reader(codec, scanned))
+        parsed = answered(fix_parse_arrow_reader(codec, _selected(scanned, PARSE_COLUMNS)))
         opened.callback(parsed.close)
         stored = stored_arrow_reader(parsed, field)
         opened.callback(stored.close)
-        raw = storages.dataset(target, field=field, merge_schema=True)
+        raw = _target(storages, target, field, commit_row_size, merge_schema=True)
         opened.callback(raw.close)
         # Keyed on `curruuid` within the hour of the event's own instant, so
         # every restatement of one event meets the others and lands once.
-        written = raw.overwrite_arrow_reader(stored, field, merge_by=True)
+        written = raw.merge_arrow_reader(stored, field)
         return Landed(read=read.rows, written=written, skipped=answered.rows - written)
 
 
@@ -289,6 +335,7 @@ def parse_fix_messages_refined(
     *,
     codec: FixCodec | None = None,
     snapshot_millis: int = SNAPSHOT_MILLIS,
+    commit_row_size: int = COMMIT_ROW_SIZE,
     source: str = FIX_MESSAGES_RAW,
     target: str = FIX_MESSAGES,
 ) -> Landed:
@@ -340,9 +387,9 @@ def parse_fix_messages_refined(
         opened.callback(events.close)
         stored = stored_arrow_reader(events, field)
         opened.callback(stored.close)
-        refined = storages.dataset(target, field=field, merge_schema=True)
+        refined = _target(storages, target, field, commit_row_size, merge_schema=True)
         opened.callback(refined.close)
-        written = refined.overwrite_arrow_reader(stored, field, merge_by=True)
+        written = refined.merge_arrow_reader(stored, field)
         return Landed(read=read.rows, written=written, skipped=placed.rows - written)
 
 
@@ -352,6 +399,7 @@ def parse_books(
     *,
     codec: FixCodec | None = None,
     snapshot_millis: int = SNAPSHOT_MILLIS,
+    commit_row_size: int = COMMIT_ROW_SIZE,
     source: str = FIX_MESSAGES,
     target: str = BOOKS,
 ) -> Landed:
@@ -401,7 +449,7 @@ def parse_books(
         field = book_field()
         stored = stored_arrow_reader(bounded, field)
         opened.callback(stored.close)
-        books = storages.dataset(target, field=field, merge_schema=True)
+        books = _target(storages, target, field, commit_row_size, merge_schema=True)
         opened.callback(books.close)
         run = uuid.uuid4().hex
         written = books.overwrite_arrow_reader(
@@ -425,11 +473,12 @@ def parse_orders(
     window: Window,
     *,
     snapshot_id: int | None = None,
+    commit_row_size: int = COMMIT_ROW_SIZE,
     source: str = BOOKS,
     target: str = ORDERS,
 ) -> Landed:
     """Replace `window` of silver `orders` with the order deltas of one books snapshot."""
-    return _flatten("orders", storages, window, snapshot_id, source, target)
+    return _flatten("orders", storages, window, snapshot_id, commit_row_size, source, target)
 
 
 def parse_quotes(
@@ -437,11 +486,12 @@ def parse_quotes(
     window: Window,
     *,
     snapshot_id: int | None = None,
+    commit_row_size: int = COMMIT_ROW_SIZE,
     source: str = BOOKS,
     target: str = QUOTES,
 ) -> Landed:
     """Replace `window` of silver `quotes` with the quote deltas of one books snapshot."""
-    return _flatten("quotes", storages, window, snapshot_id, source, target)
+    return _flatten("quotes", storages, window, snapshot_id, commit_row_size, source, target)
 
 
 def parse_executions(
@@ -449,11 +499,12 @@ def parse_executions(
     window: Window,
     *,
     snapshot_id: int | None = None,
+    commit_row_size: int = COMMIT_ROW_SIZE,
     source: str = BOOKS,
     target: str = EXECUTIONS,
 ) -> Landed:
     """Replace `window` of silver `executions` with the executions of one books snapshot."""
-    return _flatten("executions", storages, window, snapshot_id, source, target)
+    return _flatten("executions", storages, window, snapshot_id, commit_row_size, source, target)
 
 
 #: The three flattening tasks, by the kind each reads out of the books.
@@ -465,6 +516,7 @@ def _flatten(
     storages: Storages,
     window: Window,
     snapshot_id: int | None,
+    commit_row_size: int,
     source: str,
     target: str,
 ) -> Landed:
@@ -508,7 +560,7 @@ def _flatten(
         field = market_event_field()
         stored = stored_arrow_reader(bounded, field)
         opened.callback(stored.close)
-        events = storages.dataset(target, field=field, merge_schema=True)
+        events = _target(storages, target, field, commit_row_size, merge_schema=True)
         opened.callback(events.close)
         written = events.overwrite_arrow_reader(stored, field, row_filter=selected)
         return Landed(
@@ -522,6 +574,7 @@ def _flatten(
 __all__ = [
     "BOOKS",
     "BOOKS_RUN",
+    "COMMIT_ROW_SIZE",
     "EVENTS",
     "EXECUTIONS",
     "FIX_MESSAGES",

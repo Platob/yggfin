@@ -188,29 +188,25 @@ def write_case(
 ) -> dict[str, Any]:
     """One write configuration, measured on a table of its own.
 
-    `mode` is `append` for the blind write, `replace` for the keyed one and
-    `partitions` for the keyless one that empties every partition it touches.
+    `mode` is `append` for the blind write, `diffs` for the keyed append that
+    adds only the keys a partition lacks, `merge` for the upsert of what
+    differs, and `partitions` for the keyless overwrite that empties every
+    partition it touches.
     """
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-"))
     try:
         target = dataset(root, partitioned=partitioned, properties=properties or {})
-        if preload is not None:  # something for a replace to take out
+        if preload is not None:  # something for a keyed write to find
             target.append_arrow(preload, commit_row_size=1_000_000)
-        if mode == "append":
+        verb = {
+            "append": functools.partial(target.append_arrow, merge_by=False),
+            "diffs": target.append_arrow,
+            "merge": target.merge_arrow,
+            "partitions": target.overwrite_arrow,
+        }[mode]
 
-            def write() -> int:
-                return target.append_arrow(
-                    batches(table, batch_row_size), commit_row_size=commit_row_size
-                )
-
-        else:
-
-            def write() -> int:
-                return target.overwrite_arrow(
-                    batches(table, batch_row_size),
-                    merge_by=mode == "replace",
-                    commit_row_size=commit_row_size,
-                )
+        def write() -> int:
+            return verb(batches(table, batch_row_size), commit_row_size=commit_row_size)
 
         # What the write held: Arrow's high-water mark over it, which is where
         # a writer that collects its chunk instead of staging it shows up --
@@ -225,9 +221,9 @@ def write_case(
             **stats(target),
         }
         report["stored"] = target.read_arrow_table().num_rows
-        # A replace takes out the rows whose keys match, so a preloaded half
-        # is already in the count; a keyless one empties the partitions it
-        # touches, which here is every one the preload filled.
+        # A keyed write holds each key once, so a preloaded half is already in
+        # the count; a keyless overwrite empties the partitions it touches,
+        # which here is every one the preload filled.
         if mode == "partitions" or preload is None:
             expected = table.num_rows
         else:
@@ -238,12 +234,12 @@ def write_case(
         shutil.rmtree(root, ignore_errors=True)
 
 
-def monotonic_replace_case(table: pyarrow.Table, commit_rows: int) -> dict:
-    """Replace increasing chunks the way a chronological stream commits them.
+def monotonic_merge_case(table: pyarrow.Table, commit_rows: int) -> dict:
+    """Merge increasing chunks the way a chronological stream commits them.
 
-    Every chunk's keys sit above every stored file's, so the bounds a replace
+    Every chunk's keys sit above every stored file's, so the bounds a merge
     plans by admit no file: this is the cost of the verb when it has nothing
-    to take out.
+    to compare.
     """
     root = pathlib.Path(tempfile.mkdtemp(prefix="rekep-bench-stream-"))
     try:
@@ -251,9 +247,7 @@ def monotonic_replace_case(table: pyarrow.Table, commit_rows: int) -> dict:
 
         def write() -> None:
             for start in range(0, table.num_rows, commit_rows):
-                target.overwrite_arrow_table(
-                    table.slice(start, commit_rows), merge_by=True, commit_row_size=1_000_000
-                )
+                target.merge_arrow_table(table.slice(start, commit_rows), commit_row_size=1_000_000)
 
         seconds, _ = timed(write)
         return {"seconds": seconds, "rows": target.records, **stats(target)}
@@ -311,11 +305,13 @@ def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
     for commit in commits:
         configurations.append(("append", "append", commit, True, "optimised", None))
     for commit in commits:
-        configurations.append(("replace, all new", "replace", commit, True, "optimised", None))
+        configurations.append(("merge, all new", "merge", commit, True, "optimised", None))
     for commit in commits:
-        configurations.append(("replace, half stored", "replace", commit, True, "optimised", half))
+        configurations.append(("merge, half stored", "merge", commit, True, "optimised", half))
     for commit in commits:
-        configurations.append(("replace, replay", "replace", commit, True, "optimised", table))
+        configurations.append(("merge, replay", "merge", commit, True, "optimised", table))
+    for commit in commits:
+        configurations.append(("diffs, replay", "diffs", commit, True, "optimised", table))
     for commit in commits:
         configurations.append(
             ("partitions, replay", "partitions", commit, True, "optimised", table)
@@ -326,7 +322,7 @@ def sweep_write(rows: int, days: int, quick: bool) -> pathlib.Path:
                 [
                     ("append, no partition", "append", commit, False, "optimised", None),
                     ("append, iceberg defaults", "append", commit, True, "default", None),
-                    ("replace, no partition", "replace", commit, False, "optimised", half),
+                    ("merge, no partition", "merge", commit, False, "optimised", half),
                 ]
             )
 
@@ -354,9 +350,9 @@ def sweep_stream(rows: int, repeat: int) -> None:
     commit_rows = max(rows // 6, 1)
     table = tick_rows(rows)
     # Every row lands, once, before any of them is timed.
-    warmed = monotonic_replace_case(table, commit_rows)
+    warmed = monotonic_merge_case(table, commit_rows)
     assert warmed["rows"] == rows, warmed
-    runs = [monotonic_replace_case(table, commit_rows) for _ in range(repeat)]
+    runs = [monotonic_merge_case(table, commit_rows) for _ in range(repeat)]
     assert all(run["rows"] == rows for run in runs), runs
     best = min(runs, key=lambda run: run["seconds"])
     print(f"\n== chronological replace: {rows:,} rows, {commit_rows:,} per commit ==")
@@ -567,7 +563,7 @@ def sweep_update(rows: int, days: int) -> None:
                 )
                 planned = target.scan_plan(_key_bounds(changed, join))["files"]
                 seconds, written = timed(
-                    functools.partial(target.overwrite_arrow_table, changed, merge_by=join)
+                    functools.partial(target.merge_arrow_table, changed, merge_by=join)
                 )
                 files = target.refresh().iceberg_table.inspect.data_files().num_rows
                 print(
@@ -575,7 +571,7 @@ def sweep_update(rows: int, days: int) -> None:
                     f"{planned:>8,} {files:>7,}"
                 )
                 assert written == count, written
-                target.overwrite_arrow_table(stored.slice(0, count), merge_by=join)  # back
+                target.merge_arrow_table(stored.slice(0, count), merge_by=join)  # back
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
@@ -691,10 +687,8 @@ def sweep_backfill(rows: int, days: int) -> None:
             stored = target.refresh().data_files().num_rows
             bounds = _key_bounds(replay, ["at", "h64"])
             plan = target.scan_plan(bounds)
-            seconds, replaced = timed(
-                functools.partial(target.overwrite_arrow_table, replay, merge_by=True)
-            )
-            assert replaced == replay.num_rows, (label, replaced)
+            seconds, replaced = timed(functools.partial(target.merge_arrow_table, replay))
+            assert replaced == 0, (label, replaced)  # a replay differs nowhere
             assert target.refresh().read_arrow_table().num_rows == per * bands, label
             assert plan["files"] + plan["skipped"] == stored, (label, plan)
             print(

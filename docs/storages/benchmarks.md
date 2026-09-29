@@ -10,7 +10,7 @@ keeps the fastest of.
 | --- | --- | --- |
 | `bench_message.py` | plain and gzip text objects read into stored `log_messages` batches: the native text read, then the storage boundary `parse_log_messages` pays | the schema and the first and last row of every source |
 | `bench_market.py` | flattening book deltas and executions into event rows with Arrow kernels, as `parse_orders`, `parse_quotes` and `parse_executions` do | a Python row-by-row flattening of the same books |
-| `bench_iceberg.py` | Iceberg commits, streamed and ordered scans, keyed and window replacements, maintenance, deletes and a backfill over synthetic hourly rows | the rows written read back |
+| `bench_iceberg.py` | Iceberg appends, merges and replacements, streamed and ordered scans, maintenance, deletes and a backfill over synthetic hourly rows | the rows written read back |
 
 ```bash
 cd python
@@ -32,7 +32,7 @@ any of them:
   streams one object at a time with bounded read-ahead, and
   `IOBase.buffered()` is a positional-read cache the sequential record reader
   bypasses. The production path never stages a remote file.
-- A write holds a bounded multiple of the chunk it was handed, whatever the
-  number of partitions the chunk spans, because it stages one partition at a
-  time: [Iceberg datasets](iceberg.md#what-a-commit-holds) has the measured
-  bound and the test that pins it.
+- A write holds a bounded multiple of one chunk, whatever the number of
+  partitions the chunk spans, because it spills the stream locally and stages
+  one partition at a time: [Iceberg datasets](iceberg.md#what-a-commit-holds)
+  has the measured bound and the test that pins it.

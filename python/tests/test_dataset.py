@@ -12,10 +12,14 @@ from rekep import Dataset, Field, scalar
 from rekep.dataset import (
     anti_join,
     arrow_chunks,
+    equal_rows,
     first_rows,
     in_sort_order,
+    key_pairs,
     normalised_keys,
+    semi_join,
     sort_order_fields,
+    sorted_rows,
 )
 from rekep.fields import field_of, primary_key
 
@@ -78,41 +82,85 @@ class MemoryDataset(Dataset):
         self,
         source: pyarrow.RecordBatchReader,
         schema: Any = None,
-        merge_by: bool | Sequence[str] | None = True,
         commit_row_size: int | None = None,
+        **kwargs: Any,
     ) -> int:
-        join = self.merge_columns(merge_by)
-        if not join:
-            raise ValueError(f"merge_by={merge_by!r} names nothing to match on")
-        target = self.target_field(schema)
-        reader = target.apply_arrow_reader(source, safe=False)
+        """What a stream covers here is everything: it replaces every commit."""
+        reader = self.target_field(schema).apply_arrow_reader(source, safe=False)
         self.get_or_create()
+        self.commits = []
         written = 0
         for chunk in arrow_chunks(reader, commit_row_size):
-            for name in join:
-                if chunk.column(name).null_count:
-                    raise ValueError(f"column {name!r} is a merge key and cannot be null")
-            chunk = first_rows(normalised_keys(chunk, join), join)
-            # What the chunk carries replaces what the commits held under the
-            # same key: each stored commit loses those rows, and the chunk
-            # lands whole as a commit of its own.
-            self.commits = [
-                kept
-                for kept in (anti_join(commit, chunk, join) for commit in self.commits)
-                if kept.num_rows
-            ]
             self.commits.append(chunk)
             written += chunk.num_rows
         return written
+
+    def merge_arrow_reader(
+        self,
+        source: pyarrow.RecordBatchReader,
+        schema: Any = None,
+        commit_row_size: int | None = None,
+        merge_by: bool | Sequence[str] | None = None,
+        **kwargs: Any,
+    ) -> int:
+        join = self.merge_columns(True if merge_by is None else merge_by)
+        if not join:
+            raise ValueError(f"merge_by={merge_by!r} names nothing to match on")
+        return self._keyed(source, schema, commit_row_size, join, upsert=True)
 
     def append_arrow_reader(
         self,
         source: pyarrow.RecordBatchReader,
         schema: Any = None,
         commit_row_size: int | None = None,
+        merge_by: bool | Sequence[str] | None = None,
         **kwargs: Any,
     ) -> int:
-        return self._commit(source, schema, commit_row_size)
+        join = self.merge_columns(merge_by)
+        if not join:
+            return self._commit(source, schema, commit_row_size)
+        return self._keyed(source, schema, commit_row_size, join, upsert=False)
+
+    def _keyed(
+        self,
+        source: pyarrow.RecordBatchReader,
+        schema: Any,
+        commit_row_size: int | None,
+        join: Sequence[str],
+        *,
+        upsert: bool,
+    ) -> int:
+        """The rows no key holds as they are: to an upsert, also the changed ones."""
+        reader = self.target_field(schema).apply_arrow_reader(source, safe=False)
+        self.get_or_create()
+        written = 0
+        settled: pyarrow.Table | None = None
+        for chunk in arrow_chunks(reader, commit_row_size):
+            for name in join:
+                if chunk.column(name).null_count:
+                    raise ValueError(f"column {name!r} is a merge key and cannot be null")
+            chunk = first_rows(normalised_keys(chunk, join), join)
+            if settled is not None:
+                # A key an earlier chunk of the same write settled keeps it.
+                chunk = anti_join(chunk, settled, join)
+            keys = chunk.select(list(join))
+            settled = keys if settled is None else pyarrow.concat_tables([settled, keys])
+            stored = self.read_arrow_table()
+            if upsert:
+                ours, theirs = key_pairs(stored, chunk, join)
+                same = equal_rows(stored.take(ours), chunk.take(theirs))
+                fresh = anti_join(chunk, chunk.take(theirs).filter(same), join)
+            else:
+                fresh = anti_join(chunk, stored, join)
+            self.commits = [
+                kept
+                for kept in (anti_join(commit, fresh, join) for commit in self.commits)
+                if kept.num_rows
+            ]
+            if fresh.num_rows:
+                self.commits.append(fresh)
+            written += fresh.num_rows
+        return written
 
     def _commit(
         self,
@@ -188,9 +236,9 @@ def test_only_public_reader_methods_are_required_for_writes() -> None:
     required = {
         name
         for name in Dataset.__abstractmethods__
-        if name.startswith("append_") or name.startswith("overwrite_")
+        if name.startswith("append_") or name.startswith("overwrite_") or name.startswith("merge_")
     }
-    assert required == {"append_arrow_reader", "overwrite_arrow_reader"}
+    assert required == {"append_arrow_reader", "merge_arrow_reader", "overwrite_arrow_reader"}
 
 
 # -- merging ----------------------------------------------------------------
@@ -212,14 +260,25 @@ def test_merge_by_a_list_means_those_columns(dataset: MemoryDataset) -> None:
     assert dataset.merge_columns(["symbol", "day"]) == ["symbol", "day"]
 
 
-@pytest.mark.parametrize("merge_by", [None, False, []])
+def test_no_merge_by_means_the_primary_key_when_one_is_declared(dataset: MemoryDataset) -> None:
+    assert dataset.merge_columns(None) == ["symbol"]
+
+    @scalar
+    class Loose:
+        symbol: str
+        """Instrument, and nothing says it identifies one."""
+
+    assert MemoryDataset(field=Loose.into_field()).merge_columns(None) == []
+
+
+@pytest.mark.parametrize("merge_by", [False, []])
 def test_a_falsy_merge_by_names_nothing_to_match_on(
     dataset: MemoryDataset, merge_by: object
 ) -> None:
-    """Which the append family reads as "insert every row", and an overwrite refuses."""
+    """Which the append family reads as "insert every row", and a merge refuses."""
     assert dataset.merge_columns(merge_by) == []
     with pytest.raises(ValueError, match="names nothing to match on"):
-        dataset.overwrite_arrow(rows(1), merge_by=merge_by)
+        dataset.merge_arrow(rows(1), merge_by=merge_by)
 
 
 def test_merging_on_a_key_nothing_declares_is_refused() -> None:
@@ -264,12 +323,14 @@ def test_a_write_uses_yggdryls_native_array_cast() -> None:
 
 
 def test_commit_row_size_bounds_what_one_commit_carries(dataset: MemoryDataset) -> None:
-    dataset.append_arrow_reader(reader_of(*(rows(1) for _ in range(5))), commit_row_size=2)
+    dataset.append_arrow_reader(
+        reader_of(*(rows(1) for _ in range(5))), commit_row_size=2, merge_by=False
+    )
     assert [commit.num_rows for commit in dataset.commits] == [2, 2, 1]
 
 
 def test_no_commit_row_size_writes_the_stream_as_one(dataset: MemoryDataset) -> None:
-    dataset.append_arrow_reader(reader_of(*(rows(1) for _ in range(5))))
+    dataset.append_arrow_reader(reader_of(*(rows(1) for _ in range(5))), merge_by=False)
     assert [commit.num_rows for commit in dataset.commits] == [5]
 
 
@@ -319,67 +380,76 @@ def stored_rows(dataset: MemoryDataset) -> dict[str, int]:
     return dict(zip(*(table.column(name).to_pylist() for name in ("symbol", "size")), strict=True))
 
 
-def test_append_is_a_plain_write(keyed: MemoryDataset) -> None:
+def test_append_adds_only_the_keys_it_does_not_hold(keyed: MemoryDataset) -> None:
     assert keyed.append_arrow(keyed_batch(["A"], [1])) == 1
-    assert keyed.append_arrow(keyed_batch(["A"], [2])) == 1
-    assert keyed.read_arrow_table().num_rows == 2, "an append adds every row, keyed or not"
+    assert keyed.append_arrow(keyed_batch(["A", "B"], [2, 3])) == 1
+    assert stored_rows(keyed) == {"A": 1, "B": 3}, "a held key keeps the row it holds"
 
 
-def test_overwrite_replaces_stored_keys_and_adds_the_rest(keyed: MemoryDataset) -> None:
-    keyed.overwrite_arrow(keyed_batch(["A", "B"], [1, 2]))
-    assert keyed.overwrite_arrow(keyed_batch(["B", "C"], [20, 3]), merge_by=True) == 2
+def test_append_without_a_key_is_blind(keyed: MemoryDataset) -> None:
+    assert keyed.append_arrow(keyed_batch(["A"], [1]), merge_by=False) == 1
+    assert keyed.append_arrow(keyed_batch(["A"], [2]), merge_by=False) == 1
+    assert keyed.read_arrow_table().num_rows == 2, "a blind append adds every row"
+
+
+def test_merge_replaces_what_changed_and_adds_the_rest(keyed: MemoryDataset) -> None:
+    keyed.merge_arrow(keyed_batch(["A", "B"], [1, 2]))
+    assert keyed.merge_arrow(keyed_batch(["A", "B", "C"], [1, 20, 3])) == 2
     assert stored_rows(keyed) == {"A": 1, "B": 20, "C": 3}, "B carries the value it was handed"
 
 
-def test_replaying_a_stream_leaves_the_same_rows(keyed: MemoryDataset) -> None:
+def test_replaying_a_merge_writes_nothing(keyed: MemoryDataset) -> None:
     batch = keyed_batch(["A", "B"], [1, 2])
-    assert keyed.overwrite_arrow(batch, merge_by=True) == 2
-    assert keyed.overwrite_arrow(batch, merge_by=True) == 2, "carried again, and said so"
+    assert keyed.merge_arrow(batch) == 2
+    commits = list(keyed.commits)
+    assert keyed.merge_arrow(batch) == 0, "every row is held as it is"
+    assert keyed.commits == commits, "and nothing is committed"
     assert stored_rows(keyed) == {"A": 1, "B": 2}
-    assert keyed.read_arrow_table().num_rows == 2, "a replay holds each key once"
 
 
 def test_duplicate_keys_inside_a_chunk_collapse_to_the_first(keyed: MemoryDataset) -> None:
-    keyed.overwrite_arrow_reader(
-        reader_of(keyed_batch(["A", "A"], [1, 9]), keyed_batch(["A"], [8])),
-        merge_by=True,
+    keyed.merge_arrow_reader(reader_of(keyed_batch(["A", "A"], [1, 9]), keyed_batch(["A"], [8])))
+    assert stored_rows(keyed) == {"A": 1}
+
+
+def test_a_key_repeated_in_a_later_chunk_keeps_the_first(keyed: MemoryDataset) -> None:
+    keyed.merge_arrow_reader(
+        reader_of(keyed_batch(["A"], [1]), keyed_batch(["A"], [8])), commit_row_size=1
     )
     assert stored_rows(keyed) == {"A": 1}
 
 
-def test_a_key_repeated_in_a_later_chunk_replaces_the_earlier(keyed: MemoryDataset) -> None:
-    keyed.overwrite_arrow_reader(
-        reader_of(keyed_batch(["A"], [1]), keyed_batch(["A"], [8])),
-        merge_by=True,
-        commit_row_size=1,
-    )
-    assert stored_rows(keyed) == {"A": 8}
-
-
-def test_overwrite_by_a_list_names_the_columns(keyed: MemoryDataset) -> None:
-    keyed.overwrite_arrow(keyed_batch(["A"], [1]), merge_by=["symbol"])
-    keyed.overwrite_arrow(keyed_batch(["A"], [9]), merge_by=["symbol"])
+def test_merge_by_a_list_names_the_columns(keyed: MemoryDataset) -> None:
+    keyed.merge_arrow(keyed_batch(["A"], [1]), merge_by=["symbol"])
+    keyed.merge_arrow(keyed_batch(["A"], [9]), merge_by=["symbol"])
     assert stored_rows(keyed) == {"A": 9}
 
 
 def test_a_null_merge_key_is_refused(dataset: MemoryDataset) -> None:
     batch = batch_of(symbol=["A"], day=[datetime.date(2026, 8, 14)], size=[None])
     with pytest.raises(ValueError, match="merge key and cannot be null"):
-        dataset.overwrite_arrow(batch, merge_by=["size"])
+        dataset.merge_arrow(batch, merge_by=["size"])
 
 
-def test_overwrite_creates_what_is_not_there(keyed: MemoryDataset) -> None:
+def test_merge_creates_what_is_not_there(keyed: MemoryDataset) -> None:
     assert not keyed.exists
-    keyed.overwrite_arrow(keyed_batch(["A"], [1]), merge_by=True)
+    keyed.merge_arrow(keyed_batch(["A"], [1]))
     assert keyed.exists and stored_rows(keyed) == {"A": 1}
 
 
 def test_append_arrow_picks_the_method_by_what_it_is(keyed: MemoryDataset) -> None:
     batch = keyed_batch(["A"], [1])
-    keyed.append_arrow(batch)
-    keyed.append_arrow(pyarrow.Table.from_batches([batch]))
-    keyed.append_arrow(reader_of(batch))
+    keyed.append_arrow(batch, merge_by=False)
+    keyed.append_arrow(pyarrow.Table.from_batches([batch]), merge_by=False)
+    keyed.append_arrow(reader_of(batch), merge_by=False)
     assert keyed.read_arrow_table().num_rows == 3
+
+
+def test_merge_arrow_picks_the_method_by_what_it_is(keyed: MemoryDataset) -> None:
+    assert keyed.merge_arrow(keyed_batch(["A"], [1])) == 1
+    assert keyed.merge_arrow(pyarrow.Table.from_batches([keyed_batch(["A"], [2])])) == 1
+    assert keyed.merge_arrow(reader_of(keyed_batch(["A"], [3]))) == 1
+    assert stored_rows(keyed) == {"A": 3}
 
 
 # -- chunking ---------------------------------------------------------------
@@ -470,7 +540,7 @@ def test_overwrite_arrow_picks_the_method_by_what_it_is(dataset: MemoryDataset) 
     assert dataset.overwrite_arrow(batch) == 1
     assert dataset.overwrite_arrow(pyarrow.Table.from_batches([batch])) == 1
     assert dataset.overwrite_arrow(reader_of(batch)) == 1
-    assert [commit.num_rows for commit in dataset.commits] == [1], "one key, replaced twice"
+    assert [commit.num_rows for commit in dataset.commits] == [1], "replaced twice"
 
 
 def test_read_arrow_picks_the_method_by_the_type_asked_for(dataset: MemoryDataset) -> None:
@@ -669,3 +739,156 @@ def test_one_row_per_key_groups_nulls_and_nans_the_way_a_group_by_does() -> None
     assert first_rows(ordered, ["at"]).num_rows == 4
     shuffled = pyarrow.table({"at": pyarrow.array([None, 2.0, nan, 2.0, None, nan, 1.0])})
     assert first_rows(shuffled, ["at"]).num_rows == 4
+
+
+# -- matching rows on a key ----------------------------------------------------
+
+
+def test_a_semi_join_keeps_the_matched_rows_in_their_own_order() -> None:
+    stored = pyarrow.table(
+        {"at": pyarrow.array(["c", "a", "b", "a"], pyarrow.large_string()), "n": [1, 2, 3, 4]}
+    )
+    found = semi_join(stored, pyarrow.table({"at": pyarrow.array(["a", "z"])}), ["at"])
+    assert found.column("n").to_pylist() == [2, 4]
+    assert found.schema.field("at").type == pyarrow.large_string(), "the rows keep their types"
+    assert semi_join(stored, stored.slice(0, 0), ["at"]).num_rows == 0
+    assert semi_join(stored.slice(0, 0), stored, ["at"]).num_rows == 0
+
+
+def test_key_pairs_name_every_pair_of_rows_sharing_a_key() -> None:
+    stored = pyarrow.table({"at": [3, 1, 3], "n": [10, 11, 12]})
+    ours, theirs = key_pairs(stored, pyarrow.table({"at": [3, 9]}), ["at"])
+    assert sorted(zip(ours.to_pylist(), theirs.to_pylist(), strict=True)) == [(0, 0), (2, 0)]
+    none, nothing = key_pairs(stored, pyarrow.table({"at": [9]}), ["at"])
+    assert (len(none), len(nothing)) == (0, 0)
+
+
+NAN = float("nan")
+
+
+@pytest.mark.parametrize(
+    ("left", "right", "same"),
+    [
+        (pyarrow.array([1, None, 3]), pyarrow.array([1, None, 4]), [True, True, False]),
+        (pyarrow.array([NAN, 0.0, None]), pyarrow.array([NAN, -0.0, 1.0]), [True, True, False]),
+        (
+            pyarrow.array(["a", None], pyarrow.large_string()),
+            pyarrow.array(["a", ""], pyarrow.string()),
+            [True, False],
+        ),
+        (
+            pyarrow.array(["x", "y"]).dictionary_encode(),
+            pyarrow.array(["x", "z"]),
+            [True, False],
+        ),
+        (
+            pyarrow.array([[1, 2], [], None, [None]]),
+            pyarrow.array([[1, 2], None, None, [None]], pyarrow.large_list(pyarrow.int64())),
+            [True, False, True, True],
+        ),
+        (
+            pyarrow.array([[1, 2], [3, 4]], pyarrow.list_(pyarrow.int64(), 2)),
+            pyarrow.array([[1, 2], [3, 5]], pyarrow.list_(pyarrow.int64(), 2)),
+            [True, False],
+        ),
+        (
+            pyarrow.array([{"a": 1, "b": [1]}, None, {"a": None, "b": None}]),
+            pyarrow.array([{"a": 1, "b": [1]}, {"a": None, "b": None}, {"a": None, "b": None}]),
+            [True, False, True],
+        ),
+        (
+            pyarrow.array([[("k", 1)], [], None], pyarrow.map_(pyarrow.string(), pyarrow.int64())),
+            pyarrow.array(
+                [[("k", 1)], [("k", 2)], None], pyarrow.map_(pyarrow.string(), pyarrow.int64())
+            ),
+            [True, False, True],
+        ),
+        (
+            pyarrow.array([[{"x": [1]}], [{"x": [2]}]]),
+            pyarrow.array([[{"x": [1]}], [{"x": [3]}]]),
+            [True, False],
+        ),
+    ],
+    ids=[
+        "ints",
+        "floats",
+        "strings",
+        "dictionary",
+        "lists",
+        "fixed-lists",
+        "structs",
+        "maps",
+        "nested",
+    ],
+)
+def test_rows_are_equal_where_their_values_are(left: Any, right: Any, same: list[bool]) -> None:
+    """Two nulls and two NaNs are equal, a type is compared as the values it
+    holds, and a nested value is equal when everything inside it is."""
+    assert equal_rows(pyarrow.table({"v": left}), pyarrow.table({"v": right})).to_pylist() == same
+    sliced = equal_rows(pyarrow.table({"v": left}).slice(1), pyarrow.table({"v": right}).slice(1))
+    assert sliced.to_pylist() == same[1:], "a slice compares its own rows"
+
+
+def test_rows_compare_an_extension_as_the_bytes_it_holds() -> None:
+    import uuid
+
+    held = [uuid.UUID(int=1).bytes, uuid.UUID(int=2).bytes]
+    stored = pyarrow.table({"id": pyarrow.array(held, pyarrow.binary(16))})
+    arriving = pyarrow.table(
+        {
+            "id": pyarrow.ExtensionArray.from_storage(
+                pyarrow.uuid(), pyarrow.array(held, pyarrow.binary(16))
+            )
+        }
+    )
+    assert equal_rows(stored, arriving).to_pylist() == [True, True]
+
+
+def test_a_column_the_right_lacks_is_equal_only_where_the_left_is_null() -> None:
+    left = pyarrow.table({"k": [1, 2], "extra": [None, 5]})
+    assert equal_rows(left, pyarrow.table({"k": [1, 2]})).to_pylist() == [True, False]
+
+
+def test_values_no_kernel_compares_are_unequal() -> None:
+    union = pyarrow.UnionArray.from_sparse(
+        pyarrow.array([0, 0], pyarrow.int8()), [pyarrow.array([1, 1])]
+    )
+    table = pyarrow.table({"u": union})
+    assert equal_rows(table, table).to_pylist() == [False, False]
+
+
+def test_no_rows_compare_to_no_answers() -> None:
+    empty = pyarrow.table({"k": pyarrow.array([], pyarrow.int64())})
+    assert equal_rows(empty, empty).to_pylist() == []
+
+
+def test_sorted_rows_order_on_values_and_keep_ties_in_their_own_order() -> None:
+    table = pyarrow.table({"at": [2, 1, 2, 1], "n": [0, 1, 2, 3]})
+    assert sorted_rows(table, ["at"]).column("n").to_pylist() == [1, 3, 0, 2]
+    descending = sorted_rows(table, [("at", "descending")])
+    assert descending.column("n").to_pylist() == [0, 2, 1, 3]
+
+
+def test_sorted_rows_place_nan_after_numbers_and_null_last_either_way() -> None:
+    table = pyarrow.table({"value": [1.0, NAN, 2.0, None]})
+    for direction in ("ascending", "descending"):
+        ordered = sorted_rows(table, [("value", direction)])
+        assert in_sort_order(ordered, [("value", direction)])
+        assert ordered.column("value").is_null().to_pylist()[-1]
+
+
+def test_sorted_rows_sort_an_extension_key_by_the_bytes_it_holds() -> None:
+    """Arrow has no sort kernel for an extension type; a UUID key sorts as its storage."""
+    import uuid
+
+    held = [uuid.UUID(int=value).bytes for value in (3, 1, 2)]
+    table = pyarrow.table(
+        {
+            "id": pyarrow.ExtensionArray.from_storage(
+                pyarrow.uuid(), pyarrow.array(held, pyarrow.binary(16))
+            )
+        }
+    )
+    ordered = sorted_rows(table, ["id"])
+    assert ordered.schema == table.schema, "the rows keep their type"
+    assert [value.int for value in ordered.column("id").to_pylist()] == [1, 2, 3]

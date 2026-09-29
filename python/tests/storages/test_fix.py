@@ -59,6 +59,7 @@ from .conftest import (
     planned,
     read,
     rows,
+    snapshots,
     storages_mapping,
 )
 from .test_pipeline import LANDED
@@ -171,27 +172,36 @@ def test_the_clocks_and_the_group_the_row_grew_reach_the_stored_tables(landing: 
 def test_fix_rows_cross_from_the_codec_straight_into_both_layers(
     storages: Storages, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Each task hands Iceberg a reader; the FIX tables merge a grown row into
-    the table, the log does not; and what lands is the fixed row, its native
-    event columns first and its residual record last, with nothing of the
-    line beside it."""
+    """Each task hands Iceberg a reader and merges it on the table's primary
+    key, appending or overwriting nothing; the FIX tables merge a grown row
+    into the table, the log does not; and what lands is the fixed row, its
+    native event columns first and its residual record last, with nothing of
+    the line beside it."""
     handed: dict[str, pyarrow.Schema] = {}
     merged: dict[str, bool] = {}
-    replace = IcebergDataset.overwrite_arrow_reader
+    keyed: dict[str, Any] = {}
+    merge = IcebergDataset.merge_arrow_reader
 
     def observed(dataset: IcebergDataset, source: Any, *args: Any, **kwargs: Any) -> int:
         assert isinstance(source, pyarrow.RecordBatchReader)
         table = f"{dataset.catalog_name}.{dataset.identifier}"
         merged[table] = dataset.merge_schema
+        keyed[table] = kwargs.get("merge_by")
         handed[table] = source.schema
-        return replace(dataset, source, *args, **kwargs)
+        return merge(dataset, source, *args, **kwargs)
 
-    monkeypatch.setattr(IcebergDataset, "overwrite_arrow_reader", observed)
+    def refused(dataset: IcebergDataset, *args: Any, **kwargs: Any) -> int:
+        raise AssertionError(f"{dataset.identifier} is merged, never appended or overwritten")
+
+    monkeypatch.setattr(IcebergDataset, "merge_arrow_reader", observed)
+    monkeypatch.setattr(IcebergDataset, "append_arrow_reader", refused)
+    monkeypatch.setattr(IcebergDataset, "overwrite_arrow_reader", refused)
     parse_log_messages(CAPTURE.as_uri(), storages, DAY)
     parse_fix_messages_raw(storages, WINDOW)
     parse_fix_messages_refined(storages, WINDOW)
 
     assert merged == {LOG_MESSAGES: False, FIX_MESSAGES_RAW: True, FIX_MESSAGES: True}
+    assert keyed == dict.fromkeys(merged), "each merges on the primary key it declares"
     for table in (FIX_MESSAGES_RAW, FIX_MESSAGES):
         fixes = read(storages, table)
         assert handed[table].names == fixes.column_names
@@ -360,7 +370,7 @@ def test_the_published_contract_streams_a_mock_row_through_iceberg(storages: Sto
     fixes = storages.dataset(FIX_MESSAGES_RAW, field=field)
     try:
         source = pyarrow.RecordBatchReader.from_batches(schema, [batch])
-        assert fixes.overwrite_arrow_reader(source, field, merge_by=True) == 1
+        assert fixes.merge_arrow_reader(source, field) == 1
         stored = fixes.read_arrow_table(field)
     finally:
         fixes.close()
@@ -441,7 +451,9 @@ def test_the_walk_reads_the_hour_before_its_window_and_writes_only_its_own(
     """The hour before `start` places a chain that began there, and none of
     it is written but the view of it the hourly grid restates at `start`; an
     expiry past `end` waits for its own window. The lines arrive out of
-    order, so arrival cannot stand in for the event's order."""
+    order, so arrival cannot stand in for the event's order. A replay of the
+    window answers every row again, each a key the table holds, so it
+    appends none and commits nothing."""
     from pyiceberg.io.pyarrow import PyArrowFile
 
     capture = tmp_path / "hours.log"
@@ -514,8 +526,12 @@ def test_the_walk_reads_the_hour_before_its_window_and_writes_only_its_own(
     if expires == "10:40:00":
         assert walked[1][EVENT_CLOCK] == datetime.datetime(2026, 8, 14, 10, 40, tzinfo=UTC)
         assert walked[1]["state"] == State.EXPIRED
-    assert parse_fix_messages_refined(storages, HOUR) == landed
+    committed = snapshots(storages, FIX_MESSAGES)
+    assert parse_fix_messages_refined(storages, HOUR) == Landed(
+        read=landed.read, written=0, skipped=landed.written + landed.skipped
+    )
     assert read(storages, FIX_MESSAGES).equals(held)
+    assert snapshots(storages, FIX_MESSAGES) == committed
 
 
 #: The grid the walk restates the chains on, in nanoseconds: one hour.
@@ -587,12 +603,13 @@ def test_the_rows_at_start_are_the_chains_the_hour_before_left_alive(
     storages: Storages,
 ) -> None:
     """A window opening at 13:00 reads the hour before it, where the day's
-    chains began, and lands at 13:00 exactly the views the walk over the
-    whole window landed there -- every row it lands is the one that walk
-    landed. The grid is the task's `snapshot_millis`, whatever the codec
-    pins: zero lands the events alone, and a codec pinning a minute lands
-    the hourly views. The walk runs on the task's own codec stating the read
-    is sorted, so it holds an hour at a time."""
+    chains began, and answers at 13:00 exactly the views the walk over the
+    whole window landed there -- every row it answers is a key that walk
+    landed, so it appends none and commits nothing. The grid is the task's
+    `snapshot_millis`, whatever the codec pins: zero lands the events alone,
+    and a codec pinning a minute lands the hourly views. The walk runs on
+    the task's own codec stating the read is sorted, so it holds an hour at
+    a time."""
     parse_log_messages(CAPTURE.as_uri(), storages, DAY)
     parse_fix_messages_raw(storages, WINDOW)
     used: list[FixCodec] = []
@@ -610,13 +627,15 @@ def test_the_rows_at_start_are_the_chains_the_hour_before_left_alive(
     held = read(storages, FIX_MESSAGES)
 
     later = (START + HISTORY, END)
+    committed = snapshots(storages, FIX_MESSAGES)
     landed = parse_fix_messages_refined(storages, later)
     stored = held.filter(within(held.column(EVENT_CLOCK), later))
     at_start = [row for row in stored.to_pylist() if row[EVENT_CLOCK] == later[0]]
     print(f"\nfrom 13:00 {landed}: {len(at_start)} rows at 13:00")
-    assert landed == Landed(read=66, written=stored.num_rows)
+    assert landed == Landed(read=66, written=0, skipped=stored.num_rows)
     assert len(at_start) == 3 and all(row["snapunix"] == later[0] for row in at_start)
     assert read(storages, FIX_MESSAGES).equals(held)
+    assert snapshots(storages, FIX_MESSAGES) == committed
 
     plain = parse_fix_messages_refined(
         storages, WINDOW, snapshot_millis=0, target="silver.record_keeping.plain_fix_messages"

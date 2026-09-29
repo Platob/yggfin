@@ -3,7 +3,8 @@
 `landing` lands the capture once: its whole day into bronze `log_messages`,
 then every later task over `EARLY` and over the main window `WINDOW`. Pinned
 here: what each task answered, which data files it opened, what the walk
-settled in silver, and that a rerun lands the same rows again. The samples
+settled in silver, that a rerun leaves every table holding what it held, and
+that `commit_row_size` bounds a commit and never what lands. The samples
 print for a reader running with `-s`.
 """
 
@@ -24,7 +25,7 @@ from pyiceberg.io.pyarrow import expression_to_pyarrow
 from pyiceberg.schema import Schema
 from pyiceberg.types import IntegerType, NestedField, TimestamptzType
 
-from rekep import Side, State, scalar
+from rekep import Side, State, Storages, scalar
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.fields import partition_key
 from rekep.fix import (
@@ -39,6 +40,7 @@ from rekep.iceberg import window_filter
 from rekep.market import market_window_filter
 from rekep.pipeline import (
     BOOKS,
+    COMMIT_ROW_SIZE,
     EVENTS,
     FIX_MESSAGES,
     FIX_MESSAGES_RAW,
@@ -56,6 +58,7 @@ from rekep.times import EPOCH, within
 from .conftest import (
     CAPTURE,
     DAY,
+    EARLY,
     END,
     START,
     WINDOW,
@@ -150,6 +153,18 @@ READS = {
     },
 }
 
+#: The tasks keyed on `curruuid`, by the table each appends to: a run appends
+#: only the keys its table does not hold.
+KEYED = {
+    "parse_log_messages": LOG_MESSAGES,
+    "parse_fix_messages_raw": FIX_MESSAGES_RAW,
+    "parse_fix_messages_refined": FIX_MESSAGES,
+}
+
+#: Fewer rows than the log over `DAY`, the parse or the walk over `WINDOW`
+#: appends, so each commits several times where `COMMIT_ROW_SIZE` commits once.
+SMALL_COMMIT_ROW_SIZE = 7
+
 #: The identifiers `crosscode` takes the first non-empty one of, in order.
 CROSS_IDENTIFIERS = ("orderid", "clordid", "origclordid", "quoteid", "quotereqid", "mdreqid")
 
@@ -162,6 +177,29 @@ STATUS_FIELDS = ((39, "ordstatus"), (150, "exectype"), (297, "quotestatus"))
 def counted(landed: dict[str, Landed]) -> dict[str, Landed]:
     """What each task read, wrote and skipped, without the snapshot it pinned."""
     return {name: dataclasses.replace(held, snapshot_id=None) for name, held in landed.items()}
+
+
+def replayed(landed: Landed) -> Landed:
+    """What a keyed task answers over a window it already landed: the rows it
+    read, every row it answered a key its table holds, and none written."""
+    return dataclasses.replace(landed, written=0, skipped=landed.written + landed.skipped)
+
+
+def rerun(landed: dict[str, Landed]) -> dict[str, Landed]:
+    """What every task answers over a window it already landed: a keyed task
+    appends nothing, and the books and the event tables write what they
+    wrote, since they replace their window."""
+    return {task: replayed(held) if task in KEYED else held for task, held in landed.items()}
+
+
+def added(storages: Storages, table: str) -> list[tuple[str, int]]:
+    """Each snapshot of one table, oldest first: its operation and the rows it added."""
+    layer, _, name = table.partition(".")
+    held = storages.catalog(layer).load_table(name).metadata.snapshots
+    return [
+        (snapshot.summary.operation.value, int(snapshot.summary.get("added-records") or 0))
+        for snapshot in held
+    ]
 
 
 def short(identity: bytes | None) -> str:
@@ -528,8 +566,11 @@ def test_no_parsed_message_sits_at_the_pin(landing: Landing) -> None:
 
 def test_a_rerun_of_every_task_over_its_window_lands_identical_rows(landing: Landing) -> None:
     """Idempotent: the log over its day and every later task over the window
-    land the rows they replace again, in one commit per table, and `EARLY`'s
-    rows are left as they were."""
+    answer what they answered and leave every table holding what it held. A
+    keyed task finds every key it answers held, so it appends none and
+    commits nothing; the books and the event tables replace their window
+    with the same rows in one commit each; and `EARLY`'s rows are left as
+    they were."""
     storages = landing.storages
     before = {table: read(storages, table) for table in storages.tables()}
     commits = {table: snapshots(storages, table) for table in before}
@@ -537,8 +578,8 @@ def test_a_rerun_of_every_task_over_its_window_lands_identical_rows(landing: Lan
     log = parse_log_messages(CAPTURE.as_uri(), storages, DAY)
     again = graph(storages, WINDOW)
 
-    assert log == LOG
-    assert counted(again) == LANDED
+    assert log == replayed(LOG) == Landed(read=144, written=0, skipped=144)
+    assert counted(again) == rerun(LANDED)
     books = again["parse_books"].snapshot_id
     assert books != landing.landed["parse_books"].snapshot_id
     assert all(again[task.__name__].snapshot_id == books for task in FLATTENERS.values())
@@ -546,7 +587,98 @@ def test_a_rerun_of_every_task_over_its_window_lands_identical_rows(landing: Lan
         assert read(storages, table).equals(held), f"{table} landed other rows"
     after = {table: snapshots(storages, table) for table in before}
     print(f"\nsnapshots before the rerun {commits}\nand after it {after}")
-    assert after == {table: count + 1 for table, count in commits.items()}
+    keyed = set(KEYED.values())
+    assert after == {
+        table: count if table in keyed else count + 1 for table, count in commits.items()
+    }, "a keyed table commits nothing, and a market table one replacement"
+
+
+# -- the commit size -----------------------------------------------------------
+
+
+def test_the_commit_row_size_bounds_a_commit_and_never_what_lands(
+    landing: Landing, storages: Storages
+) -> None:
+    """`commit_row_size` is how many rows one commit of a task holds, never
+    which rows land: the capture through every task at seven rows a commit
+    answers what the landing at `COMMIT_ROW_SIZE` answered and stores the
+    very rows it stores. A keyed table takes a commit per seven rows it
+    appends, each one an append, where the landing took one per run; the
+    books and the event tables still replace a window in one commit, whatever
+    it holds. A replay at seven rows a commit appends nothing and commits
+    nothing to a keyed table."""
+    small = {"commit_row_size": SMALL_COMMIT_ROW_SIZE}
+    assert SMALL_COMMIT_ROW_SIZE < COMMIT_ROW_SIZE
+
+    log = parse_log_messages(CAPTURE.as_uri(), storages, DAY, **small)
+    early = graph(storages, EARLY, **small)
+    landed = graph(storages, WINDOW, **small)
+
+    assert log == landing.log
+    assert counted(early) == counted(landing.early)
+    assert counted(landed) == counted(landing.landed)
+    tables = sorted(landing.storages.tables())
+    assert sorted(storages.tables()) == tables
+    for table in tables:
+        assert read(storages, table).equals(landing.table(table)), f"{table} landed other rows"
+
+    commits = {table: added(storages, table) for table in tables}
+    for table, held in commits.items():
+        print(f"\n{table:<36} {len(held)} commits adding {[rows for _, rows in held]}")
+    for table in KEYED.values():
+        held = commits[table]
+        assert {operation for operation, _ in held} == {"append"}, "a keyed table only appends"
+        assert max(rows for _, rows in held) <= SMALL_COMMIT_ROW_SIZE
+        assert sum(rows for _, rows in held) == read(storages, table).num_rows
+        assert len(held) > snapshots(landing.storages, table), "more commits than the default"
+    # The log's 144 lines, seven to a commit.
+    assert len(commits[LOG_MESSAGES]) == -(-LOG.written // SMALL_COMMIT_ROW_SIZE)
+    for table in {BOOKS, *EVENTS.values()}:
+        assert len(commits[table]) == len((EARLY, WINDOW)), "one replacement per window"
+    assert max(rows for _, rows in commits[BOOKS]) > SMALL_COMMIT_ROW_SIZE, (
+        "a window's books are one commit however many rows they hold"
+    )
+
+    before = {table: read(storages, table) for table in tables}
+    assert parse_log_messages(CAPTURE.as_uri(), storages, DAY, **small) == replayed(landing.log)
+    again = graph(storages, WINDOW, **small)
+
+    assert counted(again) == rerun(counted(landing.landed))
+    for table, held in before.items():
+        assert read(storages, table).equals(held), f"{table} landed other rows"
+    for table in tables:
+        replaced = table not in KEYED.values()
+        assert len(added(storages, table)) == len(commits[table]) + replaced, table
+
+
+def test_a_rerun_replaces_exactly_the_rows_whose_content_changed(storages: Storages) -> None:
+    """A keyed task merges: a stored row the rerun states otherwise under the
+    same identity is replaced, and every other row -- and every file holding
+    none of those -- is left as it was."""
+    parse_log_messages(CAPTURE.as_uri(), storages, DAY)
+    landed = read(storages, LOG_MESSAGES)
+    field = log_message_field()
+    lines = storages.dataset(LOG_MESSAGES, field=field)
+    try:
+        hours = pyarrow.compute.floor_temporal(landed.column("currunix"), unit="hour")
+        stale = landed.filter(pyarrow.compute.equal(hours, hours[0])).slice(0, 3)
+        level = stale.schema.get_field_index("loglevel")
+        stale = stale.set_column(
+            level,
+            stale.schema.field(level),
+            pyarrow.array(["STALE"] * stale.num_rows, stale.schema.field(level).type),
+        )
+        assert lines.merge_arrow_table(stale, field) == 3, "the stale rows replace the stored"
+        before = {task.file.file_path for task in lines.refresh().iceberg_table.scan().plan_files()}
+    finally:
+        lines.close()
+
+    rerun = parse_log_messages(CAPTURE.as_uri(), storages, DAY)
+
+    assert rerun == Landed(read=144, written=3, skipped=141)
+    assert read(storages, LOG_MESSAGES).equals(landed), "the read's own rows are back"
+    after = set(planned(storages, LOG_MESSAGES))
+    assert len(before - after) == 1, "only the file holding the stale rows is rewritten"
 
 
 # -- the task surface ----------------------------------------------------------

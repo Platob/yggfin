@@ -131,10 +131,13 @@ first run; `catchup` walks each day as the next one lands.
 
 ## Retries, reruns and backfills
 
-Every task replaces its window, so a retry, a cleared task and a rerun of an
-old interval land the same rows again. Clearing `books` clears the three
-flatteners downstream of it, which then read the new snapshot. A backfill is
-the same DAG over past intervals, in order:
+A retry, a cleared task and a rerun of an old interval leave each table
+holding each row once: the three keyed tasks merge their rows into their
+table -- writing none, on an interval they landed as it is, and committing
+nothing -- and `books` and the flatteners replace their window. A keyed task
+whose write failed after a commit keeps it, and its retry writes the rest.
+Clearing `books` clears the three flatteners downstream of it, which then
+read the new snapshot. A backfill is the same DAG over past intervals, in order:
 
 ```bash
 airflow dags backfill rekep_record_keeping --start-date 2026-08-01 --end-date 2026-08-15

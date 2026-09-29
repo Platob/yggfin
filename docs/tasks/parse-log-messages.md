@@ -1,6 +1,6 @@
 # parse_log_messages
 
-`parse_log_messages(source, storages, window=None, *, rowheader=None, timezone=TIMEZONE, target=LOG_MESSAGES)`
+`parse_log_messages(source, storages, window=None, *, rowheader=None, timezone=TIMEZONE, commit_row_size=COMMIT_ROW_SIZE, target=LOG_MESSAGES)`
 reads a local or object-store text capture and lands one row per line whose
 `currunix` falls in the window -- every line, given none -- in
 `bronze.record_keeping.log_messages`.
@@ -31,12 +31,12 @@ capture = "file:data/capture/ulbridge.log"
 day = window_of("2026-08-14", "2026-08-14")
 with storages:
     assert parse_log_messages(capture, storages, day) == Landed(read=144, written=144)
-    # A rerun lands the same rows over the ones it landed: one per line.
-    assert parse_log_messages(capture, storages, day) == Landed(read=144, written=144)
-    # Given no window, every line lands, and the answer names the whole hours
-    # its dated lines span, for the tasks after it to run over.
+    # A rerun finds every line held as it is and writes none: one row per line.
+    assert parse_log_messages(capture, storages, day) == Landed(read=144, written=0, skipped=144)
+    # Given no window, every line is read, and the answer names the whole
+    # hours its dated lines span, for the tasks after it to run over.
     landed = parse_log_messages(capture, storages)
-    assert (landed.read, landed.written) == (144, 144)
+    assert (landed.read, landed.written) == (144, 0)
     assert [bound.isoformat() for bound in landed.window] == [
         "2026-08-14T01:00:00+00:00",
         "2026-08-14T22:00:00+00:00",
@@ -287,9 +287,9 @@ falls in; a line the header did not match is in the window of its object's
 modification time; a line read from a handle with no clock at all sits at the
 epoch, in the window that covers 1970.
 
-Given no window, every line is read and staged in a local Arrow stream file
-while the span of the instants it was dated at is measured, then landed, and
-`Landed.window` answers the whole hours that span covers --
+Given no window, every line is read and landed, the span of the instants
+they were dated at measured as they stream past, and `Landed.window` answers
+the whole hours that span covers --
 `rekep.times.hour_window` over the earliest and latest `currunix`, lines at
 the epoch dating nothing -- for the tasks after it to run over; it is None
 where a window was given or no line was dated. The shipped capture spans
@@ -297,11 +297,13 @@ where a window was given or no line was dated. The shipped capture spans
 
 ## The write
 
-The write replaces the window's rows on `curruuid` within the hour of
-`currunix`: a stored row carrying one of the window's keys is taken out and
-the window's row lands, in one commit per bounded chunk. If no stored file can
-contain a key, the commit is an append. A rerun lands the same rows under the
-same keys, so the table holds each line once.
+The write merges the window's lines into the table on `curruuid` within the
+hour of `currunix`, at most `commit_row_size` lines a commit
+([commits](index.md#commits)): a line the hour lacks is inserted, one it
+holds with other values replaced, and one it holds as it is `skipped`. A
+rerun finds every line held as it is, writes none and commits nothing, so the
+table holds each line once. [Stream writes](../storages/iceberg.md#stream-writes)
+says what the merge reads to decide.
 
 The identity digests the object a line was read from, so the same bytes read
 through two URIs, or from a copy written at another time, answer other
@@ -312,8 +314,8 @@ identities. Replay a capture from where it was first read.
 One object is opened at a time, transport read-ahead is byte-bounded, emitted
 batches are row-bounded, and the writer receives one `RecordBatchReader`;
 nothing collects a capture into a table first, and a remote object is never
-staged locally -- a windowless read stages the rows it decoded, not the
-object. One physical line is not byte-bounded: a huge line can exceed
-the target batch size. Concatenated gzip members should be validated against
+staged locally -- the write [spills](../storages/iceberg.md#what-a-commit-holds)
+the rows it decoded, not the object. One physical line is not byte-bounded: a
+huge line can exceed the target batch size. Concatenated gzip members should be validated against
 the decoder before a production run, because staging locally is not a
 substitute for a streaming decoder fix.

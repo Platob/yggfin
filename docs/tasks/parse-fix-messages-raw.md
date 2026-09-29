@@ -1,6 +1,6 @@
 # parse_fix_messages_raw
 
-`parse_fix_messages_raw(storages, window, *, codec=None, source=LOG_MESSAGES, target=FIX_MESSAGES_RAW)`
+`parse_fix_messages_raw(storages, window, *, codec=None, commit_row_size=COMMIT_ROW_SIZE, source=LOG_MESSAGES, target=FIX_MESSAGES_RAW)`
 parses the stored lines of one window into FIX messages and lands them in
 `bronze.record_keeping.fix_messages`. It parses and nothing more: no chain is
 walked.
@@ -61,12 +61,14 @@ lands 77 rows, 58 of them folded.
 
 The task scans the source for the window on `currunix` -- the instant each
 line was printed at -- and the lines at the epoch beside it, where a handle
-with no clock leaves a line. The scan is projected to
-`rekep.fix.PARSE_COLUMNS`, the seven columns a parse consumes: `currunix`,
+with no clock leaves a line, in the table's sort order,
+`rekep.fix.SORT_COLUMNS` (`currunix`, `seqnum`, `curruuid`): the order the
+lines were printed in, whatever files hold them. The parse is handed
+`rekep.fix.PARSE_COLUMNS`, the seven columns it consumes: `currunix`,
 `curruuid`, `body`, `msgsessionid`, `msgctxid`, `msgseqnum` and
 `msgpluginid` -- the line's clock, its identity, the body the frames are read
-out of, and the four captures that fill a FIX field by name. The scan opens no
-other column.
+out of, and the four captures that fill a FIX field by name. The scan opens
+those and `seqnum`, which only the order reads, and no other column.
 
 ## Parse
 
@@ -113,13 +115,18 @@ execution through the parse.
 A bridge logs a message again at every hop it passes. A copy that restates
 another exactly answers the same identity, so the table is keyed on
 `curruuid` alone, within the hour of `currunix`, and the copies the key folded
-into a written row are `skipped`. A copy stating no `SendingTime` takes the
-transaction clock it states only where its line stands within
-`official_time_delay_ms` of it, which a line read in its bridge's zone does,
+into one row are `skipped`. Of the copies one run reads, the row kept is the
+first printed, because the lines are read in the order they were printed in.
+A copy stating no `SendingTime` takes the transaction clock it states only
+where its line stands within `official_time_delay_ms` of it, which a line
+read in its bridge's zone does,
 so it folds with the copies that state one; read in another zone, it takes
 its line's instant, hours away from them, and folds with none of them. A copy
 a hop changed -- an enrichment plugin added a field -- is a row of its own
 here, and the walk merges it into the event it is, in
-[silver](parse-fix-messages-refined.md). The write replaces the window's keys
-and adds any column a newer dictionary declares (`merge_schema=True`). A
-rerun lands the same rows again.
+[silver](parse-fix-messages-refined.md). The write merges the messages into
+the table on that key, at most `commit_row_size` rows a commit
+([commits](index.md#commits)) -- a key the hour lacks is inserted, one it
+holds with other values replaced -- and adds any column a newer dictionary
+declares (`merge_schema=True`). A rerun finds every message held as it is:
+it writes none and counts all of them `skipped`.

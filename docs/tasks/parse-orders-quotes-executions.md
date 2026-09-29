@@ -1,6 +1,6 @@
 # parse_orders, parse_quotes, parse_executions
 
-`parse_orders(storages, window, *, snapshot_id=None, source=BOOKS, target=ORDERS)`,
+`parse_orders(storages, window, *, snapshot_id=None, commit_row_size=COMMIT_ROW_SIZE, source=BOOKS, target=ORDERS)`,
 `parse_quotes(...)` with `target=QUOTES` and `parse_executions(...)` with
 `target=EXECUTIONS` read one snapshot of `silver.record_keeping.books` and
 replace the strict `[start, end)` window of `silver.record_keeping.orders`,
@@ -123,9 +123,10 @@ shipped capture's window.
 
 ## Write
 
-The output is filtered to `[start, end)` and replaces exactly that window in
-one snapshot, an empty rerun included; rows outside it survive and a failure
-leaves the previous snapshot visible. `read` counts the books of the pinned
-snapshot the window selected, `written` the events stored, and `skipped` the
-events answered but not written, normally zero. After a book replacement,
-run the three again against the new snapshot.
+The output is filtered to `[start, end)`, staged `commit_row_size` rows at a
+time, and replaces exactly that window in one snapshot, an empty rerun
+included; rows outside it survive and a failure leaves the previous snapshot
+visible. `read` counts the books of the pinned snapshot the window selected,
+`written` the events stored, and `skipped` the events answered but not
+written, normally zero. After a book replacement, run the three again against
+the new snapshot.

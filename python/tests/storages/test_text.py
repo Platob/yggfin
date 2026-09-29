@@ -129,10 +129,10 @@ def test_a_window_the_capture_falls_outside_reads_nothing_and_writes_none(
 
 
 @pytest.mark.parametrize(
-    ("zone", "hours", "bronze", "events"),
+    ("zone", "hours", "bronze", "events", "stored"),
     [
-        pytest.param({}, HOURS, (77, 58), (22, 23), id="default"),
-        pytest.param({"timezone": "UTC"}, HOURS_READ_AS_UTC, (81, 54), (23, 27), id="utc"),
+        pytest.param({}, HOURS, (77, 58), (22, 23), 23, id="default"),
+        pytest.param({"timezone": "UTC"}, HOURS_READ_AS_UTC, (81, 54), (23, 27), 39, id="utc"),
     ],
 )
 def test_a_line_is_read_in_the_zone_its_bridge_prints(
@@ -141,21 +141,26 @@ def test_a_line_is_read_in_the_zone_its_bridge_prints(
     hours: dict[int, int],
     bronze: tuple[int, int],
     events: tuple[int, int],
+    stored: int,
 ) -> None:
     """The capture's bridge prints a Central European summer clock, two hours
     ahead of the UTC its FIX frames state, and `rekep.times.TIMEZONE` reads
     it there unless a task states another zone. Read in its zone, a line
     lands in the hour of the message it carries: the key folds the
-    observations of one delivery, and hourly silver windows place every
-    event the day's walk does but the one expiry whose order began more than
-    `HISTORY` before it.
+    observations of one delivery, and hourly silver windows land every
+    event the day's walk answers, each as that walk settles it, but the one
+    expiry whose order began more than `HISTORY` before it -- so the day's
+    walk after them appends that expiry alone, and silver holds each event
+    once.
 
     Read as UTC, each line is dated two hours after its message, past the
     delay a transaction clock is trusted within: a copy stating no
     `SendingTime` is dated by its line, two hours from a copy stating one, so
     the key folds neither into the other and the day's walk answers both.
     An hourly window holds such a copy's bronze row or the instant the walk
-    dates it at, never both, and drops it."""
+    dates it at, never both, and drops it; and it merges only the
+    observations it holds, so the rows it lands settle identities the day's
+    walk, merging them all, answers otherwise, and silver ends holding both."""
     parse_log_messages(f"file:{CAPTURE}", storages, DAY, **zone)
     lines = read(storages, LOG_MESSAGES)
     stamped = pyarrow.compute.hour(lines.column(EVENT_CLOCK)).to_pylist()
@@ -172,27 +177,36 @@ def test_a_line_is_read_in_the_zone_its_bridge_prints(
         ).written
         for hour in range(24)
     ]
-    daily = parse_fix_messages_refined(storages, DAY, snapshot_millis=0).written
-    # An execution split out of a report is an event of its own.
-    assert (sum(hourly), daily) == events
+    daily = parse_fix_messages_refined(storages, DAY, snapshot_millis=0)
+    # An execution split out of a report is an event of its own. The day's
+    # walk answers every event it places, appending those whose key no
+    # hourly window landed and skipping the rest.
+    assert (sum(hourly), daily.written + daily.skipped) == events
+    assert read(storages, FIX_MESSAGES).num_rows == sum(hourly) + daily.written == stored
 
 
-def test_a_window_replaces_only_the_lines_it_covers(storages: Storages) -> None:
-    """A run over the whole day and then one over its first part leave every
-    line once: the second run replaces the lines its window covers and no
-    other. The capture's 112 lines of 12:46 straddle one second, which is
-    where it cuts."""
-    parse_log_messages(CAPTURE.as_uri(), storages, DAY)
-    stored = read(storages, LOG_MESSAGES)
+def test_a_window_lands_only_the_lines_it_covers(storages: Storages, landing: Landing) -> None:
+    """A run over the first part of the day lands the lines its window covers
+    and no other; a run over the whole day after it reads every line and
+    appends only those the first left out, so the table holds every line
+    once -- what one run over the day landed. The capture's 112 lines of
+    12:46 straddle one second, which is where it cuts."""
+    day = landing.table(LOG_MESSAGES)
     cut = datetime.datetime(2026, 8, 14, 12, 46, 40, tzinfo=UTC)
-    later = stored.filter(pyarrow.compute.greater_equal(stored.column(EVENT_CLOCK), cut)).num_rows
-    assert 0 < later < stored.num_rows, "the capture straddles this cut"
+    before = pyarrow.compute.less(day.column(EVENT_CLOCK), cut)
+    earlier = day.filter(before).num_rows
+    later = day.num_rows - earlier
+    assert 0 < earlier < day.num_rows, "the capture straddles this cut"
 
     first = parse_log_messages(CAPTURE.as_uri(), storages, (DAY[0], cut))
 
-    earlier = stored.num_rows - later
     assert first == Landed(read=earlier, written=earlier)
-    assert read(storages, LOG_MESSAGES).equals(stored), "the later lines were not the run's"
+    assert read(storages, LOG_MESSAGES).equals(day.filter(before)), "only the window's lines"
+
+    whole = parse_log_messages(CAPTURE.as_uri(), storages, DAY)
+
+    assert whole == Landed(read=day.num_rows, written=later, skipped=earlier)
+    assert read(storages, LOG_MESSAGES).equals(day), "every line once"
 
 
 def test_an_empty_capture_is_read_and_produces_nothing(storages: Storages, tmp_path: Path) -> None:
@@ -219,7 +233,13 @@ def test_no_window_lands_every_line_and_infers_the_whole_hours_they_span(
         read=144, written=144, window=(start, datetime.datetime(2026, 8, 14, 22, tzinfo=UTC))
     )
     assert rows(storages) == {LOG_MESSAGES: 144}
-    assert parse_fix_messages_raw(storages, landed.window) == parse_fix_messages_raw(storages, DAY)
+    inferred = parse_fix_messages_raw(storages, landed.window)
+    # The day reads the very lines the inferred window did, and answers the
+    # same messages, every one a key that run landed.
+    assert inferred.read == 144
+    assert parse_fix_messages_raw(storages, DAY) == Landed(
+        read=inferred.read, written=0, skipped=inferred.written + inferred.skipped
+    )
 
 
 def test_no_window_over_undated_lines_infers_none(storages: Storages, tmp_path: Path) -> None:
@@ -277,11 +297,14 @@ def test_a_uri_is_bound_for_the_task_and_a_handle_stays_the_callers(
         assert handle.exists(), "and the caller may read it again"
 
         before = len(closed)
-        assert parse_log_messages(capture.as_uri(), storages, DAY) == Landed(read=1, written=1)
+        # The same line, read under the same URI, is the key the first run landed.
+        assert parse_log_messages(capture.as_uri(), storages, DAY) == Landed(
+            read=1, written=0, skipped=1
+        )
         assert [bound.masked_uri for bound in closed[before:]] == [capture.as_uri()]
     finally:
         handle.close()
-    assert rows(storages) == {LOG_MESSAGES: 1}, "the second run replaced the first"
+    assert rows(storages) == {LOG_MESSAGES: 1}, "the second run appended nothing"
 
 
 def test_lines_stream_through_hour_partitions(
@@ -297,14 +320,14 @@ def test_lines_stream_through_hour_partitions(
     (capture / "15.log").write_bytes(line.replace(b"2026-08-14 14:", b"2026-08-14 15:", 1))
 
     handed_to_iceberg: list[pyarrow.Schema] = []
-    replace = IcebergDataset.overwrite_arrow_reader
+    merge = IcebergDataset.merge_arrow_reader
 
     def observed(dataset: IcebergDataset, source: Any, *args: Any, **kwargs: Any) -> int:
         assert isinstance(source, pyarrow.RecordBatchReader)
         handed_to_iceberg.append(source.schema)
-        return replace(dataset, source, *args, **kwargs)
+        return merge(dataset, source, *args, **kwargs)
 
-    monkeypatch.setattr(IcebergDataset, "overwrite_arrow_reader", observed)
+    monkeypatch.setattr(IcebergDataset, "merge_arrow_reader", observed)
 
     assert parse_log_messages(capture.as_uri(), storages, DAY) == Landed(read=2, written=2)
     assert handed_to_iceberg == [log_message_field().into_arrow_schema()]

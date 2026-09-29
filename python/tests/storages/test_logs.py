@@ -107,12 +107,12 @@ def test_the_detail_under_it_is_debug(storages: Storages, caplog: pytest.LogCapt
     dataset = storages.dataset("bronze.trading.quotes", field=Quote.into_field())
     try:
         with caplog.at_level(logging.INFO, logger="rekep"):
-            dataset.append_arrow_table(quotes(4))
+            dataset.append_arrow_table(quotes(4), merge_by=False)
         assert not [record for record in caplog.records if record.levelno == logging.DEBUG]
 
         caplog.clear()
         with caplog.at_level(logging.DEBUG, logger="rekep"):
-            dataset.append_arrow_table(quotes(4))
+            dataset.append_arrow_table(quotes(4), merge_by=False)
     finally:
         dataset.close()
     assert " output " in caplog.text and ".parquet" in caplog.text
