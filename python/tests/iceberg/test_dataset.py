@@ -704,9 +704,9 @@ def test_an_external_order_uses_bounded_merge_fan_in(
     merged: list[int] = []
     original = module._merge_batch_streams
 
-    def bounded(streams: Sequence[Any], columns: Sequence[tuple[str, str]]) -> Any:
+    def bounded(streams: Sequence[Any], columns: Sequence[tuple[str, str]], *step: int) -> Any:
         merged.append(len(streams))
-        return original(streams, columns)
+        return original(streams, columns, *step)
 
     monkeypatch.setattr(module, "SORT_MERGE_FAN_IN", 2)
     monkeypatch.setattr(module, "_merge_batch_streams", bounded)
@@ -732,9 +732,9 @@ def test_overlapping_files_use_bounded_merge_fan_in(
     merged: list[int] = []
     original = module._merge_batch_streams
 
-    def bounded(streams: Sequence[Any], columns: Sequence[tuple[str, str]]) -> Any:
+    def bounded(streams: Sequence[Any], columns: Sequence[tuple[str, str]], *step: int) -> Any:
         merged.append(len(streams))
-        return original(streams, columns)
+        return original(streams, columns, *step)
 
     monkeypatch.setattr(module, "SORT_MERGE_FAN_IN", 2)
     monkeypatch.setattr(module, "_merge_batch_streams", bounded)
@@ -2675,16 +2675,14 @@ def test_append_streams_one_commit_per_chunk(dataset: IcebergDataset) -> None:
     assert len(dataset.iceberg_table.snapshots()) == 3, "two rows per commit"
 
 
-def test_a_stale_plan_lands_on_the_retry_unless_the_moved_head_holds_its_rows(
+def test_a_handle_whose_head_moved_plans_each_chunk_on_the_current_head(
     tmp_path: Path,
 ) -> None:
-    """A commit planned against a head another writer moved is retried by
-    PyIceberg against the new head, and what decides it is whether the rows
-    landed in between are ones the plan takes out. A replacement is never
-    rebuilt on a stale plan, so one that is refused is handed back for the
-    caller to refresh and plan again, against what is stored now."""
-    from pyiceberg.exceptions import CommitFailedException
-
+    """A handle whose cached head another writer has moved plans each chunk on
+    the catalog's head as it is then, so what landed meanwhile is read like
+    any stored row: a key the other writer landed is compared and replaced,
+    never handed back. Only a commit landing between a chunk's plan and its
+    commit is a conflict, as `_landed_before_the_commit` pins."""
     catalog = IcebergCatalog(name="concurrent", properties=catalog_properties(tmp_path))
     writer = catalog.dataset("trading.timed", field=Timed.into_field())
     assert writer.merge_arrow_table(timed(0, 1), commit_row_size=1_000_000) == 2
@@ -2692,21 +2690,16 @@ def test_a_stale_plan_lands_on_the_retry_unless_the_moved_head_holds_its_rows(
     other.append_arrow_table(timed(100), commit_row_size=1_000_000)
 
     assert writer.merge_arrow_table(timed(1, 2), commit_row_size=1_000_000) == 1, "key 1 is held"
-    assert writer.read_arrow_table().sort_by("unix").column("unix").to_pylist() == [0, 1, 2, 100], (
-        "nothing landed under keys 1 and 2, so the stale plan landed on the retry"
-    )
+    assert writer.read_arrow_table().sort_by("unix").column("unix").to_pylist() == [0, 1, 2, 100]
 
     other.refresh().append_arrow_table(timed(3), commit_row_size=1_000_000)
     changed = timed(2, 3).set_column(1, "payload", pyarrow.array(["y", "y"]))
-    with pytest.raises(CommitFailedException, match="branch main has changed"):
-        writer.merge_arrow_table(changed, commit_row_size=1_000_000)
-
-    assert writer.refresh().merge_arrow_table(changed) == 2
+    assert writer.merge_arrow_table(changed, commit_row_size=1_000_000) == 2
     stored = writer.read_arrow_table().sort_by("unix")
     assert list(
         zip(stored.column("unix").to_pylist(), stored.column("payload").to_pylist(), strict=True)
     ) == [(0, "x"), (1, "x"), (2, "y"), (3, "y"), (100, "x")], (
-        "key 3 landed by the other writer was replaced by the fresh plan"
+        "key 3, landed by the other writer after this handle last read, was replaced"
     )
 
 
@@ -6637,11 +6630,9 @@ def test_a_keyed_append_beaten_elsewhere_lands_on_the_retry(
 
 
 def test_a_keyed_append_through_a_stale_handle_never_duplicates_a_key(tmp_path: Path) -> None:
-    """A handle planning against a head another writer has moved plans on
-    what it read, and its commit is checked against what landed since: a key
-    landed under its ranges hands the write back, and anything else lands."""
-    from pyiceberg.exceptions import CommitFailedException
-
+    """A handle whose cached head another writer has moved plans on the
+    catalog's current head, so a key landed meanwhile is held and not added
+    again, and anything else lands."""
     catalog = IcebergCatalog(name="stale", properties=catalog_properties(tmp_path))
     writer = catalog.dataset("trading.timed", field=Timed.into_field())
     assert writer.append_arrow_table(timed(0, 1), merge_by=True) == 2
@@ -6651,9 +6642,7 @@ def test_a_keyed_append_through_a_stale_handle_never_duplicates_a_key(tmp_path: 
     assert writer.append_arrow_table(timed(1, 2), merge_by=True) == 1
 
     other.refresh().append_arrow_table(timed(3))
-    with pytest.raises(CommitFailedException, match="branch main has changed"):
-        writer.append_arrow_table(timed(3, 4), merge_by=True)
-    assert writer.refresh().append_arrow_table(timed(3, 4), merge_by=True) == 1
+    assert writer.append_arrow_table(timed(3, 4), merge_by=True) == 1, "key 3 is held"
 
     assert sorted(writer.read_arrow_table().column("unix").to_pylist()) == [0, 1, 2, 3, 4, 100]
 
@@ -7475,3 +7464,152 @@ def test_a_column_no_bound_can_be_spelled_for_widens_its_partition_safely(
     assert _partition_key_bounds(chunk, parts, {"part": None}, ["seq"]) == _key_bounds(
         chunk, ["part", "seq"]
     )
+
+
+# -- what the spill holds, reads and plans ------------------------------------
+
+
+def _interleaved_runs(runs: int, rows: int) -> pyarrow.RecordBatchReader:
+    """`runs` batches of `rows` each, every one spanning the others' key range."""
+    schema = pyarrow.schema([("at", pyarrow.int64()), ("payload", pyarrow.string())])
+
+    def batches() -> Iterator[pyarrow.RecordBatch]:
+        for run in range(runs):
+            keys = [(index * 7_919 + run * 104_729) % 1_000_003 for index in range(rows)]
+            yield pyarrow.record_batch(
+                [pyarrow.array(keys, pyarrow.int64()), pyarrow.array(["x" * 100] * rows)],
+                schema=schema,
+            )
+
+    return pyarrow.RecordBatchReader.from_batches(schema, batches())
+
+
+def test_the_spill_merge_holds_a_step_not_the_runs_that_overlap(tmp_path: Path) -> None:
+    """Forty runs, each spanning every other's keys: a step that took each
+    run's batch whole held all forty chunks at once; a window of each holds
+    half a chunk beside the chunk being filled."""
+    from rekep.iceberg.dataset import _spilled_chunks
+
+    runs, rows = 40, 2_000
+    chunk = next(_interleaved_runs(1, rows)).nbytes
+    chunks = _spilled_chunks(
+        _interleaved_runs(runs, rows), str(tmp_path), None, [("at", "ascending")], rows, None
+    )
+    try:
+        first = next(chunks)
+        count, last, ordered = first.num_rows, first.column("at")[-1].as_py(), True
+        del first
+        with peak_arrow_memory() as peak:
+            for merged in chunks:
+                keys = merged.column("at").to_pylist()
+                ordered = ordered and keys == sorted(keys) and last <= keys[0]
+                count, last = count + len(keys), keys[-1]
+                del merged
+            held = peak()
+    finally:
+        chunks.close()
+    assert count == runs * rows
+    assert ordered, "one order, however the runs overlap"
+    assert held < 3 * chunk, f"{held / chunk:.2f} chunks held merging {runs} runs"
+
+
+def test_an_ordered_read_of_overlapping_files_yields_bounded_batches(
+    dataset: IcebergDataset,
+) -> None:
+    """Twenty files spanning one another's sizes, past the merge's fan-in: the
+    read is ordered, and no batch it hands back is more than one merge step."""
+    from rekep.iceberg.dataset import MERGE_BLOCK_ROWS
+
+    files, rows = 20, 5_000
+    for index in range(files):
+        sizes = [(offset * 7_919 + index * 104_729) % 1_000_003 for offset in range(rows)]
+        dataset.append_arrow_table(
+            pyarrow.Table.from_pydict(
+                {
+                    "symbol": [f"S{index}-{offset}" for offset in range(rows)],
+                    "day": [datetime.date(2026, 8, 14)] * rows,
+                    "size": sizes,
+                    "venue": [None] * rows,
+                },
+                schema=Quote.into_field().into_arrow_schema(),
+            ),
+            merge_by=False,
+        )
+    reader = dataset.read_arrow_reader(order_by=("size",))
+    try:
+        batches = list(reader)
+    finally:
+        reader.close()
+    sizes = pyarrow.chunked_array([batch.column("size") for batch in batches])
+    assert len(sizes) == files * rows
+    assert sizes.to_pylist() == sorted(sizes.to_pylist())
+    assert max(batch.num_rows for batch in batches) <= MERGE_BLOCK_ROWS
+
+
+@pytest.mark.parametrize("verb", ["merge", "append"])
+def test_a_commit_landed_while_the_stream_spills_is_no_conflict(tmp_path: Path, verb: str) -> None:
+    """The stream is read whole before the first chunk plans, so a chunk plans
+    on the head as it is then: another writer's key landed in the range while
+    the stream spilled is one this write never carries, and both land."""
+    properties = catalog_properties(tmp_path)
+    ours = IcebergCatalog(name="test", properties=properties).dataset(
+        "trading.quotes", field=Quote.into_field()
+    )
+    theirs = IcebergCatalog(name="test", properties=properties).dataset(
+        "trading.quotes", field=Quote.into_field()
+    )
+    day = datetime.date(2026, 8, 14)
+
+    def rows(*symbols: str, venue: str = "XPAR") -> pyarrow.Table:
+        return pyarrow.Table.from_pydict(
+            {
+                "symbol": list(symbols),
+                "day": [day] * len(symbols),
+                "size": [1] * len(symbols),
+                "venue": [venue] * len(symbols),
+            },
+            schema=Quote.into_field().into_arrow_schema(),
+        )
+
+    ours.append_arrow_table(rows("S1", "S9"))
+
+    def source() -> Iterator[pyarrow.RecordBatch]:
+        yield from rows("S2", "S3").to_batches()
+        theirs.append_arrow_table(rows("S5", venue="XETR"))
+        yield from rows("S6").to_batches()
+
+    reader = pyarrow.RecordBatchReader.from_batches(rows().schema, source())
+    assert getattr(ours, f"{verb}_arrow_reader")(reader) == 3
+    held = ours.refresh().read_arrow_table().sort_by("symbol")
+    assert held.column("symbol").to_pylist() == ["S1", "S2", "S3", "S5", "S6", "S9"]
+
+
+def test_a_dictionary_column_spills_as_the_values_it_encodes(tmp_path: Path) -> None:
+    """Two batches that each bring their own dictionary: an Arrow IPC file
+    holds one per column and refuses the second, so a spill holds the values,
+    which is what Iceberg stores anyway."""
+    schema = pyarrow.schema(
+        [
+            pyarrow.field("at", pyarrow.int64(), nullable=False, metadata=sort_key()["metadata"]),
+            pyarrow.field("venue", pyarrow.dictionary(pyarrow.int32(), pyarrow.string())),
+        ]
+    )
+    field = Field.from_arrow_schema(schema, name="Coded")
+    dataset = IcebergCatalog(name="test", properties=catalog_properties(tmp_path)).dataset(
+        "trading.coded", field=field
+    )
+
+    def batch(start: int, venue: str) -> pyarrow.RecordBatch:
+        return pyarrow.record_batch(
+            [
+                pyarrow.array(range(start, start + 10), pyarrow.int64()),
+                pyarrow.array([venue] * 10).dictionary_encode(),
+            ],
+            schema=schema,
+        )
+
+    reader = pyarrow.RecordBatchReader.from_batches(schema, [batch(10, "b"), batch(0, "a")])
+    assert dataset.append_arrow_reader(reader) == 20
+    held = dataset.read_arrow_table()
+    assert held.column("at").to_pylist() == list(range(20)), "laid out in its sort order"
+    assert held.column("venue").to_pylist() == ["a"] * 10 + ["b"] * 10

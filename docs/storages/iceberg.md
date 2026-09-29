@@ -37,7 +37,7 @@ it wrote:
   is absent is inserted, one whose stored row holds other values replaces it,
   and one stored as it is is left alone. Only a file holding a replaced row
   is rewritten, and a key stored twice is collapsed into one row. Values are
-  compared as a staged file would hold them: PyIceberg stores a null list as
+  compared as a staged file would hold them: PyIceberg stores a null list of structs as
   an empty one, so the two are the same row. It returns the rows inserted or
   replaced.
 - `overwrite_arrow_reader` replaces and takes no key: given a `row_filter`,
@@ -54,7 +54,9 @@ table of the graph: on bronze `log_messages` it identifies a line, on both
 `fix_messages` tables a settled event. A key is scoped to its transformed
 partition -- the same key on two days is two rows, and a null partition value
 is a partition of its own. A key that recurs within the stream keeps its
-first row in the table's sort order, and a null or NaN key is refused,
+first row in the table's sort order -- across commits too, because a merge
+carries the keys it settled in the partition it is writing to that
+partition's next chunk -- and a null or NaN key is refused,
 because no join matches it. So a replay through a keyed append or a merge
 writes nothing, commits nothing and returns 0, and the table holds each key
 once however often a window runs. Iceberg identifier fields describe identity
@@ -120,7 +122,9 @@ of `commit_row_size` rows, or of the largest chunk spilled when only
 - each partition's files hold disjoint ranges in the table's sort order,
   which an ordered read concatenates rather than merges and a filter on a
   sort column prunes by row group;
-- memory holds one chunk, never the stream;
+- memory holds one chunk and one merge step of at most half a chunk, never
+  the stream: each step sorts a window of every run, so overlapping runs do
+  not add up -- 300 overlapping runs of one partition held 1.8 chunks;
 - the stream is consumed before the first commit, so a producer that fails
   commits nothing.
 

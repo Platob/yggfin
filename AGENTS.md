@@ -124,7 +124,7 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   inserted, one whose stored row holds other values replaces it, rewriting
   only the files holding such a row, and one stored as it is is left alone. A
   key stored twice is collapsed. Values are compared as a staged file would
-  hold them: PyIceberg stores a null list as an empty one, so the two are
+  hold them: PyIceberg stores a null list of structs as an empty one, so the two are
   equal. It returns the rows inserted or replaced.
 - `overwrite_*` replaces and takes no `merge_by`: `row_filter` replaces
   exactly the predicate's rows in one commit; without one, every row of the
@@ -132,20 +132,23 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
 - `merge_by=True` means the native Field's declared primary key, and a list
   names columns. A key is scoped to its partition: the same key on two days is
   two rows. A key that recurs within a stream keeps its first row in the
-  table's sort order. A keyed append or merge of a replay writes nothing and
-  commits nothing.
+  table's sort order, across chunks too: a merge carries the keys it settled
+  in the partition it is writing to the next chunk of that partition. A keyed
+  append or merge of a replay writes nothing and commits nothing.
 - Commit after `commit_row_size` rows or `commit_batch_num` input batches,
   whichever comes first. Either may be None, and with neither a stream is one
   commit. Under `row_filter` the bounds size staging chunks, not commits.
 - Every write spills its stream to a local Arrow IPC folder under the
   dataset's `spill_directory` (None: the system temporary directory) -- one
   sorted run per bounded chunk and partition, one folder per partition --
-  then merges each partition back, at most 16 runs open, in partition order,
-  and re-cuts it into commits of `commit_row_size` rows, or of the largest
-  spilled chunk when only `commit_batch_num` bounds. So each partition's
-  files hold disjoint ranges in the table's sort order, memory holds one
-  chunk, and a stream is consumed before its first commit. A table with no
-  partitions and no sort order streams through.
+  then merges each partition back, at most 16 runs open and a window of each
+  sorted per step, in partition order, and re-cuts it into commits of
+  `commit_row_size` rows, or of the largest spilled chunk when only
+  `commit_batch_num` bounds. So each partition's files hold disjoint ranges
+  in the table's sort order, memory holds one chunk and one merge step of at
+  most half a chunk however many runs overlap, and a stream is consumed
+  before its first commit. Dictionary columns spill as their values. A table
+  with no partitions and no sort order streams through.
 - Every commit streams one transformed partition at a time through
   PyIceberg's file-format writer on the table's `FileIO` and commits it by
   path, so a commit holds its chunk and not a multiple of it, and no data file

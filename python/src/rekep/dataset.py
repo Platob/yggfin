@@ -564,13 +564,7 @@ def anti_join(rows: pyarrow.Table, matched: pyarrow.Table, join: Sequence[str]) 
     if matched.num_rows == 0 or rows.num_rows == 0:
         return rows
     stored = keys_of(rows, join, SOURCE_INDEX)
-    wanted = keys_of(matched, join, TARGET_INDEX).select(list(join))
-    for index, name in enumerate(join):
-        kind = stored.schema.field(name).type
-        if wanted.schema.field(name).type != kind:
-            wanted = wanted.set_column(
-                index, wanted.schema.field(index).with_type(kind), wanted.column(name).cast(kind)
-            )
+    wanted = _keys_onto(stored, matched, join)
     fresh = stored.join(wanted, keys=list(join), join_type="left anti")
     if fresh.num_rows == rows.num_rows:
         return rows
