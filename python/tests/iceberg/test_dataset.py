@@ -1332,16 +1332,6 @@ def test_a_merge_lands_each_key_once_and_writes_only_what_changed(
     assert stored.column("venue").to_pylist() == ["XPAR", "XETR", "XPAR", "XETR", "XPAR"]
 
 
-#: A merge groups the stored keys it found without taking their storage, and
-#: Arrow has no grouping kernel for an extension type such as a UUID.
-UUID_KEY_GROUPING = pytest.mark.xfail(
-    raises=pyarrow.ArrowNotImplementedError,
-    strict=True,
-    reason="_changed_rows groups an extension-typed key without its storage",
-)
-
-
-@UUID_KEY_GROUPING
 def test_an_extension_typed_key_is_replaced_by_the_bytes_it_holds(tmp_path: Path) -> None:
     """An extension type carries no kernel of its own, so the key is joined
     and bounded as its storage: the sixteen bytes a UUID is."""
@@ -1377,7 +1367,7 @@ def test_an_extension_typed_key_is_replaced_by_the_bytes_it_holds(tmp_path: Path
     assert set(stored.column("size").to_pylist()) == {2}
 
 
-@pytest.mark.parametrize("kind", ["string", "int64", pytest.param("uuid", marks=UUID_KEY_GROUPING)])
+@pytest.mark.parametrize("kind", ["string", "int64", "uuid"])
 def test_a_blind_append_and_a_partition_scoped_merge_use_any_declared_identifier(
     tmp_path: Path, kind: str
 ) -> None:
@@ -4405,7 +4395,7 @@ def test_overlapping_bounds_with_no_matching_key_leave_the_stored_file_standing(
     assert dataset.iceberg_table.snapshots()[-1].summary.operation.value == "append"
 
 
-def test_a_merge_that_matches_reads_the_file_it_empties(
+def test_a_merge_that_empties_a_file_deletes_it_unread_after_comparing(
     dataset: IcebergDataset, opened: dict[str, int]
 ) -> None:
     dataset.append_arrow_table(quotes(3))
@@ -4413,9 +4403,9 @@ def test_a_merge_that_matches_reads_the_file_it_empties(
     stored = _data_paths(dataset)
     opened.clear()
     assert dataset.merge_arrow_table(quotes(3, "XETR")) == 3
-    assert opened.get("data", 0) == 3, (
-        "one stored file: by its keys to find them held, whole to find them changed, "
-        "and by its keys once more to find that none survives"
+    assert opened.get("data", 0) == 2, (
+        "one stored file: by its keys to find them held and whole to find them changed; "
+        "its record count then says no row of it survives"
     )
     after = _data_paths(dataset)
     assert len(after) == 1 and not after & stored, "so it is deleted, never written back"

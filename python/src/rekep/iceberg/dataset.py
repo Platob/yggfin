@@ -899,7 +899,7 @@ class IcebergDataset(Dataset):
                 else:
                     settled = run.select(list(join))
                 decided = _Decided(identity, settled)
-                fresh, changed, replaced = _changed_rows(
+                fresh, changed, replaced, emptied = _changed_rows(
                     table, keys, rows, run, stored.pop(identity, ()), join
                 )
                 if changed:
@@ -909,6 +909,7 @@ class IcebergDataset(Dataset):
                         stager,
                         lambda held, replaced=replaced: anti_join(held, replaced, join),
                         needs=join,
+                        doomed=lambda data_file, emptied=emptied: data_file.file_path in emptied,
                     )
                     originals.extend(deleted)
                     rewritten.extend(kept)
@@ -2799,15 +2800,17 @@ def _changed_rows(
     run: pyarrow.Table,
     tasks: Iterable[Any],
     join: Sequence[str],
-) -> tuple[pyarrow.Table, list[Any], pyarrow.Table]:
+) -> tuple[pyarrow.Table, list[Any], pyarrow.Table, set[str]]:
     """`run`'s differences from one partition's stored files.
 
-    `(rows to write, files to rewrite, keys they are rewritten without)`: the
-    rows whose key no stored row holds or whose stored row holds other
-    values, the planned files holding one of those, and those keys. A file is
-    read by its key columns first and whole only when it holds a key `run`
-    carries; a key stored twice, in one file or two, is replaced wherever it
-    is, so the partition holds it once after.
+    `(rows to write, files to rewrite, keys they are rewritten without, files
+    emptied)`: the rows whose key no stored row holds or whose stored row
+    holds other values, the planned files holding one of those, those keys --
+    as `comparable` storage, since a UUID key has no grouping kernel -- and
+    the paths of the files every row of which they replace, which a rewrite
+    deletes unread. A file is read by its key columns first and whole only
+    when it holds a key `run` carries; a key stored twice, in one file or
+    two, is replaced wherever it is, so the partition holds it once after.
     """
     from pyiceberg.expressions import AlwaysTrue
     from pyiceberg.table import FileScanTask
@@ -2824,14 +2827,25 @@ def _changed_rows(
         stored_form = stored_form or _stored_form(table, run.schema)
         differing.extend(_differing_keys(rows, table.io, whole, run, join, stored_form))
     if not held:
-        return run, [], run.select(list(join)).slice(0, 0)
+        return run, [], _key_columns(run, join).slice(0, 0), set()
     found = pyarrow.concat_tables([keys for _, keys in held])
     counted = found.group_by(list(join), use_threads=False).aggregate([([], "count_all")])
     recurring = counted.filter(pyarrow.compute.greater(counted.column("count_all"), 1))
     replaced = pyarrow.concat_tables([*differing, recurring.select(list(join))])
     same = anti_join(counted.select(list(join)), replaced, join)
-    files = [task for task, keys in held if semi_join(keys, replaced, join).num_rows]
-    return anti_join(run, same, join), files, replaced
+    files, emptied = [], set()
+    for task, keys in held:
+        taken = semi_join(keys, replaced, join).num_rows
+        if taken:
+            files.append(task)
+            if taken == task.file.record_count and not task.delete_files:
+                emptied.add(task.file.file_path)
+    return anti_join(run, same, join), files, replaced, emptied
+
+
+def _key_columns(rows: pyarrow.Table, join: Sequence[str]) -> pyarrow.Table:
+    """`rows`' key columns alone, as the `comparable` storage every key join reads."""
+    return pyarrow.table({name: comparable(rows.column(name)) for name in join})
 
 
 def _held_keys(
@@ -2844,7 +2858,7 @@ def _held_keys(
         for batch in batches:
             found = semi_join(pyarrow.Table.from_batches([batch]), run, join)
             if found.num_rows:
-                held.append(found.select(list(join)))
+                held.append(_key_columns(found, join))
     finally:
         batches.close()
     return pyarrow.concat_tables(held) if held else None
@@ -2876,7 +2890,7 @@ def _differing_keys(
                 held = ours.slice(start, COMPARE_ROW_SIZE)
                 arriving = theirs.slice(start, COMPARE_ROW_SIZE)
                 same = equal_rows(stored.take(held), stored_form(run.take(arriving)))
-                changed = stored.select(list(join)).take(held.filter(pyarrow.compute.invert(same)))
+                changed = _key_columns(stored.take(held.filter(pyarrow.compute.invert(same))), join)
                 if changed.num_rows:
                     differing.append(changed)
     finally:
