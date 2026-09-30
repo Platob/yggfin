@@ -29,10 +29,6 @@ sources:
       data_type: timestamptz
       description: When the event was created, where that is known; the earliest its chain knows once
         followed.
-    - name: execunix
-      data_type: timestamptz
-      description: The latest execution clock this lifecycle reached as of this event; an execution dates
-        itself, following carries it, and duplicate statements keep their earliest observation.
     - name: recdunix
       data_type: timestamptz
       description: When this event was recorded, where that is known; the earliest its statements know.
@@ -77,7 +73,8 @@ sources:
       description: The identity of the event this one follows, where it follows one.
     - name: seqnum
       data_type: long
-      description: 'The event''s place in its chain: how many came before it.'
+      description: 'The event''s place among the events of its instant: 0 for the first its stream hands
+        over there, one more for each next.'
     - name: srcuuids
       data_type: list<fixed[16]>
       description: 'The sorted unique identities of the elements this event was read from: provenance,
@@ -182,9 +179,9 @@ sources:
       description: One row-header capture, read at the datatype its syntax matches; empty on every line
         the header declared it for and did not match.
   - name: fix_messages
-    description: 'One row per FIX message parsed out of a stored line, nothing walked: a message logged
-      again at another hop is folded into the one row its identity names, and `seqnum` and `prevuuid`
-      are empty.'
+    description: 'One row per FIX message parsed out of a stored line, nothing walked: each copy of a
+      message logged at several hops is a row of its own, `seqnum` places it among the messages of its
+      instant, and `prevuuid` is empty.'
     meta:
       written_by: parse_fix_messages_raw
       primary_key:
@@ -290,7 +287,8 @@ sources:
       description: The identity of the event this one follows, where it follows one.
     - name: seqnum
       data_type: long
-      description: 'The event''s place in its chain: how many came before it.'
+      description: 'The event''s place among the events of its instant: 0 for the first its stream hands
+        over there, one more for each next.'
     - name: srcuuids
       data_type: list<fixed[16]>
       description: 'The identities of the elements this message was read from: the text line it was parsed

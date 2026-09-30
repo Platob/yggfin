@@ -116,7 +116,9 @@ def test_every_flattened_event_is_a_book_delta_folded_from_one_silver_event(
     book's executions; each names the lines of the silver event it was folded
     from, and carries that event's instrument: its ISIN the one the event
     states, and its category the key of the book it stands in, since every
-    book is a `MIC:CFI` category and no event states a ticker."""
+    book is a `MIC:CFI` category and no event states a ticker. A side the
+    silver row leaves unstated is `UNKN` in the book, whose side is never
+    null."""
     books = landing.table(BOOKS).to_pylist()
     assert books, "the window's events fold into books"
     carried: dict[str, dict[bytes, dict[str, Any]]] = {kind: {} for kind in EVENTS}
@@ -155,7 +157,7 @@ def test_every_flattened_event_is_a_book_delta_folded_from_one_silver_event(
             assert event[EVENT_CLOCK] == source[EVENT_CLOCK]
             assert event["crosscode"] == source["crosscode"]
             assert event["state"] == source["state"]
-            assert event["side"] == source["side"]
+            assert event["side"] == (source["side"] or int(Side.UNKN))
             assert event["ticker"] is None and book["ticker"] is None
             assert book["crosscode"] == category
             assert event["isincode"] == securities.get("ISIN") == source["isincode"]
@@ -186,13 +188,14 @@ CANCELLED = "SELL:816179183-1983-98963_912"
 
 def test_books_fold_a_cancel_reject_under_the_side_of_its_order(storages: Storages) -> None:
     """The trade report of 14:52:55, whose side group states no `Side(54)`,
-    splits off no execution and so books nothing: the books from 14:00 are
-    the hourly restatements of the order the events of 12:46 left alive. The
-    capture's last order message is a cancel reject at 21:59:46 that states
-    no `Side(54)` either; the walk joins it to the one live side of its order,
-    the sell, and writes that side into its silver row, so the fold books it
-    beside the cancel request it answers and the books outside its window
-    stay."""
+    splits off one execution of side `UNKN`, which the fold books under
+    `XXXX:XXXXXX` beside the order the events of 12:46 left alive there: the
+    books from 14:00 are that order's hourly restatements and the book of
+    the execution. The capture's last order message is a cancel reject at
+    21:59:46 that states no `Side(54)` either; the walk joins it to the one
+    live side of its order, the sell, and writes that side into its silver
+    row, so the fold books it beside the cancel request it answers and the
+    books outside its window stay."""
     parse_log_messages(CAPTURE.as_uri(), storages, DAY)
     walked = (
         datetime.datetime(2026, 8, 14, 12, tzinfo=UTC),
@@ -202,13 +205,21 @@ def test_books_fold_a_cancel_reject_under_the_side_of_its_order(storages: Storag
     parse_fix_messages_refined(storages, walked)
     assert "AE" in read(storages, FIX_MESSAGES).column("msgtype").to_pylist()
     traded = (datetime.datetime(2026, 8, 14, 14, tzinfo=UTC), walked[1])
-    assert parse_books(storages, traded).written == 3
+    assert parse_books(storages, traded).written == 4
     booked = read(storages, BOOKS).to_pylist()
-    assert [book[EVENT_CLOCK].hour for book in booked] == [14, 15, 16]
+    assert [f"{book[EVENT_CLOCK]:%H:%M:%S}" for book in booked] == [
+        "14:00:00",
+        "14:52:55",
+        "15:00:00",
+        "16:00:00",
+    ]
     for book in booked:
-        assert book["snapunix"] == book[EVENT_CLOCK]
-        assert not book["deltas"] and not book["executions"]
         assert (book["crosscode"], len(book["alive"])) == ("XXXX:XXXXXX", 1)
+        assert not book["deltas"]
+    grid = [book for book in booked if book["snapunix"] is not None]
+    assert all(book["snapunix"] == book[EVENT_CLOCK] and not book["executions"] for book in grid)
+    (execution,) = booked[1]["executions"]
+    assert (execution["side"], State(execution["state"]).name) == (Side.UNKN, "FILLED")
 
     window = (
         datetime.datetime(2026, 8, 14, 21, tzinfo=UTC),
@@ -223,12 +234,14 @@ def test_books_fold_a_cancel_reject_under_the_side_of_its_order(storages: Storag
         {EVENT_CLOCK: rejected, "msgtype": "9", "side": Side.SELL, "crosscode": CANCELLED}
     ]
 
-    # The window's three silver rows: the reject, the cancel request it
+    # The window's four silver rows: the reject, the cancel request it
     # answers, and the bridge's restatement of the reject, which keeps the
-    # bare code and books nothing.
+    # bare code and books nothing -- twice, a repeat delivery the walk over
+    # stored rows does not yet fold: PyIceberg stores its null list of structs
+    # as an empty one, and the core's delivery key then tells the two apart.
     landed = parse_books(storages, window)
     print(f"books over [21:00, 22:00): {landed}")
-    assert (landed.read, landed.written) == (3, 1)
+    assert (landed.read, landed.written) == (4, 1)
     stored = read(storages, BOOKS).to_pylist()
     assert stored[:-1] == booked, "the books outside the window stay"
     book = stored[-1]
@@ -248,8 +261,8 @@ def test_books_fold_a_cancel_reject_under_the_side_of_its_order(storages: Storag
 
 
 #: The capture's day up to the window's end: the report of 01:03, the events
-#: of 12:46, in two categories, and the trade report of 14:52:55, which books
-#: nothing; nothing the fold refuses.
+#: of 12:46, in two categories, and the trade report of 14:52:55, whose one
+#: execution books under `XXXX:XXXXXX`.
 MORNING = (
     datetime.datetime(2026, 8, 14, tzinfo=UTC),
     datetime.datetime(2026, 8, 14, 16, 30, tzinfo=UTC),
@@ -287,7 +300,7 @@ def test_a_window_opens_on_the_book_its_hour_before_left(
     print(f"\nwhole morning {whole}\nfrom 02:00    {opened}")
     for book in found:
         print(f"{book[EVENT_CLOCK]:%H:%M:%S.%f} {book['snapunix']} {book['crosscode']}")
-    assert opened.read == whole.read == 47, "the hour before 02:00 holds the 01:03 report"
+    assert opened.read == whole.read == 51, "the hour before 02:00 holds the 01:03 report"
     assert found == expected
     first = found[0]
     assert first[EVENT_CLOCK] == first["snapunix"] == OPENED[0]
@@ -305,20 +318,20 @@ def test_a_window_opens_on_the_book_its_hour_before_left(
 def test_books_at_a_window_start_are_the_books_the_whole_history_holds(
     storages: Storages,
 ) -> None:
-    """Every event the capture's afternoon books is dated 12:46 -- the trade
-    report of 14:52:55 books nothing -- so a window opening at 13:00 or 14:00
-    lands none of them, and one opening at 14:00 reads none either: what its
-    books hold at `start` comes from the views the walk restated on the
-    hour, which silver holds. Each book it lands is the one the fold over
-    the whole morning lands at that instant -- but a book the morning's
-    fills left empty, which the whole fold keeps restating with nothing in
-    it, names no live chain a view could carry, so a window whose hour
-    before opens after it emptied does not know it."""
+    """Every event the capture's afternoon books is dated 12:46 but the one
+    execution the trade report of 14:52:55 splits off -- so a window opening
+    at 13:00 or 14:00 lands none of the others, and one opening at 14:00
+    reads none of them either: what its books hold at `start` comes from the
+    views the walk restated on the hour, which silver holds. Each book it
+    lands is the one the fold over the whole morning lands at that instant --
+    but a book the morning's fills left empty, which the whole fold keeps
+    restating with nothing in it, names no live chain a view could carry, so
+    a window whose hour before opens after it emptied does not know it."""
     parse_log_messages(CAPTURE.as_uri(), storages, DAY)
     parse_fix_messages_raw(storages, MORNING)
     parse_fix_messages_refined(storages, MORNING)
     parse_books(storages, MORNING)
-    for hour, read_rows, emptied in ((13, 35, 0), (14, 18, 3)):
+    for hour, read_rows, emptied in ((13, 39, 0), (14, 19, 3)):
         start = datetime.datetime(2026, 8, 14, hour, tzinfo=UTC)
         target = f"silver.record_keeping.books_from_{hour}"
         landed = parse_books(storages, (start, MORNING[1]), target=target)
@@ -356,7 +369,10 @@ def test_the_book_grid_flattens_every_event_once(storages: Storages) -> None:
     the hourly silver and books are exactly those flattened with no grid at
     all. Every order and every execution is flattened off one silver event
     under a key of its own: the lines each hop logged one report on fold
-    into one event, so no report lands twice."""
+    into one event, so no report lands twice -- but for the two repeat
+    deliveries of 12:46:39.743 a walk over stored rows does not yet fold,
+    since PyIceberg stores their null list of structs as an empty one and
+    the core's delivery key then tells the copies apart."""
     parse_log_messages(CAPTURE.as_uri(), storages, DAY)
     parse_fix_messages_raw(storages, MORNING)
     walked = parse_fix_messages_refined(storages, MORNING)
@@ -373,8 +389,8 @@ def test_the_book_grid_flattens_every_event_once(storages: Storages) -> None:
     )
     grid = [row for row in read(storages, BOOKS).to_pylist() if row["snapunix"] is not None]
     print(f"\nhourly {walked} {gridded}\nnone   {events} {plain}")
-    assert (walked.written, events.written) == (47, 20)
-    assert gridded.written == plain.written + len(grid) == 29
+    assert (walked.written, events.written) == (51, 24)
+    assert gridded.written == plain.written + len(grid) == 30
     assert all(not row["deltas"] and not row["executions"] for row in grid)
     for kind, task in FLATTENERS.items():
         hourly = task(storages, MORNING, snapshot_id=gridded.snapshot_id)
@@ -394,7 +410,7 @@ def test_the_book_grid_flattens_every_event_once(storages: Storages) -> None:
     silver = [row for row in read(storages, FIX_MESSAGES).to_pylist() if row["snapunix"] is None]
     matched = collections.Counter(tuple(row[key] for key in MATCHED) for row in silver)
     flattened = set()
-    for kind, landed in {"orders": 8, "executions": 7}.items():
+    for kind, landed in {"orders": 9, "executions": 9}.items():
         held = read(storages, EVENTS[kind]).to_pylist()
         found = collections.Counter(tuple(row[key] for key in MATCHED) for row in held)
         identities = {row["curruuid"] for row in held}
@@ -413,15 +429,16 @@ def test_the_book_grid_flattens_every_event_once(storages: Storages) -> None:
     )
     print(f"not a book input: {dict(left)}")
     # Administration, the one message the bridge sent as XML, the trade
-    # report that splits off no execution, and the chain of an order only
-    # ever acknowledged -- its acknowledgement, which every hop's line of it
-    # folds into, and the expiry that ends it -- execute nothing, so the fold
+    # report -- whose execution is flattened on its own -- and the chain of
+    # an order only ever acknowledged -- its acknowledgement, stated anew and
+    # so updated, and the expiry that ends it -- execute nothing, so the fold
     # admits none of them; every other event is flattened, once.
     assert left == {
         ("A", "UNKNOWN"): 1,
         ("n", "FILLED"): 1,
         ("AE", "FILLED"): 1,
         ("8", "NEW"): 1,
+        ("8", "UPDATED"): 1,
         ("8", "EXPIRED"): 1,
     }
 
@@ -442,7 +459,7 @@ def test_books_replace_their_window_and_a_pinned_fanout_reads_its_snapshot(
     # side filled.
     assert [row["quantity"] for row in executions if row["lastqty"] is None] == [2]
     assert {(row["side"], row["lastqty"]) for row in executions if row["lastqty"]} == {
-        (int(Side.BUY), 4),
+        (int(Side.BUYS), 4),
         (int(Side.SELL), 6),
     }
 
@@ -469,25 +486,22 @@ def test_books_replace_their_window_and_a_pinned_fanout_reads_its_snapshot(
         assert read(storages, EVENTS[kind]).num_rows == 0
 
 
-def test_an_order_stating_no_side_is_refused_and_the_books_keep_their_snapshot(
-    storages: Storages,
-) -> None:
+def test_an_order_stating_no_side_is_left_out_of_the_books(storages: Storages) -> None:
     """A new order that states no `Side(54)`, with no chain before it to take
-    one from, is admitted and refused by path: an invalid admitted message is
-    an error, never a skipped row, and the books keep what they held."""
+    one from, stands on neither side of a book: the fold leaves it out, with
+    a warning through `logging`, and never fails on what a message states,
+    so the books land what the other messages fold."""
     refined(storages, FRAMES)
-    held = parse_books(storages, FRAMES_WINDOW)
-    booked = read(storages, BOOKS)
+    parse_books(storages, FRAMES_WINDOW)
+    booked = read(storages, BOOKS).to_pylist()
     sideless = b"8=FIX.4.4|35=D|52=20260921-10:00:05|11=O2|55=AAPL|38=5|44=99|10=0|"
     refined(storages, (*FRAMES, sideless))
-    with pytest.raises(pyarrow.ArrowInvalid, match=r"operation\.side: expected a bid or ask"):
-        parse_books(storages, FRAMES_WINDOW)
-    assert read(storages, BOOKS).equals(booked)
-    dataset = storages.dataset(BOOKS)
-    try:
-        assert dataset.iceberg_table.current_snapshot().snapshot_id == held.snapshot_id
-    finally:
-        dataset.close()
+
+    landed = parse_books(storages, FRAMES_WINDOW)
+
+    print(f"\nwith a side-less order: {landed}")
+    assert (landed.read, landed.written) == (7, 4)
+    assert read(storages, BOOKS).to_pylist() == booked, "the order books nowhere"
 
 
 def test_an_absent_snapshot_does_not_follow_newly_created_books(storages: Storages) -> None:

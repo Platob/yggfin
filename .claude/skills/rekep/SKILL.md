@@ -81,14 +81,14 @@ storages = Storages.from_dict({layer: {"name": layer, "properties": {
 window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 with storages:
     assert parse_log_messages("file:data/capture/ulbridge.log", storages, window) == Landed(129, 129)
-    assert parse_fix_messages_raw(storages, window) == Landed(read=129, written=72, skipped=53)
-    assert parse_fix_messages_refined(storages, window) == Landed(read=72, written=47)
+    assert parse_fix_messages_raw(storages, window) == Landed(read=129, written=126)
+    assert parse_fix_messages_refined(storages, window) == Landed(read=126, written=51)
     books = parse_books(storages, window)
     with ThreadPoolExecutor(max_workers=3) as pool:
         running = {kind: pool.submit(task, storages, window, snapshot_id=books.snapshot_id)
                    for kind, task in FLATTENERS.items()}
     written = {kind: future.result().written for kind, future in running.items()}
-    assert (books.written, written) == (29, {"orders": 8, "quotes": 0, "executions": 7})
+    assert (books.written, written) == (30, {"orders": 9, "quotes": 0, "executions": 9})
 ```
 
 Order matters: each task reads only the table before it. Every task creates
@@ -102,10 +102,12 @@ fine: open `Storages`, run, close.
 
 `Landed` holds `read` (source rows the window selected), `written` (target
 rows written: inserted or replaced by a keyed task, the window's rows for the
-others), `skipped` (answered rows the key folded into a stored one: 53 bronze
-FIX messages restate another hop's exactly, and on a rerun every row a keyed
-task answers) and `snapshot_id` (the books snapshot `parse_books` committed
-or a flattener read; None for the others). Tasks log to the `rekep.*`
+others), `skipped` (answered rows the key folded into a stored one: on a
+rerun, every row a keyed task answers) and `snapshot_id` (the books snapshot
+`parse_books` committed or a flattener read; None for the others). Every copy
+of a message the bridge logged at another hop is a bronze row of its own,
+placed apart at its instant; the walk folds the copies into one silver
+event. Tasks log to the `rekep.*`
 loggers and configure nothing: `INFO` shows each table created and each
 commit, `DEBUG` adds scans and files.
 
@@ -119,9 +121,13 @@ commit, `DEBUG` adds scans and files.
 | `row header captures nothing for ...` | a `rowheader` that renames or drops a capture |
 | `FIX registry contains no specification fields` | a codec over an empty dictionary folder |
 | `FixCodec.__new__() got an unexpected keyword argument` | a codec pin the native codec does not declare |
-| `ArrowInvalid ... expected a bid or ask operation` | `parse_books` met an admitted message the fold cannot read, such as one stating no `Side(54)` whose order has no live side to lend it one; the table's prior snapshot stays |
 | `expected a nonnegative book snapshot_id or None` / `has no snapshot N: table is missing` | a bad or missing pinned books snapshot; nothing was written |
 | `unable to open database file` | a SQLite catalog whose folder does not exist |
+
+Nothing a message states fails a task: what the parse, the walk or the book
+fold cannot read takes its default or is left out, with a `WARNING` through
+`logging` -- an order stating no `Side(54)` and no live side to take stands
+in no book.
 
 ## Windows
 
@@ -184,8 +190,8 @@ Never put credentials in a mapping. `docs/storages/` is the full reference.
   `source` is a file, folder or prefix URI (`file:data/capture`,
   `s3://bucket/prefix?region=eu-west-1`) or an `IOBase` the caller keeps open.
   `rowheader=None` is `rekep.times.ULBRIDGE_ROWHEADER`, whose clock takes
-  three fraction digits after a point, optionally grouped micros
-  (`.524_315`): a line spelling a comma or no fraction is left unmatched,
+  three fraction digits after a point or a comma, optionally grouped micros
+  (`.524_315`), or no fraction: a line spelling another is left unmatched,
   dated by its object's modification time with every capture null, and needs
   a header of its own, which must keep `rekep.text.CAPTURES`.
   `timezone` is the IANA zone the bridge prints its clock in,
@@ -264,13 +270,16 @@ states = [State(code) for code in table.column("state").to_pylist()]
 
 `state` is an `int32` code of `rekep.State` (61 members, code = rank * 100 +
 place: `FILLED` is 8003); `side` and `marketdatakind` on market rows are
-`int32` codes of `rekep.Side` and `rekep.MarketDataKind` (`ORDR` 10, `QUOT`
-14, `EXEC` 8, `BOOK` 3). Keys: `curruuid` on every table; `srcuuids` on FIX
-and event rows lists the `log_messages.curruuid` of the lines an event was
-logged on, and an execution split out of a report lists that report's
-`curruuid` beside them; `crosscode` is the business id (OrderID, ClOrdID,
-..., `ExecID=` for a split execution) prefixed with the side (`BUY:...`) on
-FIX rows, and the object a line was read from on `log_messages`. Column meanings:
+`int32` codes of `rekep.Side` (`UNKN` 0, `BUYS` 1, `SELL` 2) and
+`rekep.MarketDataKind` (`ORDR` 10, `QUOT` 14, `EXEC` 8, `BOOK` 3). Keys:
+`curruuid` on every table; `seqnum` is an event's place among the events of
+its instant, null at place zero, which sorts first; `srcuuids` on FIX and event
+rows lists the `log_messages.curruuid` of the lines an event was logged on,
+and an execution split out of a report lists that report's `curruuid` beside
+them; `crosscode` is the business id (OrderID, ClOrdID, ..., the `ExecID` of
+a split execution), an order's, a quote's or an execution's prefixed with
+the four-letter code of its side (`BUYS:...`, `SELL:...`), on FIX rows, and
+the object a line was read from on `log_messages`. Column meanings:
 `docs/tables/`; real rows: `docs/samples/`.
 
 ## FIX registry
@@ -352,15 +361,18 @@ on it.
   2026-08-14, so an unbounded run over it reads nothing.
 - An `int` bound is epoch nanoseconds: `window_of(20260814, ...)` starts in
   1970. Spell the date, `"2026-08-14"`.
-- Bronze FIX rows have empty `seqnum`/`prevuuid` by design; chains are
-  silver's. Products read silver, never bronze FIX.
+- Bronze FIX rows have an empty `prevuuid` by design, and a `seqnum` that is
+  only a message's place at its instant; chains are silver's. Every copy of a
+  message a hop logged is a bronze row. Products read silver, never bronze
+  FIX.
 - A message stating no `Side(54)` is side-less in bronze and takes the one
   live side of its order in silver: the capture's cancel reject at 21:59:46
   is `816179183-1983-98963_912` in bronze and `SELL:816179183-1983-98963_912`,
   side `SELL`, in silver, which is what the books fold. An order with no live
-  side to take stays side-less, and `parse_books` refuses it.
+  side to take stays side-less, and `parse_books` leaves it out of every book.
 - The parse splits every report of a fill into the report and the execution
-  it reports (`FILLED`), one per side for a trade report, and a two-sided
-  quote into one quote per side, so FIX tables hold more rows than frames.
+  it reports (`FILLED`), one per side for a trade report -- `UNKN` for a side
+  stating no `Side(54)` -- and a two-sided quote into one quote per side, so
+  FIX tables hold more rows than frames.
 - A task never closes the catalogs. Close `Storages` yourself: on Windows an
   open SQLite catalog is a file its caller cannot delete.

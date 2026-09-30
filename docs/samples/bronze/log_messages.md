@@ -23,14 +23,14 @@ is the line past its row header; the other columns are the header's captures.
 
 | seqnum | currunix | curruuid | msgpluginid | loglevel | msgseqnum | body |
 | :---: | --- | --- | --- | --- | :---: | --- |
-| 1 | `2026-08-14 12:46:39.769` | `…5f1d22` | `ULBridge` | `INFO` | 3088 | `Execution report from OMS_X1_OrderOut type trade for KL3RCZUA797. Forwa…` |
-| 2 | `2026-08-14 12:46:39.769` | `…df5495` | `ULBridge` | `INFO` | 3088 | `Message received: Message type [execution report <trade>] from (OMS_X1_…` |
-| 3 | `2026-08-14 12:46:39.769` | `…e078b0` | `EnrichmentManager` | `INFO` | 3088 | `Enrichment execution[&SetEnv, &ULMSG_Add_Fields]` |
-| 4 | `2026-08-14 12:46:39.769` | `…5206a5` | `ULMSG_BROKER_BDG_DMZ_CLI` | `DEBUG` | 3088 | `PushMessage : #AVEXDESTINATION=XSWX|#BLOOMBERGCODE=HOLN SW|#CFICODE=ESX…` |
-| 5 | `2026-08-14 12:46:39.769` | `…2c6885` | `ULMSG_BROKER_BDG_DMZ_CLI` | `INFO` | 3088 | `Sending : 8=FIX.4.2|9=3513|35=UL|49=ULB_DMZ_BROKER_BDG|56=ULB_CLI_BROKE…` |
-| 6 | `2026-08-14 12:46:39.769` | `…42ebff` | `OMS_X1_TradeCapture` | `INFO` | 40218 | `Receiving : 8=FIX.4.4|9=938|35=8|34=40218|49=OMSAUDITX1|56=FIRMAUDITX1|…` |
-| 7 | `2026-08-14 12:46:39.769` | `…0f3b5f` | `OMS_X1_TradeCapture` | `DEBUG` | 40218 | `RouteMessage : ACTION=EXECUTION|AGGRESSORINDICATOR=Y|ALTEVENTTEXT=Order…` |
-| 8 | `2026-08-14 12:46:39.769` | `…f64155` | `TECH_AddFields_OMS_X1` | `DEBUG` | 40218 | `After Enrichment -> ACTION=EXECUTION|AGGRESSORINDICATOR=Y|ALTEVENTTEXT=…` |
+| 1 | `2026-08-14 12:46:39.769` | `…b4e5e9` | `ULBridge` | `INFO` | 3088 | `Execution report from OMS_X1_OrderOut type trade for KL3RCZUA797. Forwa…` |
+| 2 | `2026-08-14 12:46:39.769` | `…d2a7ac` | `ULBridge` | `INFO` | 3088 | `Message received: Message type [execution report <trade>] from (OMS_X1_…` |
+| 3 | `2026-08-14 12:46:39.769` | `…453ee3` | `EnrichmentManager` | `INFO` | 3088 | `Enrichment execution[&SetEnv, &ULMSG_Add_Fields]` |
+| 4 | `2026-08-14 12:46:39.769` | `…0a9572` | `ULMSG_BROKER_BDG_DMZ_CLI` | `DEBUG` | 3088 | `PushMessage : #AVEXDESTINATION=XSWX|#BLOOMBERGCODE=HOLN SW|#CFICODE=ESX…` |
+| 5 | `2026-08-14 12:46:39.769` | `…03e18e` | `ULMSG_BROKER_BDG_DMZ_CLI` | `INFO` | 3088 | `Sending : 8=FIX.4.2|9=3513|35=UL|49=ULB_DMZ_BROKER_BDG|56=ULB_CLI_BROKE…` |
+| 6 | `2026-08-14 12:46:39.769` | `…778909` | `OMS_X1_TradeCapture` | `INFO` | 40218 | `Receiving : 8=FIX.4.4|9=938|35=8|34=40218|49=OMSAUDITX1|56=FIRMAUDITX1|…` |
+| 7 | `2026-08-14 12:46:39.769` | `…3b32da` | `OMS_X1_TradeCapture` | `DEBUG` | 40218 | `RouteMessage : ACTION=EXECUTION|AGGRESSORINDICATOR=Y|ALTEVENTTEXT=Order…` |
+| 8 | `2026-08-14 12:46:39.769` | `…f6ee81` | `TECH_AddFields_OMS_X1` | `DEBUG` | 40218 | `After Enrichment -> ACTION=EXECUTION|AGGRESSORINDICATOR=Y|ALTEVENTTEXT=…` |
 
 ## What every line states
 
@@ -41,5 +41,7 @@ table opens with; a line is not a lifecycle, so most of them are empty.
 | --- | --- |
 | `crosscode` | `local://bound/data/capture/ulbridge.log` |
 | `state` | `UNKNOWN` (0) |
-| `creaunix`, `execunix`, `recdunix`, `exprunix`, `prevunix`, `snapunix` | empty |
+| `creaunix` | the earliest instant the read has dated a line of the capture by |
+| `prevunix` | the instant the read dated the line before by |
+| `recdunix`, `exprunix`, `snapunix` | empty |
 | `prevuuid`, `srcuuids` | empty |

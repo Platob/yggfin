@@ -53,9 +53,9 @@ with storages:
             for kind, task in FLATTENERS.items()
         }
         landed = {kind: future.result() for kind, future in running.items()}
-    assert landed["orders"] == Landed(read=29, written=8, snapshot_id=pinned)
-    assert landed["quotes"] == Landed(read=29, written=0, snapshot_id=pinned)
-    assert landed["executions"] == Landed(read=29, written=7, snapshot_id=pinned)
+    assert landed["orders"] == Landed(read=30, written=9, snapshot_id=pinned)
+    assert landed["quotes"] == Landed(read=30, written=0, snapshot_id=pinned)
+    assert landed["executions"] == Landed(read=30, written=9, snapshot_id=pinned)
 
     # Zero is a pinned absence: nothing is read, so the window is emptied.
     assert parse_orders(storages, window, snapshot_id=0) == Landed(

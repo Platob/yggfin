@@ -366,6 +366,11 @@ def _positive_int(value: Any, name: str) -> int:
 # What "in order" means, once, for everything that asks: a writer deciding
 # whether a chunk needs sorting, a reader checking what a file recorded, and
 # the key joins below deciding whether equal keys are already neighbours.
+#
+# A null is the least value: first ascending and last descending, the null
+# order Iceberg records for each direction unless told otherwise. A NaN
+# follows every number either way. An event's `seqnum` is why: a null there
+# is place zero among the events of its instant, the first of them.
 
 SORT_DIRECTIONS = MappingProxyType(
     {
@@ -401,17 +406,24 @@ def sort_order_fields(
 def sorted_rows(
     rows: pyarrow.Table, columns: Sequence[str] | Sequence[tuple[str, str]]
 ) -> pyarrow.Table:
-    """`rows` in the directional, null-last order `columns` name, ties in their own order.
+    """`rows` in the directional order `columns` name, ties in their own order.
 
     Ordered as `in_sort_order` reads them, on `comparable` values, because a
     column of an extension type -- a UUID key -- has no sort kernel of its own.
+    A column holding a null is ordered on its validity first, in its own
+    direction, so its nulls lead an ascending key and close a descending one
+    while a NaN still follows every number.
     """
-    fields = sort_order_fields(columns)
-    keys = pyarrow.table(
-        {f"key_{index}": comparable(rows.column(name)) for index, (name, _) in enumerate(fields)}
-    )
-    order = [(f"key_{index}", direction) for index, (_, direction) in enumerate(fields)]
-    return rows.take(pyarrow.compute.sort_indices(keys, sort_keys=order))
+    keys: dict[str, Any] = {}
+    order: list[tuple[str, str]] = []
+    for index, (name, direction) in enumerate(sort_order_fields(columns)):
+        column = comparable(rows.column(name))
+        if column.null_count:
+            keys[f"valid_{index}"] = pyarrow.compute.is_valid(column)
+            order.append((f"valid_{index}", direction))
+        keys[f"key_{index}"] = column
+        order.append((f"key_{index}", direction))
+    return rows.take(pyarrow.compute.sort_indices(pyarrow.table(keys), sort_keys=order))
 
 
 def one_array(column: Any) -> Any:
@@ -452,7 +464,7 @@ def in_sort_order(
     rows: pyarrow.RecordBatch | pyarrow.Table,
     columns: Sequence[str] | Sequence[tuple[str, str]],
 ) -> bool:
-    """Whether a batch or table follows its directional, null-last ordering."""
+    """Whether a batch or table follows its directional ordering, a null the least value."""
     compute = pyarrow.compute
     ordered = None
     for name, direction in reversed(sort_order_fields(columns)):
@@ -474,13 +486,17 @@ def in_sort_order(
                 False,
             ),
         )
-        precedes = compute.or_(
-            regular_precedes,
-            compute.or_(
+        if direction == "descending":
+            irregular_precedes = compute.or_(
                 compute.and_(before_regular, compute.or_(after_nan, after_null)),
                 compute.and_(before_nan, after_null),
-            ),
-        )
+            )
+        else:
+            irregular_precedes = compute.or_(
+                compute.and_(before_null, compute.invert(after_null)),
+                compute.and_(before_regular, after_nan),
+            )
+        precedes = compute.or_(regular_precedes, irregular_precedes)
         equal = compute.or_(
             compute.or_(
                 compute.and_(before_null, after_null),

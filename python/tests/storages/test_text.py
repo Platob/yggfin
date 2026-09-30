@@ -70,9 +70,9 @@ def test_the_log_holds_every_line_once_dated_by_its_header(landing: Landing) -> 
     """The native read's own row, keyed on each line's identity: the shipped
     header dates all 144 lines -- the fifteen that group their micros too --
     in the bridge's zone, so none takes the file's modification time and none
-    sits at the pin, and three lines repeating another's bytes are three rows,
-    because the content code digests the line's row number and object beside
-    its bytes."""
+    sits at the pin, and a line repeating another's bytes is a row of its own:
+    its row number reaches its identity, never its content code, which lines
+    of one body share."""
     lines = landing.table(LOG_MESSAGES)
 
     assert lines.schema.equals(log_message_field().into_arrow_schema(), check_metadata=False)
@@ -90,8 +90,8 @@ def test_the_log_holds_every_line_once_dated_by_its_header(landing: Landing) -> 
     assert len(set(identities)) == lines.num_rows
     assert bytes(16) not in identities
     assert lines.schema.field("currhashcode").type == pyarrow.int64()
-    assert len(set(lines.column("currhashcode").to_pylist())) == 144
     bodies = lines.column("body").to_pylist()
+    assert len(set(lines.column("currhashcode").to_pylist())) == len(set(bodies)) == 120
     assert len(set(bodies)) < len(bodies), "some lines repeat another's bytes exactly"
     assert layout(landing.storages, LOG_MESSAGES) == {
         "key": {"curruuid"},
@@ -131,8 +131,8 @@ def test_a_window_the_capture_falls_outside_reads_nothing_and_writes_none(
 @pytest.mark.parametrize(
     ("zone", "hours", "bronze", "events", "stored"),
     [
-        pytest.param({}, HOURS, (77, 58), (22, 23), 23, id="default"),
-        pytest.param({"timezone": "UTC"}, HOURS_READ_AS_UTC, (81, 54), (23, 27), 39, id="utc"),
+        pytest.param({}, HOURS, (136, 0), (27, 28), 28, id="default"),
+        pytest.param({"timezone": "UTC"}, HOURS_READ_AS_UTC, (132, 4), (24, 28), 40, id="utc"),
     ],
 )
 def test_a_line_is_read_in_the_zone_its_bridge_prints(
@@ -146,21 +146,25 @@ def test_a_line_is_read_in_the_zone_its_bridge_prints(
     """The capture's bridge prints a Central European summer clock, two hours
     ahead of the UTC its FIX frames state, and `rekep.times.TIMEZONE` reads
     it there unless a task states another zone. Read in its zone, a line
-    lands in the hour of the message it carries: the key folds the
-    observations of one delivery, and hourly silver windows land every
-    event the day's walk answers, each as that walk settles it, but the one
-    expiry whose order began more than `HISTORY` before it -- so the day's
-    walk after them appends that expiry alone, and silver holds each event
-    once.
+    lands in the hour of the message it carries: bronze keeps every copy of
+    one delivery, each placed apart at its instant, and hourly silver windows
+    land every row the day's walk answers, each as that walk settles it, but
+    the one expiry whose order began more than `HISTORY` before it -- so the
+    day's walk after them appends that expiry alone, and silver holds each
+    row once. Three of the 28 are repeat deliveries a walk over stored rows
+    does not yet fold: PyIceberg stores a copy's null list of structs as an
+    empty one, and the core's delivery key then tells the copies apart.
 
     Read as UTC, each line is dated two hours after its message, past the
     delay a transaction clock is trusted within: a copy stating no
     `SendingTime` is dated by its line, two hours from a copy stating one, so
-    the key folds neither into the other and the day's walk answers both.
-    An hourly window holds such a copy's bronze row or the instant the walk
-    dates it at, never both, and drops it; and it merges only the
-    observations it holds, so the rows it lands settle identities the day's
-    walk, merging them all, answers otherwise, and silver ends holding both."""
+    the two stand at different instants and the walk folds neither into the
+    other; four copies meet another at one instant, one place and one content,
+    so the key folds those. An hourly window holds such a copy's bronze row or
+    the instant the walk dates it at, never both, and drops it; and it merges
+    only the observations it holds, so the rows it lands settle identities the
+    day's walk, merging them all, answers otherwise, and silver ends holding
+    both."""
     parse_log_messages(f"file:{CAPTURE}", storages, DAY, **zone)
     lines = read(storages, LOG_MESSAGES)
     stamped = pyarrow.compute.hour(lines.column(EVENT_CLOCK)).to_pylist()

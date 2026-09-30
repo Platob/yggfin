@@ -24,94 +24,87 @@
       },
       {
         "id": 4,
-        "name": "execunix",
-        "type": "timestamptz",
-        "required": false,
-        "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
-      },
-      {
-        "id": 5,
         "name": "recdunix",
         "type": "timestamptz",
         "required": false,
         "doc": "When this event was recorded, where that is known; the earliest its statements know."
       },
       {
-        "id": 6,
+        "id": 5,
         "name": "exprunix",
         "type": "timestamptz",
         "required": false,
         "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
       },
       {
-        "id": 7,
+        "id": 6,
         "name": "prevunix",
         "type": "timestamptz",
         "required": false,
         "doc": "When the event this one follows happened, where it follows one."
       },
       {
-        "id": 8,
+        "id": 7,
         "name": "snapunix",
         "type": "timestamptz",
         "required": false,
         "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
       },
       {
-        "id": 9,
+        "id": 8,
         "name": "curruuid",
         "type": "fixed[16]",
         "required": true,
         "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
       },
       {
-        "id": 10,
+        "id": 9,
         "name": "crossuuid",
         "type": "fixed[16]",
         "required": true,
         "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
       },
       {
-        "id": 11,
+        "id": 10,
         "name": "crosscode",
         "type": "string",
         "required": false,
         "doc": "The code every event of one chain shares, as the event spells it; empty where none."
       },
       {
-        "id": 12,
+        "id": 11,
         "name": "currhashcode",
         "type": "long",
         "required": true,
         "doc": "The XXH3-64 of what the event states."
       },
       {
-        "id": 13,
+        "id": 12,
         "name": "crosshashcode",
         "type": "long",
         "required": true,
         "doc": "The XXH3-64 of the cross code; zero where the event names none."
       },
       {
-        "id": 14,
+        "id": 13,
         "name": "prevuuid",
         "type": "fixed[16]",
         "required": false,
         "doc": "The identity of the event this one follows, where it follows one."
       },
       {
-        "id": 15,
+        "id": 14,
         "name": "seqnum",
         "type": "long",
         "required": false,
-        "doc": "The event's place in its chain: how many came before it."
+        "doc": "The event's place among the events of its instant: 0 for the first its stream hands over there, one more for each next."
       },
       {
-        "id": 16,
+        "id": 15,
         "name": "srcuuids",
         "type": {
           "type": "list",
-          "element-id": 49,
+          "element-id": 50,
           "element": "fixed[16]",
           "element-required": true
         },
@@ -119,71 +112,77 @@
         "doc": "The sorted unique identities of the elements this event was read from: provenance, never its chain - no walk moves it."
       },
       {
-        "id": 17,
+        "id": 16,
         "name": "state",
         "type": "int",
         "required": false,
         "doc": "The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where nothing states one, the furthest its chain knows once followed."
       },
       {
-        "id": 18,
+        "id": 17,
         "name": "price",
         "type": "decimal(38, 18)",
         "required": false
       },
       {
-        "id": 19,
+        "id": 18,
         "name": "currency",
         "type": "string",
         "required": true
       },
       {
-        "id": 20,
+        "id": 19,
         "name": "quantity",
         "type": "decimal(38, 18)",
         "required": false
       },
       {
-        "id": 21,
+        "id": 20,
         "name": "unit",
         "type": "string",
         "required": true
       },
       {
-        "id": 22,
+        "id": 21,
         "name": "side",
         "type": "int",
         "required": true
       },
       {
-        "id": 23,
+        "id": 22,
         "name": "securityids",
         "type": {
           "type": "map",
-          "key-id": 50,
+          "key-id": 51,
           "key": "string",
-          "value-id": 51,
+          "value-id": 52,
           "value": "string",
           "value-required": true
         },
         "required": false
       },
       {
-        "id": 24,
+        "id": 23,
         "name": "isincode",
         "type": "string",
         "required": false
       },
       {
-        "id": 25,
+        "id": 24,
         "name": "cficode",
         "type": "string",
         "required": false
       },
       {
-        "id": 26,
+        "id": 25,
         "name": "miccode",
         "type": "string",
+        "required": false
+      },
+      {
+        "id": 26,
+        "name": "execunix",
+        "type": "timestamptz",
         "required": false
       },
       {
@@ -281,9 +280,9 @@
         "name": "fxrates",
         "type": {
           "type": "map",
-          "key-id": 52,
+          "key-id": 53,
           "key": "string",
-          "value-id": 53,
+          "value-id": 54,
           "value": "decimal(38, 18)",
           "value-required": true
         },
@@ -300,9 +299,9 @@
         "name": "metadata",
         "type": {
           "type": "map",
-          "key-id": 54,
+          "key-id": 55,
           "key": "string",
-          "value-id": 55,
+          "value-id": 56,
           "value": "string",
           "value-required": false
         },
@@ -325,9 +324,9 @@
         "name": "altids",
         "type": {
           "type": "map",
-          "key-id": 56,
+          "key-id": 57,
           "key": "string",
-          "value-id": 57,
+          "value-id": 58,
           "value": "string",
           "value-required": true
         },
@@ -335,6 +334,19 @@
       },
       {
         "id": 48,
+        "name": "accountids",
+        "type": {
+          "type": "map",
+          "key-id": 59,
+          "key": "string",
+          "value-id": 60,
+          "value": "string",
+          "value-required": true
+        },
+        "required": false
+      },
+      {
+        "id": 49,
         "name": "bookscope",
         "type": "string",
         "required": false
@@ -342,7 +354,7 @@
     ],
     "schema-id": 0,
     "identifier-field-ids": [
-      9
+      8
     ]
   },
   "partition-spec": {
@@ -363,19 +375,19 @@
         "source-id": 2,
         "transform": "identity",
         "direction": "asc",
-        "null-order": "nulls-last"
+        "null-order": "nulls-first"
       },
       {
-        "source-id": 15,
+        "source-id": 14,
         "transform": "identity",
         "direction": "asc",
-        "null-order": "nulls-last"
+        "null-order": "nulls-first"
       },
       {
-        "source-id": 9,
+        "source-id": 8,
         "transform": "identity",
         "direction": "asc",
-        "null-order": "nulls-last"
+        "null-order": "nulls-first"
       }
     ]
   }

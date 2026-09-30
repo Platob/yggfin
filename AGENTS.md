@@ -14,7 +14,7 @@ behavior.
 
 ## Ownership
 
-- The native dependency is the exact Yggdryl 0.1.15 release declared in
+- The native dependency is the exact Yggdryl 0.1.18 release declared in
   `python/pyproject.toml` and locked in `python/uv.lock`. Public applications
   and documentation import only `rekep`, and documentation never names the
   dependency: a capability a reader needs is re-exported through `rekep`.
@@ -24,8 +24,10 @@ behavior.
   streams, codecs, decompression, text media and the text row's event
   columns, FIX registries and their process default, FIX batch parsing, the
   fixed `fixmsg` row, the lifecycle stage after the parse, the `State`
-  lifecycle enum, the `Side` and `MarketDataKind` enums, the split of a
-  fill report into its execution, and the book fold with its `MIC:CFI` key.
+  lifecycle enum, the `Side` and `MarketDataKind` enums, each event's place
+  among the events of its instant, the split of a fill report into its
+  execution and of a trade into one execution per side, and the book fold
+  with its `MIC:CFI` key.
 - Arrow owns columnar shape conversions and kernels.
 - PyIceberg owns table conversion, ids, snapshots, scan planning, and commits.
 - Rekep owns `Storages` (one catalog per layer), the bridge read's options and
@@ -71,28 +73,27 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   off: every line would then take the handle's modification time, one instant
   for a whole day of lines, with no error anywhere.
 - `ULBRIDGE_ROWHEADER` is the default and the only one here: the core's
-  `yggdryl.fix.ULBRIDGE_ROWHEADER` character for character but its
-  `timestamp` and `level` captures, renamed `mtime` and `loglevel`, because
-  under the core's names the read dates no line. A bridge writing the same
-  facts in a layout of its own is read by naming its header as the
-  `rowheader` that `parse_log_messages` and `rekep.text.text_options` take,
-  never by a second constant: the layout is a parameter and the capture
-  names are the contract.
-- The default clock takes the core's fraction: three digits under a point,
-  and the micros some of the bridge's loggers group after them as
-  `.524_315`. The `mtime` capture is consumed at nanoseconds UTC whatever the
-  expression spells, so its width types no column; what the width decides is
-  which lines the header matches. A comma or no fraction at all is left
-  unmatched, and a line a header misses is dated by its object's modification
-  time with every capture null, and reaches the walk with no session, context
-  or sequence to fold on -- so the count of lines a header matches moves the
-  count of events a walk answers. A bridge spelling another fraction is read
-  under a header of its own. `_` groups a fraction's digits in the core and
-  never opens one: a header matching `01_147` hands the read a located
-  refusal that fails the batch. `rekep.text.text_options` refuses a header
-  that renames or omits a capture, because the read drops a capture it fills
-  nothing from in silence -- a table that lands complete, keyed and empty
-  down one column, or one whose clock settled nothing.
+  `yggdryl.fix.ULBRIDGE_ROWHEADER`, which `rekep.times` re-exports
+  unchanged, its clock captured as `mtime` and its level as `loglevel`. A
+  bridge writing the same facts in a layout of its own is read by naming its
+  header as the `rowheader` that `parse_log_messages` and
+  `rekep.text.text_options` take, never by a second constant: the layout is a
+  parameter and the capture names are the contract.
+- The default clock takes the core's fraction: three digits under a point or
+  a comma, the micros some of the bridge's loggers group after them as
+  `.524_315`, or none at all. The `mtime` capture is consumed at nanoseconds
+  UTC whatever the expression spells, so its width types no column; what the
+  width decides is which lines the header matches. Another fraction -- six
+  digits straight on -- is left unmatched, and a line a header misses is dated
+  by its object's modification time with every capture null, and reaches the
+  walk with no session, context or sequence to fold on -- so the count of lines
+  a header matches moves the count of events a walk answers. A bridge spelling
+  another fraction is read under a header of its own. `_` groups a fraction's
+  digits in the core and never opens one: a header matching `01_147` hands the
+  read a located refusal that fails the batch. `rekep.text.text_options`
+  refuses a header that renames or omits a capture, because the read drops a
+  capture it fills nothing from in silence -- a table that lands complete,
+  keyed and empty down one column, or one whose clock settled nothing.
 - The header's clock states no offset, so `text_options` and
   `parse_log_messages` read it in `timezone`, the zone the bridge prints in,
   `rekep.times.TIMEZONE` -- `Europe/Zurich` -- unless stated: the shipped
@@ -166,6 +167,9 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   `snapshot` admits a concurrent same key. A keyed chunk that commits nothing
   still validates the head it read.
 - Push filters, projections, ordering, and limits into storage planning.
+- A null is the least value of every sort key: first ascending, last
+  descending, the null order Iceberg records for each direction by default
+  and the only one a shape holds. A NaN follows every number either way.
 - Every verb accepts `branch`; every read accepts `snapshot_id`.
 - Preserve supplied Iceberg ids and assign missing ids.
 - Keep PyIceberg's configured `FileIO` and native PyArrow streams at the table
@@ -258,7 +262,7 @@ the window as its `where` -- the decode cuts every line and the record surface
 answers the clause over the rows they become, so nothing is filtered after the
 read -- and writes one schema-bearing reader directly to Iceberg under
 `rekep.text.log_message_field()`, the read's own field narrowed for Iceberg:
-the sixteen event columns the read settles over every line, `body`, and one
+the fifteen event columns the read settles over every line, `body`, and one
 column per capture. Nothing there is hand-declared. `currunix` is the instant
 the read settles over the line, read off the header's `mtime` capture in
 `timezone`; a line the header could not date takes the modification time of
@@ -266,9 +270,12 @@ the object it was read from, and `EPOCH` only where a handle has none -- so a
 header that matched nothing loses no line. An identity is derived from that
 instant and the object the line was read from, so a capture is replayed from
 where it was read, never from a copy. The table is keyed on `curruuid` alone,
-the line identity the read states; `currhashcode` is its exact-content code
-and not a second key. A text row names its source through the read's own
-`crosscode` and `seqnum`, and its `state` is `UNKNOWN`. Given no window, it
+the line identity the read states, which the row number reaches;
+`currhashcode` is its content code over the object and the body, shared by
+the lines of one body, and not a second key. A text row names its source
+through the read's own `crosscode` and `seqnum`, its `creaunix` and `prevunix`
+are the earliest instant the read dated a line of the object by and the one
+it dated the line before by, and its `state` is `UNKNOWN`. Given no window, it
 reads every line, observes the span of their `currunix` as they stream past
 -- the write's spill is the only local stage -- lands them, and answers
 `Landed.window` -- `rekep.times.hour_window` over the earliest and
@@ -293,33 +300,35 @@ parse -> bronze.record_keeping.fix_messages, lifecycle -> silver.record_keeping.
 ```
 
 `parse_fix_messages_raw` reads the stored lines of the window off `currunix`,
-with the epoch-pinned lines beside them, in the table's `SORT_COLUMNS` order
--- the order they were printed in, so which hop's copy of a restated message
-bronze keeps never depends on file layout -- hands the parse `PARSE_COLUMNS`,
-the seven it consumes, and parses them, and only that: a bronze row is what
-the message implied about itself, and `seqnum`, `prevuuid` and `prevunix` are
-empty on every one because nothing has walked yet. The parse dates a message
-by the transaction clock standing within `official_time_delay_ms` of the
-`SendingTime` it states, else by that `SendingTime`; a message stating none,
-by the transaction clock standing within that delay of the line it was read
-off, else by that line; a frame read off no line takes the codec's
+with the epoch-pinned lines beside them, in the table's `SORT_COLUMNS` order --
+the order they were printed in, so the place the parse gives a message among
+the messages of its instant, which reaches its identity, never depends on file
+layout -- hands the parse `PARSE_COLUMNS`, the seven it consumes, and parses
+them, and only that: a bronze row is what the message implied about itself,
+`prevuuid` and `prevunix` are empty on every one because nothing has walked
+yet, and `seqnum` is its place in its run -- the messages the parse handed over
+at one instant, one after another -- null at place zero. The parse dates a
+message by the transaction clock standing within `official_time_delay_ms` of
+the `SendingTime` it states, else by that `SendingTime`; a message stating
+none, by the transaction clock standing within that delay of the line it was
+read off, else by that line; a frame read off no line takes the codec's
 `default_sending_time`, which the tasks pin at `UNDATED`. A message logged
-again at every hop is restated under one identity, so the key folds the
-copies, and `skipped` counts them. `parse_fix_messages_refined` reads
-`[start - HISTORY, end)` of bronze -- `HISTORY` is one hour -- with
-`fix_window_filter`, which adds the `UNDATED` rows whose `TransactTime` the
-window holds, in `SORT_COLUMNS` order, walks the chains, and lands the rows it
-places in the window. The hour before is context only, and an expiry past
-`end` waits for its own window. `snapshot_millis`, `SNAPSHOT_MILLIS` (one
-hour) unless stated and zero for none, is the walk's grid whatever the codec
-pins: at every whole hour each live chain is restated as a view,
-`currunix == snapunix ==` the tick, under the identity that instant derives --
-a row of its own under the silver key -- with the live event's content and
-place, moving no chain on. The rows at `start` are the chains the hour before
-left alive. A silver row differs from the bronze rows it merges in what the
-walk filled -- its place, its predecessor, the merged `srcuuids`, the earliest
-`recdunix`, the folded `creaunix`, `exprunix` and `state` -- and in the
-identity those re-settle to, so silver is written from bronze and never in
+again at every hop is a copy placed apart at its instant, so every copy is a
+bronze row under an identity of its own, and the walk folds them.
+`parse_fix_messages_refined` reads `[start - HISTORY, end)` of bronze --
+`HISTORY` is one hour -- with `fix_window_filter`, which adds the `UNDATED`
+rows whose `TransactTime` the window holds, in `SORT_COLUMNS` order, walks the
+chains, and lands the rows it places in the window. The hour before is context
+only, and an expiry past `end` waits for its own window. `snapshot_millis`,
+`SNAPSHOT_MILLIS` (one hour) unless stated and zero for none, is the walk's
+grid whatever the codec pins: at every whole hour each live chain is restated
+as a view, `currunix == snapunix ==` the tick, under the identity that instant
+derives -- a row of its own under the silver key -- with the live event's
+content and place, moving no chain on. The rows at `start` are the chains the
+hour before left alive. A silver row differs from the bronze rows it merges in
+what the walk filled -- its place, its predecessor, the merged `srcuuids`, the
+earliest `recdunix`, the folded `creaunix`, `exprunix` and `state` -- and in
+the identity those re-settle to, so silver is written from bronze and never in
 place. An event lands only in a refined window holding both its bronze row and
 the instant the walk dates it at: a capture read in a zone other than its
 bridge's dates its lines away from the messages they carry by the offset
@@ -338,11 +347,14 @@ chain folds forward. `state` (65029) is an `int32` code of the intrinsic
 `UNKNOWN` 0 -- set by the first of tags 39, 150, 1036, 939, 297, 87, 665, 940,
 1375 and 531 a message states, else by what its message type asks for, else
 `UNKNOWN`. The parse splits a report of a fill into the report and the
-execution it reports, one per side for a trade report, each execution
-`FILLED`, and a quote stating both sides into one quote per side.
-`crosscode` takes the first non-empty `OrderID`, `ClOrdID`, `OrigClOrdID`,
-`QuoteID`, `QuoteReqID` or `MDReqID` -- `ExecID=` and the `ExecID` for a
-split execution -- prefixed with the side a message states; `msgsesseventid`
+execution it reports, one per side for a trade report -- `UNKN` for a side
+stating no `Side(54)` -- each execution `FILLED`, and a quote stating both
+sides into one quote per side. `crosscode` takes the first non-empty
+`OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID` or `MDReqID` --
+the `ExecID` for a split execution -- and an order's, a quote's or an
+execution's is prefixed with the four-letter code of the side it states
+(`BUYS:`, `SELL:`), every other kind's, and one stating no side, bare;
+`msgsesseventid`
 joins the message type, the capture session, context and sequence. Default
 absence spellings are empty text, `null`, `<null>`, `none`, `n/a` and
 `[n/a]`, trimmed and compared case-insensitively. `fixentries` is residual and does
@@ -376,8 +388,9 @@ restores them through `fix_row_messages`, and delegates to native
 instant: the fold owns that key, `{miccode}:{cficode}` over the detailed
 classification a message's chain reaches, which no row cell holds.
 Lifecycle is not repeated. Native code owns admission, operation kinds,
-continuation, matching, expiration and book identity; invalid admitted
-messages remain errors. The fold takes the silver views of one instant as
+continuation, matching, expiration and book identity, and never fails on
+what a message states: an entry it cannot place is left out with a warning
+through `logging`. The fold takes the silver views of one instant as
 the whole membership of their book there, adding no delta, so a book at
 `start` holds every chain the walk that landed those views saw alive;
 beyond them books start with no depth before `start - HISTORY` -- a warmed
@@ -401,7 +414,8 @@ each child's own facts.
 narrows every shape recursively: timestamp ns to us, UUID to fixed bytes,
 semantic extensions to storage, uint64 to signed bit views; and declares the
 layout once: key `curruuid`, partition `hour(currunix)`, sort
-`currunix, seqnum, curruuid`. The four fields -- the text read's row, the
+`currunix, seqnum, curruuid`, where a null `seqnum` -- place zero -- sorts
+first. The four fields -- the text read's row, the
 fixed FIX row, the book, the market event -- make the seven tables.
 
 The market tasks atomically replace exactly their strict window using bounded
@@ -413,8 +427,9 @@ implement this contract for partial-hour windows.
 Every task answers `Landed`: `read` source rows its window selected,
 `written` target rows -- those a keyed task inserted or replaced, 0 on a
 replay, or those a market task replaced its window with -- `skipped` answered
-rows the target's key folded into a stored one, a restatement or a row an
-earlier run already landed as it is, and `snapshot_id` the books snapshot
+rows the target's key folded into another, a row an earlier run already
+landed as it is or one the stream answered twice under one identity, and
+`snapshot_id` the books snapshot
 `parse_books` committed or a
 flattener read. Records go to the `rekep.*` loggers -- INFO for each
 completed operation, DEBUG for scans and files -- and the caller configures

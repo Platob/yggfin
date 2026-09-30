@@ -163,6 +163,18 @@ def _kind(transform: str) -> str:
     return transform.split("[", 1)[0]
 
 
+def null_order(direction: Any) -> Any:
+    """The `NullOrder` a sort field in `direction` records: nulls first ascending, last descending.
+
+    Iceberg's own default for each direction, and the only one a shape here
+    holds, because a null is the least value of every sort key
+    (`rekep.dataset.in_sort_order`).
+    """
+    from pyiceberg.table.sorting import NullOrder, SortDirection
+
+    return NullOrder.NULLS_LAST if direction == SortDirection.DESC else NullOrder.NULLS_FIRST
+
+
 def iceberg_sort_order(
     source: Field,
     schema: Any = None,
@@ -181,7 +193,6 @@ def iceberg_sort_order(
     require("pyiceberg", "iceberg")
     from pyiceberg.table.sorting import (
         UNSORTED_SORT_ORDER,
-        NullOrder,
         SortDirection,
         SortField,
         SortOrder,
@@ -192,21 +203,20 @@ def iceberg_sort_order(
     if not declared:
         return UNSORTED_SORT_ORDER
     schema = schema if schema is not None else iceberg_schema(source)
-    return SortOrder(
-        *[
+    fields = []
+    for name, spelled in declared.items():
+        direction = (
+            SortDirection.DESC if str(spelled).lower().startswith("desc") else SortDirection.ASC
+        )
+        fields.append(
             SortField(
                 source_id=schema.find_field(name).field_id,
                 transform=IdentityTransform(),
-                direction=(
-                    SortDirection.DESC
-                    if str(direction).lower().startswith("desc")
-                    else SortDirection.ASC
-                ),
-                null_order=NullOrder.NULLS_LAST,
+                direction=direction,
+                null_order=null_order(direction),
             )
-            for name, direction in declared.items()
-        ]
-    )
+        )
+    return SortOrder(*fields)
 
 
 def iceberg_struct_field(
@@ -249,7 +259,7 @@ def iceberg_struct_field(
             members[column].iceberg["partition_key"] = transform
     metadata = dict(field.metadata)
     if sort_order is not None:
-        from pyiceberg.table.sorting import NullOrder, SortDirection
+        from pyiceberg.table.sorting import SortDirection
         from pyiceberg.transforms import IdentityTransform
 
         ordered: list[tuple[str, str]] = []
@@ -259,7 +269,7 @@ def iceberg_struct_field(
                 not column
                 or "." in column
                 or not isinstance(sorting.transform, IdentityTransform)
-                or sorting.null_order != NullOrder.NULLS_LAST
+                or sorting.null_order != null_order(sorting.direction)
             ):
                 ordered = []
                 break
@@ -349,7 +359,7 @@ def iceberg_contract_field(document: str, name: str = "") -> Field:
 
 def _projectable(schema: Any, spec: Any, sort_order: Any) -> None:
     """Raise unless every partition and sort field lands on one Field member."""
-    from pyiceberg.table.sorting import NullOrder, SortDirection
+    from pyiceberg.table.sorting import SortDirection
     from pyiceberg.transforms import IdentityTransform
 
     partitioned: set[str] = set()
@@ -367,11 +377,11 @@ def _projectable(schema: Any, spec: Any, sort_order: Any) -> None:
                 f"table contract sorts {column!r} by {sorting.transform}, "
                 "and a sort key is a column"
             )
-        if sorting.null_order != NullOrder.NULLS_LAST:
+        if sorting.null_order != null_order(sorting.direction):
             spelled = "ascending" if sorting.direction == SortDirection.ASC else "descending"
             raise ValueError(
                 f"table contract sorts {column!r} {spelled} with {sorting.null_order}, "
-                f"and a sort key orders nulls {NullOrder.NULLS_LAST}"
+                f"and a sort key orders nulls {null_order(sorting.direction)} {spelled}"
             )
 
 

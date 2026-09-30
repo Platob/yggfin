@@ -667,11 +667,12 @@ def test_an_ordered_read_sorts_a_different_physical_layout_explicitly(
     found = ordered.read_arrow_reader(order_by=("unix", "seq", "hash")).read_all()
 
     assert ordered.sort_columns() == ["hash"]
+    # A null `seq` is the least value, so it leads its ties.
     assert found.column("payload").to_pylist() == [
-        "first",
-        "second",
         "unknown-1",
         "unknown-2",
+        "first",
+        "second",
     ]
 
 
@@ -5495,8 +5496,8 @@ def test_a_reopened_table_keeps_exact_sort_priority_and_null_policy(tmp_path: Pa
     table = declared.get_or_create_table()
 
     assert [sorting.null_order for sorting in table.sort_order().fields] == [
-        NullOrder.NULLS_LAST,
-        NullOrder.NULLS_LAST,
+        NullOrder.NULLS_FIRST,
+        NullOrder.NULLS_FIRST,
     ]
     assert [sorting.direction for sorting in table.sort_order().fields] == [
         SortDirection.ASC,
@@ -5520,7 +5521,7 @@ def test_partition_staging_honours_descending_sort_and_nulls_last(tmp_path: Path
     table = dataset.iceberg_table
     assert [(field.direction, field.null_order) for field in table.sort_order().fields] == [
         (SortDirection.DESC, NullOrder.NULLS_LAST),
-        (SortDirection.ASC, NullOrder.NULLS_LAST),
+        (SortDirection.ASC, NullOrder.NULLS_FIRST),
     ]
     (path,) = dataset.data_files().column("file_path").to_pylist()
     physical = pyarrow.parquet.read_table(local(path))
@@ -5544,7 +5545,7 @@ def test_a_descending_ordered_read_merges_commits_and_applies_its_limit(tmp_path
 
 
 @pytest.mark.parametrize("special", [None, float("nan")])
-def test_ordered_read_does_not_concatenate_file_local_special_tails(
+def test_ordered_read_does_not_concatenate_file_local_nulls_or_nans(
     tmp_path: Path, special: float | None
 ) -> None:
     catalog = IcebergCatalog(name="special-read", properties=catalog_properties(tmp_path))
@@ -5554,10 +5555,10 @@ def test_ordered_read_does_not_concatenate_file_local_special_tails(
 
     found = dataset.read_arrow_reader(order_by="value").read_all().column("value").to_pylist()
 
-    assert found[:2] == [1.0, 2.0]
     if special is None:
-        assert found[2:] == [None, None]
+        assert found == [None, None, 1.0, 2.0], "a null is the least value"
     else:
+        assert found[:2] == [1.0, 2.0]
         assert all(math.isnan(value) for value in found[2:])
 
 
@@ -5819,8 +5820,8 @@ def test_a_file_claims_no_order_the_writer_could_not_lay_out(tmp_path: Path) -> 
     catalog = IcebergCatalog(name="claimed", properties=catalog_properties(tmp_path))
     dataset = catalog.dataset("t.claimed", field=Ticked.into_field())
     with dataset.get_or_create_table().update_sort_order() as update:
-        update.asc("at", IdentityTransform(), NullOrder.NULLS_LAST)
-        update.asc("payload", TruncateTransform(1), NullOrder.NULLS_LAST)
+        update.asc("at", IdentityTransform(), NullOrder.NULLS_FIRST)
+        update.asc("payload", TruncateTransform(1), NullOrder.NULLS_FIRST)
     dataset.refresh()
 
     assert dataset.iceberg_table.sort_order().order_id, "the table records an order"

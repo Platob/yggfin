@@ -9,7 +9,7 @@ landed as small tables a reader checks a column's meaning against:
 
 The rows follow one story through the layers: the lines of one execution, the
 frames the parse read off them -- each report of the fill with the execution
-it splits off -- and folded by identity, the events the walk merged them
+it splits off, every copy a row of its own -- the event the walk folded them
 into, and the execution leaf the book fold answered for it.
 
 The capture is read as `file:data/capture/ulbridge.log` from the repository
@@ -37,9 +37,11 @@ from collections.abc import Iterator, Sequence
 from typing import Any
 
 from rekep import MarketDataKind, Side, State, Storages
+from rekep.dataset import sorted_rows
 from rekep.fix import (
     EVENT_CLOCK,
     PARSE_COLUMNS,
+    SORT_COLUMNS,
     UNDATED,
     FixCodec,
     fix_parse_arrow_reader,
@@ -83,17 +85,15 @@ WINDOW = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 EXECID = "00030561317VOJO7"
 
 #: The chains the silver page shows walked, as their side-prefixed cross
-#: codes: an order filled at one instant, whose fills the walk takes in
-#: `curruuid` order rather than in the order they happened, so its last fill
-#: stands as a head of its own; and one left open that the walk restates on
-#: every hour and expires at its deadline.
-CHAINS = ("BUY:00084776691VFRM7", "BUY:00037497066VFRM7")
+#: codes: an order filled at one instant, whose fills the walk takes in the
+#: table's order -- the place each copy took there, then `curruuid` -- rather
+#: than in the order they happened, so its last fill stands as a head of its
+#: own; and one left open that the walk restates on every hour and expires at
+#: its deadline.
+CHAINS = ("BUYS:00084776691VFRM7", "BUYS:00037497066VFRM7")
 
 #: The lines the log page shows: the first ones the capture holds.
 FIRST_LINES = 8
-
-#: The order every table is sorted by within a partition, and read back in.
-ORDER = ("currunix", "seqnum", "curruuid")
 
 #: How much of a line's body a cell shows.
 EXCERPT = 72
@@ -145,7 +145,7 @@ def read(storages: Storages, table: str) -> list[dict[str, Any]]:
         held = dataset.read_arrow_table()
     finally:
         dataset.close()
-    return held.sort_by([(name, "ascending") for name in ORDER]).to_pylist()
+    return sorted_rows(held, SORT_COLUMNS).to_pylist()
 
 
 def parsed(storages: Storages) -> list[dict[str, Any]]:
@@ -486,9 +486,11 @@ def log_page(lines: list[dict[str, Any]]) -> str:
                     ["`crosscode`", code(shared["crosscode"])],
                     ["`state`", state(shared["state"])],
                     [
-                        "`creaunix`, `execunix`, `recdunix`, `exprunix`, `prevunix`, `snapunix`",
-                        "empty",
+                        "`creaunix`",
+                        "the earliest instant the read has dated a line of the capture by",
                     ],
+                    ["`prevunix`", "the instant the read dated the line before by"],
+                    ["`recdunix`, `exprunix`, `snapunix`", "empty"],
                     ["`prevuuid`, `srcuuids`", "empty"],
                 ],
             ),
@@ -505,8 +507,8 @@ def raw_page(
     execution = [row for row in raw if row["execid"] == EXECID]
     if not execution:
         raise ValueError(f"the capture carries no bronze row of execution {EXECID}")
-    # What the parse answered off each line, before the key folded restatements:
-    # an execution split out of a report names the report beside the line.
+    # What the parse answered off each line: an execution split out of a
+    # report names the report beside the line.
     frames: dict[int, list[uuid.UUID | None]] = collections.defaultdict(list)
     for message in answered:
         for source in message["srcuuids"]:
@@ -515,26 +517,12 @@ def raw_page(
     held = {identity(row["curruuid"]) for row in execution}
     carrying = [seqnum for seqnum, messages in frames.items() if held & set(messages)]
     first, last = min(carrying), max(carrying)
-    stored_from: dict[int, set[uuid.UUID | None]] = collections.defaultdict(set)
-    for row in raw:
-        stored_from[line_of(by_line, row)["seqnum"]].add(identity(row["curruuid"]))
     around = [line for line in sorted(lines, key=lambda line: line["seqnum"])]
     around = [line for line in around if first <= line["seqnum"] <= last]
     walked = []
-    folded = 0
     for line in around:
         messages = frames.get(line["seqnum"], [])
-        if not messages:
-            landed = "no frame"
-        else:
-            parts = []
-            for message in messages:
-                if message in stored_from[line["seqnum"]]:
-                    parts.append(f"row {short(message)}")
-                else:
-                    parts.append(f"restates {short(message)}, folded")
-                    folded += 1
-            landed = "; ".join(parts)
+        landed = "; ".join(f"row {short(message)}" for message in messages) or "no frame"
         walked.append(
             [
                 str(line["seqnum"]),
@@ -549,7 +537,9 @@ def raw_page(
         [
             f"{len(raw)} rows: one per FIX message the parse read off the stored lines of",
             f"{window_text()}, keyed on the message's identity. Nothing has walked, so",
-            "`seqnum` and `prevuuid` are empty on every row.",
+            "`prevuuid` is empty on every row; `seqnum` is the message's place in its",
+            "run -- the messages the parse handed over at one instant, one after",
+            "another -- null at place zero.",
             f"Columns: {table_link(FIX_MESSAGES_RAW, 2)}.",
         ],
         [
@@ -559,9 +549,9 @@ def raw_page(
             f"logged it on lines {first} to {last}, once per plugin it passed, and wrote",
             "prose between.",
             "The parse answers a message per frame a line carries, and a report of a fill",
-            "answers the execution it splits off beside it; a message that restates",
-            "another under the same identity is folded by the key and counted in",
-            f"`skipped` -- {folded} of them here.",
+            "answers the execution it splits off beside it. Every copy is a row of its",
+            "own: its place in its run reaches its identity, so bronze keeps each hop's",
+            "copy and the walk folds them into one event.",
             "",
             *table(["line:", "msgpluginid", "body", "the parse"], walked),
         ],
@@ -575,11 +565,13 @@ def raw_page(
             "dated by that clock too, at the precision its frame spells. Each row names",
             "the one line it was parsed from, and the execution a report splits off",
             "names that report beside it, `FILLED`: one fill, complete in itself,",
-            "whatever the report's own state.",
+            "whatever the report's own state. The report itself is filed under its",
+            "order's category, `ORDR`.",
             "",
             *table(
                 [
                     "currunix",
+                    "seqnum:",
                     "msgcat",
                     "curruuid",
                     "state",
@@ -590,6 +582,7 @@ def raw_page(
                 [
                     [
                         instant(row["currunix"]),
+                        number(row["seqnum"]),
                         marketdatakind(row["msgcat"]),
                         short(row["curruuid"]),
                         state(row["state"]),
@@ -687,23 +680,25 @@ def refined_page(lines: list[dict[str, Any]], refined: list[dict[str, Any]]) -> 
         "silver.record_keeping.fix_messages",
         [
             f"{len(refined)} rows: the bronze messages of {window_text()} walked into",
-            f"the {len(events)} events they are, each placed in its chain and naming",
-            f"every line it was logged on, and {len(views)} hourly views of the chains",
-            f"alive. Columns: {table_link(FIX_MESSAGES, 2)}.",
+            f"the {len(events)} events they are, the copies of each folded into one row",
+            f"placed in its chain and naming the lines it was logged on, and {len(views)}",
+            f"hourly views of the chains alive. Columns: {table_link(FIX_MESSAGES, 2)}.",
         ],
         [
             "## Two chains",
             "",
-            "`crosscode` is the business identifier a chain shares, `seqnum` the step an",
-            "event stands at and `prevuuid` the event it follows. An expiry is an event",
-            "the walk generates at the deadline the chain stated: no line recorded it.",
+            "`crosscode` is the business identifier a chain shares, `seqnum` an event's",
+            "place among the events of its instant and `prevuuid` the event it follows.",
+            "An expiry is an event the walk generates at the deadline the chain stated:",
+            "no line recorded it.",
             "",
             f"The fills of `{CHAINS[0]}` are dated at one instant, and the walk takes",
-            "the rows of one instant in `curruuid` order rather than in the order they",
-            f"happened: here the last fill, execution `{EXECID}`, comes first and stands",
-            "as a head of its own, while the first two chain on to the bridge's later",
-            "`FILLED` restatement, so [the books](books.md) hold the order resting",
-            "between the two.",
+            "the rows of one instant in the order the table holds them -- by the place",
+            "each copy took in its run of the parse, then by `curruuid` -- rather than",
+            f"in the order they happened: here the last fill, execution `{EXECID}`, is",
+            "taken first and stands as a head of its own, while the first two chain on",
+            "to the bridge's later `FILLED` restatement, so [the books](books.md) hold",
+            "the order resting between the two.",
             "",
             *chains,
         ],

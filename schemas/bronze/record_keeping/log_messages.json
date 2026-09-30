@@ -18,94 +18,87 @@
       },
       {
         "id": 3,
-        "name": "execunix",
-        "type": "timestamptz",
-        "required": false,
-        "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
-      },
-      {
-        "id": 4,
         "name": "recdunix",
         "type": "timestamptz",
         "required": false,
         "doc": "When this event was recorded, where that is known; the earliest its statements know."
       },
       {
-        "id": 5,
+        "id": 4,
         "name": "exprunix",
         "type": "timestamptz",
         "required": false,
         "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
       },
       {
-        "id": 6,
+        "id": 5,
         "name": "prevunix",
         "type": "timestamptz",
         "required": false,
         "doc": "When the event this one follows happened, where it follows one."
       },
       {
-        "id": 7,
+        "id": 6,
         "name": "snapunix",
         "type": "timestamptz",
         "required": false,
         "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
       },
       {
-        "id": 8,
+        "id": 7,
         "name": "curruuid",
         "type": "fixed[16]",
         "required": true,
         "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
       },
       {
-        "id": 9,
+        "id": 8,
         "name": "crossuuid",
         "type": "fixed[16]",
         "required": true,
         "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
       },
       {
-        "id": 10,
+        "id": 9,
         "name": "crosscode",
         "type": "string",
         "required": false,
         "doc": "The code every event of one chain shares, as the event spells it; empty where none."
       },
       {
-        "id": 11,
+        "id": 10,
         "name": "currhashcode",
         "type": "long",
         "required": true,
         "doc": "The XXH3-64 of what the event states."
       },
       {
-        "id": 12,
+        "id": 11,
         "name": "crosshashcode",
         "type": "long",
         "required": true,
         "doc": "The XXH3-64 of the cross code; zero where the event names none."
       },
       {
-        "id": 13,
+        "id": 12,
         "name": "prevuuid",
         "type": "fixed[16]",
         "required": false,
         "doc": "The identity of the event this one follows, where it follows one."
       },
       {
-        "id": 14,
+        "id": 13,
         "name": "seqnum",
         "type": "long",
         "required": false,
-        "doc": "The event's place in its chain: how many came before it."
+        "doc": "The event's place among the events of its instant: 0 for the first its stream hands over there, one more for each next."
       },
       {
-        "id": 15,
+        "id": 14,
         "name": "srcuuids",
         "type": {
           "type": "list",
-          "element-id": 24,
+          "element-id": 23,
           "element": "fixed[16]",
           "element-required": true
         },
@@ -113,56 +106,56 @@
         "doc": "The sorted unique identities of the elements this event was read from: provenance, never its chain - no walk moves it."
       },
       {
-        "id": 16,
+        "id": 15,
         "name": "state",
         "type": "int",
         "required": false,
         "doc": "The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where nothing states one, the furthest its chain knows once followed."
       },
       {
-        "id": 17,
+        "id": 16,
         "name": "body",
         "type": "string",
         "required": true,
         "doc": "The line past its row header, as text: the edges stripped, the byte limit applied; never empty, because a line with no body is no line."
       },
       {
-        "id": 18,
+        "id": 17,
         "name": "msgthreadid",
         "type": "long",
         "required": false,
         "doc": "One row-header capture, read at the datatype its syntax matches; empty on every line the header declared it for and did not match."
       },
       {
-        "id": 19,
+        "id": 18,
         "name": "msgsessionid",
         "type": "string",
         "required": false,
         "doc": "One row-header capture, read at the datatype its syntax matches; empty on every line the header declared it for and did not match."
       },
       {
-        "id": 20,
+        "id": 19,
         "name": "msgctxid",
         "type": "string",
         "required": false,
         "doc": "One row-header capture, read at the datatype its syntax matches; empty on every line the header declared it for and did not match."
       },
       {
-        "id": 21,
+        "id": 20,
         "name": "msgseqnum",
         "type": "long",
         "required": false,
         "doc": "One row-header capture, read at the datatype its syntax matches; empty on every line the header declared it for and did not match."
       },
       {
-        "id": 22,
+        "id": 21,
         "name": "msgpluginid",
         "type": "string",
         "required": false,
         "doc": "One row-header capture, read at the datatype its syntax matches; empty on every line the header declared it for and did not match."
       },
       {
-        "id": 23,
+        "id": 22,
         "name": "loglevel",
         "type": "string",
         "required": false,
@@ -171,7 +164,7 @@
     ],
     "schema-id": 0,
     "identifier-field-ids": [
-      8
+      7
     ]
   },
   "partition-spec": {
@@ -192,19 +185,19 @@
         "source-id": 1,
         "transform": "identity",
         "direction": "asc",
-        "null-order": "nulls-last"
+        "null-order": "nulls-first"
       },
       {
-        "source-id": 14,
+        "source-id": 13,
         "transform": "identity",
         "direction": "asc",
-        "null-order": "nulls-last"
+        "null-order": "nulls-first"
       },
       {
-        "source-id": 8,
+        "source-id": 7,
         "transform": "identity",
         "direction": "asc",
-        "null-order": "nulls-last"
+        "null-order": "nulls-first"
       }
     ]
   }

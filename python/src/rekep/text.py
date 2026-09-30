@@ -1,7 +1,7 @@
 """The bridge text read, and the `log_messages` row it lands.
 
 A captured line is read by the native text reader under the bridge's row
-header, and the row it answers is the whole of the table: the sixteen event
+header, and the row it answers is the whole of the table: the fifteen event
 columns the read settles over every line, the line past its header as
 `body`, and one column per capture the header declares. Nothing here
 declares a column; the read's own schema is narrowed to what Iceberg stores

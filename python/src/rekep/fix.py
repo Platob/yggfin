@@ -62,13 +62,15 @@ REGISTRY_VARIABLE = "YGGDRYL_FIX_REGISTRY"
 FIXMSG = "fixmsg"
 
 #: The column a message's own identity is published as, and the table's whole
-#: key. The native UUIDv7 orders the event's millisecond and sequence with a
-#: deterministic content payload seeded by its cross hash. Yggdryl owns its
-#: derivation; a repeated delivery is a restatement, not a second row.
+#: key. The native UUIDv7 orders the event's millisecond and its place among
+#: the events of that instant, with a deterministic content payload seeded by
+#: its cross hash. Yggdryl owns its derivation. The place reaches it, so each
+#: copy of a message a hop logged is a bronze row of its own, and the walk
+#: folds the repeated deliveries into one event.
 MESSAGE_KEY = "curruuid"
 
 #: The instant every table here is laid out by, and the core's own name for
-#: it: the first of the nineteen columns every event's schema opens with. On a
+#: it: the first of the fifteen event columns every row here states. On a
 #: FIX row it is what the message stated and never what a line was printed
 #: at; on a text row it is what the line was printed at, because there a line
 #: is the event. Each read settles its own, and the hour of it is the layout.
@@ -94,10 +96,13 @@ SOURCES = "srcuuids"
 #: read states before it is asked to read it.
 CAPTURE_KEY = "curruuid"
 
-#: What the lifecycle walk filled for a message's place in its chain. A chain
-#: read in `currunix, seqnum` order is the order the venue described, and the
-#: column is empty on every bronze `fix_messages` row.
-CHAIN_STEP = "seqnum"
+#: An event's place among the events of its instant: null at place zero, the
+#: first, and one more for each next. The parse places a message in its run,
+#: the messages its stream handed over at that instant one after another, and
+#: an instant the stream comes back to starts a run of its own; the walk
+#: places each event again once it has sorted and folded them. It is no step
+#: along a chain -- `prevuuid` links those.
+EVENT_PLACE = "seqnum"
 
 #: The columns of a stored line the parse reads, and the projection the
 #: raw stage pushes into its scan: the line's own clock, which is context to
@@ -116,10 +121,10 @@ PARSE_COLUMNS = (
     "msgpluginid",
 )
 
-#: Where a row sits inside its partition: the instant, then the step its chain
-#: put it at, then its own identity, so two events of one instant still read
-#: in one order and a chain never interleaves with itself.
-SORT_COLUMNS = (EVENT_CLOCK, CHAIN_STEP, MESSAGE_KEY)
+#: Where a row sits inside its partition: the instant, then its place there --
+#: a null, place zero, first -- then its own identity, so the events of one
+#: instant read in the order they were placed in.
+SORT_COLUMNS = (EVENT_CLOCK, EVENT_PLACE, MESSAGE_KEY)
 
 #: What dates a message no clock reached at all: neither its own `SendingTime`
 #: nor a `TransactTime`, because the frame carried neither. An instant is what
@@ -192,8 +197,11 @@ def fix_parse_arrow_reader(
     source identity. Projection shares the parsed column buffers and works
     for empty readers too.
 
-    Nothing has walked: `seqnum`, `prevuuid` and `prevunix` are empty. One
-    source row answers one row per frame it contains.
+    Nothing has walked: `prevuuid` and `prevunix` are empty, and `seqnum` is
+    the message's place among the messages the stream handed over at its
+    instant, which reaches its identity. One source row answers one row per
+    frame it contains, and the copies of a message logged at several hops are
+    one row each.
 
     The parse answers the capture's own columns ahead of the row -- the
     `body` it read the frames out of, and whatever else the source carried
@@ -411,16 +419,15 @@ def iceberg_event_field(
     """A parsed schema narrowed to what Iceberg v2 stores, and declared as a table.
 
     The layout, declared once here and carried on the field alone. The key is
-    `curruuid` and nothing beside it: one message logged at every hop it
-    passed is one event, so an arrival under an identity already held
-    replaces it rather than landing beside it. The partition is the hour of
-    `currunix` and nothing beside it: a key is scoped to its partition, so the
-    partition has to be the event's own instant for two arrivals of one event
-    to meet -- and the row already carries that instant, so a materialized
-    copy of it would be a second owner of one fact. The sort order is
-    `currunix, seqnum, curruuid` within a partition, so two events of one
-    instant still read in one order and a chain never interleaves with
-    itself.
+    `curruuid` and nothing beside it: a row landed again under an identity
+    already held replaces it rather than landing beside it, so a replay lands
+    nothing twice. The partition is the hour of `currunix` and nothing beside
+    it: a key is scoped to its partition, so the partition has to be the
+    event's own instant for two arrivals of one row to meet -- and the row
+    already carries that instant, so a materialized copy of it would be a
+    second owner of one fact. The sort order is `currunix, seqnum, curruuid`
+    within a partition, so the events of one instant read in the order of
+    their places, place zero's null first.
 
     The schema contains only native message columns. The source identities
     in `srcuuids` link to `log_messages`, which holds the capture facts.
@@ -503,8 +510,8 @@ def _stored(dtype: pyarrow.DataType) -> pyarrow.DataType:
 
 __all__ = [
     "CAPTURE_KEY",
-    "CHAIN_STEP",
     "EVENT_CLOCK",
+    "EVENT_PLACE",
     "FIXMSG",
     "MESSAGE_KEY",
     "PARSE_COLUMNS",

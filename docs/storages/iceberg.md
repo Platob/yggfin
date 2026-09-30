@@ -178,8 +178,9 @@ once, one stored partition holding the whole chunk measured 3.66 chunks.
 
 Staged files record the order they were written in, which is what lets
 `order_by` read them back without sorting each one again. A table whose
-recorded order the shape cannot hold -- a transformed sort field, a
-nulls-first one, a nested column -- is written unsorted and says so. A file that does not record an order
+recorded order the shape cannot hold -- a transformed sort field, one ordering
+its nulls against its direction's default, a nested column -- is written
+unsorted and says so. A file that does not record an order
 is sorted on every read, through Arrow IPC runs on local disk; over four files
 of a 524,288-row table, dropping that pass took a warm ordered read
 from 85 ms to 62 ms and wrote no temporary file at all.
@@ -303,6 +304,12 @@ finally:
 Filters, projections, limits, and ordering are pushed into scan planning where
 PyIceberg supports them. Every read accepts `snapshot_id`; every read and write
 accepts `branch`. `root`, `main`, and `master` address the physical main ref.
+
+Every order here takes a null as the least value: first ascending and last
+descending, the null order Iceberg records for each direction by default, and
+the one a created table's sort order records. A NaN follows every number
+either way. An event's `seqnum` is null at place zero among the events of its
+instant, so the first of them reads first.
 
 An ordered read streams already-disjoint file ranges directly. Overlapping
 ranges are externally sorted and merged through Arrow IPC scratch, with at

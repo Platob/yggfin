@@ -27,8 +27,8 @@ the sum of the bytes published. Instruments, prices, quantities and clocks
 are the market's own. Every task lands the rows the
 original bytes landed, identities aside: party ids keep the order a message
 sorts them in, and the pseudonyms were drawn so that the messages of one
-instant, which the walk and the book fold order by identity, still arrive in
-the order they did.
+instant, which the walk and the book fold order by their place there and then
+by identity, still arrive in the order they did.
 
 Its content SHA-256, as `sha256sum` prints it, is:
 
@@ -57,22 +57,22 @@ Over the capture's whole day, `window_of("2026-08-14", "2026-08-14")`:
 
 | reading | count | why |
 | --- | ---: | --- |
-| lines | 144 | one `bronze.record_keeping.log_messages` row each: the content code digests the line's row number, so the exact repeats answer identities of their own |
+| lines | 144 | one `bronze.record_keeping.log_messages` row each: the row number reaches each line's identity, so the exact repeats answer identities of their own |
 | lines the row header does not date | 0 | the shipped header reads both fractions the capture spells, `.769` and `.524_315` |
-| messages the parse answers | 135 | 65 lines carry no frame and each of the other 79 carries one, and each of the 56 reports of a fill answers the execution it reports beside itself; a message is a row, not a line |
-| `bronze.record_keeping.fix_messages` rows | 77 | the key folds the 58 messages that restate another hop's exactly |
-| `silver.record_keeping.fix_messages` rows | 65 | the 77 bronze rows walked: the messages of one event merged and one expiry added, 23 events, and every chain still alive restated on each whole hour, 42 views |
-| `silver.record_keeping.books` rows | 45 | the 65 silver rows folded into three `MIC:CFI` categories: 7 books an event moved, and every book restated on each whole hour from the first after it opens to 21:00, 38 views |
-| `silver.record_keeping.orders`, `quotes`, `executions` rows | 10, 0, 7 | the books' order deltas, quote deltas and executions |
+| messages the parse answers | 136 | 65 lines carry no frame and each of the other 79 carries one, each of the 56 reports of a fill answers the execution it reports beside itself, and the trade report the one execution its side states; a message is a row, not a line |
+| `bronze.record_keeping.fix_messages` rows | 136 | every copy a hop logged is placed apart at its instant, so the key folds none |
+| `silver.record_keeping.fix_messages` rows | 70 | the 136 bronze rows walked: the copies of one event folded and one expiry added, 28 events -- three of them repeat deliveries a walk over stored rows does not yet fold -- and every chain still alive restated on each whole hour, 42 views |
+| `silver.record_keeping.books` rows | 46 | the 70 silver rows folded into three `MIC:CFI` categories: 8 books an event moved, and every book restated on each whole hour from the first after it opens to 21:00, 38 views |
+| `silver.record_keeping.orders`, `quotes`, `executions` rows | 11, 0, 9 | the books' order deltas, quote deltas and executions |
 
 At 21:59:46 the capture holds a cancel request and its reject, which states
 no `Side(54)`: the walk joins it to the one live side of its order, the
 sell, so the fold books both on that side -- the two orders the day adds to
-the morning's eight. The documented runs use
+the morning's nine. The documented runs use
 `window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")`, the morning's
 order flow, its one trade report at 14:52 and the expiry of its open order at
-16:25, which lands 129 lines, 72 bronze and 47 silver FIX rows, 29 books, 8
-orders, 0 quotes and 7 executions:
+16:25, which lands 129 lines, 126 bronze and 51 silver FIX rows, 30 books, 9
+orders, 0 quotes and 9 executions:
 [Data samples](../docs/samples/index.md) shows every table's rows.
 
 `python/tests/storages/` runs the capture through every task under

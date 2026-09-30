@@ -7,8 +7,9 @@ sources:
   schema: record_keeping
   tables:
   - name: fix_messages
-    description: 'One row per FIX event, walked: the chain it belongs to, the step it stands at, the lines
-      it was logged on, and the state, creation and expiry its chain folded forward.'
+    description: 'One row per FIX event, walked: every delivery of it folded into one row, the event it
+      follows in its chain, the lines it was logged on, and the state, creation and expiry its chain folded
+      forward.'
     meta:
       written_by: parse_fix_messages_refined
       primary_key:
@@ -114,7 +115,8 @@ sources:
       description: The identity of the event this one follows, where it follows one.
     - name: seqnum
       data_type: long
-      description: 'The event''s place in its chain: how many came before it.'
+      description: 'The event''s place among the events of its instant: 0 for the first its stream hands
+        over there, one more for each next.'
     - name: srcuuids
       data_type: list<fixed[16]>
       description: 'The identities of the elements this message was read from: the text line it was parsed
@@ -663,6 +665,10 @@ sources:
           - 19
           - 20
           - 21
+          - 22
+          - 23
+          - 24
+          - 25
           quote: false
     - name: currunix
       data_type: timestamptz
@@ -671,10 +677,6 @@ sources:
       data_type: timestamptz
       description: When the event was created, where that is known; the earliest its chain knows once
         followed.
-    - name: execunix
-      data_type: timestamptz
-      description: The latest execution clock this lifecycle reached as of this event; an execution dates
-        itself, following carries it, and duplicate statements keep their earliest observation.
     - name: recdunix
       data_type: timestamptz
       description: When this event was recorded, where that is known; the earliest its statements know.
@@ -713,7 +715,8 @@ sources:
       description: The identity of the event this one follows, where it follows one.
     - name: seqnum
       data_type: long
-      description: 'The event''s place in its chain: how many came before it.'
+      description: 'The event''s place among the events of its instant: 0 for the first its stream hands
+        over there, one more for each next.'
     - name: srcuuids
       data_type: list<fixed[16]>
       description: 'The sorted unique identities of the elements this event was read from: provenance,
@@ -832,6 +835,8 @@ sources:
       data_type: string
     - name: miccode
       data_type: string
+    - name: execunix
+      data_type: timestamptz
     - name: lastpx
       data_type: decimal(38, 18)
     - name: lastqty
@@ -874,47 +879,49 @@ sources:
       data_type: boolean
     - name: altids
       data_type: map<string, string>
+    - name: accountids
+      data_type: map<string, string>
     - name: bookscope
       data_type: string
     - name: alive
-      data_type: 'list<struct<marketdatakind: int, currunix: timestamptz, creaunix: timestamptz, execunix:
-        timestamptz, recdunix: timestamptz, exprunix: timestamptz, prevunix: timestamptz, snapunix: timestamptz,
-        curruuid: fixed[16], crossuuid: fixed[16], crosscode: string, currhashcode: long, crosshashcode:
-        long, prevuuid: fixed[16], seqnum: long, srcuuids: list<fixed[16]>, state: int, price: decimal(38,
-        18), currency: string, quantity: decimal(38, 18), unit: string, side: int, securityids: map<string,
-        string>, isincode: string, cficode: string, miccode: string, lastpx: decimal(38, 18), lastqty:
+      data_type: 'list<struct<marketdatakind: int, currunix: timestamptz, creaunix: timestamptz, recdunix:
+        timestamptz, exprunix: timestamptz, prevunix: timestamptz, snapunix: timestamptz, curruuid: fixed[16],
+        crossuuid: fixed[16], crosscode: string, currhashcode: long, crosshashcode: long, prevuuid: fixed[16],
+        seqnum: long, srcuuids: list<fixed[16]>, state: int, price: decimal(38, 18), currency: string,
+        quantity: decimal(38, 18), unit: string, side: int, securityids: map<string, string>, isincode:
+        string, cficode: string, miccode: string, execunix: timestamptz, lastpx: decimal(38, 18), lastqty:
         decimal(38, 18), avgpx: decimal(38, 18), cumqty: decimal(38, 18), leavesqty: decimal(38, 18),
         prevpx: decimal(38, 18), prevqty: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
         18), bidpx: decimal(38, 18), bidqty: decimal(38, 18), bidccy: string, askpx: decimal(38, 18),
         askqty: decimal(38, 18), askccy: string, fxrates: map<string, decimal(38, 18)>, ticker: string,
-        metadata: map<string, string>, tif: string, tradable: boolean, altids: map<string, string>, bookscope:
-        string>>'
+        metadata: map<string, string>, tif: string, tradable: boolean, altids: map<string, string>, accountids:
+        map<string, string>, bookscope: string>>'
     - name: deltas
-      data_type: 'list<struct<marketdatakind: int, currunix: timestamptz, creaunix: timestamptz, execunix:
-        timestamptz, recdunix: timestamptz, exprunix: timestamptz, prevunix: timestamptz, snapunix: timestamptz,
-        curruuid: fixed[16], crossuuid: fixed[16], crosscode: string, currhashcode: long, crosshashcode:
-        long, prevuuid: fixed[16], seqnum: long, srcuuids: list<fixed[16]>, state: int, price: decimal(38,
-        18), currency: string, quantity: decimal(38, 18), unit: string, side: int, securityids: map<string,
-        string>, isincode: string, cficode: string, miccode: string, lastpx: decimal(38, 18), lastqty:
+      data_type: 'list<struct<marketdatakind: int, currunix: timestamptz, creaunix: timestamptz, recdunix:
+        timestamptz, exprunix: timestamptz, prevunix: timestamptz, snapunix: timestamptz, curruuid: fixed[16],
+        crossuuid: fixed[16], crosscode: string, currhashcode: long, crosshashcode: long, prevuuid: fixed[16],
+        seqnum: long, srcuuids: list<fixed[16]>, state: int, price: decimal(38, 18), currency: string,
+        quantity: decimal(38, 18), unit: string, side: int, securityids: map<string, string>, isincode:
+        string, cficode: string, miccode: string, execunix: timestamptz, lastpx: decimal(38, 18), lastqty:
         decimal(38, 18), avgpx: decimal(38, 18), cumqty: decimal(38, 18), leavesqty: decimal(38, 18),
         prevpx: decimal(38, 18), prevqty: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
         18), bidpx: decimal(38, 18), bidqty: decimal(38, 18), bidccy: string, askpx: decimal(38, 18),
         askqty: decimal(38, 18), askccy: string, fxrates: map<string, decimal(38, 18)>, ticker: string,
-        metadata: map<string, string>, tif: string, tradable: boolean, altids: map<string, string>, bookscope:
-        string>>'
+        metadata: map<string, string>, tif: string, tradable: boolean, altids: map<string, string>, accountids:
+        map<string, string>, bookscope: string>>'
     - name: executions
-      data_type: 'list<struct<marketdatakind: int, currunix: timestamptz, creaunix: timestamptz, execunix:
-        timestamptz, recdunix: timestamptz, exprunix: timestamptz, prevunix: timestamptz, snapunix: timestamptz,
-        curruuid: fixed[16], crossuuid: fixed[16], crosscode: string, currhashcode: long, crosshashcode:
-        long, prevuuid: fixed[16], seqnum: long, srcuuids: list<fixed[16]>, state: int, price: decimal(38,
-        18), currency: string, quantity: decimal(38, 18), unit: string, side: int, securityids: map<string,
-        string>, isincode: string, cficode: string, miccode: string, lastpx: decimal(38, 18), lastqty:
+      data_type: 'list<struct<marketdatakind: int, currunix: timestamptz, creaunix: timestamptz, recdunix:
+        timestamptz, exprunix: timestamptz, prevunix: timestamptz, snapunix: timestamptz, curruuid: fixed[16],
+        crossuuid: fixed[16], crosscode: string, currhashcode: long, crosshashcode: long, prevuuid: fixed[16],
+        seqnum: long, srcuuids: list<fixed[16]>, state: int, price: decimal(38, 18), currency: string,
+        quantity: decimal(38, 18), unit: string, side: int, securityids: map<string, string>, isincode:
+        string, cficode: string, miccode: string, execunix: timestamptz, lastpx: decimal(38, 18), lastqty:
         decimal(38, 18), avgpx: decimal(38, 18), cumqty: decimal(38, 18), leavesqty: decimal(38, 18),
         prevpx: decimal(38, 18), prevqty: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
         18), bidpx: decimal(38, 18), bidqty: decimal(38, 18), bidccy: string, askpx: decimal(38, 18),
         askqty: decimal(38, 18), askccy: string, fxrates: map<string, decimal(38, 18)>, ticker: string,
-        metadata: map<string, string>, tif: string, tradable: boolean, altids: map<string, string>, bookscope:
-        string>>'
+        metadata: map<string, string>, tif: string, tradable: boolean, altids: map<string, string>, accountids:
+        map<string, string>, bookscope: string>>'
     - name: bidlimits
       data_type: 'list<struct<price: decimal(38, 18), quantity: decimal(38, 18), uuids: list<fixed[16]>,
         tradable: boolean>>'
@@ -961,6 +968,10 @@ sources:
           - 19
           - 20
           - 21
+          - 22
+          - 23
+          - 24
+          - 25
           quote: false
     - name: currunix
       data_type: timestamptz
@@ -971,10 +982,6 @@ sources:
       data_type: timestamptz
       description: When the event was created, where that is known; the earliest its chain knows once
         followed.
-    - name: execunix
-      data_type: timestamptz
-      description: The latest execution clock this lifecycle reached as of this event; an execution dates
-        itself, following carries it, and duplicate statements keep their earliest observation.
     - name: recdunix
       data_type: timestamptz
       description: When this event was recorded, where that is known; the earliest its statements know.
@@ -1019,7 +1026,8 @@ sources:
       description: The identity of the event this one follows, where it follows one.
     - name: seqnum
       data_type: long
-      description: 'The event''s place in its chain: how many came before it.'
+      description: 'The event''s place among the events of its instant: 0 for the first its stream hands
+        over there, one more for each next.'
     - name: srcuuids
       data_type: list<fixed[16]>
       description: 'The sorted unique identities of the elements this event was read from: provenance,
@@ -1138,6 +1146,8 @@ sources:
       data_type: string
     - name: miccode
       data_type: string
+    - name: execunix
+      data_type: timestamptz
     - name: lastpx
       data_type: decimal(38, 18)
     - name: lastqty
@@ -1179,6 +1189,8 @@ sources:
     - name: tradable
       data_type: boolean
     - name: altids
+      data_type: map<string, string>
+    - name: accountids
       data_type: map<string, string>
     - name: bookscope
       data_type: string
@@ -1222,6 +1234,10 @@ sources:
           - 19
           - 20
           - 21
+          - 22
+          - 23
+          - 24
+          - 25
           quote: false
     - name: currunix
       data_type: timestamptz
@@ -1232,10 +1248,6 @@ sources:
       data_type: timestamptz
       description: When the event was created, where that is known; the earliest its chain knows once
         followed.
-    - name: execunix
-      data_type: timestamptz
-      description: The latest execution clock this lifecycle reached as of this event; an execution dates
-        itself, following carries it, and duplicate statements keep their earliest observation.
     - name: recdunix
       data_type: timestamptz
       description: When this event was recorded, where that is known; the earliest its statements know.
@@ -1280,7 +1292,8 @@ sources:
       description: The identity of the event this one follows, where it follows one.
     - name: seqnum
       data_type: long
-      description: 'The event''s place in its chain: how many came before it.'
+      description: 'The event''s place among the events of its instant: 0 for the first its stream hands
+        over there, one more for each next.'
     - name: srcuuids
       data_type: list<fixed[16]>
       description: 'The sorted unique identities of the elements this event was read from: provenance,
@@ -1399,6 +1412,8 @@ sources:
       data_type: string
     - name: miccode
       data_type: string
+    - name: execunix
+      data_type: timestamptz
     - name: lastpx
       data_type: decimal(38, 18)
     - name: lastqty
@@ -1440,6 +1455,8 @@ sources:
     - name: tradable
       data_type: boolean
     - name: altids
+      data_type: map<string, string>
+    - name: accountids
       data_type: map<string, string>
     - name: bookscope
       data_type: string
@@ -1483,6 +1500,10 @@ sources:
           - 19
           - 20
           - 21
+          - 22
+          - 23
+          - 24
+          - 25
           quote: false
     - name: currunix
       data_type: timestamptz
@@ -1493,10 +1514,6 @@ sources:
       data_type: timestamptz
       description: When the event was created, where that is known; the earliest its chain knows once
         followed.
-    - name: execunix
-      data_type: timestamptz
-      description: The latest execution clock this lifecycle reached as of this event; an execution dates
-        itself, following carries it, and duplicate statements keep their earliest observation.
     - name: recdunix
       data_type: timestamptz
       description: When this event was recorded, where that is known; the earliest its statements know.
@@ -1541,7 +1558,8 @@ sources:
       description: The identity of the event this one follows, where it follows one.
     - name: seqnum
       data_type: long
-      description: 'The event''s place in its chain: how many came before it.'
+      description: 'The event''s place among the events of its instant: 0 for the first its stream hands
+        over there, one more for each next.'
     - name: srcuuids
       data_type: list<fixed[16]>
       description: 'The sorted unique identities of the elements this event was read from: provenance,
@@ -1660,6 +1678,8 @@ sources:
       data_type: string
     - name: miccode
       data_type: string
+    - name: execunix
+      data_type: timestamptz
     - name: lastpx
       data_type: decimal(38, 18)
     - name: lastqty
@@ -1701,6 +1721,8 @@ sources:
     - name: tradable
       data_type: boolean
     - name: altids
+      data_type: map<string, string>
+    - name: accountids
       data_type: map<string, string>
     - name: bookscope
       data_type: string

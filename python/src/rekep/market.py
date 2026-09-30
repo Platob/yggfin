@@ -81,8 +81,11 @@ def book_arrow_reader(
 
     One book per `symbol` a row states, else per `MIC:CFI` category, so rows
     passed through `categorized_symbol_reader` fold one book per category.
-    The codec ignores non-market records and refuses malformed admitted
-    events. Refined lifecycle is already settled and is not run a second time.
+    The codec ignores non-market records, and never fails on what a message
+    states: an entry it cannot place -- an order or a quote stating no side,
+    an entry stating no `MDEntryType` -- is left out of its book with a
+    warning through `logging`. Refined lifecycle is already settled and is
+    not run a second time.
     A grid book restates what its book holds and answers no delta or
     execution a book before it answered. A source row whose `snapunix` is set
     -- a lifecycle view of a live chain -- is folded at that instant as the

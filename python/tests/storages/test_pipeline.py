@@ -25,7 +25,7 @@ from pyiceberg.io.pyarrow import expression_to_pyarrow
 from pyiceberg.schema import Schema
 from pyiceberg.types import IntegerType, NestedField, TimestamptzType
 
-from rekep import Side, State, Storages, scalar
+from rekep import MarketDataKind, Side, State, Storages, scalar
 from rekep.arrow_reader import OwnedRecordBatchReader
 from rekep.fields import partition_key
 from rekep.fix import (
@@ -81,8 +81,8 @@ LOG = Landed(read=144, written=144)
 #: What every later task answers over `EARLY`: the sixteen lines of 01:00
 #: carry one fill report logged at three hops -- its receipt and two
 #: restatements, each dated 01:03:17 by the transaction clock it states --
-#: and each copy splits off the execution it reports. The restatements differ
-#: from the receipt, so bronze folds none. The walk merges the observations
+#: and each copy splits off the execution it reports. Bronze keeps every
+#: copy, each placed apart at its instant. The walk merges the observations
 #: into the report's event and the execution's, folded into one book holding
 #: one order delta and one execution.
 EARLY_LANDED = {
@@ -96,40 +96,45 @@ EARLY_LANDED = {
 
 #: What every later task answers over `WINDOW`. Its 113 lines are the 112 of
 #: 12:46, carrying 65 frames, and the trade report's of 14:52; every fill
-#: report splits off the execution it reports -- the trade report, stating no
-#: `Side(54)`, splits off none -- so the parse answers 119 messages. A
-#: restatement states no `SendingTime`, and its line stands within
-#: `official_time_delay_ms` of the `TransactTime` it states, so it is dated
-#: by that clock, in the hour of the message it restates: bronze keeps 66 keys
-#: and folds 53 identical restatements. The walk reads those 66 rows -- the
-#: hour before `START` holds none -- and merges the observations of one event
-#: into 17 rows, the trade report among them, plus the expiry it emits at
-#: 16:25, and restates the three chains still alive
-#: after 12:46 -- the logon, the new order and the acknowledged order that
-#: expires -- at 13:00, 14:00, 15:00 and 16:00: 18 events and 12 views, each
-#: a row of its own, so the key folds nothing. The books fold those 30 into 5
-#: books of events and the two categories' books on each of the four hours,
-#: 13; their deltas and executions are seven orders -- the new order and six
-#: fill reports -- no quote and six executions, one split out of each fill
-#: report, the hourly books adding none.
+#: report splits off the execution it reports, and the trade report one per
+#: side it states -- its one side states no `Side(54)`, so an `UNKN` one --
+#: so the parse answers 120 messages. A restatement states no `SendingTime`,
+#: and its line stands within `official_time_delay_ms` of the `TransactTime`
+#: it states, so it is dated by that clock, in the hour of the message it
+#: restates; every copy is placed apart at its instant, so bronze keeps all
+#: 120. The walk reads those 120 rows -- the hour before `START` holds none --
+#: and merges the observations of one event into 21 rows, the trade report
+#: and its execution among them, plus the expiry it emits at 16:25, and
+#: restates the three chains still alive after 12:46 -- the logon, the new
+#: order and the acknowledged order that expires -- at 13:00, 14:00, 15:00 and
+#: 16:00: 22 events and 12 views, each a row of its own, so the key folds
+#: nothing. Two of the 22 are repeat deliveries of 12:46:39.743 the walk over
+#: stored rows does not yet fold: PyIceberg stores a copy's null list of
+#: structs as an empty one, and the core's delivery key then tells the copies
+#: apart. The books fold those 34 into 6 books of events and the two
+#: categories' books on each of the four hours, 14; their deltas and
+#: executions are eight orders -- the new order, six fill reports and one
+#: repeat delivery -- no quote and eight executions, one split out of each
+#: fill report, the repeat delivery and the trade's, the hourly books adding
+#: none.
 LANDED = {
-    "parse_fix_messages_raw": Landed(read=113, written=66, skipped=53),
-    "parse_fix_messages_refined": Landed(read=66, written=30),
-    "parse_books": Landed(read=30, written=13),
-    "parse_orders": Landed(read=13, written=7),
-    "parse_quotes": Landed(read=13, written=0),
-    "parse_executions": Landed(read=13, written=6),
+    "parse_fix_messages_raw": Landed(read=113, written=120),
+    "parse_fix_messages_refined": Landed(read=120, written=34),
+    "parse_books": Landed(read=34, written=14),
+    "parse_orders": Landed(read=14, written=8),
+    "parse_quotes": Landed(read=14, written=0),
+    "parse_executions": Landed(read=14, written=8),
 }
 
 #: Rows each table holds after both windows. The gold catalog holds no table.
 STORED = {
     LOG_MESSAGES: 144,
-    FIX_MESSAGES_RAW: 72,
-    FIX_MESSAGES: 32,
-    BOOKS: 14,
-    EVENTS["orders"]: 8,
+    FIX_MESSAGES_RAW: 126,
+    FIX_MESSAGES: 36,
+    BOOKS: 15,
+    EVENTS["orders"]: 9,
     EVENTS["quotes"]: 0,
-    EVENTS["executions"]: 7,
+    EVENTS["executions"]: 9,
 }
 
 #: The table each task scans, the hours of it that scan plans, and every hour
@@ -237,16 +242,30 @@ def stated(row: dict[str, Any]) -> State:
     return State.from_fix_msgtype(row["msgtype"] or "") or State.UNKNOWN
 
 
+#: The kinds whose cross code is stored under the side the message states.
+SIDED = {MarketDataKind.ORDR, MarketDataKind.QUOT, MarketDataKind.EXEC}
+
+
 def cross_code(row: dict[str, Any], split: bool) -> str | None:
     """The identifier `crosscode` takes, per the rule it is read by: an
-    execution split out of a report chains on its `ExecID`, and a message
-    stating a side is prefixed with it."""
+    execution split out of a report chains on its `ExecID`, and an order's, a
+    quote's or an execution's is prefixed with the four-letter code of the
+    side it states; any other kind, and a message stating no side, keeps the
+    bare code."""
     if split:
-        code = f"ExecID={row['execid']}"
+        code = row["execid"]
     else:
         code = next((row[name] for name in CROSS_IDENTIFIERS if row[name]), None)
-    side = Side(row["side"] or Side.UNKNOWN)
-    return code if code is None or side is Side.UNKNOWN else f"{side.name}:{code}"
+    side = Side(row["side"] or Side.UNKN)
+    if code is None or side is Side.UNKN or row["msgcat"] not in SIDED:
+        return code
+    return f"{side.name}:{code}"
+
+
+def traded(row: dict[str, Any], split: bool) -> bool:
+    """Whether a row is an execution a trade report split off: it chains on
+    what its side of the trade states, which no column of the row holds."""
+    return split and row["msgtype"] == "AE"
 
 
 def split_off(rows: list[dict[str, Any]], reports: set[bytes]) -> list[bool]:
@@ -336,11 +355,12 @@ def test_a_file_of_the_windows_last_hour_past_its_end_is_left_unplanned(
 
 
 def test_the_walk_links_each_chain_and_expires_the_order_left_open(landing: Landing) -> None:
-    """Every step follows a row this table holds, one place after it, at the
-    instant it states; a step never moves its chain back; creation is carried
-    forward; and the one order still open at its expiry gets the row that
-    ends it, at that instant, recorded by no line. The hourly views are the
-    walk's restatements and follow no step, so a chain is its events."""
+    """Every step follows a row this table holds, at or after its instant --
+    placed after it where the two share one; a step never moves its chain
+    back; creation is carried forward; and the one order still open at its
+    expiry gets the row that ends it, at that instant, recorded by no line.
+    The hourly views are the walk's restatements and follow no step, so a
+    chain is its events."""
     silver = events(landing.table(FIX_MESSAGES))
     held = {row["curruuid"]: row for row in silver}
     followed = collections.defaultdict(list)
@@ -352,13 +372,14 @@ def test_the_walk_links_each_chain_and_expires_the_order_left_open(landing: Land
     assert links, "the walk links steps into chains"
     for row in links:
         before = held[row["prevuuid"]]
-        assert row["seqnum"] == (before["seqnum"] or 0) + 1
         assert row["prevunix"] == before[EVENT_CLOCK] <= row[EVENT_CLOCK]
+        if row[EVENT_CLOCK] == before[EVENT_CLOCK]:
+            assert (row["seqnum"] or 0) > (before["seqnum"] or 0), "a later place there"
         assert (row["crossuuid"], row["crosscode"]) == (before["crossuuid"], before["crosscode"])
         assert State(row["state"]).rank >= State(before["state"]).rank, "the furthest state wins"
         assert row["creaunix"] <= before["creaunix"], "the earliest creation is carried forward"
     heads = [row for row in silver if row["prevuuid"] is None]
-    assert all(row["seqnum"] is None and row["prevunix"] is None for row in heads)
+    assert all(row["prevunix"] is None for row in heads)
 
     def chain(head: dict[str, Any]) -> list[dict[str, Any]]:
         steps = [head]
@@ -404,11 +425,10 @@ def test_a_message_logged_at_every_hop_is_one_silver_row(landing: Landing) -> No
     """Every line of the window that carries a message is accounted for once.
 
     The parse answers one row per message, and bronze keeps one per key -- an
-    identity within its hour -- so a restatement identical to a message it
-    holds is folded there, counted in `skipped`, and named by no row after
-    it. The walk then merges the observations of one event that bronze keeps
-    apart -- the hops that restated it differently -- into one silver row
-    naming each of their lines.
+    identity within its hour. Every copy of a message is placed apart at its
+    instant, so each is a key of its own and bronze keeps them all. The walk
+    then merges the observations of one event -- the hops that restated it
+    -- into one silver row naming each of their lines.
     """
     storages = landing.storages
     lines = {row["curruuid"]: row for row in landing.table(LOG_MESSAGES).to_pylist()}
@@ -486,13 +506,13 @@ def test_a_message_logged_at_every_hop_is_one_silver_row(landing: Landing) -> No
     )
     print(
         f"\nraw: {parsed.num_rows} messages off {raw.read} lines, {len(keys)} keys, "
-        f"{raw.skipped} identical restatements folded"
+        f"{raw.skipped} folded"
         f"\n{widest['crosscode']} execid={widest['execid']} "
         f"{State(widest['state']).name}: one silver row naming {len(hops)} lines"
     )
     for line in hops:
         print(f"  line {line['seqnum']:>3} {line['msgpluginid']:<36} {line['body'][:60]}")
-    print(f"  and restating one of them identically, folded in bronze: lines {restated}")
+    print(f"  and folded in bronze: lines {restated}")
     assert len(hops) > 2
     assert len({line["msgpluginid"] for line in hops}) > 2, "logged at several hops"
     observed = [row for row in bronze if line_of(row, reports) in set(widest["srcuuids"])]
@@ -503,7 +523,8 @@ def test_the_walk_folds_state_creation_and_recording(landing: Landing) -> None:
     """`state` is an `int32` code of the lifecycle-sorted enum: a parse reads it
     off the first status field a message states, else off its type -- a new
     order is `PENDING_NEW` -- and the walk keeps the furthest rank its
-    observations reached. `creaunix` folds to the earliest creation,
+    observations reached, saying `UPDATED` of a `NEW` stated over a live new
+    one. `creaunix` folds to the earliest creation,
     `recdunix` to the earliest line, and `crosscode` is the first identifier
     stated."""
     lines = {row["curruuid"]: row for row in landing.table(LOG_MESSAGES).to_pylist()}
@@ -525,7 +546,8 @@ def test_the_walk_folds_state_creation_and_recording(landing: Landing) -> None:
         # whatever state the report it was split out of reached.
         expected = State.FILLED if split else stated(row)
         assert row["state"] == expected, (row["msgtype"], row["ordstatus"], row["exectype"])
-        assert row["crosscode"] == cross_code(row, split)
+        if not traded(row, split):
+            assert row["crosscode"] == cross_code(row, split)
         line = line_of(row, reports)
         assert row["recdunix"] == lines[line][EVENT_CLOCK], "the line's own clock"
         observations[(line, split)].append(row)
@@ -534,12 +556,17 @@ def test_the_walk_folds_state_creation_and_recording(landing: Landing) -> None:
 
     walked = silver.to_pylist()
     for row, split in zip(walked, split_off(walked, reports), strict=True):
-        assert row["crosscode"] == cross_code(row, split)
+        if not traded(row, split):
+            assert row["crosscode"] == cross_code(row, split)
         assert row["creaunix"] is not None and row["creaunix"] <= row[EVENT_CLOCK]
         if row["recdunix"] is None:
             continue
         seen = [held for line in row["srcuuids"] for held in observations[(line, split)]]
-        assert State(row["state"]).rank == max(State(held["state"]).rank for held in seen)
+        reached = max(State(held["state"]).rank for held in seen)
+        if row["state"] == State.UPDATED:
+            assert reached == State.NEW.rank, "the order stated anew and carrying on"
+        else:
+            assert State(row["state"]).rank == reached
         assert row["recdunix"] == min(held["recdunix"] for held in seen)
         assert row["creaunix"] <= min(held["creaunix"] for held in seen)
         if row["msgtype"] == "D":

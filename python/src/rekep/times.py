@@ -243,41 +243,26 @@ SHAPES: tuple[Stamp, ...] = (ISO, FIX, COMPACT)
 #: Central European clock, two hours ahead of its frames' UTC in summer.
 TIMEZONE = "Europe/Zurich"
 
-#: The core's capture names this package reads under another: the clock the
-#: read consumes into `currunix` is `mtime`, and the level `log_messages`
-#: keeps is `loglevel`.
-_RENAMED = {"timestamp": "mtime", "level": "loglevel"}
+ULBRIDGE_ROWHEADER: str = _CORE_ROWHEADER
+"""The ULBridge row-header expression for physical message records, the core's own.
 
-ULBRIDGE_ROWHEADER = re.sub(
-    r"\(\?P<(\w+)>",
-    lambda found: f"(?P<{_RENAMED.get(found[1], found[1])}>",
-    _CORE_ROWHEADER,
-)
-"""The ULBridge row-header expression for physical message records.
+Every capture is named for the column the native read fills from it, which is
+the whole of how a bracket part is told from another: `mtime` is the record
+clock the read consumes -- it settles `currunix` from it, at nanoseconds UTC,
+and lands no column of it -- `msgpluginid`, `msgsessionid`, `msgctxid` and
+`msgseqnum` are the crate's own fields 65017, 65020 and 65019 and
+`MsgSeqNum(34)`, which a parse reads off the line it was handed, and
+`msgthreadid` and `loglevel` name no field of the graph and stay on
+`log_messages`; a FIX row links back to the whole capture record through
+`srcuuids`.
 
-`yggdryl.fix.ULBRIDGE_ROWHEADER` character for character but two capture
-names, because a capture reaches a column by being called what the column is
-called and the native one dates nothing: it names its clock `timestamp` and
-its level `level`. `mtime` is the one name the read consumes -- the record
-clock it settles `currunix` from, at nanoseconds UTC -- and `loglevel` is the
-column `log_messages` keeps.
-
-The clock takes the core's fraction: three digits under a point, and the
-micros some loggers group after them as `.524_315`. A bracket the expression
-does not match is not a line lost: the read dates that line by the
+The clock takes three digits under a point or a comma, the micros some
+loggers group after them as `.524_315`, or no fraction at all. A bracket the
+expression does not match is not a line lost: the read dates that line by the
 modification time of the object it was read from, keeps its whole text as its
 body, and leaves the captures empty -- and the walk then has no session,
 context or sequence to fold that line's message on. A bridge writing another
 fraction is read by naming its header as the `rowheader` a task takes.
-
-Every capture is named for the column the native read fills from it, which is
-the whole of how a bracket part is told from another: `msgpluginid`,
-`msgsessionid`, `msgctxid` and `msgseqnum` are the crate's own fields 65017,
-65020 and 65019 and `MsgSeqNum(34)`, which a parse reads off the line it was
-handed.
-`msgthreadid` and `loglevel` name no field of the graph and stay on
-`log_messages`; a FIX row links back to the whole capture record through
-`srcuuids`.
 """
 
 #: Spellings `datetime.fromisoformat` does not read, in the order they are

@@ -86,7 +86,7 @@ independent owners. gzip and zstd objects are decompressed as they are read.
 The read is `rekep.text.text_options()`, and the row it answers is the whole
 of the table: `rekep.text.log_message_field()` is the read's own field,
 narrowed to what Iceberg stores and nothing hand-declared beside it. It holds
-23 columns: the 16 event columns every table opens with, then `body`, then
+22 columns: the 15 event columns every table opens with, then `body`, then
 one column per row-header capture.
 
 ```python
@@ -102,9 +102,9 @@ finally:
     source.close()
 
 names = [member.name for member in log_message_field()]
-assert len(names) == 23
-assert names[:3] == ["currunix", "creaunix", "execunix"]
-assert names[16:] == [
+assert len(names) == 22
+assert names[:3] == ["currunix", "creaunix", "recdunix"]
+assert names[15:] == [
     "body",
     "msgthreadid",
     "msgsessionid",
@@ -113,7 +113,7 @@ assert names[16:] == [
     "msgpluginid",
     "loglevel",
 ]
-assert CAPTURES - {RECORD_CLOCK} == set(names[17:])
+assert CAPTURES - {RECORD_CLOCK} == set(names[16:])
 assert first.column("seqnum")[0].as_py() == 1
 assert first.column("crosscode")[0].as_py() == "local://bound/data/capture/ulbridge.log"
 assert first.column("msgpluginid")[0].as_py() == "ULBridge"
@@ -123,38 +123,40 @@ assert first.column("msgseqnum")[0].as_py() == 3088
 | column | on a line |
 | --- | --- |
 | `currunix` | the instant the read settled over the line: the header's `mtime` capture, read in `timezone`, at nanoseconds UTC; a line the header did not date takes the modification time of the object it was read from |
-| `curruuid` | the line's identity, a UUIDv7 over that instant and `currhashcode`; the table's key |
-| `currhashcode` | XXH3-64 over the object, the header's captures except the clock, the row number and the body: two lines of identical bytes answer two codes |
+| `curruuid` | the line's identity, a UUIDv7 over that instant, the line's row number and `currhashcode`; the table's key |
+| `currhashcode` | XXH3-64 over the object and the body: the lines of one body in one object share it, and their row numbers tell their identities apart |
 | `crosscode` | the object the line was read from, as the identifier the read was addressed under: `local://bound/data/capture/ulbridge.log` for `file:data/capture/ulbridge.log` |
 | `seqnum` | the line's row number in that object, counted from 1 |
+| `creaunix` | the earliest instant the read has dated a line of the object by, up to this one |
+| `prevunix` | the instant the read dated the line before by; empty on the object's first line |
 | `state` | `UNKNOWN` (0): a line is not a lifecycle |
 | `body` | the line past its row header, as text; empty where the header consumed the line |
 | `msgthreadid`, `loglevel` | the bridge's thread and level, which stay on the line |
 | `msgsessionid`, `msgctxid`, `msgseqnum`, `msgpluginid` | the bracket's session instance, context, sequence and plugin; the parse fills the FIX fields of the same names from them |
 
-The other event columns -- `creaunix`, `execunix`, `recdunix`, `exprunix`,
-`prevunix`, `snapunix`, `prevuuid`, `srcuuids` -- are empty on every line.
+The other event columns -- `recdunix`, `exprunix`, `snapunix`, `prevuuid`,
+`srcuuids` -- are empty on every line.
 [The table page](../tables/bronze/log_messages.md) lists every column and
 [its samples](../samples/bronze/log_messages.md) the capture's first lines.
 
 ## The row header
 
 The header is `rekep.times.ULBRIDGE_ROWHEADER`, the bridge's layout as the
-native read ships it, with its clock and its level captured under the names
-the read fills: `rekep.text.CAPTURES` names `mtime`, the record clock the
+native read ships it, each part captured under the name of what the read
+fills from it: `rekep.text.CAPTURES` names `mtime`, the record clock the
 read settles `currunix` from and stores nowhere else, and the six columns
 above, each named for what the read fills from it. Nothing maps a spelling
 onto a tag in between: the bracket's `msgseqnum` is `msgseqnum`, and it fills
 `MsgSeqNum(34)` where a frame stated none.
 
-The clock's fraction is three digits after a point, optionally followed by
-the micros some of the bridge's loggers group after them, such as
-`.524_315`. Its width types no column; what it decides is which lines the
-header matches. A clock spelling
-its millis after a comma, or no fraction at all, is not this layout: its
-line is left unmatched, keeps its whole text as its body, states every
-capture null, and is dated by its object's modification time. A bridge that
-writes one is read under a header of its own.
+The clock's fraction is three digits after a point or a comma, optionally
+followed by the micros some of the bridge's loggers group after them, such as
+`.524_315`, or none at all. Its width types no column; what it decides is
+which lines the header matches. A clock spelling another fraction -- six
+digits straight on, say -- is not this layout: its line is left unmatched,
+keeps its whole text as its body, states every capture null, and is dated by
+its object's modification time. A bridge that writes one is read under a
+header of its own.
 
 ## The clock's zone
 
@@ -202,8 +204,8 @@ not always agree on the clock: the shipped capture spells its fraction `.769`
 on 129 lines and `.524_315` on 15, and the shipped header dates all 144. A
 line a header misses is still a row -- dated by its object's modification
 time, with every capture null -- so the fraction a header admits decides
-which lines it dates. A header widened to a comma and to no fraction at all
-dates the lines the shipped one leaves to their object's clock:
+which lines it dates. A header widened to six digits straight on dates the
+line the shipped one leaves to its object's clock:
 
 ```python
 import datetime
@@ -215,9 +217,9 @@ from rekep import IOBase
 from rekep.text import text_options
 from rekep.times import ULBRIDGE_ROWHEADER
 
-fraction = r"\.\d{3}(?:_\d{3})?"
+fraction = r"(?:[.,]\d{3}(?:_\d{3})?)?"
 assert fraction in ULBRIDGE_ROWHEADER
-widened = ULBRIDGE_ROWHEADER.replace(fraction, r"(?:[.,]\d{3}(?:_\d{3})?)?")
+widened = ULBRIDGE_ROWHEADER.replace(fraction, r"(?:[.,]\d{3}(?:_?\d{3})?)?")
 narrowed = ULBRIDGE_ROWHEADER.replace(fraction, r"\.\d{3}")
 
 capture = Path(tempfile.mkdtemp()) / "spellings.log"
@@ -225,7 +227,8 @@ capture.write_text(
     "2026-08-14 14:46:39.769 [23] [Jolokia] (DEBUG) a point\n"
     "2026-08-14 14:46:39.769_315 [23] [Jolokia] (DEBUG) grouped micros\n"
     "2026-08-14 14:46:39,769 [23] [Jolokia] (DEBUG) a comma\n"
-    "2026-08-14 14:46:39 [23] [Jolokia] (DEBUG) no fraction\n",
+    "2026-08-14 14:46:39 [23] [Jolokia] (DEBUG) no fraction\n"
+    "2026-08-14 14:46:39.769315 [23] [Jolokia] (DEBUG) six digits\n",
     encoding="utf-8",
 )
 modified = datetime.datetime(2026, 8, 15, tzinfo=datetime.timezone.utc)
@@ -247,11 +250,11 @@ def dated(table):
 
 plain = read(capture.as_uri())
 bodies = plain.column("body").to_pylist()
-assert bodies[:2] == ["a point", "grouped micros"]
-# The comma and the bare second are left whole, at the object's modification time.
-assert bodies[2:] == capture.read_text(encoding="utf-8").splitlines()[2:]
-assert plain.column("currunix").to_pylist()[2:] == [modified, modified]
-assert dated(read(capture.as_uri(), widened)) == 4
+assert bodies[:4] == ["a point", "grouped micros", "a comma", "no fraction"]
+# The six digits are left whole, at the object's modification time.
+assert bodies[4:] == capture.read_text(encoding="utf-8").splitlines()[4:]
+assert plain.column("currunix").to_pylist()[4:] == [modified]
+assert dated(read(capture.as_uri(), widened)) == 5
 
 shipped = "file:data/capture/ulbridge.log"
 assert dated(read(shipped)) == dated(read(shipped, widened)) == 144

@@ -8,7 +8,7 @@ One row per captured line: the event the read settled over it, the line past its
 | key | `curruuid` |
 | partitioned by | `hour(currunix)` |
 | sorted by | `currunix`, `seqnum`, `curruuid` |
-| columns | 23 |
+| columns | 22 |
 | Iceberg contract | `schemas/bronze/record_keeping/log_messages.json` |
 | dbt source | `{{ source('bronze', 'log_messages') }}`, `schemas/bronze/schema.yml` |
 | sample rows | [bronze.record_keeping.log_messages](../../samples/bronze/log_messages.md) |
@@ -19,7 +19,6 @@ One row per captured line: the event the read settled over it, the line past its
 | --- | --- | :---: | --- |
 | `currunix` | `timestamptz` | yes | When the event happened: the settled instant, UTC. |
 | `creaunix` | `timestamptz` |  | When the event was created, where that is known; the earliest its chain knows once followed. |
-| `execunix` | `timestamptz` |  | The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation. |
 | `recdunix` | `timestamptz` |  | When this event was recorded, where that is known; the earliest its statements know. |
 | `exprunix` | `timestamptz` |  | When the event stops being good, where it does; the latest its chain knows once followed. |
 | `prevunix` | `timestamptz` |  | When the event this one follows happened, where it follows one. |
@@ -30,7 +29,7 @@ One row per captured line: the event the read settled over it, the line past its
 | `currhashcode` | `long` | yes | The XXH3-64 of what the event states. |
 | `crosshashcode` | `long` | yes | The XXH3-64 of the cross code; zero where the event names none. |
 | `prevuuid` | `fixed[16]` |  | The identity of the event this one follows, where it follows one. |
-| `seqnum` | `long` |  | The event's place in its chain: how many came before it. |
+| `seqnum` | `long` |  | The event's place among the events of its instant: 0 for the first its stream hands over there, one more for each next. |
 | `srcuuids` | `list<fixed[16]>` |  | The sorted unique identities of the elements this event was read from: provenance, never its chain - no walk moves it. |
 | `state` | `int` |  | The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where nothing states one, the furthest its chain knows once followed. |
 | `body` | `string` | yes | The line past its row header, as text: the edges stripped, the byte limit applied; never empty, because a line with no body is no line. |

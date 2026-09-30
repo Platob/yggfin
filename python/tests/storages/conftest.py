@@ -26,6 +26,8 @@ import pyarrow
 import pytest
 
 from rekep import Storages
+from rekep.dataset import sorted_rows
+from rekep.fix import SORT_COLUMNS
 from rekep.pipeline import (
     EVENTS,
     FLATTENERS,
@@ -59,8 +61,8 @@ DAY = window_of("2026-08-14", "2026-08-14")
 #: report, whose line and message are dated 14:52, runs past 16:25, where the
 #: walk expires the day's open order, and closes inside that hour, so no
 #: task's window ends on a partition's bound. The trade report's side group
-#: states no `Side(54)`, so it splits off no execution and books nothing,
-#: which
+#: states no `Side(54)`, so it splits off one execution of side `UNKN`, which
+#: books under `XXXX:XXXXXX` -- as
 #: `test_market.py::test_books_fold_a_cancel_reject_under_the_side_of_its_order`
 #: pins.
 START = datetime.datetime(2026, 8, 14, 12, tzinfo=UTC)
@@ -75,9 +77,6 @@ EARLY = (
     datetime.datetime(2026, 8, 14, tzinfo=UTC),
     datetime.datetime(2026, 8, 14, 2, tzinfo=UTC),
 )
-
-#: The columns every table is sorted by within a partition, and read back in.
-ORDER = ("currunix", "seqnum", "curruuid")
 
 #: Where a data file sits: its layer's warehouse, its table, its hour.
 _LOCATION = re.compile(
@@ -109,7 +108,7 @@ def read(storages: Storages, table: str, **options: Any) -> pyarrow.Table:
     """One stored table, read whole in its sort order."""
     dataset = storages.dataset(table)
     try:
-        return dataset.read_arrow_table(**options).sort_by([(name, "ascending") for name in ORDER])
+        return sorted_rows(dataset.read_arrow_table(**options), SORT_COLUMNS)
     finally:
         dataset.close()
 

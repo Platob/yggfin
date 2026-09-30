@@ -129,13 +129,25 @@ def first_batch(case: Case) -> int:
 
 
 #: The event columns a read leaves to a walk: empty on every line.
-UNWALKED = ("creaunix", "execunix", "recdunix", "exprunix", "prevunix", "snapunix")
+UNWALKED = ("recdunix", "exprunix", "snapunix")
+
+
+def clock(index: int) -> datetime.datetime:
+    """The instant the read dates one row by: its record clock, in the bridge's zone."""
+    return datetime_of(datetime.datetime.fromisoformat(mtime(index)).replace(tzinfo=ZONE))
 
 
 def expected(index: int) -> dict[str, object]:
-    """The endpoint values independent of the resource's diagnostic URL."""
+    """The endpoint values independent of the resource's diagnostic URL.
+
+    Beside its own clock a line states two of the read's: the earliest it has
+    dated a line by -- the first row's, the earliest of the corpus -- and the
+    one it dated the line before by.
+    """
     return {
-        "currunix": datetime_of(datetime.datetime.fromisoformat(mtime(index)).replace(tzinfo=ZONE)),
+        "currunix": clock(index),
+        "creaunix": clock(0),
+        "prevunix": None if index == 0 else clock(index - 1),
         **dict.fromkeys(UNWALKED),
         "prevuuid": None,
         "srcuuids": None,

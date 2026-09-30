@@ -1,6 +1,6 @@
 # bronze.record_keeping.fix_messages
 
-One row per FIX message parsed out of a stored line, nothing walked: a message logged again at another hop is folded into the one row its identity names, and `seqnum` and `prevuuid` are empty.
+One row per FIX message parsed out of a stored line, nothing walked: each copy of a message logged at several hops is a row of its own, `seqnum` places it among the messages of its instant, and `prevuuid` is empty.
 
 | | |
 | --- | --- |
@@ -38,7 +38,7 @@ One row per FIX message parsed out of a stored line, nothing walked: a message l
 | `currhashcode` | `long` | yes | The XXH3-64 of what the event states and the named FIX content behind it. |
 | `crosshashcode` | `long` | yes | The XXH3-64 of the cross code; zero where the event names none. |
 | `prevuuid` | `fixed[16]` |  | The identity of the event this one follows, where it follows one. |
-| `seqnum` | `long` |  | The event's place in its chain: how many came before it. |
+| `seqnum` | `long` |  | The event's place among the events of its instant: 0 for the first its stream hands over there, one more for each next. |
 | `srcuuids` | `list<fixed[16]>` |  | The identities of the elements this message was read from: the text line it was parsed out of, and none for one parsed from raw bytes. Provenance, never lineage: no walk moves it. |
 | `beginstring` | `string` | yes | Identifies beginning of new message and session protocol version by means of a session profile identifier (see FIX Session Layer for details). ALWAYS FIRST FIELD IN MESSAGE. (Always unencrypted). |
 | `msgtype` | `string` |  | Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted) |

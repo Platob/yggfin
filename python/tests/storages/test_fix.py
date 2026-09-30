@@ -80,13 +80,14 @@ COLUMNS = 133
 DAY_MESSAGES = 84
 
 #: How many messages the parse dates by their sending clock, and how many by
-#: their transaction clock, over the capture's day, per delay pin. A message
-#: stating no `SendingTime` is measured against its line's clock: read in the
+#: their transaction clock, over the capture's day, per delay pin: every copy
+#: is a row, and one whose two clocks agree counts in both. A message stating
+#: no `SendingTime` is measured against its line's clock: read in the
 #: bridge's zone, that stands within the default second of the venue's clock
-#: but never on it, so the default dates 58 such messages by their
+#: but never on it, so the default dates all 112 such messages by their
 #: transaction clock and the nought pin dates them by their line. An
 #: execution split out of a report is dated as the report is.
-DELAYS = {"default": (8, 73), "nought": (23, 4)}
+DELAYS = {"default": (9, 132), "nought": (24, 5)}
 
 #: The narrow dictionary's row: the crate's own columns, its clock and symbol.
 NARROW_COLUMNS = 34
@@ -108,7 +109,8 @@ def test_the_fix_tables_are_laid_out_exactly_alike_by_the_event(landing: Landing
 def test_the_lineage_holds_across_the_layers(landing: Landing) -> None:
     """A message's `srcuuids` is the `curruuid` of the lines it was parsed out
     of -- provenance, never lineage. A silver row's `prevuuid` is the
-    `curruuid` of the step before it; bronze carries no chain at all."""
+    `curruuid` of the step before it; bronze carries no chain at all, only
+    each message's place among the messages of its instant."""
     lines = landing.table(LOG_MESSAGES)
     bronze = landing.table(FIX_MESSAGES_RAW)
     silver = landing.table(FIX_MESSAGES)
@@ -128,14 +130,14 @@ def test_the_lineage_holds_across_the_layers(landing: Landing) -> None:
         assert sources <= named | reports
         assert not {"msgthreadid", "loglevel", "body"} & set(table.column_names)
 
-    assert bronze.column("seqnum").null_count == bronze.num_rows
+    assert 0 < bronze.column("seqnum").null_count < bronze.num_rows, "place zero is null"
     assert bronze.column("prevuuid").null_count == bronze.num_rows
     assert bronze.column("prevunix").null_count == bronze.num_rows
 
     identities = set(silver.column(MESSAGE_KEY).to_pylist())
     followed = [row for row in silver.to_pylist() if row["prevuuid"] is not None]
     assert followed
-    assert all(row["prevuuid"] in identities and row["seqnum"] >= 1 for row in followed)
+    assert all(row["prevuuid"] in identities for row in followed)
     assert UNDATED not in silver.column(EVENT_CLOCK).to_pylist()
     # The walk re-settles the identities it dates and emits the expiry the
     # chain states, so the two tables hold different identities.
@@ -515,14 +517,14 @@ def test_the_walk_reads_the_hour_before_its_window_and_writes_only_its_own(
         assert view["curruuid"] not in {walked[0]["curruuid"], walked[0]["prevuuid"]}
         assert walked[0]["prevuuid"] is not None
         assert walked[0]["prevunix"] == datetime.datetime(2026, 8, 14, 9, 59, tzinfo=UTC)
-        assert walked[0]["seqnum"] == 1
     else:
         # The one-hour context is an explicit horizon, not a claim that a
         # business chain cannot have an older predecessor.
         assert views == []
         assert walked[0]["prevuuid"] is None
         assert walked[0]["prevunix"] is None
-        assert walked[0]["seqnum"] is None
+    # The one event of its instant either way: place zero.
+    assert walked[0]["seqnum"] is None
     if expires == "10:40:00":
         assert walked[1][EVENT_CLOCK] == datetime.datetime(2026, 8, 14, 10, 40, tzinfo=UTC)
         assert walked[1]["state"] == State.EXPIRED
@@ -583,7 +585,7 @@ def test_the_walk_restates_every_chain_alive_on_each_whole_hour(landing: Landing
     events, views = split(silver.to_pylist())
     refined = landing.landed["parse_fix_messages_refined"]
     print(f"\n{len(events)} events and {len(views)} views: {refined}")
-    assert (len(events), len(views)) == (18, 12)
+    assert (len(events), len(views)) == (22, 12)
     assert refined.written == silver.num_rows and refined.skipped == 0
     assert all(view[EVENT_CLOCK] == view["snapunix"] for view in views)
     ticks = sorted({view["snapunix"] for view in views})
@@ -632,7 +634,7 @@ def test_the_rows_at_start_are_the_chains_the_hour_before_left_alive(
     stored = held.filter(within(held.column(EVENT_CLOCK), later))
     at_start = [row for row in stored.to_pylist() if row[EVENT_CLOCK] == later[0]]
     print(f"\nfrom 13:00 {landed}: {len(at_start)} rows at 13:00")
-    assert landed == Landed(read=66, written=0, skipped=stored.num_rows)
+    assert landed == Landed(read=120, written=0, skipped=stored.num_rows)
     assert len(at_start) == 3 and all(row["snapunix"] == later[0] for row in at_start)
     assert read(storages, FIX_MESSAGES).equals(held)
     assert snapshots(storages, FIX_MESSAGES) == committed
@@ -640,7 +642,7 @@ def test_the_rows_at_start_are_the_chains_the_hour_before_left_alive(
     plain = parse_fix_messages_refined(
         storages, WINDOW, snapshot_millis=0, target="silver.record_keeping.plain_fix_messages"
     )
-    assert plain == Landed(read=66, written=18)
+    assert plain == Landed(read=120, written=22)
     events, _ = split(held.to_pylist())
     assert read(storages, "silver.record_keeping.plain_fix_messages").to_pylist() == events
 
@@ -648,7 +650,7 @@ def test_the_rows_at_start_are_the_chains_the_hour_before_left_alive(
     pinned = parse_fix_messages_refined(
         storages, WINDOW, codec=minute, target="silver.record_keeping.pinned_fix_messages"
     )
-    assert pinned == Landed(read=66, written=30)
+    assert pinned == Landed(read=120, written=34)
     assert read(storages, "silver.record_keeping.pinned_fix_messages").equals(held)
 
 
@@ -678,7 +680,7 @@ def test_a_sorted_walk_answers_what_the_whole_walk_does(landing: Landing) -> Non
     hourly = walked(True)
     whole = walked(False)
     print(f"\nthe hourly walk answers {hourly.num_rows} rows, the whole walk {whole.num_rows}")
-    assert hourly.num_rows == whole.num_rows == 30
+    assert hourly.num_rows == whole.num_rows == 34
     assert hourly.equals(whole)
 
 

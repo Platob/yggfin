@@ -24,94 +24,87 @@
       },
       {
         "id": 4,
-        "name": "execunix",
-        "type": "timestamptz",
-        "required": false,
-        "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
-      },
-      {
-        "id": 5,
         "name": "recdunix",
         "type": "timestamptz",
         "required": false,
         "doc": "When this event was recorded, where that is known; the earliest its statements know."
       },
       {
-        "id": 6,
+        "id": 5,
         "name": "exprunix",
         "type": "timestamptz",
         "required": false,
         "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
       },
       {
-        "id": 7,
+        "id": 6,
         "name": "prevunix",
         "type": "timestamptz",
         "required": false,
         "doc": "When the event this one follows happened, where it follows one."
       },
       {
-        "id": 8,
+        "id": 7,
         "name": "snapunix",
         "type": "timestamptz",
         "required": false,
         "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
       },
       {
-        "id": 9,
+        "id": 8,
         "name": "curruuid",
         "type": "fixed[16]",
         "required": true,
         "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
       },
       {
-        "id": 10,
+        "id": 9,
         "name": "crossuuid",
         "type": "fixed[16]",
         "required": false,
         "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
       },
       {
-        "id": 11,
+        "id": 10,
         "name": "crosscode",
         "type": "string",
         "required": false,
         "doc": "The code every event of one chain shares, as the event spells it; empty where none."
       },
       {
-        "id": 12,
+        "id": 11,
         "name": "currhashcode",
         "type": "long",
         "required": false,
         "doc": "The XXH3-64 of what the event states."
       },
       {
-        "id": 13,
+        "id": 12,
         "name": "crosshashcode",
         "type": "long",
         "required": false,
         "doc": "The XXH3-64 of the cross code; zero where the event names none."
       },
       {
-        "id": 14,
+        "id": 13,
         "name": "prevuuid",
         "type": "fixed[16]",
         "required": false,
         "doc": "The identity of the event this one follows, where it follows one."
       },
       {
-        "id": 15,
+        "id": 14,
         "name": "seqnum",
         "type": "long",
         "required": false,
-        "doc": "The event's place in its chain: how many came before it."
+        "doc": "The event's place among the events of its instant: 0 for the first its stream hands over there, one more for each next."
       },
       {
-        "id": 16,
+        "id": 15,
         "name": "srcuuids",
         "type": {
           "type": "list",
-          "element-id": 54,
+          "element-id": 55,
           "element": "fixed[16]",
           "element-required": true
         },
@@ -119,71 +112,77 @@
         "doc": "The sorted unique identities of the elements this event was read from: provenance, never its chain - no walk moves it."
       },
       {
-        "id": 17,
+        "id": 16,
         "name": "state",
         "type": "int",
         "required": false,
         "doc": "The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where nothing states one, the furthest its chain knows once followed."
       },
       {
-        "id": 18,
+        "id": 17,
         "name": "price",
         "type": "decimal(38, 18)",
         "required": false
       },
       {
-        "id": 19,
+        "id": 18,
         "name": "currency",
         "type": "string",
         "required": true
       },
       {
-        "id": 20,
+        "id": 19,
         "name": "quantity",
         "type": "decimal(38, 18)",
         "required": false
       },
       {
-        "id": 21,
+        "id": 20,
         "name": "unit",
         "type": "string",
         "required": true
       },
       {
-        "id": 22,
+        "id": 21,
         "name": "side",
         "type": "int",
         "required": true
       },
       {
-        "id": 23,
+        "id": 22,
         "name": "securityids",
         "type": {
           "type": "map",
-          "key-id": 55,
+          "key-id": 56,
           "key": "string",
-          "value-id": 56,
+          "value-id": 57,
           "value": "string",
           "value-required": true
         },
         "required": false
       },
       {
-        "id": 24,
+        "id": 23,
         "name": "isincode",
         "type": "string",
         "required": false
       },
       {
-        "id": 25,
+        "id": 24,
         "name": "cficode",
         "type": "string",
         "required": false
       },
       {
-        "id": 26,
+        "id": 25,
         "name": "miccode",
         "type": "string",
+        "required": false
+      },
+      {
+        "id": 26,
+        "name": "execunix",
+        "type": "timestamptz",
         "required": false
       },
       {
@@ -281,9 +280,9 @@
         "name": "fxrates",
         "type": {
           "type": "map",
-          "key-id": 57,
+          "key-id": 58,
           "key": "string",
-          "value-id": 58,
+          "value-id": 59,
           "value": "decimal(38, 18)",
           "value-required": true
         },
@@ -300,9 +299,9 @@
         "name": "metadata",
         "type": {
           "type": "map",
-          "key-id": 59,
+          "key-id": 60,
           "key": "string",
-          "value-id": 60,
+          "value-id": 61,
           "value": "string",
           "value-required": false
         },
@@ -325,9 +324,9 @@
         "name": "altids",
         "type": {
           "type": "map",
-          "key-id": 61,
+          "key-id": 62,
           "key": "string",
-          "value-id": 62,
+          "value-id": 63,
           "value": "string",
           "value-required": true
         },
@@ -335,129 +334,135 @@
       },
       {
         "id": 48,
+        "name": "accountids",
+        "type": {
+          "type": "map",
+          "key-id": 64,
+          "key": "string",
+          "value-id": 65,
+          "value": "string",
+          "value-required": true
+        },
+        "required": false
+      },
+      {
+        "id": 49,
         "name": "bookscope",
         "type": "string",
         "required": false
       },
       {
-        "id": 49,
+        "id": 50,
         "name": "alive",
         "type": {
           "type": "list",
-          "element-id": 63,
+          "element-id": 66,
           "element": {
             "type": "struct",
             "fields": [
               {
-                "id": 64,
+                "id": 67,
                 "name": "marketdatakind",
                 "type": "int",
                 "required": false
               },
               {
-                "id": 65,
+                "id": 68,
                 "name": "currunix",
                 "type": "timestamptz",
                 "required": true,
                 "doc": "When the event happened: the settled instant, UTC."
               },
               {
-                "id": 66,
+                "id": 69,
                 "name": "creaunix",
                 "type": "timestamptz",
                 "required": false,
                 "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
               },
               {
-                "id": 67,
-                "name": "execunix",
-                "type": "timestamptz",
-                "required": false,
-                "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
-              },
-              {
-                "id": 68,
+                "id": 70,
                 "name": "recdunix",
                 "type": "timestamptz",
                 "required": false,
                 "doc": "When this event was recorded, where that is known; the earliest its statements know."
               },
               {
-                "id": 69,
+                "id": 71,
                 "name": "exprunix",
                 "type": "timestamptz",
                 "required": false,
                 "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
               },
               {
-                "id": 70,
+                "id": 72,
                 "name": "prevunix",
                 "type": "timestamptz",
                 "required": false,
                 "doc": "When the event this one follows happened, where it follows one."
               },
               {
-                "id": 71,
+                "id": 73,
                 "name": "snapunix",
                 "type": "timestamptz",
                 "required": false,
                 "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
               },
               {
-                "id": 72,
+                "id": 74,
                 "name": "curruuid",
                 "type": "fixed[16]",
                 "required": true,
                 "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
               },
               {
-                "id": 73,
+                "id": 75,
                 "name": "crossuuid",
                 "type": "fixed[16]",
                 "required": true,
                 "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
               },
               {
-                "id": 74,
+                "id": 76,
                 "name": "crosscode",
                 "type": "string",
                 "required": false,
                 "doc": "The code every event of one chain shares, as the event spells it; empty where none."
               },
               {
-                "id": 75,
+                "id": 77,
                 "name": "currhashcode",
                 "type": "long",
                 "required": true,
                 "doc": "The XXH3-64 of what the event states."
               },
               {
-                "id": 76,
+                "id": 78,
                 "name": "crosshashcode",
                 "type": "long",
                 "required": true,
                 "doc": "The XXH3-64 of the cross code; zero where the event names none."
               },
               {
-                "id": 77,
+                "id": 79,
                 "name": "prevuuid",
                 "type": "fixed[16]",
                 "required": false,
                 "doc": "The identity of the event this one follows, where it follows one."
               },
               {
-                "id": 78,
+                "id": 80,
                 "name": "seqnum",
                 "type": "long",
                 "required": false,
-                "doc": "The event's place in its chain: how many came before it."
+                "doc": "The event's place among the events of its instant: 0 for the first its stream hands over there, one more for each next."
               },
               {
-                "id": 79,
+                "id": 81,
                 "name": "srcuuids",
                 "type": {
                   "type": "list",
-                  "element-id": 112,
+                  "element-id": 116,
                   "element": "fixed[16]",
                   "element-required": true
                 },
@@ -465,574 +470,241 @@
                 "doc": "The sorted unique identities of the elements this event was read from: provenance, never its chain - no walk moves it."
               },
               {
-                "id": 80,
+                "id": 82,
                 "name": "state",
                 "type": "int",
                 "required": false,
                 "doc": "The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where nothing states one, the furthest its chain knows once followed."
               },
               {
-                "id": 81,
+                "id": 83,
                 "name": "price",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 82,
+                "id": 84,
                 "name": "currency",
                 "type": "string",
                 "required": true
               },
               {
-                "id": 83,
+                "id": 85,
                 "name": "quantity",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 84,
+                "id": 86,
                 "name": "unit",
                 "type": "string",
                 "required": true
               },
               {
-                "id": 85,
+                "id": 87,
                 "name": "side",
                 "type": "int",
                 "required": true
               },
               {
-                "id": 86,
-                "name": "securityids",
-                "type": {
-                  "type": "map",
-                  "key-id": 113,
-                  "key": "string",
-                  "value-id": 114,
-                  "value": "string",
-                  "value-required": true
-                },
-                "required": false
-              },
-              {
-                "id": 87,
-                "name": "isincode",
-                "type": "string",
-                "required": false
-              },
-              {
                 "id": 88,
-                "name": "cficode",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": 89,
-                "name": "miccode",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": 90,
-                "name": "lastpx",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 91,
-                "name": "lastqty",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 92,
-                "name": "avgpx",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 93,
-                "name": "cumqty",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 94,
-                "name": "leavesqty",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 95,
-                "name": "prevpx",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 96,
-                "name": "prevqty",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 97,
-                "name": "spotrate",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 98,
-                "name": "forwardpoints",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 99,
-                "name": "bidpx",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 100,
-                "name": "bidqty",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 101,
-                "name": "bidccy",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": 102,
-                "name": "askpx",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 103,
-                "name": "askqty",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 104,
-                "name": "askccy",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": 105,
-                "name": "fxrates",
-                "type": {
-                  "type": "map",
-                  "key-id": 115,
-                  "key": "string",
-                  "value-id": 116,
-                  "value": "decimal(38, 18)",
-                  "value-required": true
-                },
-                "required": false
-              },
-              {
-                "id": 106,
-                "name": "ticker",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": 107,
-                "name": "metadata",
+                "name": "securityids",
                 "type": {
                   "type": "map",
                   "key-id": 117,
                   "key": "string",
                   "value-id": 118,
                   "value": "string",
-                  "value-required": false
-                },
-                "required": false
-              },
-              {
-                "id": 108,
-                "name": "tif",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": 109,
-                "name": "tradable",
-                "type": "boolean",
-                "required": false
-              },
-              {
-                "id": 110,
-                "name": "altids",
-                "type": {
-                  "type": "map",
-                  "key-id": 119,
-                  "key": "string",
-                  "value-id": 120,
-                  "value": "string",
                   "value-required": true
                 },
                 "required": false
               },
               {
-                "id": 111,
-                "name": "bookscope",
-                "type": "string",
-                "required": false
-              }
-            ]
-          },
-          "element-required": true
-        },
-        "required": false
-      },
-      {
-        "id": 50,
-        "name": "deltas",
-        "type": {
-          "type": "list",
-          "element-id": 121,
-          "element": {
-            "type": "struct",
-            "fields": [
-              {
-                "id": 122,
-                "name": "marketdatakind",
-                "type": "int",
-                "required": false
-              },
-              {
-                "id": 123,
-                "name": "currunix",
-                "type": "timestamptz",
-                "required": true,
-                "doc": "When the event happened: the settled instant, UTC."
-              },
-              {
-                "id": 124,
-                "name": "creaunix",
-                "type": "timestamptz",
-                "required": false,
-                "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
-              },
-              {
-                "id": 125,
-                "name": "execunix",
-                "type": "timestamptz",
-                "required": false,
-                "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
-              },
-              {
-                "id": 126,
-                "name": "recdunix",
-                "type": "timestamptz",
-                "required": false,
-                "doc": "When this event was recorded, where that is known; the earliest its statements know."
-              },
-              {
-                "id": 127,
-                "name": "exprunix",
-                "type": "timestamptz",
-                "required": false,
-                "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
-              },
-              {
-                "id": 128,
-                "name": "prevunix",
-                "type": "timestamptz",
-                "required": false,
-                "doc": "When the event this one follows happened, where it follows one."
-              },
-              {
-                "id": 129,
-                "name": "snapunix",
-                "type": "timestamptz",
-                "required": false,
-                "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
-              },
-              {
-                "id": 130,
-                "name": "curruuid",
-                "type": "fixed[16]",
-                "required": true,
-                "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
-              },
-              {
-                "id": 131,
-                "name": "crossuuid",
-                "type": "fixed[16]",
-                "required": true,
-                "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
-              },
-              {
-                "id": 132,
-                "name": "crosscode",
-                "type": "string",
-                "required": false,
-                "doc": "The code every event of one chain shares, as the event spells it; empty where none."
-              },
-              {
-                "id": 133,
-                "name": "currhashcode",
-                "type": "long",
-                "required": true,
-                "doc": "The XXH3-64 of what the event states."
-              },
-              {
-                "id": 134,
-                "name": "crosshashcode",
-                "type": "long",
-                "required": true,
-                "doc": "The XXH3-64 of the cross code; zero where the event names none."
-              },
-              {
-                "id": 135,
-                "name": "prevuuid",
-                "type": "fixed[16]",
-                "required": false,
-                "doc": "The identity of the event this one follows, where it follows one."
-              },
-              {
-                "id": 136,
-                "name": "seqnum",
-                "type": "long",
-                "required": false,
-                "doc": "The event's place in its chain: how many came before it."
-              },
-              {
-                "id": 137,
-                "name": "srcuuids",
-                "type": {
-                  "type": "list",
-                  "element-id": 170,
-                  "element": "fixed[16]",
-                  "element-required": true
-                },
-                "required": false,
-                "doc": "The sorted unique identities of the elements this event was read from: provenance, never its chain - no walk moves it."
-              },
-              {
-                "id": 138,
-                "name": "state",
-                "type": "int",
-                "required": false,
-                "doc": "The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where nothing states one, the furthest its chain knows once followed."
-              },
-              {
-                "id": 139,
-                "name": "price",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 140,
-                "name": "currency",
-                "type": "string",
-                "required": true
-              },
-              {
-                "id": 141,
-                "name": "quantity",
-                "type": "decimal(38, 18)",
-                "required": false
-              },
-              {
-                "id": 142,
-                "name": "unit",
-                "type": "string",
-                "required": true
-              },
-              {
-                "id": 143,
-                "name": "side",
-                "type": "int",
-                "required": true
-              },
-              {
-                "id": 144,
-                "name": "securityids",
-                "type": {
-                  "type": "map",
-                  "key-id": 171,
-                  "key": "string",
-                  "value-id": 172,
-                  "value": "string",
-                  "value-required": true
-                },
-                "required": false
-              },
-              {
-                "id": 145,
+                "id": 89,
                 "name": "isincode",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 146,
+                "id": 90,
                 "name": "cficode",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 147,
+                "id": 91,
                 "name": "miccode",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 148,
+                "id": 92,
+                "name": "execunix",
+                "type": "timestamptz",
+                "required": false
+              },
+              {
+                "id": 93,
                 "name": "lastpx",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 149,
+                "id": 94,
                 "name": "lastqty",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 150,
+                "id": 95,
                 "name": "avgpx",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 151,
+                "id": 96,
                 "name": "cumqty",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 152,
+                "id": 97,
                 "name": "leavesqty",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 153,
+                "id": 98,
                 "name": "prevpx",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 154,
+                "id": 99,
                 "name": "prevqty",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 155,
+                "id": 100,
                 "name": "spotrate",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 156,
+                "id": 101,
                 "name": "forwardpoints",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 157,
+                "id": 102,
                 "name": "bidpx",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 158,
+                "id": 103,
                 "name": "bidqty",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 159,
+                "id": 104,
                 "name": "bidccy",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 160,
+                "id": 105,
                 "name": "askpx",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 161,
+                "id": 106,
                 "name": "askqty",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 162,
+                "id": 107,
                 "name": "askccy",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 163,
+                "id": 108,
                 "name": "fxrates",
                 "type": {
                   "type": "map",
-                  "key-id": 173,
+                  "key-id": 119,
                   "key": "string",
-                  "value-id": 174,
+                  "value-id": 120,
                   "value": "decimal(38, 18)",
                   "value-required": true
                 },
                 "required": false
               },
               {
-                "id": 164,
+                "id": 109,
                 "name": "ticker",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 165,
+                "id": 110,
                 "name": "metadata",
                 "type": {
                   "type": "map",
-                  "key-id": 175,
+                  "key-id": 121,
                   "key": "string",
-                  "value-id": 176,
+                  "value-id": 122,
                   "value": "string",
                   "value-required": false
                 },
                 "required": false
               },
               {
-                "id": 166,
+                "id": 111,
                 "name": "tif",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 167,
+                "id": 112,
                 "name": "tradable",
                 "type": "boolean",
                 "required": false
               },
               {
-                "id": 168,
+                "id": 113,
                 "name": "altids",
                 "type": {
                   "type": "map",
-                  "key-id": 177,
+                  "key-id": 123,
                   "key": "string",
-                  "value-id": 178,
+                  "value-id": 124,
                   "value": "string",
                   "value-required": true
                 },
                 "required": false
               },
               {
-                "id": 169,
+                "id": 114,
+                "name": "accountids",
+                "type": {
+                  "type": "map",
+                  "key-id": 125,
+                  "key": "string",
+                  "value-id": 126,
+                  "value": "string",
+                  "value-required": true
+                },
+                "required": false
+              },
+              {
+                "id": 115,
                 "name": "bookscope",
                 "type": "string",
                 "required": false
@@ -1045,123 +717,116 @@
       },
       {
         "id": 51,
-        "name": "executions",
+        "name": "deltas",
         "type": {
           "type": "list",
-          "element-id": 179,
+          "element-id": 127,
           "element": {
             "type": "struct",
             "fields": [
               {
-                "id": 180,
+                "id": 128,
                 "name": "marketdatakind",
                 "type": "int",
                 "required": false
               },
               {
-                "id": 181,
+                "id": 129,
                 "name": "currunix",
                 "type": "timestamptz",
                 "required": true,
                 "doc": "When the event happened: the settled instant, UTC."
               },
               {
-                "id": 182,
+                "id": 130,
                 "name": "creaunix",
                 "type": "timestamptz",
                 "required": false,
                 "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
               },
               {
-                "id": 183,
-                "name": "execunix",
-                "type": "timestamptz",
-                "required": false,
-                "doc": "The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation."
-              },
-              {
-                "id": 184,
+                "id": 131,
                 "name": "recdunix",
                 "type": "timestamptz",
                 "required": false,
                 "doc": "When this event was recorded, where that is known; the earliest its statements know."
               },
               {
-                "id": 185,
+                "id": 132,
                 "name": "exprunix",
                 "type": "timestamptz",
                 "required": false,
                 "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
               },
               {
-                "id": 186,
+                "id": 133,
                 "name": "prevunix",
                 "type": "timestamptz",
                 "required": false,
                 "doc": "When the event this one follows happened, where it follows one."
               },
               {
-                "id": 187,
+                "id": 134,
                 "name": "snapunix",
                 "type": "timestamptz",
                 "required": false,
                 "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
               },
               {
-                "id": 188,
+                "id": 135,
                 "name": "curruuid",
                 "type": "fixed[16]",
                 "required": true,
                 "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
               },
               {
-                "id": 189,
+                "id": 136,
                 "name": "crossuuid",
                 "type": "fixed[16]",
                 "required": true,
                 "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
               },
               {
-                "id": 190,
+                "id": 137,
                 "name": "crosscode",
                 "type": "string",
                 "required": false,
                 "doc": "The code every event of one chain shares, as the event spells it; empty where none."
               },
               {
-                "id": 191,
+                "id": 138,
                 "name": "currhashcode",
                 "type": "long",
                 "required": true,
                 "doc": "The XXH3-64 of what the event states."
               },
               {
-                "id": 192,
+                "id": 139,
                 "name": "crosshashcode",
                 "type": "long",
                 "required": true,
                 "doc": "The XXH3-64 of the cross code; zero where the event names none."
               },
               {
-                "id": 193,
+                "id": 140,
                 "name": "prevuuid",
                 "type": "fixed[16]",
                 "required": false,
                 "doc": "The identity of the event this one follows, where it follows one."
               },
               {
-                "id": 194,
+                "id": 141,
                 "name": "seqnum",
                 "type": "long",
                 "required": false,
-                "doc": "The event's place in its chain: how many came before it."
+                "doc": "The event's place among the events of its instant: 0 for the first its stream hands over there, one more for each next."
               },
               {
-                "id": 195,
+                "id": 142,
                 "name": "srcuuids",
                 "type": {
                   "type": "list",
-                  "element-id": 228,
+                  "element-id": 177,
                   "element": "fixed[16]",
                   "element-required": true
                 },
@@ -1169,222 +834,241 @@
                 "doc": "The sorted unique identities of the elements this event was read from: provenance, never its chain - no walk moves it."
               },
               {
-                "id": 196,
+                "id": 143,
                 "name": "state",
                 "type": "int",
                 "required": false,
                 "doc": "The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where nothing states one, the furthest its chain knows once followed."
               },
               {
-                "id": 197,
+                "id": 144,
                 "name": "price",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 198,
+                "id": 145,
                 "name": "currency",
                 "type": "string",
                 "required": true
               },
               {
-                "id": 199,
+                "id": 146,
                 "name": "quantity",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 200,
+                "id": 147,
                 "name": "unit",
                 "type": "string",
                 "required": true
               },
               {
-                "id": 201,
+                "id": 148,
                 "name": "side",
                 "type": "int",
                 "required": true
               },
               {
-                "id": 202,
+                "id": 149,
                 "name": "securityids",
                 "type": {
                   "type": "map",
-                  "key-id": 229,
+                  "key-id": 178,
                   "key": "string",
-                  "value-id": 230,
+                  "value-id": 179,
                   "value": "string",
                   "value-required": true
                 },
                 "required": false
               },
               {
-                "id": 203,
+                "id": 150,
                 "name": "isincode",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 204,
+                "id": 151,
                 "name": "cficode",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 205,
+                "id": 152,
                 "name": "miccode",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 206,
+                "id": 153,
+                "name": "execunix",
+                "type": "timestamptz",
+                "required": false
+              },
+              {
+                "id": 154,
                 "name": "lastpx",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 207,
+                "id": 155,
                 "name": "lastqty",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 208,
+                "id": 156,
                 "name": "avgpx",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 209,
+                "id": 157,
                 "name": "cumqty",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 210,
+                "id": 158,
                 "name": "leavesqty",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 211,
+                "id": 159,
                 "name": "prevpx",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 212,
+                "id": 160,
                 "name": "prevqty",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 213,
+                "id": 161,
                 "name": "spotrate",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 214,
+                "id": 162,
                 "name": "forwardpoints",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 215,
+                "id": 163,
                 "name": "bidpx",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 216,
+                "id": 164,
                 "name": "bidqty",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 217,
+                "id": 165,
                 "name": "bidccy",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 218,
+                "id": 166,
                 "name": "askpx",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 219,
+                "id": 167,
                 "name": "askqty",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 220,
+                "id": 168,
                 "name": "askccy",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 221,
+                "id": 169,
                 "name": "fxrates",
                 "type": {
                   "type": "map",
-                  "key-id": 231,
+                  "key-id": 180,
                   "key": "string",
-                  "value-id": 232,
+                  "value-id": 181,
                   "value": "decimal(38, 18)",
                   "value-required": true
                 },
                 "required": false
               },
               {
-                "id": 222,
+                "id": 170,
                 "name": "ticker",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 223,
+                "id": 171,
                 "name": "metadata",
                 "type": {
                   "type": "map",
-                  "key-id": 233,
+                  "key-id": 182,
                   "key": "string",
-                  "value-id": 234,
+                  "value-id": 183,
                   "value": "string",
                   "value-required": false
                 },
                 "required": false
               },
               {
-                "id": 224,
+                "id": 172,
                 "name": "tif",
                 "type": "string",
                 "required": false
               },
               {
-                "id": 225,
+                "id": 173,
                 "name": "tradable",
                 "type": "boolean",
                 "required": false
               },
               {
-                "id": 226,
+                "id": 174,
                 "name": "altids",
                 "type": {
                   "type": "map",
-                  "key-id": 235,
+                  "key-id": 184,
                   "key": "string",
-                  "value-id": 236,
+                  "value-id": 185,
                   "value": "string",
                   "value-required": true
                 },
                 "required": false
               },
               {
-                "id": 227,
+                "id": 175,
+                "name": "accountids",
+                "type": {
+                  "type": "map",
+                  "key-id": 186,
+                  "key": "string",
+                  "value-id": 187,
+                  "value": "string",
+                  "value-required": true
+                },
+                "required": false
+              },
+              {
+                "id": 176,
                 "name": "bookscope",
                 "type": "string",
                 "required": false
@@ -1397,38 +1081,402 @@
       },
       {
         "id": 52,
-        "name": "bidlimits",
+        "name": "executions",
         "type": {
           "type": "list",
-          "element-id": 237,
+          "element-id": 188,
           "element": {
             "type": "struct",
             "fields": [
               {
-                "id": 238,
+                "id": 189,
+                "name": "marketdatakind",
+                "type": "int",
+                "required": false
+              },
+              {
+                "id": 190,
+                "name": "currunix",
+                "type": "timestamptz",
+                "required": true,
+                "doc": "When the event happened: the settled instant, UTC."
+              },
+              {
+                "id": 191,
+                "name": "creaunix",
+                "type": "timestamptz",
+                "required": false,
+                "doc": "When the event was created, where that is known; the earliest its chain knows once followed."
+              },
+              {
+                "id": 192,
+                "name": "recdunix",
+                "type": "timestamptz",
+                "required": false,
+                "doc": "When this event was recorded, where that is known; the earliest its statements know."
+              },
+              {
+                "id": 193,
+                "name": "exprunix",
+                "type": "timestamptz",
+                "required": false,
+                "doc": "When the event stops being good, where it does; the latest its chain knows once followed."
+              },
+              {
+                "id": 194,
+                "name": "prevunix",
+                "type": "timestamptz",
+                "required": false,
+                "doc": "When the event this one follows happened, where it follows one."
+              },
+              {
+                "id": 195,
+                "name": "snapunix",
+                "type": "timestamptz",
+                "required": false,
+                "doc": "The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of."
+              },
+              {
+                "id": 196,
+                "name": "curruuid",
+                "type": "fixed[16]",
+                "required": true,
+                "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
+              },
+              {
+                "id": 197,
+                "name": "crossuuid",
+                "type": "fixed[16]",
+                "required": true,
+                "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
+              },
+              {
+                "id": 198,
+                "name": "crosscode",
+                "type": "string",
+                "required": false,
+                "doc": "The code every event of one chain shares, as the event spells it; empty where none."
+              },
+              {
+                "id": 199,
+                "name": "currhashcode",
+                "type": "long",
+                "required": true,
+                "doc": "The XXH3-64 of what the event states."
+              },
+              {
+                "id": 200,
+                "name": "crosshashcode",
+                "type": "long",
+                "required": true,
+                "doc": "The XXH3-64 of the cross code; zero where the event names none."
+              },
+              {
+                "id": 201,
+                "name": "prevuuid",
+                "type": "fixed[16]",
+                "required": false,
+                "doc": "The identity of the event this one follows, where it follows one."
+              },
+              {
+                "id": 202,
+                "name": "seqnum",
+                "type": "long",
+                "required": false,
+                "doc": "The event's place among the events of its instant: 0 for the first its stream hands over there, one more for each next."
+              },
+              {
+                "id": 203,
+                "name": "srcuuids",
+                "type": {
+                  "type": "list",
+                  "element-id": 238,
+                  "element": "fixed[16]",
+                  "element-required": true
+                },
+                "required": false,
+                "doc": "The sorted unique identities of the elements this event was read from: provenance, never its chain - no walk moves it."
+              },
+              {
+                "id": 204,
+                "name": "state",
+                "type": "int",
+                "required": false,
+                "doc": "The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where nothing states one, the furthest its chain knows once followed."
+              },
+              {
+                "id": 205,
                 "name": "price",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 239,
+                "id": 206,
+                "name": "currency",
+                "type": "string",
+                "required": true
+              },
+              {
+                "id": 207,
+                "name": "quantity",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 208,
+                "name": "unit",
+                "type": "string",
+                "required": true
+              },
+              {
+                "id": 209,
+                "name": "side",
+                "type": "int",
+                "required": true
+              },
+              {
+                "id": 210,
+                "name": "securityids",
+                "type": {
+                  "type": "map",
+                  "key-id": 239,
+                  "key": "string",
+                  "value-id": 240,
+                  "value": "string",
+                  "value-required": true
+                },
+                "required": false
+              },
+              {
+                "id": 211,
+                "name": "isincode",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 212,
+                "name": "cficode",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 213,
+                "name": "miccode",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 214,
+                "name": "execunix",
+                "type": "timestamptz",
+                "required": false
+              },
+              {
+                "id": 215,
+                "name": "lastpx",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 216,
+                "name": "lastqty",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 217,
+                "name": "avgpx",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 218,
+                "name": "cumqty",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 219,
+                "name": "leavesqty",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 220,
+                "name": "prevpx",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 221,
+                "name": "prevqty",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 222,
+                "name": "spotrate",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 223,
+                "name": "forwardpoints",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 224,
+                "name": "bidpx",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 225,
+                "name": "bidqty",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 226,
+                "name": "bidccy",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 227,
+                "name": "askpx",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 228,
+                "name": "askqty",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 229,
+                "name": "askccy",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 230,
+                "name": "fxrates",
+                "type": {
+                  "type": "map",
+                  "key-id": 241,
+                  "key": "string",
+                  "value-id": 242,
+                  "value": "decimal(38, 18)",
+                  "value-required": true
+                },
+                "required": false
+              },
+              {
+                "id": 231,
+                "name": "ticker",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 232,
+                "name": "metadata",
+                "type": {
+                  "type": "map",
+                  "key-id": 243,
+                  "key": "string",
+                  "value-id": 244,
+                  "value": "string",
+                  "value-required": false
+                },
+                "required": false
+              },
+              {
+                "id": 233,
+                "name": "tif",
+                "type": "string",
+                "required": false
+              },
+              {
+                "id": 234,
+                "name": "tradable",
+                "type": "boolean",
+                "required": false
+              },
+              {
+                "id": 235,
+                "name": "altids",
+                "type": {
+                  "type": "map",
+                  "key-id": 245,
+                  "key": "string",
+                  "value-id": 246,
+                  "value": "string",
+                  "value-required": true
+                },
+                "required": false
+              },
+              {
+                "id": 236,
+                "name": "accountids",
+                "type": {
+                  "type": "map",
+                  "key-id": 247,
+                  "key": "string",
+                  "value-id": 248,
+                  "value": "string",
+                  "value-required": true
+                },
+                "required": false
+              },
+              {
+                "id": 237,
+                "name": "bookscope",
+                "type": "string",
+                "required": false
+              }
+            ]
+          },
+          "element-required": true
+        },
+        "required": false
+      },
+      {
+        "id": 53,
+        "name": "bidlimits",
+        "type": {
+          "type": "list",
+          "element-id": 249,
+          "element": {
+            "type": "struct",
+            "fields": [
+              {
+                "id": 250,
+                "name": "price",
+                "type": "decimal(38, 18)",
+                "required": false
+              },
+              {
+                "id": 251,
                 "name": "quantity",
                 "type": "decimal(38, 18)",
                 "required": true
               },
               {
-                "id": 240,
+                "id": 252,
                 "name": "uuids",
                 "type": {
                   "type": "list",
-                  "element-id": 242,
+                  "element-id": 254,
                   "element": "fixed[16]",
                   "element-required": true
                 },
                 "required": true
               },
               {
-                "id": 241,
+                "id": 253,
                 "name": "tradable",
                 "type": "boolean",
                 "required": true
@@ -1440,39 +1488,39 @@
         "required": false
       },
       {
-        "id": 53,
+        "id": 54,
         "name": "asklimits",
         "type": {
           "type": "list",
-          "element-id": 243,
+          "element-id": 255,
           "element": {
             "type": "struct",
             "fields": [
               {
-                "id": 244,
+                "id": 256,
                 "name": "price",
                 "type": "decimal(38, 18)",
                 "required": false
               },
               {
-                "id": 245,
+                "id": 257,
                 "name": "quantity",
                 "type": "decimal(38, 18)",
                 "required": true
               },
               {
-                "id": 246,
+                "id": 258,
                 "name": "uuids",
                 "type": {
                   "type": "list",
-                  "element-id": 248,
+                  "element-id": 260,
                   "element": "fixed[16]",
                   "element-required": true
                 },
                 "required": true
               },
               {
-                "id": 247,
+                "id": 259,
                 "name": "tradable",
                 "type": "boolean",
                 "required": true
@@ -1486,7 +1534,7 @@
     ],
     "schema-id": 0,
     "identifier-field-ids": [
-      9
+      8
     ]
   },
   "partition-spec": {
@@ -1507,19 +1555,19 @@
         "source-id": 2,
         "transform": "identity",
         "direction": "asc",
-        "null-order": "nulls-last"
+        "null-order": "nulls-first"
       },
       {
-        "source-id": 15,
+        "source-id": 14,
         "transform": "identity",
         "direction": "asc",
-        "null-order": "nulls-last"
+        "null-order": "nulls-first"
       },
       {
-        "source-id": 9,
+        "source-id": 8,
         "transform": "identity",
         "direction": "asc",
-        "null-order": "nulls-last"
+        "null-order": "nulls-first"
       }
     ]
   }

@@ -44,12 +44,12 @@ with storages:
     parse_fix_messages_raw(storages, window)
     # The walk merges the messages of one event, adds an expiry, and restates
     # every chain alive on each whole hour.
-    assert parse_fix_messages_refined(storages, window) == Landed(read=72, written=47)
+    assert parse_fix_messages_refined(storages, window) == Landed(read=126, written=51)
 
     refined = storages.dataset(FIX_MESSAGES)
     lines = storages.dataset(LOG_MESSAGES)
     try:
-        walked = refined.read_arrow_table(row_filter="crosscode == 'BUY:00084776691VFRM7'")
+        walked = refined.read_arrow_table(row_filter="crosscode == 'BUYS:00084776691VFRM7'")
         logged = lines.read_arrow_table(columns=("curruuid", "seqnum"))
         expired = refined.read_arrow_table(row_filter=f"state == {int(State.EXPIRED)}")
         views = refined.read_arrow_table(row_filter="snapunix is not null")
@@ -57,17 +57,18 @@ with storages:
         refined.close()
         lines.close()
 
-    # One order filled at one instant: the walk takes its fills in `curruuid`
-    # order, so the last stands as a head of its own beside a chain of three.
+    # One order filled at one instant: the walk takes its rows in the table's
+    # order -- the place each copy took at that instant, then `curruuid` --
+    # so the last fill stands as a head of its own beside a chain of three.
     states = sorted(State(code).name for code in walked.column("state").to_pylist())
     assert states == ["FILLED", "FILLED", "PARTIALLY_FILLED", "PARTIALLY_FILLED"]
-    assert sorted(step for step in walked.column("seqnum").to_pylist() if step) == [1, 2]
+    assert sorted(place for place in walked.column("seqnum").to_pylist() if place) == [1, 2]
     heads = walked.filter(pyarrow.compute.is_null(walked.column("prevuuid")))
     assert heads.num_rows == 2
 
     # Provenance, not a recomputation: every line joins back by its identity.
     sources = pyarrow.table({"curruuid": pyarrow.compute.list_flatten(walked.column("srcuuids"))})
-    assert sources.join(logged, keys="curruuid", join_type="inner").num_rows == 27
+    assert sources.join(logged, keys="curruuid", join_type="inner").num_rows == 49
 
     # The one row no line recorded is the expiry the walk generated.
     assert expired.num_rows == 1
@@ -79,7 +80,7 @@ with storages:
     assert all(tick.minute == tick.second == 0 for tick in views.column("snapunix").to_pylist())
 ```
 
-Over the capture's whole day the same task reads 77 bronze rows and lands 23
+Over the capture's whole day the same task reads 136 bronze rows and lands 28
 events and 42 views.
 
 ## Read
@@ -112,7 +113,7 @@ exactly the walk that collects it. What it fills:
 
 | column | on a silver row |
 | --- | --- |
-| `seqnum` | the event's step in its chain: how many came before it; empty on a chain's first event |
+| `seqnum` | the event's place among the events of its instant, as the walk placed them; empty at place zero |
 | `prevuuid`, `prevunix` | the event this one follows, and its instant |
 | `srcuuids` | every line the event was logged on, the merged messages' lines together |
 | `recdunix` | the earliest the event was recorded; empty on an expiry, which no line recorded |
@@ -123,6 +124,17 @@ The walk holds the messages of the hours it has not yet walked -- two of
 them for a read in order -- so its memory grows with the busiest two hours,
 not with the window. [The table page](../tables/silver/fix_messages.md) lists every column and
 [its samples](../samples/silver/fix_messages.md) show two walked chains.
+
+## Repeat deliveries
+
+A bridge logs one message at every hop it passes, and bronze keeps each copy
+as a row of its own, placed apart at its instant. The walk folds a repeated
+delivery into the event it repeats, but over rows read back from a table not
+yet every one: PyIceberg stores a copy's null list of structs as an empty
+one, and the walk then tells two copies apart. Over the capture's day silver
+holds three such rows -- two deliveries of 12:46:39.743 and one of
+21:59:46.479 -- beside the events they repeat; a walk over the parse's own
+rows folds all three.
 
 ## Write
 

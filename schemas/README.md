@@ -30,13 +30,13 @@ that holds it, and `<namespace>.<table>` its name in that catalog.
 
 | table | written by | columns |
 | --- | --- | ---: |
-| `bronze.record_keeping.log_messages` | `parse_log_messages` | 23 |
+| `bronze.record_keeping.log_messages` | `parse_log_messages` | 22 |
 | `bronze.record_keeping.fix_messages` | `parse_fix_messages_raw` | 133 |
 | `silver.record_keeping.fix_messages` | `parse_fix_messages_refined` | 133 |
-| `silver.record_keeping.books` | `parse_books` | 53 |
-| `silver.record_keeping.orders` | `parse_orders` | 48 |
-| `silver.record_keeping.quotes` | `parse_quotes` | 48 |
-| `silver.record_keeping.executions` | `parse_executions` | 48 |
+| `silver.record_keeping.books` | `parse_books` | 54 |
+| `silver.record_keeping.orders` | `parse_orders` | 49 |
+| `silver.record_keeping.quotes` | `parse_quotes` | 49 |
+| `silver.record_keeping.executions` | `parse_executions` | 49 |
 
 Every table is keyed on `curruuid`, partitioned by `hour(currunix)` and sorted
 by `currunix, seqnum, curruuid`. The column meanings are on the
@@ -51,7 +51,7 @@ each as PyIceberg's own model serializes it:
 | --- | --- | --- |
 | `schema` | `pyiceberg.schema.Schema` | every column with its field id, type, `required` and `doc`, and `identifier-field-ids`, the key |
 | `partition-spec` | `pyiceberg.partitioning.PartitionSpec` | `hour(currunix)` |
-| `sort-order` | `pyiceberg.table.sorting.SortOrder` | `currunix, seqnum, curruuid`, ascending |
+| `sort-order` | `pyiceberg.table.sorting.SortOrder` | `currunix, seqnum, curruuid`, ascending, nulls first |
 
 It holds no data location, table UUID, snapshot or catalog state. Load it
 into those models, from the repository root:

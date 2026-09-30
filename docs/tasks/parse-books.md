@@ -43,15 +43,15 @@ with storages:
     parse_fix_messages_refined(storages, window)
 
     first = parse_books(storages, window)
-    assert (first.read, first.written) == (47, 29)
+    assert (first.read, first.written) == (51, 30)
     # A rerun replaces the same window with the same books, in a new snapshot.
     again = parse_books(storages, window)
-    assert (again.read, again.written) == (47, 29)
+    assert (again.read, again.written) == (51, 30)
     assert again.snapshot_id != first.snapshot_id
 
     books = storages.dataset(BOOKS)
     try:
-        assert books.read_arrow_table().num_rows == 29
+        assert books.read_arrow_table().num_rows == 30
         runs = {
             snapshot.snapshot_id: snapshot.summary.get(BOOKS_RUN)
             for snapshot in books.iceberg_table.metadata.snapshots
@@ -67,7 +67,8 @@ with storages:
 
 For a window `[start, end)` the scan reads the silver events of
 `[start - HISTORY, end)`, `rekep.pipeline.HISTORY` being one hour, with no
-epoch or null exception, in `currunix, seqnum, curruuid` order: one hour
+epoch or null exception, in `currunix, seqnum, curruuid` order -- a null
+`seqnum`, place zero among the events of an instant, first: one hour
 partition after the other, each finished before the next is opened, the
 files of one hour merged in bounded runs, and nothing collected before the
 fold, which reads them as they come.
@@ -141,8 +142,11 @@ with storages:
     (reject,) = [row for row in rows(FIX_MESSAGES) if row["msgtype"] == "9"]
     assert (reject["crosscode"], reject["side"]) == (order, Side.SELL)
 
+    # Four silver rows: the cancel request, its reject, and the bridge's
+    # restatement of the reject, which books nothing -- twice, a repeat
+    # delivery a walk over stored rows does not yet fold.
     landed = parse_books(storages, evening)
-    assert (landed.read, landed.written) == (3, 1)
+    assert (landed.read, landed.written) == (4, 1)
     (book,) = rows(BOOKS)
     assert (book["currunix"], book["crosscode"]) == (reject["currunix"], "XXXX:XXXXXX")
     # The cancel request, then its reject, in the chain's order: the reject
@@ -154,9 +158,10 @@ with storages:
     assert not book["alive"]
 ```
 
-An admitted message the fold still cannot read is an error, never a skipped
-row, and the table keeps its previous snapshot: a new order stating no
-`Side(54)`, with no order before it to take one from, is refused by path.
+Nothing a message states fails the fold: an entry it cannot place is left
+out of its book, with a warning through `logging`, and every other entry
+books as it would. A new order stating no `Side(54)`, with no order before it
+to take one from, stands on neither side, so it books nowhere.
 
 ```python
 import tempfile
@@ -196,12 +201,10 @@ with storages:
     parse_log_messages(capture.as_uri(), storages, day)
     parse_fix_messages_raw(storages, day)
     parse_fix_messages_refined(storages, day)
-    try:
-        parse_books(storages, day)
-    except Exception as refusal:
-        assert "$.operation.side: expected a bid or ask operation" in str(refusal)
-    else:
-        raise AssertionError("an order stating no side is refused")
+    # The order, and the view of it the walk restated on the hour it was sent
+    # at, stand on neither side: the fold books neither.
+    landed = parse_books(storages, day)
+    assert (landed.read, landed.written) == (2, 0)
 ```
 
 The hour before `start` warms the books and none of its books is written:
@@ -213,9 +216,10 @@ book at it, adding no delta: so the book at `start` holds every chain alive
 there that the walk which landed those views saw, older than `HISTORY` or
 not. Beyond that a book starts with no depth before `start - HISTORY` -- the
 fold is not a checkpoint reconstruction -- and a partial update whose missing
-facts need an earlier order can be refused. A book the fills emptied names no
+facts need an earlier order is left out. A book the fills emptied names no
 live chain a view could carry, so a window opening after it emptied does not
-restate it empty, as a fold over the whole history does. Operation times must not
+restate it empty, as a fold over the whole history does. An operation dated
+before the book it would move is left out too, so operation times must not
 decrease. The native fold keeps live depth as it streams bounded batches, so
 its memory grows with the depth outstanding.
 

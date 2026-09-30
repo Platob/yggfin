@@ -645,12 +645,14 @@ def test_sortedness_is_lexicographic_over_every_key(
     assert in_sort_order(ordered_pairs(pairs), ["at", "seq"]) is ordered
 
 
-def test_sort_checks_apply_nulls_last_only_when_the_prefix_ties() -> None:
+def test_sort_checks_apply_nulls_first_only_when_the_prefix_ties() -> None:
+    """A null is the least value, so it leads its ties ascending -- the way an
+    event's `seqnum`, null at place zero, leads the events of its instant."""
     rows = ordered_pairs([(1, 0), (2, 0)])
     holed = rows.set_column(
         rows.schema.get_field_index("seq"),
         pyarrow.field("seq", pyarrow.int64()),
-        pyarrow.array([None, 1], pyarrow.int64()),
+        pyarrow.array([1, None], pyarrow.int64()),
     )
     assert in_sort_order(holed, ["at", "seq"]) is True
 
@@ -663,13 +665,15 @@ def test_sort_checks_apply_nulls_last_only_when_the_prefix_ties() -> None:
     assert in_sort_order(tied.take(pyarrow.array([1, 0])), ["at", "seq"]) is True
 
 
-def test_sort_checks_place_nan_after_numbers_and_before_null() -> None:
-    ascending = pyarrow.table({"value": [1.0, 2.0, float("nan"), None]})
+def test_sort_checks_place_null_least_and_nan_after_numbers() -> None:
+    ascending = pyarrow.table({"value": [None, 1.0, 2.0, float("nan")]})
     descending = pyarrow.table({"value": [2.0, 1.0, float("nan"), None]})
 
     assert in_sort_order(ascending, [("value", "ascending")]) is True
     assert in_sort_order(descending, [("value", "descending")]) is True
-    assert in_sort_order(ascending.take(pyarrow.array([2, 0, 1, 3])), ["value"]) is False
+    assert in_sort_order(ascending.take(pyarrow.array([1, 2, 3, 0])), ["value"]) is False
+    assert in_sort_order(ascending.take(pyarrow.array([0, 3, 1, 2])), ["value"]) is False
+    assert in_sort_order(descending.take(pyarrow.array([3, 0, 1, 2])), ["value"]) is False
 
 
 def test_an_unknown_sort_direction_is_refused() -> None:
@@ -869,12 +873,15 @@ def test_sorted_rows_order_on_values_and_keep_ties_in_their_own_order() -> None:
     assert descending.column("n").to_pylist() == [0, 2, 1, 3]
 
 
-def test_sorted_rows_place_nan_after_numbers_and_null_last_either_way() -> None:
+def test_sorted_rows_place_null_least_and_nan_after_numbers() -> None:
     table = pyarrow.table({"value": [1.0, NAN, 2.0, None]})
-    for direction in ("ascending", "descending"):
-        ordered = sorted_rows(table, [("value", direction)])
-        assert in_sort_order(ordered, [("value", direction)])
-        assert ordered.column("value").is_null().to_pylist()[-1]
+    ascending = sorted_rows(table, [("value", "ascending")])
+    descending = sorted_rows(table, [("value", "descending")])
+
+    assert in_sort_order(ascending, [("value", "ascending")])
+    assert in_sort_order(descending, [("value", "descending")])
+    assert str(ascending.column("value").to_pylist()) == "[None, 1.0, 2.0, nan]"
+    assert str(descending.column("value").to_pylist()) == "[2.0, 1.0, nan, None]"
 
 
 def test_sorted_rows_sort_an_extension_key_by_the_bytes_it_holds() -> None:

@@ -155,7 +155,7 @@ MSGTYPE=executionreport|SYMBOL=HOLN|SIDE=buy|LASTSHARES=235|LASTPX=72.28|
 | --- | --- | --- |
 | `MSGTYPE=executionreport` | canonical `msgtype`, tag 35; code name to `8` | `msgtype = "8"` |
 | `SYMBOL=HOLN` | canonical `symbol`, tag 55 | `symbol = "HOLN"` |
-| `SIDE=buy` | canonical `side`, tag 54; stored as its code | `side = 1`, `Side.BUY` |
+| `SIDE=buy` | canonical `side`, tag 54; stored as its code | `side = 1`, `Side.BUYS` |
 | `LASTSHARES=235` | another spelling of `lastqty`, tag 32 | `lastqty = 235`, an exact decimal |
 | `LASTPX=72.28` | canonical `lastpx`, tag 31 | `lastpx = 72.28`, an exact decimal |
 
@@ -169,7 +169,7 @@ message = next(iter(FixCodec.from_env().parse_line(body)))
 
 assert message.by_tag(35).as_py() == "8"
 # `Side(54)` is stored as its code, which reads back as its member.
-assert message.by_name("side").as_py() is Side.BUY
+assert message.by_name("side").as_py() is Side.BUYS
 assert message.by_name("lastqty").as_py() == 235
 assert message.by_name("lastpx").as_py() == Decimal("72.28")
 # `price` is Price(44) alone, which this row does not state.
@@ -260,19 +260,25 @@ states where the parse could not.
 
 `currhashcode` is the content code over the event's facts, its text, its
 metadata, the stated header cells and the entry tree; `curruuid` the identity
-the codec derives from the instant and that content, which rekep stores
-unchanged and never reconstructs. `crosscode` is the first of `OrderID`,
-`ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID` and `MDReqID` stated, and
-`crossuuid` and `crosshashcode` derive from it. `msgsesseventid` joins the
+the codec derives from the instant, the place there and that content, which
+rekep stores unchanged and never reconstructs. `crosscode` is the first of
+`OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID` and `MDReqID`
+stated -- an execution split out of a report chains on its `ExecID` -- and an
+order's, a quote's or an execution's is prefixed with the four-letter code of
+the side it states, `BUYS:` or `SELL:`; `crossuuid` and `crosshashcode` derive
+from it. `msgsesseventid` joins the
 message type, the session instance, the context and `MsgSeqNum` by `:`
 where all four are stated. `state` is the [lifecycle code](../tables/states.md)
 the message's own status tags or message type ask for.
 
 A parse fills what a message implied about itself -- its deprecated fields
 restated to their latest spellings, the dictionary's own derivations run --
-and nothing more: `seqnum`, `prevuuid` and `prevunix` are empty on every
-bronze row. The walk fills what a message implied about the one before it,
-and the `creaunix`, `exprunix` and `state` its chain folds forward.
+and nothing more: `prevuuid` and `prevunix` are empty on every bronze row,
+and `seqnum` is only the message's place among the messages the parse handed
+over at its instant, one after another -- empty at place zero -- which reaches
+its identity, so every copy of a message a hop logged is a row of its own.
+The walk fills what a message implied about the one before it, and the
+`creaunix`, `exprunix` and `state` its chain folds forward.
 
 ## Arrow parse step
 
@@ -324,9 +330,9 @@ The input is the stored `log_messages` row projected to
 `rekep.fix.PARSE_COLUMNS`, the seven columns a parse consumes, which is what
 `parse_fix_messages_raw` pushes into its scan. The output is the dictionary's
 fixed row, which holds neither `body`, `msgthreadid` nor `loglevel`; its
-`crosscode` and `seqnum` are the message's chain and its step in it, not the
-line's object and row number. The line's `curruuid` becomes the row's one
-`srcuuids` entry: the parse reads the stored sixteen bytes back as the
+`crosscode` and `seqnum` are the message's chain and its place at its instant,
+not the line's object and row number. The line's `curruuid` becomes the row's
+one `srcuuids` entry: the parse reads the stored sixteen bytes back as the
 identity the read stated over the line, so the join back is exact.
 
 ## Two doors onto the same messages
@@ -348,16 +354,18 @@ try:
 finally:
     source.close()
 
-assert len(messages) == 135
+assert len(messages) == 136
 assert messages[0].field.name == "8"
 assert messages[0].by_name("msgpluginid").as_py() == "ULBridge"
 ```
 
-The capture's 144 lines carry 79 frames and answer 135 messages, because a
-row is a message and not a line, and each of the 56 reports of a fill answers
-the execution it reports beside itself. `fix_parse_arrow_reader` is the batch
-door the task uses, over a stored table; over the capture's day it answers
-the same 135 messages, which the key folds to 77 bronze rows.
+The capture's 144 lines carry 79 frames and answer 136 messages, because a
+row is a message and not a line: each of the 56 reports of a fill answers the
+execution it reports beside itself, and the trade report the one execution
+its side states, `UNKN` where the side states no `Side(54)`.
+`fix_parse_arrow_reader` is the batch door the task uses, over a stored table;
+over the capture's day it answers the same 136 messages, each a bronze row of
+its own.
 
 ## Failure behavior
 

@@ -17,8 +17,8 @@ from yggdryl.fix import fix_schema
 
 from rekep.fields import stored_arrow_reader
 from rekep.fix import (
-    CHAIN_STEP,
     EVENT_CLOCK,
+    EVENT_PLACE,
     FIXMSG,
     MESSAGE_KEY,
     SORT_COLUMNS,
@@ -47,66 +47,75 @@ FIXTURE = ROOT / "data" / "capture" / "ulbridge.log"
 
 #: What the bundled capture states, read through the pins this package sets:
 #: 144 physical lines carry 79 frames, because a line can carry two frames
-#: and a line carrying none answers nothing, and the parse answers 135
-#: messages: every report of a fill splits off the execution it reports, 56
-#: of them, each naming the report beside the line it was read off.
+#: and a line carrying none answers nothing, and the parse answers 136
+#: messages: every report of a fill splits off the execution it reports, and
+#: the trade report one per side it states -- as `UNKN` where the side states
+#: no `Side(54)` -- 57 of them, each naming the report beside the line it was
+#: read off.
 LINES = 144
 FRAMES = 79
-SPLIT = 56
+SPLIT = 57
 MESSAGES = FRAMES + SPLIT
 
-#: The lifecycle's business chains as `rows, identities, last seqnum`. A
-#: crosscode is the first stated business identifier, never the bridge header
-#: capture, prefixed with the side a message states, so a buy and a sell
-#: under one identifier are two chains; an execution split out of a report
-#: chains on its own `ExecID`. Lifecycle removes repeated deliveries and may
-#: emit an expiry. The shipped header matches every one of the 144 lines, so
-#: every observation carries the session, context and sequence the fold
-#: merges on. The cancel reject of `816179183-1983-98963_912` states no
-#: `Side(54)` and joins the one live side of its order, the sell; the
-#: bridge's own two restatements of it arrive after that chain ended, so no
-#: side of the identity is live to lend them one and they keep the bare code.
+#: The lifecycle's business chains as `rows, identities, followers` -- the
+#: rows stating the `prevuuid` of the event before them. A crosscode is the
+#: first stated business identifier, never the bridge header capture, and an
+#: order's, a quote's or an execution's is prefixed with the four-letter code
+#: of the side it states, so a buy and a sell under one identifier are two
+#: chains; an execution split out of a report chains on its own `ExecID`, and
+#: one of no side, a trade, and a message of any other kind keep the bare
+#: code. The walk folds every repeated delivery into one event, so a chain has
+#: a row per identity, and it may emit an expiry. The shipped header matches
+#: every one of the 144 lines, so every observation carries the session,
+#: context and sequence the fold merges on. The cancel reject of
+#: `816179183-1983-98963_912` states no `Side(54)` and joins the one live side
+#: of its order, the sell; the bridge's own restatements of it arrive after
+#: that chain ended, so no side of the identity is live to lend them one and
+#: they keep the bare code.
 CHAINS = {
     "": (1, 1, 0),
     "485586100": (1, 1, 0),
-    "816179183-1983-98963_912": (2, 1, 0),
-    "BUY:00036189167VFRM7": (1, 1, 0),
-    "BUY:00037497066VFRM7": (3, 3, 2),
-    "BUY:00057637971VFRM7": (2, 1, 0),
-    "BUY:00084776691VFRM7": (4, 4, 2),
-    "BUY:20260814_DT6_PGYVLK_8840": (1, 1, 0),
-    "BUY:ExecID=00030561317VOJO7": (1, 1, 0),
-    "BUY:ExecID=00062178347VOJO7": (1, 1, 0),
-    "BUY:ExecID=00069354334VOJO7": (1, 1, 0),
-    "BUY:ExecID=00071435545VOJO7": (2, 1, 0),
-    "BUY:ExecID=00089357553VOJO7": (2, 2, 0),
-    "BUY:ExecID=3494": (1, 1, 0),
-    "BUY:KL3RCZUA564": (1, 1, 0),
-    "BUY:KL3RCZUA620": (1, 1, 0),
+    "5:NOREF|11:5:NOREF": (1, 1, 0),
+    "816179183-1983-98963_912": (1, 1, 0),
+    "BUYS:00030561317VOJO7": (1, 1, 0),
+    "BUYS:00036189167VFRM7": (1, 1, 0),
+    "BUYS:00037497066VFRM7": (3, 3, 2),
+    "BUYS:00057637971VFRM7": (1, 1, 0),
+    "BUYS:00062178347VOJO7": (1, 1, 0),
+    "BUYS:00069354334VOJO7": (1, 1, 0),
+    "BUYS:00071435545VOJO7": (1, 1, 0),
+    "BUYS:00084776691VFRM7": (4, 4, 2),
+    "BUYS:00089357553VOJO7": (2, 2, 0),
+    "BUYS:20260814_DT6_PGYVLK_8840": (1, 1, 0),
+    "BUYS:3494": (1, 1, 0),
+    "BUYS:KL3RCZUA564": (1, 1, 0),
+    "KL3RCZUA620": (1, 1, 0),
     "SELL:816179183-1983-98963_912": (2, 2, 1),
 }
 
-#: How many rows a table keyed on `curruuid` holds after the whole capture,
-#: in either stage: the walk restates events and adds none.
+#: How many rows silver holds after the whole capture: one per event, the
+#: walk folding every copy of one and adding none.
 EVENTS = sum(events for _, events, _ in CHAINS.values())
 
 #: The native row is the only FIX row shape at every stage.
 ROW = 133
 CRATE = 41
 
-#: The event identities the parse answers over the capture's 135 messages: a
-#: message logged at several hops restates one identity, and a copy stating
-#: no `SendingTime` is dated by the `TransactTime` its line stands within
-#: `official_time_delay_ms` of, so it settles on the identity a copy stating
-#: `SendingTime` does.
-PARSED_EVENTS = 77
+#: The content codes the parse answers over the capture's 136 messages, each
+#: message under an identity of its own: a message logged at several hops is
+#: one code at one instant, placed apart, and a copy stating no `SendingTime`
+#: is dated by the `TransactTime` its line stands within
+#: `official_time_delay_ms` of, so it meets a copy stating `SendingTime` at
+#: that instant.
+PARSED_CODES = 78
 
 #: The same parse over the capture read as UTC, which dates every line two
 #: hours after the message it carries: a copy stating no `SendingTime` is
 #: then dated by its line, two hours from the `TransactTime` a copy stating
-#: one is dated by, so four events logged both ways answer two identities
-#: each.
-PARSED_EVENTS_READ_AS_UTC = 81
+#: one is dated by, so six messages logged both ways stand at two or three
+#: instants each -- 86 pairs of content code and instant, where the reading
+#: in the bridge's zone has one instant per code.
+PARSED_CODE_INSTANTS_READ_AS_UTC = 86
 
 #: The messages of the capture stating no `SendingTime(52)`. Read in the zone
 #: its bridge prints in, each line stands 13 to 911 ms after the
@@ -194,19 +203,25 @@ def _refined(raw: pyarrow.Table) -> pyarrow.Table:
 
 
 def _chains(rows: pyarrow.Table) -> dict[str, tuple[int, int, int]]:
-    """Each chain as `messages, events, last seqnum`, off the stored columns."""
+    """Each chain as `messages, events, followers`, off the stored columns."""
     held: dict[str, list] = defaultdict(lambda: [0, set(), 0])
-    for code, identity, step in zip(
+    for code, identity, previous in zip(
         rows.column("crosscode").to_pylist(),
         rows.column(MESSAGE_KEY).to_pylist(),
-        rows.column(CHAIN_STEP).to_pylist(),
+        rows.column("prevuuid").to_pylist(),
         strict=True,
     ):
         seen = held[code or ""]
         seen[0] += 1
         seen[1].add(identity)
-        seen[2] = max(seen[2], step or 0)
-    return {code: (count, len(seen), step) for code, (count, seen, step) in held.items()}
+        seen[2] += previous is not None
+    return {code: (count, len(seen), follows) for code, (count, seen, follows) in held.items()}
+
+
+def _code_instants(rows: pyarrow.Table) -> int:
+    """How many distinct pairs of content code and instant the rows state."""
+    codes = rows.column("currhashcode").to_pylist()
+    return len(set(zip(codes, rows.column(EVENT_CLOCK).to_pylist(), strict=True)))
 
 
 def _sources(rows: pyarrow.Table) -> list[bytes]:
@@ -398,10 +413,10 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from(raw) -> None:
     an event's.
 
     A message logged at four hops is four lines -- four different bodies, four
-    different digests -- and one row, so either column would be one arrival's
-    answer standing in for the event's. `log_messages` holds all four; the row
-    names the line it was read from and is re-emitted from its own arrival
-    record.
+    different digests -- and one silver event, so either column would be one
+    arrival's answer standing in for the event's. `log_messages` holds all
+    four; each bronze row names the line it was read from and is re-emitted
+    from its own arrival record.
     """
     stored = fix_message_field().into_arrow_schema()
     parsed = fix_parse_field().into_arrow_schema()
@@ -452,14 +467,14 @@ def test_the_key_is_required_whatever_the_row_states() -> None:
         [
             pyarrow.field(EVENT_CLOCK, pyarrow.timestamp("ns", tz="UTC"), nullable=False),
             pyarrow.field(MESSAGE_KEY, pyarrow.uuid(), nullable=True),
-            pyarrow.field(CHAIN_STEP, pyarrow.uint64()),
+            pyarrow.field(EVENT_PLACE, pyarrow.uint64()),
         ]
     )
 
     field = iceberg_event_field(row, "Keyed")
 
     assert field[MESSAGE_KEY].nullable is False
-    assert field[CHAIN_STEP].nullable is True
+    assert field[EVENT_PLACE].nullable is True
     assert primary_keys(field) == [MESSAGE_KEY]
     assert partition_keys(field) == {EVENT_CLOCK: "hour"}
     assert list(sort_keys(field)) == list(SORT_COLUMNS)
@@ -601,20 +616,24 @@ def test_a_frame_read_off_no_line_takes_the_codecs_pin() -> None:
 
 
 def test_the_capture_answers_a_message_per_frame_and_not_a_row_per_line(raw) -> None:
-    """144 lines, 79 frames, 135 messages, and 77 parsed event identities."""
+    """144 lines, 79 frames, 136 messages, each its own identity, and 78
+    content codes."""
     assert raw.num_rows == MESSAGES
-    assert len(set(raw.column(MESSAGE_KEY).to_pylist())) == PARSED_EVENTS
+    assert len(set(raw.column(MESSAGE_KEY).to_pylist())) == MESSAGES
+    assert len(set(raw.column("currhashcode").to_pylist())) == PARSED_CODES
 
 
-def test_the_parse_places_no_message_in_a_chain(raw) -> None:
+def test_the_parse_places_each_message_at_its_instant_and_in_no_chain(raw) -> None:
     """Bronze `fix_messages` has no chain, and says so.
 
     The parse fills what a message implied about itself and nothing about the
-    message before it: `seqnum`, `prevuuid` and `prevunix` are empty on every
-    row. A message read back off the row stands at step zero, which is what an
-    empty place reads as.
+    message before it: `prevuuid` and `prevunix` are empty on every row. What
+    it does fill is `seqnum`, the message's place among the messages the
+    stream handed over at its instant -- null at place zero -- and a message
+    read back off the row stands at that place.
     """
-    assert raw.column(CHAIN_STEP).null_count == raw.num_rows
+    places = raw.column(EVENT_PLACE)
+    assert 0 < places.null_count < raw.num_rows
     assert raw.column("prevuuid").null_count == raw.num_rows
     assert raw.column("prevunix").null_count == raw.num_rows
     # What the parse did settle is on every row: the state the message states
@@ -623,7 +642,7 @@ def test_the_parse_places_no_message_in_a_chain(raw) -> None:
     assert raw.column("creaunix").null_count == 0
     messages = list(fix_row_messages(_codec(), _reader(raw)))
     assert len(messages) == MESSAGES
-    assert {message.seqnum for message in messages} == {0}
+    assert [message.seqnum for message in messages] == [held or 0 for held in places.to_pylist()]
     assert all(message.prevuuid is None for message in messages)
 
 
@@ -688,21 +707,30 @@ def test_a_message_names_the_stored_line_it_was_parsed_out_of(lines, raw) -> Non
     assert set(_lines(partly)) <= named | set(_lines(unstated))
 
 
-def test_every_restatement_of_an_event_settles_on_one_identity(raw) -> None:
+def test_every_copy_of_a_message_is_placed_apart_at_its_instant(raw) -> None:
     """The gap between a chain's messages and its events, row by row: the same
-    message logged at a second hop answers the identity the first one did, and
-    the rows it was read from are different lines."""
-    held: dict[bytes, set[bytes]] = defaultdict(set)
-    for identity, source in zip(raw.column(MESSAGE_KEY).to_pylist(), _lines(raw), strict=True):
-        held[identity].add(source)
-    restated = {identity: lines for identity, lines in held.items() if len(lines) > 1}
+    message logged at a second hop states what the first one did at the same
+    instant, and is placed after it there -- so it answers the same content
+    code under an identity of its own, read off a line of its own. Folding
+    the copies into one event is the walk's."""
+    held: dict[int, list[tuple]] = defaultdict(list)
+    for code, instant, place, identity, line in zip(
+        raw.column("currhashcode").to_pylist(),
+        raw.column(EVENT_CLOCK).to_pylist(),
+        raw.column(EVENT_PLACE).to_pylist(),
+        raw.column(MESSAGE_KEY).to_pylist(),
+        _lines(raw),
+        strict=True,
+    ):
+        held[code].append((instant, place or 0, identity, line))
+    restated = [copies for copies in held.values() if len(copies) > 1]
 
     assert restated, "the capture logs messages at several hops"
-    assert len(held) == PARSED_EVENTS
-    # Each restatement is its own line, so the arrivals of one event span
-    # several rows of `log_messages` -- which is why the row cannot carry one
-    # line's bytes or one line's digest as if they were the event's.
-    assert sum(len(lines) for lines in restated.values()) > len(restated)
+    assert len(held) == PARSED_CODES
+    for copies in restated:
+        instants, places, identities, lines = (set(part) for part in zip(*copies, strict=True))
+        assert len(instants) == 1, "one message, one instant"
+        assert len(places) == len(identities) == len(lines) == len(copies)
 
 
 def test_a_market_fact_is_fixs_own_field_and_the_trait_answers_off_it(raw) -> None:
@@ -815,7 +843,7 @@ def test_the_batch_door_also_answers_messages(raw) -> None:
 def test_the_walk_reads_the_chains_the_capture_describes(refined) -> None:
     """The chains the capture describes, column for column."""
     assert _chains(refined) == CHAINS
-    assert refined.num_rows == sum(rows for rows, _, _ in CHAINS.values())
+    assert refined.num_rows == sum(rows for rows, _, _ in CHAINS.values()) == EVENTS
     assert len(set(refined.column(MESSAGE_KEY).to_pylist())) == EVENTS
 
 
@@ -842,19 +870,19 @@ def test_the_walk_restates_the_events_and_adds_none(raw, refined) -> None:
     assert walked and all(row[EVENT_CLOCK] == row[TRANSACTION_CLOCK] for row in walked)
     assert not any(instant == UNDATED for instant in refined.column(EVENT_CLOCK).to_pylist())
     assert refined.column("prevuuid").null_count < refined.num_rows
-    assert refined.column(CHAIN_STEP).null_count < refined.num_rows
+    assert refined.column(EVENT_PLACE).null_count < refined.num_rows
     # Provenance is never moved by a walk: each row still names its line.
     assert set(_sources(refined)) <= set(_sources(raw))
 
 
-def test_a_bridge_read_as_utc_dates_its_unsent_messages_by_the_line(refined) -> None:
+def test_a_bridge_read_as_utc_dates_its_unsent_messages_by_the_line(raw, refined) -> None:
     """This bridge prints a Central European summer clock, so reading it as
     UTC dates every line two hours after the message it carries, and no line
     stands within `official_time_delay_ms` of the transaction it logs. The
     parse then dates each unsent message by its line, two hours from the
     `TransactTime` that dates a copy stating `SendingTime`, so the copies of
-    an event logged both ways stop folding. The walk dates them by their
-    transaction time and settles the same events."""
+    an event logged both ways stop meeting at one instant. The walk dates
+    them by their transaction time and settles the same events."""
     handle = IOBase.from_uri(FIXTURE.as_uri())
     try:
         misread = _raw(handle, timezone="UTC")
@@ -871,7 +899,8 @@ def test_a_bridge_read_as_utc_dates_its_unsent_messages_by_the_line(refined) -> 
         and offset < row["recdunix"] - row[TRANSACTION_CLOCK] <= offset + delay
         for row in unsent
     ), "dated by the line, two hours after its transaction"
-    assert len(set(misread.column(MESSAGE_KEY).to_pylist())) == PARSED_EVENTS_READ_AS_UTC
+    assert _code_instants(raw) == PARSED_CODES
+    assert _code_instants(misread) == PARSED_CODE_INSTANTS_READ_AS_UTC
     walked = _refined(misread)
     assert walked.column(MESSAGE_KEY).to_pylist() == refined.column(MESSAGE_KEY).to_pylist()
     assert walked.column(EVENT_CLOCK).to_pylist() == refined.column(EVENT_CLOCK).to_pylist()
@@ -904,40 +933,28 @@ def test_a_refined_message_follows_the_messages_before_it(refined) -> None:
         assert instants[previous] <= instant
 
 
-def test_a_duplicate_is_not_a_successor(refined) -> None:
-    """One message logged at several hops answers one identity, and the walk
-    gives every copy the same place, the same lineage and the same state: the
-    chain grows by nothing. Dropping a repeat from a stream is `FixDedup`'s
-    job, not the walk's, so every copy is still a row here."""
-    held: dict[bytes, set[tuple]] = defaultdict(set)
-    for row in refined.select(
-        (MESSAGE_KEY, "prevuuid", CHAIN_STEP, "state", EVENT_CLOCK)
-    ).to_pylist():
-        held[row[MESSAGE_KEY]].add(
-            (row["prevuuid"], row[CHAIN_STEP], row["state"], row[EVENT_CLOCK])
-        )
-    copies = {identity: places for identity, places in held.items() if len(places) > 0}
+def test_a_duplicate_is_not_a_successor(raw, refined) -> None:
+    """One message logged at several hops is one row per copy in bronze, and
+    the walk folds the copies into one event: the chain grows by nothing, and
+    no copy follows another."""
+    identities = refined.column(MESSAGE_KEY).to_pylist()
+    followers = sum(1 for held in refined.column("prevuuid").to_pylist() if held is not None)
 
-    assert len(copies) == EVENTS
-    assert all(len(places) == 1 for places in held.values())
-    assert sum(1 for identity in refined.column(MESSAGE_KEY).to_pylist()) > len(held)
+    assert len(identities) == len(set(identities)) == EVENTS
+    assert followers == sum(follows for _, _, follows in CHAINS.values())
+    assert raw.num_rows - EVENTS > followers, "the copies became no steps"
+    assert set(_sources(refined)) <= set(_sources(raw))
 
 
 def test_a_new_stated_over_a_live_new_is_updated(raw, refined) -> None:
     """A `NEW` stated over a live predecessor that is new itself is the order
     stated anew and carrying on, which the walk says with `UPDATED`. The
     capture logs the acknowledgement of `00037497066VFRM7` under two bracket
-    sequences, so walked unfolded it is two events, the second over the first.
-    The first shares its identity with copies of the second, so a table keyed
-    on `curruuid` folds it into them, and the pipeline walks one `NEW`."""
-    chain = [row for row in refined.to_pylist() if row["crosscode"] == "BUY:00037497066VFRM7"]
+    sequences, so walked it is two events, the second over the first."""
+    chain = [row for row in refined.to_pylist() if row["crosscode"] == "BUYS:00037497066VFRM7"]
     assert [State(row["state"]) for row in chain] == [State.NEW, State.UPDATED, State.EXPIRED]
     new, updated, _ = chain
     assert updated["prevuuid"] == new[MESSAGE_KEY]
-    sequences = {
-        row["msgsesseventid"] for row in raw.to_pylist() if row[MESSAGE_KEY] == new[MESSAGE_KEY]
-    }
-    assert sequences == {new["msgsesseventid"], updated["msgsesseventid"]}
     assert new["msgsesseventid"] != updated["msgsesseventid"]
 
 
@@ -947,7 +964,7 @@ def test_the_walk_reads_the_row_and_never_the_capture_beside_it(raw, refined) ->
     A line's text is not content here. The walk reads only the native row,
     whose `srcuuids` name the stored lines it joins back to.
     """
-    chain = "BUY:00084776691VFRM7"
+    chain = "BUYS:00084776691VFRM7"
     assert _chains(refined)[chain] == CHAINS[chain] == (4, 4, 2)
     assert refined.column_names == raw.column_names
     assert set(_sources(refined)) <= set(_sources(raw))
@@ -991,12 +1008,12 @@ def test_the_walk_sorts_distinct_effective_instants_and_keeps_equal_ties(raw) ->
     reversed_times = chronological.take(pyarrow.array(list(reversed(range(len(selected))))))
     assert _refined(reversed_times).equals(_refined(chronological))
 
-    # Two observations of one event at one instant are one event, so the tie
-    # is no longer two rows to order but one row's provenance: the walk keeps
+    # Two copies of one message at one instant are one event, so the tie is
+    # no longer two rows to order but one row's provenance: the walk keeps
     # both lines under one identity in the core's canonical identity order.
-    identities = raw.column(MESSAGE_KEY).to_pylist()
-    first = next(index for index, held in enumerate(identities) if identities.count(held) > 1)
-    second = identities.index(identities[first], first + 1)
+    codes = raw.column("currhashcode").to_pylist()
+    first = next(index for index, held in enumerate(codes) if codes.count(held) > 1)
+    second = codes.index(codes[first], first + 1)
     tied = raw.take(pyarrow.array([first, second]))
     reversed_tied = tied.take(pyarrow.array([1, 0]))
     held, reversed_held = _refined(tied), _refined(reversed_tied)
@@ -1019,8 +1036,8 @@ def test_the_walk_settles_the_same_identities_however_often_it_runs(raw) -> None
 
 
 def test_the_line_door_walks_the_same_way() -> None:
-    """The second stage over messages rather than rows: as many events, and the
-    same chain steps, off the same capture."""
+    """The second stage over messages rather than rows: as many events, and as
+    many of them following another, off the same capture."""
     handle = IOBase.from_uri(FIXTURE.as_uri())
     try:
         walked = list(
@@ -1034,7 +1051,9 @@ def test_the_line_door_walks_the_same_way() -> None:
 
     assert len(walked) == sum(rows for rows, _, _ in CHAINS.values())
     assert len({str(message.curruuid) for message in walked}) == EVENTS
-    assert max(message.seqnum for message in walked) == max(step for _, _, step in CHAINS.values())
+    assert sum(1 for message in walked if message.prevuuid is not None) == sum(
+        follows for _, _, follows in CHAINS.values()
+    )
 
 
 def test_a_walk_needs_no_capture_sidecar(raw) -> None:

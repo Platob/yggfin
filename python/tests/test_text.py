@@ -28,12 +28,11 @@ UTC = datetime.timezone.utc
 #: the Central European summer clock, two hours ahead of UTC.
 CEST = datetime.timezone(datetime.timedelta(hours=2), "CEST")
 
-#: The sixteen columns the native read states over every line, in its order:
+#: The fifteen columns the native read states over every line, in its order:
 #: the line as the event it is, `currunix` first and `state` last.
 EVENT_COLUMNS = (
     "currunix",
     "creaunix",
-    "execunix",
     "recdunix",
     "exprunix",
     "prevunix",
@@ -69,14 +68,14 @@ SAMPLE = Path(__file__).resolve().parents[2] / "data" / "capture" / "ulbridge.lo
 #: it: the modification time a line the header did not match is dated by.
 WRITTEN_AT = datetime.datetime(2026, 8, 14, 18, 0, tzinfo=UTC)
 
+#: The shipped header's fraction: three digits under a point or a comma, the
+#: micros grouped after them under a `_`, or none at all.
+FRACTION = r"(?:[.,]\d{3}(?:_\d{3})?)?"
+
 #: A header of a bridge's own, its fraction widened past the shipped one's:
-#: under a comma as well as a point, or absent, and six digits straight on as
-#: well as grouped. The names it captures are unchanged, which is the whole
-#: rule.
-WIDENED = ULBRIDGE_ROWHEADER.replace(
-    r"\.\d{3}(?:_\d{3})?",
-    r"(?:[.,]\d{3}(?:_?\d{3})?)?",
-)
+#: six digits straight on as well as grouped. The names it captures are
+#: unchanged, which is the whole rule.
+WIDENED = ULBRIDGE_ROWHEADER.replace(FRACTION, r"(?:[.,]\d{3}(?:_?\d{3})?)?")
 
 
 def _read(source: Path, options=None) -> pyarrow.Table:
@@ -231,11 +230,17 @@ def test_the_text_reader_produces_rows_without_a_python_row_pass(tmp_path) -> No
     codes = table.column("currhashcode")
     assert codes.type == pyarrow.uint64() and codes.null_count == 0
     assert len(set(codes.to_pylist())) == 2
-    # A line is an event nothing has walked: no chain, no source, no clock
-    # beside its own.
-    for empty in ("creaunix", "execunix", "recdunix", "exprunix", "prevunix", "snapunix"):
+    # A line is an event nothing has walked: no chain and no source. Its two
+    # other clocks are the read's: the earliest instant it has dated a line
+    # of the object by, and the instant it dated the line before by.
+    first, second = (
+        datetime.datetime(2026, 8, 14, 0, 5, 1, micros, tzinfo=CEST) for micros in (147000, 148000)
+    )
+    assert table.column("creaunix").to_pylist() == [first, first]
+    assert table.column("prevunix").to_pylist() == [None, first]
+    assert table.column("currunix").to_pylist() == [first, second]
+    for empty in ("recdunix", "exprunix", "snapunix", "prevuuid", "srcuuids"):
         assert table.column(empty).null_count == 2, empty
-    assert table.column("prevuuid").null_count == table.column("srcuuids").null_count == 2
     # And the line's own identity, stated as the `uuid` it is -- the table
     # keeps its sixteen bytes -- one per line, which is what a message
     # parsed out of the line names as its source.
@@ -271,9 +276,8 @@ def test_a_line_without_the_bridge_header_is_dated_by_the_object_it_was_read_fro
 def test_two_lines_of_one_text_are_two_rows_of_one_table(tmp_path) -> None:
     """`log_messages` is keyed on `curruuid` alone, so a file that prints the
     same bytes twice has to answer two identities or one of the two lines is
-    gone. The code is the line's and not its bytes': it digests the row
-    number and the object beside the body, so the two differ, and so do the
-    identities derived from them."""
+    gone. The code is what the line states, so the two share it; the row
+    number is the line's place, and reaches the identity alone."""
     source = tmp_path / "twice.log"
     source.write_bytes(b"one physical line\none physical line\n")
     os.utime(source, (WRITTEN_AT.timestamp(), WRITTEN_AT.timestamp()))
@@ -283,7 +287,7 @@ def test_two_lines_of_one_text_are_two_rows_of_one_table(tmp_path) -> None:
     assert first["body"] == second["body"]
     assert first["crosscode"] == second["crosscode"]
     assert (first["seqnum"], second["seqnum"]) == (1, 2)
-    assert first["currhashcode"] != second["currhashcode"]
+    assert first["currhashcode"] == second["currhashcode"]
     assert first["curruuid"] != second["curruuid"]
     # A replay of the same bytes answers the same two identities, because the
     # read dates each line by its object's modification time and its place,
@@ -346,11 +350,10 @@ def test_the_shipped_header_dates_every_fraction_this_bridge_writes() -> None:
 
 def test_a_header_of_its_own_reads_a_bridge_that_writes_the_clock_differently(tmp_path) -> None:
     """What the parameter is for: a bridge writing a fraction the shipped
-    header leaves unmatched -- under a comma, none at all, six digits straight
-    on -- is read by naming its own header, and the columns are the same
-    columns either way. The width types nothing: the `mtime` capture is
-    consumed into `currunix` at the read's own precision, whatever the
-    expression admits."""
+    header leaves unmatched -- six digits straight on -- is read by naming its
+    own header, and the columns are the same columns either way. The width
+    types nothing: the `mtime` capture is consumed into `currunix` at the
+    read's own precision, whatever the expression admits."""
     source = tmp_path / "micros.log"
     source.write_bytes(
         b"2026-08-14 00:05:01,148 [250-e7256476:9effef3e6a:72504] [ULBridge] (INFO) comma\n"
@@ -366,21 +369,30 @@ def test_a_header_of_its_own_reads_a_bridge_that_writes_the_clock_differently(tm
 
     # A header frames every physical line either way -- what changes is how
     # many of them it could date -- and answers the same schema either way.
+    assert FRACTION in ULBRIDGE_ROWHEADER
     assert plain.num_rows == widened.num_rows == 5
     assert plain.schema.equals(widened.schema, check_metadata=True)
     assert log_message_field(WIDENED) == log_message_field()
-    # The shipped header leaves the first three under no bracket, dated by
-    # the object they were read from.
-    assert plain.column("msgpluginid").null_count == 3
-    assert plain.column("currunix").to_pylist()[:3] == [WRITTEN_AT] * 3
+    # The shipped header reads the comma and the bare seconds, and leaves the
+    # six digits under no bracket, dated by the object they were read from.
+    assert plain.column("msgpluginid").to_pylist()[2] is None
+    assert plain.column("msgpluginid").null_count == 1
+    assert plain.column("currunix").to_pylist()[2] == WRITTEN_AT
     assert widened.column("msgpluginid").null_count == 0
     assert widened.column("currunix").to_pylist() == [
         datetime.datetime(2026, 8, 14, 0, 5, 1, micro, tzinfo=CEST)
         for micro in (148000, 0, 147250, 147250, 147000)
     ]
-    # The two agree on every line both could date, the clock read to the
-    # microsecond the bridge wrote.
-    assert plain.slice(3).equals(widened.slice(3))
+    # The two agree on every line both dated alike, the clock read to the
+    # microsecond the bridge wrote -- all but the one the shipped header
+    # missed, and the line after it, whose `prevunix` is that line's clock.
+    assert [plain.slice(line, 1).equals(widened.slice(line, 1)) for line in range(5)] == [
+        True,
+        True,
+        False,
+        False,
+        True,
+    ]
 
 
 # -- the row --------------------------------------------------------------------
@@ -388,7 +400,7 @@ def test_a_header_of_its_own_reads_a_bridge_that_writes_the_clock_differently(tm
 
 def test_the_row_is_the_event_then_the_body_then_the_captures() -> None:
     """Nothing is declared here: the table's columns are the read's own, in
-    its own order -- the sixteen event columns it settles over every line,
+    its own order -- the fifteen event columns it settles over every line,
     the line past its header, and one column per capture but the clock."""
     field = log_message_field()
 

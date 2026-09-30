@@ -154,7 +154,7 @@
         "name": "seqnum",
         "type": "long",
         "required": false,
-        "doc": "The event's place in its chain: how many came before it."
+        "doc": "The event's place among the events of its instant: 0 for the first its stream hands over there, one more for each next."
       },
       {
         "id": 23,
@@ -1222,19 +1222,19 @@
         "source-id": 1,
         "transform": "identity",
         "direction": "asc",
-        "null-order": "nulls-last"
+        "null-order": "nulls-first"
       },
       {
         "source-id": 22,
         "transform": "identity",
         "direction": "asc",
-        "null-order": "nulls-last"
+        "null-order": "nulls-first"
       },
       {
         "source-id": 16,
         "transform": "identity",
         "direction": "asc",
-        "null-order": "nulls-last"
+        "null-order": "nulls-first"
       }
     ]
   }

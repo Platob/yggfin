@@ -63,7 +63,7 @@ Every task returns `Landed`:
 | --- | --- |
 | `read` | source rows the window selected |
 | `written` | target rows the task wrote: those a keyed task inserted or replaced, those a book or event task replaced its window with |
-| `skipped` | rows the task answered that the target's key folded into a stored one: a restatement of a row it wrote, or a row the table already held as it is |
+| `skipped` | rows the task answered that the target's key folded into another: a row the table already held as it is, or one the stream answered twice under one identity |
 | `snapshot_id` | the `books` snapshot `parse_books` committed, or the one a flattening task read; None for the other tasks |
 | `window` | the whole-hour window `parse_log_messages` inferred from the lines it landed when given none, for the tasks after it; None otherwise |
 
@@ -122,7 +122,12 @@ for the commit it failed in is published, and a keyed task's earlier
 | `row header captures nothing for ...` | a `rowheader` that renames or drops a capture |
 | `FIX registry contains no specification fields` | a codec over an empty dictionary |
 | `FixCodec.__new__() got an unexpected keyword argument` | a codec pin the native codec does not declare |
-| `ArrowInvalid ... expected a bid or ask operation` | `parse_books` met an admitted message the book fold cannot read, such as one stating no `Side(54)` whose order has no live side to lend it one; it is an error, never a skipped row |
 | `expected a nonnegative book snapshot_id or None` | a flattening task handed a bad snapshot |
 | `... has no snapshot N: table is missing` | a flattening task pinned to a snapshot of a books table that does not exist; nothing was written |
 | `unable to open database file` | a SQLite catalog whose folder does not exist |
+
+Nothing a message states fails a task. What the parse, the walk or the book
+fold cannot read -- a value its field's type refuses, a trade side stating no
+`Side(54)`, an order with no side to stand on -- takes its default or is left
+out, and each kind is logged as a `WARNING` through `logging`, once and then
+at every tenfold count.

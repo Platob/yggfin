@@ -8,7 +8,7 @@ The quote deltas of the books, one row per quote event.
 | key | `curruuid` |
 | partitioned by | `hour(currunix)` |
 | sorted by | `currunix`, `seqnum`, `curruuid` |
-| columns | 48 |
+| columns | 49 |
 | Iceberg contract | `schemas/silver/record_keeping/quotes.json` |
 | dbt source | `{{ source('silver', 'quotes') }}`, `schemas/silver/schema.yml` |
 | sample rows | [silver.record_keeping.quotes](../../samples/silver/quotes.md) |
@@ -20,7 +20,6 @@ The quote deltas of the books, one row per quote event.
 | `marketdatakind` | `int` |  |  |
 | `currunix` | `timestamptz` | yes | When the event happened: the settled instant, UTC. |
 | `creaunix` | `timestamptz` |  | When the event was created, where that is known; the earliest its chain knows once followed. |
-| `execunix` | `timestamptz` |  | The latest execution clock this lifecycle reached as of this event; an execution dates itself, following carries it, and duplicate statements keep their earliest observation. |
 | `recdunix` | `timestamptz` |  | When this event was recorded, where that is known; the earliest its statements know. |
 | `exprunix` | `timestamptz` |  | When the event stops being good, where it does; the latest its chain knows once followed. |
 | `prevunix` | `timestamptz` |  | When the event this one follows happened, where it follows one. |
@@ -31,7 +30,7 @@ The quote deltas of the books, one row per quote event.
 | `currhashcode` | `long` | yes | The XXH3-64 of what the event states. |
 | `crosshashcode` | `long` | yes | The XXH3-64 of the cross code; zero where the event names none. |
 | `prevuuid` | `fixed[16]` |  | The identity of the event this one follows, where it follows one. |
-| `seqnum` | `long` |  | The event's place in its chain: how many came before it. |
+| `seqnum` | `long` |  | The event's place among the events of its instant: 0 for the first its stream hands over there, one more for each next. |
 | `srcuuids` | `list<fixed[16]>` |  | The sorted unique identities of the elements this event was read from: provenance, never its chain - no walk moves it. |
 | `state` | `int` |  | The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where nothing states one, the furthest its chain knows once followed. |
 | `price` | `decimal(38, 18)` |  |  |
@@ -43,6 +42,7 @@ The quote deltas of the books, one row per quote event.
 | `isincode` | `string` |  |  |
 | `cficode` | `string` |  |  |
 | `miccode` | `string` |  |  |
+| `execunix` | `timestamptz` |  |  |
 | `lastpx` | `decimal(38, 18)` |  |  |
 | `lastqty` | `decimal(38, 18)` |  |  |
 | `avgpx` | `decimal(38, 18)` |  |  |
@@ -64,6 +64,7 @@ The quote deltas of the books, one row per quote event.
 | `tif` | `string` |  |  |
 | `tradable` | `boolean` |  |  |
 | `altids` | `map<string, string>` |  |  |
+| `accountids` | `map<string, string>` |  |  |
 | `bookscope` | `string` |  |  |
 
 ## `state` codes

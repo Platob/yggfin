@@ -61,14 +61,14 @@ TABLE_DESCRIPTIONS = {
         "its row header as `body`, and one column per row-header capture."
     ),
     "bronze.record_keeping.fix_messages": (
-        "One row per FIX message parsed out of a stored line, nothing walked: a "
-        "message logged again at another hop is folded into the one row its identity "
-        "names, and `seqnum` and `prevuuid` are empty."
+        "One row per FIX message parsed out of a stored line, nothing walked: each copy "
+        "of a message logged at several hops is a row of its own, `seqnum` places it "
+        "among the messages of its instant, and `prevuuid` is empty."
     ),
     "silver.record_keeping.fix_messages": (
-        "One row per FIX event, walked: the chain it belongs to, the step it stands "
-        "at, the lines it was logged on, and the state, creation and expiry its chain "
-        "folded forward."
+        "One row per FIX event, walked: every delivery of it folded into one row, the "
+        "event it follows in its chain, the lines it was logged on, and the state, "
+        "creation and expiry its chain folded forward."
     ),
     "silver.record_keeping.books": (
         "One row per book the fold answered over the silver FIX events of a window "

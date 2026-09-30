@@ -4,9 +4,9 @@ Quality is represented in rows rather than hidden in parser control flow.
 
 | signal | question |
 | --- | --- |
-| a line's `currhashcode` | did the line change: its object, its header, its row number or its body? |
+| a line's `currhashcode` | did the line change: its object or its body? |
 | a FIX row's `currhashcode` | did the settled event change? |
-| `curruuid` | which event is this, whichever hop logged it? |
+| `curruuid` | which row is this: in bronze one copy a hop logged, in silver the event they fold into? |
 | `srcuuids` | which lines was it logged on? |
 | `fixentries` | which pairs or groups the dictionary names did no lifted column represent, keyed `tag:name`? |
 | `metadata` | which pairs had no registry definition, under the key the message spelled? |
@@ -15,18 +15,20 @@ Quality is represented in rows rather than hidden in parser control flow.
 
 ## Distinct digests
 
-A line's `currhashcode` digests the object it was read from, the header's
-captures except the clock, its row number and then its body, so two lines of
-identical bytes answer two codes: the shipped capture's 144 lines answer 144
-codes and 144 identities. It is content metadata; bronze `log_messages` is
-keyed on the line's `curruuid`.
+A line's `currhashcode` digests the object it was read from and its body, so
+the lines of one body in one object share a code, and the row number reaches
+the line's `curruuid` alone: the shipped capture's 144 lines answer 120 codes
+and 144 identities. It is content metadata; bronze `log_messages` is keyed on
+the line's `curruuid`.
 
 A FIX row's `currhashcode` is the event's content code -- XXH3-64 over its
 facts, its text, its metadata, the stated header cells and the entry tree,
 never the row's storage -- so a message read back out of a row is the same
 message, and two lines carrying the same frame answer one code while their
-bytes differ: that is what folds a message logged at three hops into one
-event. `curruuid` is the identity the codec derives; store it unchanged.
+bytes differ: that is what the walk folds a message logged at three hops into
+one event by. `curruuid` is the identity the codec derives, over the
+message's instant, its place there and that code, so each copy is a bronze
+row of its own; store it unchanged.
 
 `crosshashcode` digests `crosscode` alone, the first business identifier
 stated: `OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID`,
@@ -93,11 +95,12 @@ contract diff `tools/schemas_dump.py` writes before publishing it.
 
 ## Replay guarantees
 
-`srcuuids` joins a FIX row back to the stored lines it was read from -- the
-one line a bronze row was parsed from, every line its event was logged on
-once the walk merged them -- each by the line's own `curruuid`. On a line,
-`crosscode` and `seqnum` are its object and row number; on a FIX row the same
-two columns are the chain and the step. A replay of a window answers the same
-bronze rows and, walked, the same silver rows, finds every one held as it is,
-writes none and leaves no duplicate, because every identity derives from what
-the bytes state and never from the instant a task ran.
+`srcuuids` joins a FIX row back to the stored lines it was read from -- the one
+line a bronze row was parsed from, every line its event was logged on once the
+walk merged them -- each by the line's own `curruuid`. On a line, `crosscode`
+and `seqnum` are its object and row number; on a FIX row the same two columns
+are the chain and the place among the events of its instant. A replay of a
+window answers the same bronze rows and, walked, the same silver rows, finds
+every one held as it is, writes none and leaves no duplicate, because every
+identity derives from what the bytes state and never from the instant a task
+ran.

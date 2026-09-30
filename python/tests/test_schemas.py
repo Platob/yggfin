@@ -153,7 +153,7 @@ def test_a_fix_row_holds_none_of_the_text_it_was_read_from() -> None:
     lines = columns["bronze.record_keeping.log_messages"]
     messages = columns["bronze.record_keeping.fix_messages"]
 
-    assert lines[16:] == [
+    assert lines[15:] == [
         "body",
         "msgthreadid",
         "msgsessionid",

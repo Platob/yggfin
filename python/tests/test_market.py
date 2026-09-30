@@ -73,7 +73,7 @@ def test_books_accept_refined_storage_and_ignore_administration():
     # book holds each once.
     traded = books.column("executions")[3].as_py()
     assert [(held["side"], held["lastqty"], held["state"]) for held in traded] == [
-        (int(Side.BUY), Decimal("4"), int(State.FILLED)),
+        (int(Side.BUYS), Decimal("4"), int(State.FILLED)),
         (int(Side.SELL), Decimal("6"), int(State.FILLED)),
     ]
 
@@ -191,12 +191,23 @@ def test_window_is_strict_at_both_bounds_and_excludes_undated_rows():
     assert selected.column("currunix").to_pylist() == [start]
 
 
-def test_admitted_errors_are_not_dropped():
+def test_an_entry_the_fold_cannot_place_is_left_out_and_the_fold_goes_on():
+    """The fold never fails on what a message states. A book entry stating no
+    `MDEntryType(269)` has no side to stand on, so it is left out of its book,
+    with a warning through `logging`, and every entry after it still books."""
     codec = FixCodec.from_env()
-    # A book entry stating no MDEntryType has no side to stand on.
     bad = codec.parse_fix_line(
         b"8=FIX.4.4|35=W|52=20260921-10:00:00|55=AAPL|268=1|278=B1|270=100|271=10|10=0|"
     )
-    source = codec.arrow_reader(fix_parse_field(codec), [bad])
-    with pytest.raises(Exception, match=r"MDEntryType\(269\)"):
-        book_arrow_reader(codec, source).read_all()
+    good = codec.parse_fix_line(
+        b"8=FIX.4.4|35=W|52=20260921-10:00:01|55=AAPL|268=1|269=0|278=B2|270=99|271=10|10=0|"
+    )
+
+    alone = codec.arrow_reader(fix_parse_field(codec), [bad])
+    assert book_arrow_reader(codec, alone).read_all().num_rows == 0
+    both = codec.arrow_reader(fix_parse_field(codec), [bad, good])
+    (book,) = book_arrow_reader(codec, both).read_all().to_pylist()
+    assert [(level["price"], level["quantity"]) for level in book["bidlimits"]] == [
+        (Decimal("99"), Decimal("10"))
+    ]
+    assert len(book["alive"]) == len(book["deltas"]) == 1

@@ -55,6 +55,7 @@ from rekep.iceberg.fields import (
     iceberg_sort_order,
     iceberg_struct_field,
     metrics_for,
+    null_order,
     partition_keys,
     sort_keys,
 )
@@ -2473,7 +2474,7 @@ def _task_is_sorted_on(
     )
     if order is None:
         return False
-    from pyiceberg.table.sorting import NullOrder, SortDirection
+    from pyiceberg.table.sorting import SortDirection
     from pyiceberg.transforms import IdentityTransform
 
     recorded = []
@@ -2484,7 +2485,7 @@ def _task_is_sorted_on(
             not name
             or "." in name
             or not isinstance(field.transform, IdentityTransform)
-            or field.null_order != NullOrder.NULLS_LAST
+            or field.null_order != null_order(field.direction)
         ):
             return False
         direction = "descending" if field.direction == SortDirection.DESC else "ascending"
@@ -2599,10 +2600,14 @@ def _row_key(
     columns: Sequence[str] | Sequence[tuple[str, str]],
     index: int,
 ) -> tuple[Any, ...]:
-    """One directional lexicographic key, with nulls kept last."""
+    """One directional lexicographic key, a null the least value and a NaN after every number."""
     return tuple(
         (
-            2 if value is None else 1 if isinstance(value, float) and math.isnan(value) else 0,
+            (0 if direction == "ascending" else 3)
+            if value is None
+            else 2
+            if isinstance(value, float) and math.isnan(value)
+            else 1,
             (
                 None
                 if value is None or isinstance(value, float) and math.isnan(value)
@@ -4380,9 +4385,10 @@ def _data_file(
     bounds could not give back. `ordered` is whether the writer laid these
     rows out in the table's recorded order, and only then does the file say
     so. A shape cannot hold every order Iceberg can record -- a transformed
-    sort field, a nulls-first one, a nested column -- and for those the writer
-    has nothing to sort by, so a file stamped with the order id would be
-    claiming one it was not written in. A reader takes that claim at its word.
+    sort field, one placing nulls against its direction's default, a nested
+    column -- and for those the writer has nothing to sort by, so a file
+    stamped with the order id would be claiming one it was not written in. A
+    reader takes that claim at its word.
     """
     from pyiceberg.manifest import DataFile, DataFileContent, FileFormat
 

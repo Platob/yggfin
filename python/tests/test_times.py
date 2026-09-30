@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pyarrow
 import pytest
-from yggdryl import IOBase, TextOptions
+from yggdryl import IOBase
 from yggdryl.fix import ULBRIDGE_ROWHEADER as CORE_ROWHEADER
 
 from rekep.text import CAPTURES, RECORD_CLOCK, text_options
@@ -26,13 +26,6 @@ from rekep.times import (
     within,
 )
 
-#: What this package calls two of the bracket's parts that the core's own
-#: expression names after the bracket rather than after the column: the clock
-#: the read consumes into `currunix`, and the level `log_messages` keeps. A
-#: capture reaches a column by being called what the column is called, so
-#: these two are renames and the rest is the core's text.
-RENAMED = {"timestamp": "mtime", "level": "loglevel"}
-
 #: The offset `TIMEZONE` stands at on every date these tests print: August,
 #: the Central European summer clock, two hours ahead of UTC.
 CEST = datetime.timezone(datetime.timedelta(hours=2), "CEST")
@@ -42,12 +35,12 @@ CEST = datetime.timezone(datetime.timedelta(hours=2), "CEST")
 WRITTEN_AT = datetime.datetime(2026, 8, 14, 18, 0, tzinfo=UTC)
 
 
-def _read_line(tmp_path: Path, line: str, options: TextOptions | None = None) -> pyarrow.Table:
+def _read_line(tmp_path: Path, line: str) -> pyarrow.Table:
     """`line` as the read answers it, from an object written at `WRITTEN_AT`."""
     source = tmp_path / "bridge.log"
     source.write_bytes(f"{line}\n".encode())
     os.utime(source, (WRITTEN_AT.timestamp(), WRITTEN_AT.timestamp()))
-    reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=options or text_options())
+    reader = IOBase.from_uri(source.as_uri()).read_arrow_reader(options=text_options())
     try:
         return reader.read_all()
     finally:
@@ -186,39 +179,11 @@ def test_a_wrapped_value_is_asked_what_it_holds() -> None:
     assert unix_of(pyarrow.scalar(STAMP, pyarrow.timestamp("ns"))) == STAMP
 
 
-def test_the_bridge_row_header_is_the_layout_the_core_states() -> None:
-    """The bracket this reads is the core's own, character for character, but
-    for what two of its parts are called -- clock and fraction included.
-    Compared against the constant the extension exports, so the check runs
+def test_the_bridge_row_header_is_the_core_s_own() -> None:
+    """The bracket this reads is the core's, clock and fraction included:
+    compared against the constant the extension exports, so the check runs
     wherever the tests do."""
-    held = ULBRIDGE_ROWHEADER
-    for core, ours in RENAMED.items():
-        assert held.count(f"(?P<{ours}>") == 1, f"the header no longer captures {ours}"
-        held = held.replace(f"(?P<{ours}>", f"(?P<{core}>")
-    assert held == CORE_ROWHEADER
-    # A rename nobody made is a rename nobody needs: each one has to be a
-    # capture the core actually states, or this table is stale.
-    assert set(RENAMED) <= set(re.findall(r"\(\?P<([A-Za-z]+)>", CORE_ROWHEADER))
-
-
-def test_the_core_s_own_header_dates_nothing(tmp_path) -> None:
-    """Why the two renames stay: under the core's verbatim header the read
-    consumes no clock. Its `timestamp` lands as a column of its own and every
-    line takes its object's modification time -- one instant for lines
-    printed a second apart, with no error anywhere."""
-    options = TextOptions()
-    options.rowheader = CORE_ROWHEADER
-    line = "2026-08-14 14:05:01.147 [250] [ULBridge] (INFO) body"
-
-    verbatim = _read_line(tmp_path, line, options)
-    renamed = _read_line(tmp_path, line)
-
-    assert verbatim.column("currunix").to_pylist() == [WRITTEN_AT]
-    assert "timestamp" in verbatim.column_names
-    assert renamed.column("currunix").to_pylist() == [
-        datetime.datetime(2026, 8, 14, 14, 5, 1, 147000, tzinfo=CEST)
-    ]
-    assert RECORD_CLOCK not in renamed.column_names
+    assert ULBRIDGE_ROWHEADER == CORE_ROWHEADER
 
 
 def test_every_bridge_capture_is_named_for_the_column_it_fills() -> None:
@@ -243,14 +208,18 @@ def test_every_bridge_capture_is_named_for_the_column_it_fills() -> None:
         # core reads as a digit group inside the fraction: fifteen lines of
         # the bundled capture spell their clock this way.
         (".524_315", ".524315"),
+        # A bridge under a comma locale, and one that stops at the seconds.
+        (",148", ".148000"),
+        ("", ""),
     ],
-    ids=["millis", "grouped"],
+    ids=["millis", "grouped", "comma", "none"],
 )
 def test_the_bridge_clock_reads_the_fractions_the_core_header_states(
     tmp_path, fraction: str, settled: str
 ) -> None:
-    """The clock takes the core's fraction: three digits under a point, and
-    the micros grouped after them under a `_`. The clock states no offset, so
+    """The clock takes the core's fraction: three digits under a point or a
+    comma, the micros grouped after them under a `_`, or no fraction at all.
+    The clock states no offset, so
     it is read in `TIMEZONE`, the Central European clock the bridge prints --
     `00:05:01` on the 14th is `22:05:01` UTC on the 13th."""
     line = f"2026-08-14 00:05:01{fraction} [250] [ULBridge] (INFO) body"
@@ -263,18 +232,17 @@ def test_the_bridge_clock_reads_the_fractions_the_core_header_states(
 
 @pytest.mark.parametrize(
     "fraction",
-    [",148", "", "_147", ".", ";147", ".147258"],
-    ids=["comma", "none", "underscore", "point", "semicolon", "micros"],
+    ["_147", ".", ";147", ".147258"],
+    ids=["underscore", "point", "semicolon", "micros"],
 )
 def test_a_fraction_this_header_does_not_read_leaves_the_line_unmatched(
     tmp_path, fraction: str
 ) -> None:
     """What this header does not read, and the one outcome.
 
-    The clock requires the core's fraction, so a bridge under a comma locale
-    (`01,148`) and one that stops at the seconds are left unmatched, as is a
-    fraction no bridge of this capture writes -- six digits straight on, a
-    lone point, a stray separator. `_` groups a fraction's digits in the core
+    The clock takes the core's fraction or none, so a fraction no bridge of
+    this capture writes is left unmatched -- six digits straight on, a lone
+    point, a stray separator. `_` groups a fraction's digits in the core
     and never opens one, so matching `01_147` would hand the instant parser a
     value it refuses -- and a located refusal fails the whole batch the line
     arrived in, which is worse than not reading the clock. Each is left to a

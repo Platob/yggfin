@@ -117,9 +117,9 @@ class Landed:
     #: target lacks or holds with other values, so a replay writes none.
     written: int
 
-    #: Rows the stage answered that the target's key folded into a stored
-    #: one: a message logged again at every hop it passed, one row each, and
-    #: a row an earlier run of the window already landed as it is.
+    #: Rows the stage answered that the target's key folded into another: a
+    #: row an earlier run of the window already landed as it is, or one the
+    #: stream answered twice under one identity.
     skipped: int = 0
 
     #: The silver `books` snapshot the stage committed (`parse_books`) or read
@@ -289,9 +289,9 @@ def parse_fix_messages_raw(
 
     `codec` is the whole parse surface, `FixCodec.from_env()` pinned at
     `UNDATED` when None. A row is a message, so a line carrying two frames
-    answers two and one message
-    logged at three hops answers three rows of one identity, which the key
-    folds: `skipped` counts them.
+    answers two, and one message logged at three hops answers three rows:
+    each copy is placed among the messages of its instant, and the place
+    reaches its identity, so the walk folds the copies and the key does not.
     """
     codec = _codec_or_env(codec)
     # Declared from the dictionary alone rather than the first batch, so an
@@ -302,10 +302,11 @@ def parse_fix_messages_raw(
         lines = storages.dataset(source, field=carrier)
         opened.callback(lines.close)
         # `[start, end)` over `currunix` with the epoch pin beside it, in the
-        # table's sort order -- the order the lines were printed in, so a
-        # message logged at several hops keeps its first copy whatever files
-        # hold the lines -- and projected to what the parse consumes and the
-        # order reads, so the scan opens no other column.
+        # table's sort order -- the order the lines were printed in, so the
+        # place the parse gives a message among the messages of its instant,
+        # which reaches its identity, never depends on which files hold the
+        # lines -- and projected to what the parse consumes and the order
+        # reads, so the scan opens no other column.
         read = _Count()
         scanned = read(
             lines.read_arrow_reader(
@@ -323,8 +324,8 @@ def parse_fix_messages_raw(
         opened.callback(stored.close)
         raw = _target(storages, target, field, commit_row_size, merge_schema=True)
         opened.callback(raw.close)
-        # Keyed on `curruuid` within the hour of the event's own instant, so
-        # every restatement of one event meets the others and lands once.
+        # Keyed on `curruuid` within the hour of the event's own instant, so a
+        # replay of the window meets the rows it landed and lands none twice.
         written = raw.merge_arrow_reader(stored, field)
         return Landed(read=read.rows, written=written, skipped=answered.rows - written)
 

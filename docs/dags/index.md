@@ -75,12 +75,12 @@ with storages:
     first = run(storages, "file:data/capture/ulbridge.log", window)
     assert {task: landed.written for task, landed in first.items()} == {
         "parse_log_messages": 129,
-        "parse_fix_messages_raw": 72,
-        "parse_fix_messages_refined": 47,
-        "parse_books": 29,
-        "parse_orders": 8,
+        "parse_fix_messages_raw": 126,
+        "parse_fix_messages_refined": 51,
+        "parse_books": 30,
+        "parse_orders": 9,
         "parse_quotes": 0,
-        "parse_executions": 7,
+        "parse_executions": 9,
     }
     # A rerun is a retry. The keyed tasks find every row they answer held as
     # it is and write none; the books and the event tables replace their
@@ -88,12 +88,12 @@ with storages:
     again = run(storages, "file:data/capture/ulbridge.log", window)
     assert {task: (landed.written, landed.skipped) for task, landed in again.items()} == {
         "parse_log_messages": (0, 129),
-        "parse_fix_messages_raw": (0, 125),
-        "parse_fix_messages_refined": (0, 47),
-        "parse_books": (29, 0),
-        "parse_orders": (8, 0),
+        "parse_fix_messages_raw": (0, 126),
+        "parse_fix_messages_refined": (0, 51),
+        "parse_books": (30, 0),
+        "parse_orders": (9, 0),
         "parse_quotes": (0, 0),
-        "parse_executions": (7, 0),
+        "parse_executions": (9, 0),
     }
 ```
 
@@ -152,8 +152,10 @@ it is walked to. Counted in events -- `snapshot_millis=0`, so no hourly view
 is landed beside them -- hourly windows over the capture's day land all but
 one of the events one window over the day does: an expiry whose order began
 more than `HISTORY` before it, which only a window holding the whole chain
-places. A run over the day after them answers all 23, finds the 22 the hours
-landed held as they are, and inserts the expiry:
+places. A run over the day after them answers all 28, finds the 27 the hours
+landed held as they are, and inserts the expiry -- three of the 28 are
+[repeat deliveries](../tasks/parse-fix-messages-refined.md#repeat-deliveries)
+a walk over stored rows does not yet fold:
 
 ```python
 import datetime
@@ -190,8 +192,8 @@ with storages:
         parse_fix_messages_refined(storages, hour, snapshot_millis=0).written for hour in hours
     )
     daily = parse_fix_messages_refined(storages, day, snapshot_millis=0)
-    assert (hourly, daily.written + daily.skipped) == (22, 23)
-    assert (daily.written, daily.skipped) == (1, 22)
+    assert (hourly, daily.written + daily.skipped) == (27, 28)
+    assert (daily.written, daily.skipped) == (1, 27)
 ```
 
 A capture read in a zone other than its bridge's dates every line hours away
@@ -199,13 +201,12 @@ from the message it carries. Read as UTC, the shipped capture's lines are
 dated 14:46 and carry messages of 12:46, so the line of a message stating no
 `SendingTime` no longer stands within `official_time_delay_ms` of its
 `TransactTime`: the parse dates the message by its line, two hours after the
-instant the walk dates it at, and no hourly window holds both. Copies of one
-message the parse dated by different clocks settle on different identities
-and no longer fold, so the day holds 27 events rather than 23, and hourly
-windows land four fewer. An hourly walk also merges only the copies its window
-holds, so an event it lands may settle another identity than the day's walk
-gives it: the day finds 11 of its 27 events held as they are and inserts the
-other 16 beside the hours' rows.
+instant the walk dates it at, and no hourly window holds both. The day's walk
+dates every copy by its transaction time and answers its 28 rows again, but
+hourly windows land three fewer, and an hourly walk merges only the copies
+its window holds, so an event it lands may settle another identity than the
+day's walk gives it: the day finds 12 of its 28 rows held as they are and
+inserts the other 16 beside the hours' rows.
 
 ```python
 import datetime
@@ -242,8 +243,8 @@ with storages:
         parse_fix_messages_refined(storages, hour, snapshot_millis=0).written for hour in hours
     )
     daily = parse_fix_messages_refined(storages, day, snapshot_millis=0)
-    assert (hourly, daily.written + daily.skipped) == (23, 27)
-    assert (daily.written, daily.skipped) == (16, 11)
+    assert (hourly, daily.written + daily.skipped) == (24, 28)
+    assert (daily.written, daily.skipped) == (16, 12)
 ```
 
 Schedule for it:

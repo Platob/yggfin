@@ -34,28 +34,30 @@ window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 codec = FixCodec.from_env(default_sending_time=UNDATED, threads=2, batch_row_size=4_096)
 with storages:
     parse_log_messages("file:data/capture/ulbridge.log", storages, window)
-    # 129 lines carry 69 frames, and every report of a fill splits off the
-    # execution it reports: 125 messages. The key folds the 53 that restate a
-    # message another hop already logged: 72 rows.
+    # 129 lines carry 69 frames; every report of a fill splits off the
+    # execution it reports, and the trade report one per side it states: 126
+    # messages, each placed at its instant under an identity of its own.
     landed = parse_fix_messages_raw(storages, window, codec=codec)
-    assert landed == Landed(read=129, written=72, skipped=53)
+    assert landed == Landed(read=129, written=126)
 
     raw = storages.dataset(FIX_MESSAGES_RAW)
     try:
         table = raw.read_arrow_table(columns=("currunix", "seqnum", "prevuuid", "srcuuids"))
     finally:
         raw.close()
-    # Nothing has walked: no row has a place in a chain yet.
-    assert table.column("seqnum").null_count == table.column("prevuuid").null_count == 72
-    # Each row names the one line it was parsed from, and each of the 32
+    # Nothing has walked: no row follows another. `seqnum` is a message's
+    # place among the messages handed over at its instant, null at place zero.
+    assert table.column("prevuuid").null_count == 126
+    assert table.column("seqnum").null_count == 18
+    # Each row names the one line it was parsed from, and each of the 57
     # executions split out of a report names that report beside it.
     lengths = pyarrow.compute.list_value_length(table.column("srcuuids")).to_pylist()
-    assert (lengths.count(1), lengths.count(2)) == (40, 32)
+    assert (lengths.count(1), lengths.count(2)) == (69, 57)
 ```
 
-Over the capture's whole day the same task reads 144 lines, answers 135
-messages -- 79 frames and the 56 executions their reports split off -- and
-lands 77 rows, 58 of them folded.
+Over the capture's whole day the same task reads 144 lines, answers 136
+messages -- 79 frames and the 57 executions their reports split off -- and
+lands all 136.
 
 ## Read
 
@@ -97,12 +99,13 @@ native codec validates every pin. Useful pins are `batch_row_size` and
 | column | on a bronze row |
 | --- | --- |
 | `currunix` | the transaction clock standing within `official_time_delay_ms` of the `SendingTime` the message states, else that `SendingTime`; a message stating none measures its transaction clock against the line it was read off the same way, and takes the line's instant where none stands that near |
-| `curruuid` | the message's identity, a UUIDv7 over its instant and its content; the table's key |
-| `crosscode` | the identifier every message of one lifecycle shares: `OrderID`, else `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID` or `MDReqID`, the first stated, or `ExecID=` its `ExecID` for an execution split out of a report; prefixed `BUY:`, `SELL:` and so on with the side the message states |
+| `curruuid` | the message's identity, a UUIDv7 over its instant, its place there and its content; the table's key |
+| `crosscode` | the identifier every message of one lifecycle shares: `OrderID`, else `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID` or `MDReqID`, the first stated, or its `ExecID` for an execution split out of a report; an order's, a quote's or an execution's prefixed with the four-letter code of the side it states -- `BUYS:`, `SELL:` and so on -- and any other kind's, or one stating no side, bare |
 | `srcuuids` | the `curruuid` of the one `log_messages` line the message was parsed from, and for an execution split out of a report that report's `curruuid` beside it |
 | `state` | the first of `OrdStatus`, `ExecType`, `ExecAckStatus`, `TrdRptStatus`, `QuoteStatus`, `AllocStatus`, `ConfirmStatus`, `AffirmStatus`, `MassActionResponse` or `MassCancelResponse` the message states, else what its message type asks for, else `UNKNOWN`, as an `int32` [code](../tables/states.md) |
 | `msgsesseventid` | `MsgType`, the session instance, the context and `MsgSeqNum` joined by `:`, where all four are stated |
-| `seqnum`, `prevuuid`, `prevunix` | empty: nothing has walked |
+| `seqnum` | the message's place among the messages the parse handed over at its instant, one after another: empty at place zero, and an instant the stream comes back to starts again at zero |
+| `prevuuid`, `prevunix` | empty: nothing has walked |
 | `fixentries` | what no lifted column represents, keyed `tag:name` |
 
 `msgthreadid`, `loglevel` and `body` stay on the line: `srcuuids` joins a
@@ -112,21 +115,18 @@ execution through the parse.
 
 ## Write
 
-A bridge logs a message again at every hop it passes. A copy that restates
-another exactly answers the same identity, so the table is keyed on
-`curruuid` alone, within the hour of `currunix`, and the copies the key folded
-into one row are `skipped`. Of the copies one run reads, the row kept is the
-first printed, because the lines are read in the order they were printed in.
-A copy stating no `SendingTime` takes the transaction clock it states only
-where its line stands within `official_time_delay_ms` of it, which a line
-read in its bridge's zone does,
-so it folds with the copies that state one; read in another zone, it takes
-its line's instant, hours away from them, and folds with none of them. A copy
-a hop changed -- an enrichment plugin added a field -- is a row of its own
-here, and the walk merges it into the event it is, in
-[silver](parse-fix-messages-refined.md). The write merges the messages into
-the table on that key, at most `commit_row_size` rows a commit
-([commits](index.md#commits)) -- a key the hour lacks is inserted, one it
-holds with other values replaced -- and adds any column a newer dictionary
-declares (`merge_schema=True`). A rerun finds every message held as it is:
-it writes none and counts all of them `skipped`.
+A bridge logs a message again at every hop it passes. Each copy is placed apart
+at its instant, and its place reaches its identity, so every copy is a row of
+its own here, under a table keyed on `curruuid` alone within the hour of
+`currunix`, and the walk folds the copies into the event they are, in
+[silver](parse-fix-messages-refined.md). The lines are read in the order they
+were printed in, so a copy's place -- and its identity -- never depends on
+which files hold them. A copy stating no `SendingTime` takes the transaction
+clock it states only where its line stands within `official_time_delay_ms` of
+it, which a line read in its bridge's zone does, so it stands at the instant of
+the copies that state one; read in another zone, it takes its line's instant,
+hours away from them. The write merges the messages into the table on that key,
+at most `commit_row_size` rows a commit ([commits](index.md#commits)) -- a key
+the hour lacks is inserted, one it holds with other values replaced -- and adds
+any column a newer dictionary declares (`merge_schema=True`). A rerun finds
+every message held as it is: it writes none and counts all of them `skipped`.

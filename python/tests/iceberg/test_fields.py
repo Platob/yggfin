@@ -534,7 +534,7 @@ def test_a_contract_states_the_partition_and_sort_a_schema_alone_cannot() -> Non
             "source-id": 1,
             "transform": "identity",
             "direction": "asc",
-            "null-order": "nulls-last",
+            "null-order": "nulls-first",
         }
     ]
 
@@ -599,12 +599,12 @@ def test_a_layout_no_member_can_hold_is_refused_rather_than_dropped() -> None:
     )
     with pytest.raises(ValueError, match="partitions 'at' more than once"):
         iceberg_contract_field(json.dumps(twice))
-    nulls_first = dict(
+    nulls_last = dict(
         document,
-        **{"sort-order": {"order-id": 1, "fields": [{**SORTING, "null-order": "nulls-first"}]}},
+        **{"sort-order": {"order-id": 1, "fields": [{**SORTING, "null-order": "nulls-last"}]}},
     )
     with pytest.raises(ValueError, match="orders nulls"):
-        iceberg_contract_field(json.dumps(nulls_first))
+        iceberg_contract_field(json.dumps(nulls_last))
     bucketed = dict(
         document,
         **{"sort-order": {"order-id": 1, "fields": [{**SORTING, "transform": "bucket[8]"}]}},
@@ -619,7 +619,7 @@ SORTING = {
     "source-id": 1,
     "transform": "identity",
     "direction": "asc",
-    "null-order": "nulls-last",
+    "null-order": "nulls-first",
 }
 
 
