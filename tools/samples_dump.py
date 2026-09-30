@@ -681,8 +681,9 @@ def refined_page(lines: list[dict[str, Any]], refined: list[dict[str, Any]]) -> 
         [
             f"{len(refined)} rows: the bronze messages of {window_text()} walked into",
             f"the {len(events)} events they are, the copies of each folded into one row",
-            f"placed in its chain and naming the lines it was logged on, and {len(views)}",
-            f"hourly views of the chains alive. Columns: {table_link(FIX_MESSAGES, 2)}.",
+            "placed in its chain and naming the lines its session event was logged on,",
+            f"and {len(views)} hourly views of the chains alive.",
+            f"Columns: {table_link(FIX_MESSAGES, 2)}.",
         ],
         [
             "## Two chains",

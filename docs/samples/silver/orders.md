@@ -1,6 +1,6 @@
 # silver.record_keeping.orders
 
-9 rows: the order deltas of the one book snapshot `parse_books` committed
+8 rows: the order deltas of the one book snapshot `parse_books` committed
 over `[2026-08-14 00:00, 2026-08-14 16:30)` UTC. Columns: [silver.record_keeping.orders](../../tables/silver/orders.md).
 
 ## Every row
@@ -9,7 +9,6 @@ over `[2026-08-14 00:00, 2026-08-14 16:30)` UTC. Columns: [silver.record_keeping
 | --- | --- | --- | --- | --- | --- | :---: | :---: | :---: | :---: | --- |
 | `2026-08-14 01:03:17` | `ORDR` (10) | `TW0001605004` | `BUYS:20260814_DT6_PGYVLK_8840` | `BUYS` (1) | `TRADE` (4002) |  | 3000000 | 39.9 | 24000 | 123, 124, 126 |
 | `2026-08-14 12:46:39.743` | `ORDR` (10) | `CH0012214059` | `BUYS:00057637971VFRM7` | `BUYS` (1) | `FILLED` (8003) | 72.28 | 300 | 72.28 | 235 | 2, 4 |
-| `2026-08-14 12:46:39.743` | `ORDR` (10) | `CH0012214059` | `BUYS:00057637971VFRM7` | `BUYS` (1) | `FILLED` (8003) | 72.28 | 300 | 72.28 | 235 | 5 |
 | `2026-08-14 12:46:39.743016` | `ORDR` (10) | `CH0012221716` | `BUYS:00084776691VFRM7` | `BUYS` (1) | `FILLED` (8003) | 83.08 | 600 | 83.08 | 75 | 73, 74, 75, 76, 77, 78, 82, 83, 84, 86, 90, 91, 92 |
 | `2026-08-14 12:46:39.743016` | `ORDR` (10) | `CH0012221716` | `BUYS:00084776691VFRM7` | `BUYS` (1) | `PARTIALLY_FILLED` (4001) | 83.08 | 600 | 83.08 | 21 | 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 21, 22 |
 | `2026-08-14 12:46:39.743016` | `ORDR` (10) | `CH0012221716` | `BUYS:00084776691VFRM7` | `BUYS` (1) | `PARTIALLY_FILLED` (4001) | 83.08 | 600 | 83.08 | 57 | 56, 57, 58, 59, 60, 61, 63, 64, 65, 70, 71 |

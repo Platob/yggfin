@@ -82,9 +82,12 @@ quote per side: each a message of its own naming its source in `srcuuids`, an
 execution `FILLED` whatever state its report reached.
 Its rows are the dictionary's fixed row, `rekep.fix.fix_message_field(codec)`:
 133 columns declared from the registry alone, so an empty window creates the
-same table a full one does. Parsing and local enrichment are independent per
-message and run on `threads` workers, the available CPU count by default,
-while the output keeps the input's order.
+same table a full one does. The parse reads each frame on its own, on
+`threads` workers -- the available CPU count by default -- and the output
+keeps the input's order; neither the workers nor the batch sizes change an
+answer. Its one piece of stream state is a message's place among the
+messages of its instant, counted in the order the lines are handed over, so
+the input's order does -- which is why the read is ordered.
 
 `codec` is the whole parse surface: `FixCodec.from_env(**pins)` over the
 process registry, or `FixCodec(registry, **pins)` over another, where the
@@ -100,7 +103,7 @@ native codec validates every pin. Useful pins are `batch_row_size` and
 | --- | --- |
 | `currunix` | the transaction clock standing within `official_time_delay_ms` of the `SendingTime` the message states, else that `SendingTime`; a message stating none measures its transaction clock against the line it was read off the same way, and takes the line's instant where none stands that near |
 | `curruuid` | the message's identity, a UUIDv7 over its instant, its place there and its content; the table's key |
-| `crosscode` | the identifier every message of one lifecycle shares: `OrderID`, else `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID` or `MDReqID`, the first stated, or its `ExecID` for an execution split out of a report; an order's, a quote's or an execution's prefixed with the four-letter code of the side it states -- `BUYS:`, `SELL:` and so on -- and any other kind's, or one stating no side, bare |
+| `crosscode` | the identifier every message of one lifecycle shares: `OrderID`, else `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID` or `MDReqID`, the first stated. An execution split out of a fill report takes its `ExecID`, else `TradeID=` and its `TradeID`, else the report's bare code, `|Execution=` and its content code in hex; one split out of a trade takes its side of the trade, `{len}:{own}|{tag}:{len}:{id}` -- `own` the side's first `OrderID`, `ClOrdID` or `OrigClOrdID`, else the trade's code, `id` its first `SideExecID`, `SideTradeID`, `SideTradeReportID`, `OrderID` or `ClOrdID`, so the capture's trade side stating `ClOrdID` `NOREF` is `5:NOREF|11:5:NOREF`. An order's, a quote's or an execution's is prefixed with the four-letter code of the side it states -- `BUYS:`, `SELL:` and so on -- and any other kind's, or one stating no side, bare |
 | `srcuuids` | the `curruuid` of the one `log_messages` line the message was parsed from, and for an execution split out of a report that report's `curruuid` beside it |
 | `state` | the first of `OrdStatus`, `ExecType`, `ExecAckStatus`, `TrdRptStatus`, `QuoteStatus`, `AllocStatus`, `ConfirmStatus`, `AffirmStatus`, `MassActionResponse` or `MassCancelResponse` the message states, else what its message type asks for, else `UNKNOWN`, as an `int32` [code](../tables/states.md) |
 | `msgsesseventid` | `MsgType`, the session instance, the context and `MsgSeqNum` joined by `:`, where all four are stated |
@@ -125,8 +128,21 @@ which files hold them. A copy stating no `SendingTime` takes the transaction
 clock it states only where its line stands within `official_time_delay_ms` of
 it, which a line read in its bridge's zone does, so it stands at the instant of
 the copies that state one; read in another zone, it takes its line's instant,
-hours away from them. The write merges the messages into the table on that key,
-at most `commit_row_size` rows a commit ([commits](index.md#commits)) -- a key
-the hour lacks is inserted, one it holds with other values replaced -- and adds
-any column a newer dictionary declares (`merge_schema=True`). A rerun finds
-every message held as it is: it writes none and counts all of them `skipped`.
+hours away from them. An identity keeps only the millisecond of its instant,
+so copies of one content dated by their lines within one millisecond, each
+the first at an instant of its own, share one, and the key folds them: read
+as UTC, the capture's evening lines answer four such copies, and the day
+lands 132 rows of its 136 messages, `skipped=4`. The write merges the
+messages into the table on that key, at most `commit_row_size` rows a commit
+([commits](index.md#commits)) -- a key the hour lacks is inserted, one it
+holds with other values replaced -- and adds any column a newer dictionary
+declares (`merge_schema=True`). A rerun finds every message held as it is:
+it writes none and counts all of them `skipped`.
+
+A message's place counts the messages the window's lines handed over at its
+instant before it, so the places -- and the identities -- are the window's:
+a bound between the lines of one instant's messages restarts the part after
+it at place zero. A later run over other bounds places those messages anew,
+under identities the table does not hold, and lands them a second time. Run
+the task again over the windows it first ran, or over bounds between the
+lines of no two messages of one instant ([windows](../dags/index.md#windows)).

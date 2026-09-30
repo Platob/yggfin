@@ -19,9 +19,10 @@ Every table is an event table laid out the same way: it opens with the event
 columns -- `currunix`, the clocks, `curruuid`, `crossuuid`, `crosscode`, the
 content codes, `prevuuid`, `seqnum`, `srcuuids` and `state` -- is keyed on
 `curruuid` alone, partitioned by `hour(currunix)` and sorted by `currunix,
-seqnum, curruuid` within a partition, a null first: `seqnum` is an event's
-place among the events of its instant, null at place zero. `state` is an
-`int32` lifecycle code,
+seqnum, curruuid` within a partition, a null first. On the FIX and market
+tables `seqnum` is an event's place among the events of its instant, null at
+place zero; on `log_messages` it is the line's row number in its object,
+counted from 1 and never null. `state` is an `int32` lifecycle code,
 the same on every table: [States](states.md) lists all 61, and `rekep.State`
 reads one back. A market row's `side` and `marketdatakind` are `int32` codes
 too, never null, which `rekep.Side` and `rekep.MarketDataKind` read back:

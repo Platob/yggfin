@@ -61,18 +61,18 @@ Over the capture's whole day, `window_of("2026-08-14", "2026-08-14")`:
 | lines the row header does not date | 0 | the shipped header reads both fractions the capture spells, `.769` and `.524_315` |
 | messages the parse answers | 136 | 65 lines carry no frame and each of the other 79 carries one, each of the 56 reports of a fill answers the execution it reports beside itself, and the trade report the one execution its side states; a message is a row, not a line |
 | `bronze.record_keeping.fix_messages` rows | 136 | every copy a hop logged is placed apart at its instant, so the key folds none |
-| `silver.record_keeping.fix_messages` rows | 70 | the 136 bronze rows walked: the copies of one event folded and one expiry added, 28 events -- three of them repeat deliveries a walk over stored rows does not yet fold -- and every chain still alive restated on each whole hour, 42 views |
-| `silver.record_keeping.books` rows | 46 | the 70 silver rows folded into three `MIC:CFI` categories: 8 books an event moved, and every book restated on each whole hour from the first after it opens to 21:00, 38 views |
-| `silver.record_keeping.orders`, `quotes`, `executions` rows | 11, 0, 9 | the books' order deltas, quote deltas and executions |
+| `silver.record_keeping.fix_messages` rows | 67 | the 136 bronze rows walked: the copies of one event folded and one expiry added, 25 events, and every chain still alive restated on each whole hour, 42 views |
+| `silver.record_keeping.books` rows | 46 | the 67 silver rows folded into three `MIC:CFI` categories: 8 books an event moved, and every book restated on each whole hour from the first after it opens to 21:00, 38 views |
+| `silver.record_keeping.orders`, `quotes`, `executions` rows | 10, 0, 8 | the books' order deltas, quote deltas and executions |
 
 At 21:59:46 the capture holds a cancel request and its reject, which states
 no `Side(54)`: the walk joins it to the one live side of its order, the
 sell, so the fold books both on that side -- the two orders the day adds to
-the morning's nine. The documented runs use
+the morning's eight. The documented runs use
 `window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")`, the morning's
 order flow, its one trade report at 14:52 and the expiry of its open order at
-16:25, which lands 129 lines, 126 bronze and 51 silver FIX rows, 30 books, 9
-orders, 0 quotes and 9 executions:
+16:25, which lands 129 lines, 126 bronze and 49 silver FIX rows, 30 books, 8
+orders, 0 quotes and 8 executions:
 [Data samples](../docs/samples/index.md) shows every table's rows.
 
 `python/tests/storages/` runs the capture through every task under

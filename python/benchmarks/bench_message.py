@@ -220,10 +220,10 @@ def sweep(rows: int, repeat: int) -> None:
         verified = [verify(case, rows) for case in selected]
         # Five columns are the line's place and not its content: `crosscode`
         # is the object it was read from and `crosshashcode` and `crossuuid`
-        # derive from it, `currhashcode` digests that object, the header's
-        # captures and the line's row number ahead of its body, and
-        # `curruuid` packs the microsecond of `currunix` and that code -- so
-        # the same line under two URIs is two events, on purpose.
+        # derive from it, `currhashcode` digests that object and the line's
+        # body, and `curruuid` packs the instant of `currunix`, the line's row
+        # number and that code -- so the same line under two URIs is two
+        # events, on purpose.
         # Everything else, `body` included, has to be the same or the gzip
         # leg is not reading what the plain one read.
         placed = ("crosscode", "crosshashcode", "crossuuid", "currhashcode", "curruuid")

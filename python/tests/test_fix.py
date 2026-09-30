@@ -62,8 +62,13 @@ MESSAGES = FRAMES + SPLIT
 #: first stated business identifier, never the bridge header capture, and an
 #: order's, a quote's or an execution's is prefixed with the four-letter code
 #: of the side it states, so a buy and a sell under one identifier are two
-#: chains; an execution split out of a report chains on its own `ExecID`, and
-#: one of no side, a trade, and a message of any other kind keep the bare
+#: chains. An execution split out of a fill report chains on its own
+#: `ExecID`; one split out of a trade chains on its side of the trade,
+#: `{len}:{own}|{tag}:{len}:{id}` -- `own` the side's first `OrderID`,
+#: `ClOrdID` or `OrigClOrdID`, `id` its first `SideExecID`, `SideTradeID`,
+#: `SideTradeReportID`, `OrderID` or `ClOrdID` -- so the capture's one trade
+#: side, stating `ClOrdID` `NOREF` and no `Side(54)`, is `5:NOREF|11:5:NOREF`.
+#: One of no side, a trade, and a message of any other kind keep the bare
 #: code. The walk folds every repeated delivery into one event, so a chain has
 #: a row per identity, and it may emit an expiry. The shipped header matches
 #: every one of the 144 lines, so every observation carries the session,
@@ -112,9 +117,14 @@ PARSED_CODES = 78
 #: The same parse over the capture read as UTC, which dates every line two
 #: hours after the message it carries: a copy stating no `SendingTime` is
 #: then dated by its line, two hours from the `TransactTime` a copy stating
-#: one is dated by, so six messages logged both ways stand at two or three
-#: instants each -- 86 pairs of content code and instant, where the reading
-#: in the bridge's zone has one instant per code.
+#: one is dated by, and microseconds from another copy dated by a line of its
+#: own. So six messages stand at two or three instants each -- four logged
+#: both ways, and two of the evening's logged only by lines microseconds
+#: apart -- 86 pairs of content code and instant, where the reading in the
+#: bridge's zone has one instant per code. An identity keeps only the
+#: millisecond: four of those line-dated copies, each place zero of an
+#: instant of its own, share an identity with another copy of their content
+#: in the same millisecond, so the 136 messages hold 132 identities.
 PARSED_CODE_INSTANTS_READ_AS_UTC = 86
 
 #: The messages of the capture stating no `SendingTime(52)`. Read in the zone
@@ -901,6 +911,7 @@ def test_a_bridge_read_as_utc_dates_its_unsent_messages_by_the_line(raw, refined
     ), "dated by the line, two hours after its transaction"
     assert _code_instants(raw) == PARSED_CODES
     assert _code_instants(misread) == PARSED_CODE_INSTANTS_READ_AS_UTC
+    assert len(set(misread.column(MESSAGE_KEY).to_pylist())) == MESSAGES - 4
     walked = _refined(misread)
     assert walked.column(MESSAGE_KEY).to_pylist() == refined.column(MESSAGE_KEY).to_pylist()
     assert walked.column(EVENT_CLOCK).to_pylist() == refined.column(EVENT_CLOCK).to_pylist()
@@ -987,6 +998,83 @@ def test_the_walk_over_stored_rows_rebuilds_native_row_types(raw) -> None:
     restored = stored_arrow_reader(fix_lifecycle_arrow_reader(codec, _reader(stored)), field)
 
     assert restored.read_all().equals(native.read_all())
+
+
+def _read_back(column: pyarrow.Array) -> pyarrow.Array:
+    """`column` as PyIceberg reads it back: every null list of structs, at any
+    depth, an empty one -- its projection rebuilds such a list from its
+    offsets alone."""
+    if pyarrow.types.is_list(column.type):
+        values = _read_back(column.values)
+        mask = None if pyarrow.types.is_struct(column.type.value_type) else column.is_null()
+        return pyarrow.ListArray.from_arrays(column.offsets, values, type=column.type, mask=mask)
+    if pyarrow.types.is_struct(column.type):
+        children = [_read_back(column.field(index)) for index in range(column.type.num_fields)]
+        return pyarrow.StructArray.from_arrays(
+            children, fields=list(column.type), mask=column.is_null()
+        )
+    return column
+
+
+def _table_read_back(rows: pyarrow.Table) -> pyarrow.Table:
+    return pyarrow.Table.from_arrays(
+        [_read_back(column.combine_chunks()) for column in rows.columns], schema=rows.schema
+    )
+
+
+def test_a_group_read_back_empty_beside_no_count_is_absent(raw, refined) -> None:
+    """PyIceberg reads a null list of structs back as an empty one, so every
+    group a message never stated -- `parties`, a party's `partysubids` --
+    comes back from a table as `[]`, beside its counter, which keeps its null.
+    The walk reads such a group absent again, so it answers over rows read
+    back what it answers over the parse's own: the same events, every repeat
+    delivery folded."""
+    emptied = _table_read_back(raw)
+    assert raw.column("parties").null_count and not emptied.column("parties").null_count
+
+    assert _refined(emptied).equals(refined)
+    batched = pyarrow.Table.from_batches(emptied.to_batches(max_chunksize=7))
+    assert _refined(batched).equals(refined), "a batch sliced out of a column reads the same"
+
+
+def test_a_group_stated_with_a_zero_count_stays_stated(tmp_path) -> None:
+    """A message stating `NoPartyIDs(453)=0` states its parties empty, and a
+    table keeps the counter's zero beside the `[]` it reads back: that group
+    stays the empty one the message stated, so the walk folds the copies of
+    such a message read back exactly as it folds the parse's own -- two hops
+    of one session event merged, and a third session's copy folded by its
+    content."""
+    stated = b"8=FIX.4.4|35=8|37=O1|11=C1|17=E1|150=0|39=0|54=1|55=AAPL|453=0|10=0|"
+    party = (
+        b"8=FIX.4.4|35=8|37=O2|11=C2|17=E2|150=0|39=0|54=1|55=AAPL|"
+        b"453=1|448=P|447=D|452=1|802=0|10=0|"
+    )
+    source = tmp_path / "bridge.log"
+    source.write_bytes(
+        b"".join(
+            b"2026-08-14 14:00:00.1%d0 [1-%s:b:%d] [ULBridge] (INFO) Sending : %s\n"
+            % (hop, session, place, frame)
+            for place, frame in enumerate((stated, party), start=1)
+            for hop, session in enumerate((b"a", b"a", b"c"), start=5)
+        )
+    )
+    handle = IOBase.from_uri(source.as_uri())
+    try:
+        parsed = _parsed(handle)
+    finally:
+        handle.close()
+    assert parsed.column("parties").to_pylist()[0] == []
+    assert parsed.column("parties").to_pylist()[3][0]["partysubids"] == []
+    codec = _codec()
+    native = stored_arrow_reader(
+        fix_lifecycle_arrow_reader(codec, _reader(parsed)), fix_message_field(codec)
+    ).read_all()
+    stored = stored_arrow_reader(_reader(parsed), fix_message_field(codec)).read_all()
+
+    walked = _refined(_table_read_back(stored))
+    assert walked.num_rows == 2, "each message's three copies fold into one event"
+    assert walked.equals(native)
+    assert [len(parties) for parties in walked.column("parties").to_pylist()] == [0, 1]
 
 
 def test_the_walk_sorts_distinct_effective_instants_and_keeps_equal_ties(raw) -> None:

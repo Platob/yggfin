@@ -292,6 +292,14 @@ def parse_fix_messages_raw(
     answers two, and one message logged at three hops answers three rows:
     each copy is placed among the messages of its instant, and the place
     reaches its identity, so the walk folds the copies and the key does not.
+
+    The places are the window's: a message's place counts the messages the
+    window's lines handed over at its instant before it. A window bound
+    between the lines of one instant's messages starts the part after it
+    again at place zero, so a later run over other bounds places those
+    messages anew, under identities the table does not hold, and lands
+    them a second time. Run a window again over the bounds it first ran,
+    or over bounds between the lines of no two messages of one instant.
     """
     codec = _codec_or_env(codec)
     # Declared from the dictionary alone rather than the first batch, so an

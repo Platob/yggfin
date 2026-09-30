@@ -234,14 +234,13 @@ def test_books_fold_a_cancel_reject_under_the_side_of_its_order(storages: Storag
         {EVENT_CLOCK: rejected, "msgtype": "9", "side": Side.SELL, "crosscode": CANCELLED}
     ]
 
-    # The window's four silver rows: the reject, the cancel request it
+    # The window's three silver rows: the reject, the cancel request it
     # answers, and the bridge's restatement of the reject, which keeps the
-    # bare code and books nothing -- twice, a repeat delivery the walk over
-    # stored rows does not yet fold: PyIceberg stores its null list of structs
-    # as an empty one, and the core's delivery key then tells the two apart.
+    # bare code and books nothing -- the copy of it the bridge forwarded under
+    # its own `MsgSeqNum` folded into it.
     landed = parse_books(storages, window)
     print(f"books over [21:00, 22:00): {landed}")
-    assert (landed.read, landed.written) == (4, 1)
+    assert (landed.read, landed.written) == (3, 1)
     stored = read(storages, BOOKS).to_pylist()
     assert stored[:-1] == booked, "the books outside the window stay"
     book = stored[-1]
@@ -300,7 +299,7 @@ def test_a_window_opens_on_the_book_its_hour_before_left(
     print(f"\nwhole morning {whole}\nfrom 02:00    {opened}")
     for book in found:
         print(f"{book[EVENT_CLOCK]:%H:%M:%S.%f} {book['snapunix']} {book['crosscode']}")
-    assert opened.read == whole.read == 51, "the hour before 02:00 holds the 01:03 report"
+    assert opened.read == whole.read == 49, "the hour before 02:00 holds the 01:03 report"
     assert found == expected
     first = found[0]
     assert first[EVENT_CLOCK] == first["snapunix"] == OPENED[0]
@@ -331,7 +330,7 @@ def test_books_at_a_window_start_are_the_books_the_whole_history_holds(
     parse_fix_messages_raw(storages, MORNING)
     parse_fix_messages_refined(storages, MORNING)
     parse_books(storages, MORNING)
-    for hour, read_rows, emptied in ((13, 39, 0), (14, 19, 3)):
+    for hour, read_rows, emptied in ((13, 37, 0), (14, 19, 3)):
         start = datetime.datetime(2026, 8, 14, hour, tzinfo=UTC)
         target = f"silver.record_keeping.books_from_{hour}"
         landed = parse_books(storages, (start, MORNING[1]), target=target)
@@ -369,10 +368,7 @@ def test_the_book_grid_flattens_every_event_once(storages: Storages) -> None:
     the hourly silver and books are exactly those flattened with no grid at
     all. Every order and every execution is flattened off one silver event
     under a key of its own: the lines each hop logged one report on fold
-    into one event, so no report lands twice -- but for the two repeat
-    deliveries of 12:46:39.743 a walk over stored rows does not yet fold,
-    since PyIceberg stores their null list of structs as an empty one and
-    the core's delivery key then tells the copies apart."""
+    into one event, so no report lands twice."""
     parse_log_messages(CAPTURE.as_uri(), storages, DAY)
     parse_fix_messages_raw(storages, MORNING)
     walked = parse_fix_messages_refined(storages, MORNING)
@@ -389,7 +385,7 @@ def test_the_book_grid_flattens_every_event_once(storages: Storages) -> None:
     )
     grid = [row for row in read(storages, BOOKS).to_pylist() if row["snapunix"] is not None]
     print(f"\nhourly {walked} {gridded}\nnone   {events} {plain}")
-    assert (walked.written, events.written) == (51, 24)
+    assert (walked.written, events.written) == (49, 22)
     assert gridded.written == plain.written + len(grid) == 30
     assert all(not row["deltas"] and not row["executions"] for row in grid)
     for kind, task in FLATTENERS.items():
@@ -410,7 +406,7 @@ def test_the_book_grid_flattens_every_event_once(storages: Storages) -> None:
     silver = [row for row in read(storages, FIX_MESSAGES).to_pylist() if row["snapunix"] is None]
     matched = collections.Counter(tuple(row[key] for key in MATCHED) for row in silver)
     flattened = set()
-    for kind, landed in {"orders": 9, "executions": 9}.items():
+    for kind, landed in {"orders": 8, "executions": 8}.items():
         held = read(storages, EVENTS[kind]).to_pylist()
         found = collections.Counter(tuple(row[key] for key in MATCHED) for row in held)
         identities = {row["curruuid"] for row in held}

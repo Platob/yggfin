@@ -1,9 +1,13 @@
 """The native FIX registry and the raw/refined storage boundary.
 
-Raw parses frames independently, lifting typed facts and retaining only
-unprojected content in `fixentries`. The native codec can parse batches in
-parallel while preserving source order. It owns null filtering, identifiers,
-code validation and the row's schema.
+Raw parses each frame on its own, lifting typed facts and retaining only
+unprojected content in `fixentries`, and carries one piece of stream state:
+the place it gives a message among the messages of its instant, in the order
+the stream hands them over, which reaches the message's identity. The native
+codec can parse batches in parallel -- threads and batch sizes change no
+answer -- while the input's order does, so the raw read is ordered by
+`SORT_COLUMNS`. It owns null filtering, identifiers, code validation and the
+row's schema.
 
 Refined uses the native finite lifecycle: date by transaction time where
 needed, stably order events, suppress repeated deliveries, learn validated
@@ -20,7 +24,7 @@ import datetime
 import functools
 import json
 import os
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -64,9 +68,12 @@ FIXMSG = "fixmsg"
 #: The column a message's own identity is published as, and the table's whole
 #: key. The native UUIDv7 orders the event's millisecond and its place among
 #: the events of that instant, with a deterministic content payload seeded by
-#: its cross hash. Yggdryl owns its derivation. The place reaches it, so each
-#: copy of a message a hop logged is a bronze row of its own, and the walk
-#: folds the repeated deliveries into one event.
+#: its cross hash. Yggdryl owns its derivation. The place reaches it, so the
+#: copies of a message the hops logged at one instant are bronze rows of
+#: their own, and the walk folds the repeated deliveries into one event. The
+#: instant reaches it at the millisecond alone: copies of one content dated
+#: apart within one millisecond, each at place zero of its own instant, are
+#: one identity, and the key keeps the first.
 MESSAGE_KEY = "curruuid"
 
 #: The instant every table here is laid out by, and the core's own name for
@@ -84,10 +91,11 @@ TRANSACTION_CLOCK = "transacttime"
 
 #: The identities a message was read from: provenance, never lineage. A
 #: bronze `fix_messages` row names the one line it was parsed from; a silver one
-#: names every line its event was logged on, because the walk merges the
-#: observations of one event. Source location and capture context remain on
-#: `log_messages`, reached through these identities; no walk reads them as
-#: lineage.
+#: names the lines of every observation of its session event, which the walk
+#: merges, and not the line of a copy another session event delivered, which
+#: the walk folds into it and only that copy's bronze row names. Source
+#: location and capture context remain on `log_messages`, reached through
+#: these identities; no walk reads them as lineage.
 SOURCES = "srcuuids"
 
 #: The stored line's column a parse reads its identity off, and puts in
@@ -253,13 +261,17 @@ def fix_lifecycle_arrow_reader(
     codec: FixCodec,
     source: pyarrow.RecordBatchReader,
 ) -> pyarrow.RecordBatchReader:
-    """Walk native FIX rows, merging every observation's `srcuuids` as capture provenance.
+    """Walk native FIX rows into events, each naming the lines it was logged on.
 
-    Stored rows are widened to the dictionary's types before the native
-    lifecycle dates, sorts, deduplicates and folds them: the whole input at
-    once, or, where `codec.sorted_lifecycle` states the rows arrive in instant
-    order, one epoch hour at a time as they come. Only native message
-    columns are passed into and returned from the walk.
+    Stored rows are widened to the dictionary's types, and the groups a table
+    read emptied made absent again, before the native lifecycle dates, sorts,
+    deduplicates and folds them: the whole input at once, or, where
+    `codec.sorted_lifecycle` states the rows arrive in instant order, one
+    epoch hour at a time as they come. An event's `srcuuids` merges those of
+    the observations of its session event, `msgsesseventid`; a copy another
+    session event delivered at its instant with its content is folded into it
+    without naming its line. Only native message columns are passed into and
+    returned from the walk.
     """
     return codec.lifecycle_arrow_reader(_dictionary_rows(codec, source))
 
@@ -280,11 +292,20 @@ def _dictionary_rows(
     handed the table's field, so what arrives here is the row's own columns
     and nothing to narrow; a source already at the dictionary's types passes
     through untouched.
+
+    It also gives back what a table read loses: PyIceberg reads a null list
+    of structs back as an empty one, so every group a message never stated
+    arrives as `[]`, and `_stated_groups` makes it absent again -- so the
+    walk and the fold read a stored message as the content the parse
+    recorded, and fold its repeat deliveries as they fold the parse's own.
     """
     native = fix_schema(codec.registry, FIXMSG).into_arrow_schema()
     if source.schema.equals(native, check_metadata=False):
         return source
     held = source.schema
+    declared = [
+        native.field(member.name) if member.name in native.names else None for member in held
+    ]
     unsigned = [
         member.name
         for member in held
@@ -304,10 +325,10 @@ def _dictionary_rows(
         for batch in source:
             yield pyarrow.RecordBatch.from_arrays(
                 [
-                    batch.column(index).view(viewed.field(index).type)
+                    column.view(viewed.field(index).type)
                     if viewed.field(index).name in unsigned
-                    else batch.column(index)
-                    for index in range(batch.num_columns)
+                    else column
+                    for index, column in enumerate(_stated_groups(batch.columns, declared))
                 ],
                 schema=viewed,
             )
@@ -315,6 +336,86 @@ def _dictionary_rows(
     return fix_schema(codec.registry, FIXMSG).apply_arrow_reader(
         pyarrow.RecordBatchReader.from_batches(viewed, _viewed()), safe=False
     )
+
+
+#: The metadata a group names the tag of its counter under, and the one a
+#: counter states its own tag under.
+_GROUP_COUNTER = b"FIX:counter"
+_FIELD_TAG = b"FIX:tag"
+
+
+def _stated_groups(
+    columns: Sequence[pyarrow.Array], declared: Sequence[pyarrow.Field | None]
+) -> list[pyarrow.Array]:
+    """One level of a stored row -- the row, or a struct in it -- with every
+    group a table read emptied absent again.
+
+    `declared` is the dictionary's field of each column, None for one it does
+    not define. A group read back empty beside a counter stating nothing is
+    null again, because a counter is an integer and a table keeps its null;
+    one beside a stated zero stays the empty group the message stated. Only a
+    column holding a group is rebuilt -- a party's sub-ids inside its party
+    included -- and its buffers are shared.
+    """
+    counters = {
+        member.metadata[_FIELD_TAG]: place
+        for place, member in enumerate(declared)
+        if member is not None and member.metadata and _FIELD_TAG in member.metadata
+    }
+    stated = []
+    for column, member in zip(columns, declared, strict=True):
+        if member is None or not _holds_group(member.type):
+            stated.append(column)
+            continue
+        absent = column.is_null()
+        counter = counters.get((member.metadata or {}).get(_GROUP_COUNTER))
+        if counter is not None:
+            unstated = pyarrow.compute.and_(
+                columns[counter].is_null(),
+                pyarrow.compute.equal(pyarrow.compute.list_value_length(column), 0),
+            )
+            absent = pyarrow.compute.or_(absent, pyarrow.compute.fill_null(unstated, False))
+        stated.append(_absent_where(column, member.type, absent))
+    return stated
+
+
+def _absent_where(
+    column: pyarrow.Array, declared: pyarrow.DataType, absent: pyarrow.Array
+) -> pyarrow.Array:
+    """`column` -- a list or a struct -- null where `absent` holds, and the
+    groups inside it made absent by `_stated_groups`."""
+    if pyarrow.types.is_struct(column.type):
+        names = [member.name for member in column.type]
+        children = _stated_groups(
+            [column.field(index) for index in range(len(names))],
+            [
+                declared.field(name) if declared.get_field_index(name) >= 0 else None
+                for name in names
+            ],
+        )
+        return pyarrow.StructArray.from_arrays(children, fields=list(column.type), mask=absent)
+    # Arrow rebuilds a list under a mask only from offsets starting at zero,
+    # so a sliced column's offsets are rebased onto the values they span --
+    # and an empty span onto none at no offset, the only empty slice the
+    # native read takes.
+    offsets = column.offsets
+    first = offsets[0]
+    span = offsets[-1].as_py() - first.as_py()
+    values = column.values.slice(first.as_py() if span else 0, span)
+    if _holds_group(declared.value_type):
+        values = _absent_where(values, declared.value_type, values.is_null())
+    return type(column).from_arrays(
+        pyarrow.compute.subtract(offsets, first), values, type=column.type, mask=absent
+    )
+
+
+def _holds_group(dtype: pyarrow.DataType) -> bool:
+    """Whether a column of `dtype` holds a group -- a list of structs -- at any depth."""
+    if pyarrow.types.is_list(dtype) or pyarrow.types.is_large_list(dtype):
+        return pyarrow.types.is_struct(dtype.value_type) or _holds_group(dtype.value_type)
+    if pyarrow.types.is_struct(dtype):
+        return any(_holds_group(member.type) for member in dtype)
+    return False
 
 
 def _carried_rows(source: pyarrow.RecordBatchReader) -> pyarrow.RecordBatchReader:

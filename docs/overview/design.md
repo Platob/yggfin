@@ -76,7 +76,10 @@ replaced, one it holds as it is left alone -- and the book and event tasks
 replace exactly their window. So a task run again over a window writes
 nothing, or replaces the rows it landed before with the same rows, and a
 table holds each row once however often a window runs. A scheduler retries a
-task by running it again.
+task by running it again, over the same window: a bronze FIX identity counts
+a message's place among those its window handed over at its instant, so
+`parse_fix_messages_raw` over other bounds may land a message twice
+([windows](../dags/index.md#windows)).
 
 ## Documentation names contracts
 

@@ -13,6 +13,7 @@ from __future__ import annotations
 import collections
 import dataclasses
 import datetime
+import json
 import uuid
 from pathlib import Path
 from typing import Annotated, Any
@@ -103,38 +104,36 @@ EARLY_LANDED = {
 #: it states, so it is dated by that clock, in the hour of the message it
 #: restates; every copy is placed apart at its instant, so bronze keeps all
 #: 120. The walk reads those 120 rows -- the hour before `START` holds none --
-#: and merges the observations of one event into 21 rows, the trade report
-#: and its execution among them, plus the expiry it emits at 16:25, and
-#: restates the three chains still alive after 12:46 -- the logon, the new
-#: order and the acknowledged order that expires -- at 13:00, 14:00, 15:00 and
-#: 16:00: 22 events and 12 views, each a row of its own, so the key folds
-#: nothing. Two of the 22 are repeat deliveries of 12:46:39.743 the walk over
-#: stored rows does not yet fold: PyIceberg stores a copy's null list of
-#: structs as an empty one, and the core's delivery key then tells the copies
-#: apart. The books fold those 34 into 6 books of events and the two
+#: and merges the observations of one event into 19 rows, the trade report
+#: and its execution among them -- the fill report of 12:46:39.743 the bridge
+#: forwarded again under its own `MsgSeqNum`, and the execution that copy
+#: splits off, folded into the two they repeat -- plus the expiry it emits at
+#: 16:25, and restates the three chains still alive after 12:46 -- the logon,
+#: the new order and the acknowledged order that expires -- at 13:00, 14:00,
+#: 15:00 and 16:00: 20 events and 12 views, each a row of its own, so the key
+#: folds nothing. The books fold those 32 into 6 books of events and the two
 #: categories' books on each of the four hours, 14; their deltas and
-#: executions are eight orders -- the new order, six fill reports and one
-#: repeat delivery -- no quote and eight executions, one split out of each
-#: fill report, the repeat delivery and the trade's, the hourly books adding
-#: none.
+#: executions are seven orders -- the new order and six fill reports -- no
+#: quote and seven executions, one split out of each fill report and the
+#: trade's, the hourly books adding none.
 LANDED = {
     "parse_fix_messages_raw": Landed(read=113, written=120),
-    "parse_fix_messages_refined": Landed(read=120, written=34),
-    "parse_books": Landed(read=34, written=14),
-    "parse_orders": Landed(read=14, written=8),
+    "parse_fix_messages_refined": Landed(read=120, written=32),
+    "parse_books": Landed(read=32, written=14),
+    "parse_orders": Landed(read=14, written=7),
     "parse_quotes": Landed(read=14, written=0),
-    "parse_executions": Landed(read=14, written=8),
+    "parse_executions": Landed(read=14, written=7),
 }
 
 #: Rows each table holds after both windows. The gold catalog holds no table.
 STORED = {
     LOG_MESSAGES: 144,
     FIX_MESSAGES_RAW: 126,
-    FIX_MESSAGES: 36,
+    FIX_MESSAGES: 34,
     BOOKS: 15,
-    EVENTS["orders"]: 9,
+    EVENTS["orders"]: 8,
     EVENTS["quotes"]: 0,
-    EVENTS["executions"]: 9,
+    EVENTS["executions"]: 8,
 }
 
 #: The table each task scans, the hours of it that scan plans, and every hour
@@ -248,11 +247,19 @@ SIDED = {MarketDataKind.ORDR, MarketDataKind.QUOT, MarketDataKind.EXEC}
 
 def cross_code(row: dict[str, Any], split: bool) -> str | None:
     """The identifier `crosscode` takes, per the rule it is read by: an
-    execution split out of a report chains on its `ExecID`, and an order's, a
-    quote's or an execution's is prefixed with the four-letter code of the
-    side it states; any other kind, and a message stating no side, keeps the
-    bare code."""
-    if split:
+    execution split out of a fill report chains on its `ExecID`, one split
+    out of a trade on its side of the trade -- `{len}:{own}|{tag}:{len}:{id}`,
+    `own` the side's first `OrderID`, `ClOrdID` or `OrigClOrdID` and `id` its
+    first `SideExecID`, `SideTradeID`, `SideTradeReportID`, `OrderID` or
+    `ClOrdID` -- and an order's, a quote's or an execution's is prefixed with
+    the four-letter code of the side it states; any other kind, and a message
+    stating no side, keeps the bare code."""
+    if split and row["msgtype"] == "AE":
+        side = trade_side(row)
+        own = next(side[tag] for tag in (37, 11, 41) if tag in side)
+        tag = next(tag for tag in (1427, 1506, 1005, 37, 11) if tag in side)
+        code = f"{len(own)}:{own}|{tag}:{len(side[tag])}:{side[tag]}"
+    elif split:
         code = row["execid"]
     else:
         code = next((row[name] for name in CROSS_IDENTIFIERS if row[name]), None)
@@ -262,10 +269,12 @@ def cross_code(row: dict[str, Any], split: bool) -> str | None:
     return f"{side.name}:{code}"
 
 
-def traded(row: dict[str, Any], split: bool) -> bool:
-    """Whether a row is an execution a trade report split off: it chains on
-    what its side of the trade states, which no column of the row holds."""
-    return split and row["msgtype"] == "AE"
+def trade_side(row: dict[str, Any]) -> dict[int, str]:
+    """The one side of its trade an execution a trade split off holds, by
+    tag: its `NoSides(552)` group, which the row keeps in `fixentries`."""
+    (group,) = [held for key, held in row["fixentries"] if key.startswith("552:")]
+    (side,) = json.loads(group)
+    return {int(key.partition(":")[0]): held for key, held in side.items()}
 
 
 def split_off(rows: list[dict[str, Any]], reports: set[bytes]) -> list[bool]:
@@ -428,7 +437,9 @@ def test_a_message_logged_at_every_hop_is_one_silver_row(landing: Landing) -> No
     identity within its hour. Every copy of a message is placed apart at its
     instant, so each is a key of its own and bronze keeps them all. The walk
     then merges the observations of one event -- the hops that restated it
-    -- into one silver row naming each of their lines.
+    under one session event, `msgsesseventid` -- into one silver row naming
+    each of their lines, and folds a copy of it another session event
+    delivered at its instant into that row without naming the copy's line.
     """
     storages = landing.storages
     lines = {row["curruuid"]: row for row in landing.table(LOG_MESSAGES).to_pylist()}
@@ -482,7 +493,23 @@ def test_a_message_logged_at_every_hop_is_one_silver_row(landing: Landing) -> No
         for line in row["srcuuids"]
     )
     assert set(named.values()) == {1}, "a line is named by one event"
-    assert set(named) == kept, "every line bronze keeps is named, and no line it folded"
+    assert set(named) <= kept, "no line bronze folded is named"
+    # The one line no event names carries the fill report of 12:46:39.743
+    # the bridge forwarded under its own `MsgSeqNum`: another session event
+    # than the copies it repeats, at their instant and with their content, so
+    # the walk folds it into their event and only its bronze row names it.
+    (forwarded,) = kept - set(named)
+    for row in bronze:
+        if line_of(row, reports) != forwarded or reports.intersection(row["srcuuids"]):
+            continue
+        repeated = [
+            held
+            for held in bronze
+            if (held["currhashcode"], held[EVENT_CLOCK]) == (row["currhashcode"], row[EVENT_CLOCK])
+            and line_of(held, reports) in named
+        ]
+        assert repeated, "it repeats a message whose lines an event names"
+        assert row["msgsesseventid"] not in {held["msgsesseventid"] for held in repeated}
     executed = {
         line
         for row, held in zip(recorded, split, strict=True)
@@ -546,8 +573,7 @@ def test_the_walk_folds_state_creation_and_recording(landing: Landing) -> None:
         # whatever state the report it was split out of reached.
         expected = State.FILLED if split else stated(row)
         assert row["state"] == expected, (row["msgtype"], row["ordstatus"], row["exectype"])
-        if not traded(row, split):
-            assert row["crosscode"] == cross_code(row, split)
+        assert row["crosscode"] == cross_code(row, split)
         line = line_of(row, reports)
         assert row["recdunix"] == lines[line][EVENT_CLOCK], "the line's own clock"
         observations[(line, split)].append(row)
@@ -556,8 +582,7 @@ def test_the_walk_folds_state_creation_and_recording(landing: Landing) -> None:
 
     walked = silver.to_pylist()
     for row, split in zip(walked, split_off(walked, reports), strict=True):
-        if not traded(row, split):
-            assert row["crosscode"] == cross_code(row, split)
+        assert row["crosscode"] == cross_code(row, split)
         assert row["creaunix"] is not None and row["creaunix"] <= row[EVENT_CLOCK]
         if row["recdunix"] is None:
             continue

@@ -76,11 +76,11 @@ with storages:
     assert {task: landed.written for task, landed in first.items()} == {
         "parse_log_messages": 129,
         "parse_fix_messages_raw": 126,
-        "parse_fix_messages_refined": 51,
+        "parse_fix_messages_refined": 49,
         "parse_books": 30,
-        "parse_orders": 9,
+        "parse_orders": 8,
         "parse_quotes": 0,
-        "parse_executions": 9,
+        "parse_executions": 8,
     }
     # A rerun is a retry. The keyed tasks find every row they answer held as
     # it is and write none; the books and the event tables replace their
@@ -89,11 +89,11 @@ with storages:
     assert {task: (landed.written, landed.skipped) for task, landed in again.items()} == {
         "parse_log_messages": (0, 129),
         "parse_fix_messages_raw": (0, 126),
-        "parse_fix_messages_refined": (0, 51),
+        "parse_fix_messages_refined": (0, 49),
         "parse_books": (30, 0),
-        "parse_orders": (9, 0),
+        "parse_orders": (8, 0),
         "parse_quotes": (0, 0),
-        "parse_executions": (9, 0),
+        "parse_executions": (8, 0),
     }
 ```
 
@@ -132,8 +132,16 @@ for day in days:
 
 A task over a window writes that window and nothing else -- a keyed task
 merges its rows into its table, a book or event task replaces it -- so two
-runs over different windows may land side by side, and a rerun over a window
-wider than the one first run is always safe: it lands what it finds.
+runs over different windows may land side by side, and a rerun of a window
+lands nothing twice. A rerun over a wider window lands what it finds for
+every task but `parse_fix_messages_raw`, whose windows decide identities: a
+message's place among the messages of its instant, which reaches its
+identity, counts those the window's lines handed over before it, so a bound
+between the lines of one instant's messages restarts the part after it at
+place zero. A wider run then places those messages anew, under identities
+bronze does not hold, and lands them a second time. Rerun
+`parse_fix_messages_raw` over the windows it first ran, or over bounds
+between the lines of no two messages of one instant.
 
 ## Late events
 
@@ -152,10 +160,8 @@ it is walked to. Counted in events -- `snapshot_millis=0`, so no hourly view
 is landed beside them -- hourly windows over the capture's day land all but
 one of the events one window over the day does: an expiry whose order began
 more than `HISTORY` before it, which only a window holding the whole chain
-places. A run over the day after them answers all 28, finds the 27 the hours
-landed held as they are, and inserts the expiry -- three of the 28 are
-[repeat deliveries](../tasks/parse-fix-messages-refined.md#repeat-deliveries)
-a walk over stored rows does not yet fold:
+places. A run over the day after them answers all 25, finds the 24 the hours
+landed held as they are, and inserts the expiry:
 
 ```python
 import datetime
@@ -192,8 +198,8 @@ with storages:
         parse_fix_messages_refined(storages, hour, snapshot_millis=0).written for hour in hours
     )
     daily = parse_fix_messages_refined(storages, day, snapshot_millis=0)
-    assert (hourly, daily.written + daily.skipped) == (27, 28)
-    assert (daily.written, daily.skipped) == (1, 27)
+    assert (hourly, daily.written + daily.skipped) == (24, 25)
+    assert (daily.written, daily.skipped) == (1, 24)
 ```
 
 A capture read in a zone other than its bridge's dates every line hours away
@@ -202,11 +208,12 @@ dated 14:46 and carry messages of 12:46, so the line of a message stating no
 `SendingTime` no longer stands within `official_time_delay_ms` of its
 `TransactTime`: the parse dates the message by its line, two hours after the
 instant the walk dates it at, and no hourly window holds both. The day's walk
-dates every copy by its transaction time and answers its 28 rows again, but
-hourly windows land three fewer, and an hourly walk merges only the copies
-its window holds, so an event it lands may settle another identity than the
-day's walk gives it: the day finds 12 of its 28 rows held as they are and
-inserts the other 16 beside the hours' rows.
+dates every copy by its transaction time and answers its 25 events again,
+but an hourly walk leaves out a copy whose bronze row and walked instant lie
+in different hours, and merges only the copies its window holds, so an event
+it lands may settle another identity than the day's walk gives it: the hours
+land 24 rows, and the day finds 12 of its 25 held as they are and inserts
+the other 13 beside the hours' rows.
 
 ```python
 import datetime
@@ -243,8 +250,8 @@ with storages:
         parse_fix_messages_refined(storages, hour, snapshot_millis=0).written for hour in hours
     )
     daily = parse_fix_messages_refined(storages, day, snapshot_millis=0)
-    assert (hourly, daily.written + daily.skipped) == (24, 28)
-    assert (daily.written, daily.skipped) == (16, 12)
+    assert (hourly, daily.written + daily.skipped) == (24, 25)
+    assert (daily.written, daily.skipped) == (13, 12)
 ```
 
 Schedule for it:
@@ -256,7 +263,9 @@ Schedule for it:
   landed every line that can date into them -- lag them by the bridge's
   delivery delay -- and, where a chain outlives `HISTORY`, wide enough to hold
   it.
-- Reconcile by rerunning a wider window: a keyed task merges its rows into
+- Reconcile by rerunning the silver tasks over a wider window -- never
+  `parse_fix_messages_raw`, whose windows decide its identities
+  ([Windows](#windows)): a keyed task merges its rows into
   its table and a book or event task replaces its window, so a daily rerun of
   the silver tasks over yesterday inserts whatever the hourly runs could not
   place and replaces a row it settles otherwise under the same identity. It

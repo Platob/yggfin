@@ -82,13 +82,13 @@ window = window_of("2026-08-14T00:00:00Z", "2026-08-14T16:30:00Z")
 with storages:
     assert parse_log_messages("file:data/capture/ulbridge.log", storages, window) == Landed(129, 129)
     assert parse_fix_messages_raw(storages, window) == Landed(read=129, written=126)
-    assert parse_fix_messages_refined(storages, window) == Landed(read=126, written=51)
+    assert parse_fix_messages_refined(storages, window) == Landed(read=126, written=49)
     books = parse_books(storages, window)
     with ThreadPoolExecutor(max_workers=3) as pool:
         running = {kind: pool.submit(task, storages, window, snapshot_id=books.snapshot_id)
                    for kind, task in FLATTENERS.items()}
     written = {kind: future.result().written for kind, future in running.items()}
-    assert (books.written, written) == (30, {"orders": 9, "quotes": 0, "executions": 9})
+    assert (books.written, written) == (30, {"orders": 8, "quotes": 0, "executions": 8})
 ```
 
 Order matters: each task reads only the table before it. Every task creates
@@ -102,8 +102,10 @@ fine: open `Storages`, run, close.
 
 `Landed` holds `read` (source rows the window selected), `written` (target
 rows written: inserted or replaced by a keyed task, the window's rows for the
-others), `skipped` (answered rows the key folded into a stored one: on a
-rerun, every row a keyed task answers) and `snapshot_id` (the books snapshot
+others), `skipped` (answered rows the target's key folded into another: a
+row an earlier run already landed as it is -- on a rerun, every row a keyed
+task answers -- or one the stream answered twice under one identity) and
+`snapshot_id` (the books snapshot
 `parse_books` committed or a flattener read; None for the others). Every copy
 of a message the bridge logged at another hop is a bronze row of its own,
 placed apart at its instant; the walk folds the copies into one silver
@@ -140,8 +142,10 @@ in no book.
   message's own on FIX rows. The capture's bridge prints a Central European
   clock, two hours ahead of UTC in summer, so its lines printed 14:46 are
   dated 12:46 UTC, the hour of the messages they carry. Read as UTC they
-  would sit two hours after their messages, and one delivery's copies would
-  stop folding.
+  would sit two hours after their messages: the whole walk still folds one
+  delivery's copies, but an hourly window leaves out a copy whose bronze row
+  and walked instant lie in different hours, and settles the copies it holds
+  on other identities.
 - `parse_fix_messages_refined` reads `HISTORY` (one hour) before its window,
   hour partition by hour partition in instant order, walks it an hour at a
   time (never collecting the read) and writes only the rows the walk dates
@@ -150,7 +154,10 @@ in no book.
   is walked from and the instant it is walked to: an expiry more than
   `HISTORY` after its order began, or any message of a capture read in a zone
   other than its bridge's. Run silver behind bronze, over wide windows (a
-  day), and rerun a wider window to reconcile.
+  day), and rerun the silver tasks over a wider window to reconcile -- never
+  `parse_fix_messages_raw`: a message's place, which reaches its identity,
+  counts those its window's lines handed over at its instant, so rerun it over
+  the windows it first ran or a wider run may land a message twice.
   `docs/dags/index.md#late-events` has the numbers.
 - `parse_books` and the flatteners replace exactly `[start, end)`. The fold
   reads `HISTORY` before `start` too, so a book standing at `start` holds what
@@ -273,13 +280,17 @@ place: `FILLED` is 8003); `side` and `marketdatakind` on market rows are
 `int32` codes of `rekep.Side` (`UNKN` 0, `BUYS` 1, `SELL` 2) and
 `rekep.MarketDataKind` (`ORDR` 10, `QUOT` 14, `EXEC` 8, `BOOK` 3). Keys:
 `curruuid` on every table; `seqnum` is an event's place among the events of
-its instant, null at place zero, which sorts first; `srcuuids` on FIX and event
-rows lists the `log_messages.curruuid` of the lines an event was logged on,
-and an execution split out of a report lists that report's `curruuid` beside
-them; `crosscode` is the business id (OrderID, ClOrdID, ..., the `ExecID` of
-a split execution), an order's, a quote's or an execution's prefixed with
-the four-letter code of its side (`BUYS:...`, `SELL:...`), on FIX rows, and
-the object a line was read from on `log_messages`. Column meanings:
+its instant on FIX and market rows, null at place zero, which sorts first,
+and a line's row number, from 1, on `log_messages`; `srcuuids` on FIX and
+event rows lists the `log_messages.curruuid` of the lines an event was logged
+on -- a copy another session event delivered is folded in unnamed -- and an
+execution split out of a report lists that report's `curruuid` beside them;
+`crosscode` on FIX rows is the business id (OrderID, ClOrdID, ...), a fill's
+split execution its `ExecID`, a trade's split execution its side of the trade
+(`{len}:{own}|{tag}:{len}:{id}`, e.g. `5:NOREF|11:5:NOREF`), an order's, a
+quote's or an execution's prefixed with the four-letter code of its side
+(`BUYS:...`, `SELL:...`), and on `log_messages` the object a line was read
+from. Column meanings:
 `docs/tables/`; real rows: `docs/samples/`.
 
 ## FIX registry

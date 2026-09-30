@@ -30,11 +30,13 @@ one event by. `curruuid` is the identity the codec derives, over the
 message's instant, its place there and that code, so each copy is a bronze
 row of its own; store it unchanged.
 
-`crosshashcode` digests `crosscode` alone, the first business identifier
-stated: `OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID`,
-`MDReqID`. The bridge's delivery is `msgsesseventid` -- the message type, the
-session instance, the context and `MsgSeqNum` -- which never alters the
-content identity.
+`crosshashcode` digests `crosscode` alone, as stored: the first business
+identifier stated -- `OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`,
+`QuoteReqID`, `MDReqID` -- or the code a split execution chains on, and for
+an order, a quote or an execution under the side prefix it is stored with, so
+`BUYS:ORD-1` and `ORD-1` digest apart. The bridge's delivery is
+`msgsesseventid` -- the message type, the session instance, the context and
+`MsgSeqNum` -- which never alters the content identity.
 
 ## Stated claims a row disagrees with
 
@@ -96,11 +98,16 @@ contract diff `tools/schemas_dump.py` writes before publishing it.
 ## Replay guarantees
 
 `srcuuids` joins a FIX row back to the stored lines it was read from -- the one
-line a bronze row was parsed from, every line its event was logged on once the
-walk merged them -- each by the line's own `curruuid`. On a line, `crosscode`
+line a bronze row was parsed from, every line its session event was logged on
+once the walk merged them, a copy another session event delivered folded in
+unnamed -- each by the line's own `curruuid`. On a line, `crosscode`
 and `seqnum` are its object and row number; on a FIX row the same two columns
 are the chain and the place among the events of its instant. A replay of a
 window answers the same bronze rows and, walked, the same silver rows, finds
 every one held as it is, writes none and leaves no duplicate, because every
 identity derives from what the bytes state and never from the instant a task
-ran.
+ran. A bronze FIX identity also derives from the window's bounds: a
+message's place counts the messages the window's lines handed over at its
+instant before it, so `parse_fix_messages_raw` is replayed over the windows
+it first ran ([windows](../dags/index.md#windows)); a wider window places the
+messages of an instant its first bound split anew, and lands them twice.

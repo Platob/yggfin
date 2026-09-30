@@ -263,10 +263,17 @@ metadata, the stated header cells and the entry tree; `curruuid` the identity
 the codec derives from the instant, the place there and that content, which
 rekep stores unchanged and never reconstructs. `crosscode` is the first of
 `OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID` and `MDReqID`
-stated -- an execution split out of a report chains on its `ExecID` -- and an
-order's, a quote's or an execution's is prefixed with the four-letter code of
-the side it states, `BUYS:` or `SELL:`; `crossuuid` and `crosshashcode` derive
-from it. `msgsesseventid` joins the
+stated. An execution split out of a fill report chains on its `ExecID`, else
+on `TradeID=` and its `TradeID`, else on the report's bare code, `|Execution=`
+and its content code in hex; one split out of a trade chains on its side of
+the trade, `{len}:{own}|{tag}:{len}:{id}` -- `own` the side's first
+`OrderID`, `ClOrdID` or `OrigClOrdID`, else the trade's code, `id` its first
+`SideExecID`, `SideTradeID`, `SideTradeReportID`, `OrderID` or `ClOrdID` --
+and a trade side stating no `Side(54)` leaves the row's `side` null, where the
+market rows state `UNKN`. An order's, a quote's or an execution's code is
+prefixed with the four-letter code of the side it states, `BUYS:` or `SELL:`;
+`crossuuid` and `crosshashcode` derive from the code as stored, prefix
+included. `msgsesseventid` joins the
 message type, the session instance, the context and `MsgSeqNum` by `:`
 where all four are stated. `state` is the [lifecycle code](../tables/states.md)
 the message's own status tags or message type ask for.

@@ -43,10 +43,10 @@ with storages:
     parse_fix_messages_refined(storages, window)
 
     first = parse_books(storages, window)
-    assert (first.read, first.written) == (51, 30)
+    assert (first.read, first.written) == (49, 30)
     # A rerun replaces the same window with the same books, in a new snapshot.
     again = parse_books(storages, window)
-    assert (again.read, again.written) == (51, 30)
+    assert (again.read, again.written) == (49, 30)
     assert again.snapshot_id != first.snapshot_id
 
     books = storages.dataset(BOOKS)
@@ -142,11 +142,11 @@ with storages:
     (reject,) = [row for row in rows(FIX_MESSAGES) if row["msgtype"] == "9"]
     assert (reject["crosscode"], reject["side"]) == (order, Side.SELL)
 
-    # Four silver rows: the cancel request, its reject, and the bridge's
-    # restatement of the reject, which books nothing -- twice, a repeat
-    # delivery a walk over stored rows does not yet fold.
+    # Three silver rows: the cancel request, its reject, and the bridge's
+    # restatement of the reject, which books nothing -- the copy of it the
+    # bridge forwarded under its own sequence folded into it.
     landed = parse_books(storages, evening)
-    assert (landed.read, landed.written) == (4, 1)
+    assert (landed.read, landed.written) == (3, 1)
     (book,) = rows(BOOKS)
     assert (book["currunix"], book["crosscode"]) == (reject["currunix"], "XXXX:XXXXXX")
     # The cancel request, then its reject, in the chain's order: the reject
@@ -169,6 +169,7 @@ from pathlib import Path
 
 from rekep import Storages
 from rekep.pipeline import (
+    Landed,
     parse_books,
     parse_fix_messages_raw,
     parse_fix_messages_refined,
@@ -200,11 +201,13 @@ day = window_of("2026-08-14", "2026-08-14")
 with storages:
     parse_log_messages(capture.as_uri(), storages, day)
     parse_fix_messages_raw(storages, day)
-    parse_fix_messages_refined(storages, day)
-    # The order, and the view of it the walk restated on the hour it was sent
-    # at, stand on neither side: the fold books neither.
+    # The order was sent on the hour, so the view the walk restates it as there
+    # is the order itself -- one instant, one place, one content, one identity
+    # -- and silver holds it once.
+    assert parse_fix_messages_refined(storages, day) == Landed(read=1, written=1, skipped=1)
+    # It stands on neither side: the fold books nothing.
     landed = parse_books(storages, day)
-    assert (landed.read, landed.written) == (2, 0)
+    assert (landed.read, landed.written) == (1, 0)
 ```
 
 The hour before `start` warms the books and none of its books is written:

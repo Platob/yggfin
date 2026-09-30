@@ -24,11 +24,11 @@ a capture read in another zone lands.
 | --- | --- | :---: | :---: | :---: |
 | [`parse_log_messages`](../tasks/parse-log-messages.md) | `bronze.record_keeping.log_messages` | 129 | 129 | 0 |
 | [`parse_fix_messages_raw`](../tasks/parse-fix-messages-raw.md) | `bronze.record_keeping.fix_messages` | 129 | 126 | 0 |
-| [`parse_fix_messages_refined`](../tasks/parse-fix-messages-refined.md) | `silver.record_keeping.fix_messages` | 126 | 51 | 0 |
-| [`parse_books`](../tasks/parse-books.md) | `silver.record_keeping.books` | 51 | 30 | 0 |
-| [`parse_orders`](../tasks/parse-orders-quotes-executions.md) | `silver.record_keeping.orders` | 30 | 9 | 0 |
+| [`parse_fix_messages_refined`](../tasks/parse-fix-messages-refined.md) | `silver.record_keeping.fix_messages` | 126 | 49 | 0 |
+| [`parse_books`](../tasks/parse-books.md) | `silver.record_keeping.books` | 49 | 30 | 0 |
+| [`parse_orders`](../tasks/parse-orders-quotes-executions.md) | `silver.record_keeping.orders` | 30 | 8 | 0 |
 | [`parse_quotes`](../tasks/parse-orders-quotes-executions.md) | `silver.record_keeping.quotes` | 30 | 0 | 0 |
-| [`parse_executions`](../tasks/parse-orders-quotes-executions.md) | `silver.record_keeping.executions` | 30 | 9 | 0 |
+| [`parse_executions`](../tasks/parse-orders-quotes-executions.md) | `silver.record_keeping.executions` | 30 | 8 | 0 |
 
 ## What each table holds
 
@@ -36,11 +36,11 @@ a capture read in another zone lands.
 | --- | :---: | --- |
 | [bronze.record_keeping.log_messages](../tables/bronze/log_messages.md) | 129 | [rows](bronze/log_messages.md) |
 | [bronze.record_keeping.fix_messages](../tables/bronze/fix_messages.md) | 126 | [rows](bronze/fix_messages.md) |
-| [silver.record_keeping.fix_messages](../tables/silver/fix_messages.md) | 51 | [rows](silver/fix_messages.md) |
+| [silver.record_keeping.fix_messages](../tables/silver/fix_messages.md) | 49 | [rows](silver/fix_messages.md) |
 | [silver.record_keeping.books](../tables/silver/books.md) | 30 | [rows](silver/books.md) |
-| [silver.record_keeping.orders](../tables/silver/orders.md) | 9 | [rows](silver/orders.md) |
+| [silver.record_keeping.orders](../tables/silver/orders.md) | 8 | [rows](silver/orders.md) |
 | [silver.record_keeping.quotes](../tables/silver/quotes.md) | 0 | [rows](silver/quotes.md) |
-| [silver.record_keeping.executions](../tables/silver/executions.md) | 9 | [rows](silver/executions.md) |
+| [silver.record_keeping.executions](../tables/silver/executions.md) | 8 | [rows](silver/executions.md) |
 
 ## Reproduce it
 
@@ -87,11 +87,11 @@ with storages:
 
 assert (log.read, log.written, log.skipped) == (129, 129, 0)
 assert (raw.read, raw.written, raw.skipped) == (129, 126, 0)
-assert (refined.read, refined.written, refined.skipped) == (126, 51, 0)
-assert (books.read, books.written, books.skipped) == (51, 30, 0)
+assert (refined.read, refined.written, refined.skipped) == (126, 49, 0)
+assert (books.read, books.written, books.skipped) == (49, 30, 0)
 assert {kind: landed.written for kind, landed in events.items()} == {
-    "orders": 9,
+    "orders": 8,
     "quotes": 0,
-    "executions": 9,
+    "executions": 8,
 }
 ```

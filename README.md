@@ -61,13 +61,13 @@ with storages:
     capture = "file:data/capture/ulbridge.log"
     assert parse_log_messages(capture, storages, window) == Landed(read=129, written=129)
     assert parse_fix_messages_raw(storages, window) == Landed(read=129, written=126)
-    assert parse_fix_messages_refined(storages, window) == Landed(read=126, written=51)
+    assert parse_fix_messages_refined(storages, window) == Landed(read=126, written=49)
     books = parse_books(storages, window)
     events = {
         kind: task(storages, window, snapshot_id=books.snapshot_id).written
         for kind, task in FLATTENERS.items()
     }
-    assert (books.written, events) == (30, {"orders": 9, "quotes": 0, "executions": 9})
+    assert (books.written, events) == (30, {"orders": 8, "quotes": 0, "executions": 8})
 ```
 
 A rerun of a task over its window leaves the table it writes holding each row

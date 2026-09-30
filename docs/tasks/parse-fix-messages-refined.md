@@ -44,7 +44,7 @@ with storages:
     parse_fix_messages_raw(storages, window)
     # The walk merges the messages of one event, adds an expiry, and restates
     # every chain alive on each whole hour.
-    assert parse_fix_messages_refined(storages, window) == Landed(read=126, written=51)
+    assert parse_fix_messages_refined(storages, window) == Landed(read=126, written=49)
 
     refined = storages.dataset(FIX_MESSAGES)
     lines = storages.dataset(LOG_MESSAGES)
@@ -80,7 +80,7 @@ with storages:
     assert all(tick.minute == tick.second == 0 for tick in views.column("snapunix").to_pylist())
 ```
 
-Over the capture's whole day the same task reads 136 bronze rows and lands 28
+Over the capture's whole day the same task reads 136 bronze rows and lands 25
 events and 42 views.
 
 ## Read
@@ -99,7 +99,13 @@ is built before the walk.
 ## Walk
 
 `rekep.fix.fix_lifecycle_arrow_reader(codec, rows)` reads each row back as
-the message it was parsed as and walks the messages in their chains. The
+the message it was parsed as and walks the messages in their chains. A table
+read gives a group a message never stated back as an empty list -- PyIceberg
+stores a null list of structs as `[]` -- beside its counter, which keeps its
+null, so a group read back empty beside a counter stating nothing is read
+absent, and one beside a stated zero as the empty group it states: a stored
+message is the content the parse recorded, and its copies fold as the parse's
+own rows would. The
 walk is stateful and ordered: it dates a message by the `TransactTime` it
 states where the parse could not, stably sorts by that instant, merges the
 messages of one event, links each event to the one before it, and emits an
@@ -115,7 +121,7 @@ exactly the walk that collects it. What it fills:
 | --- | --- |
 | `seqnum` | the event's place among the events of its instant, as the walk placed them; empty at place zero |
 | `prevuuid`, `prevunix` | the event this one follows, and its instant |
-| `srcuuids` | every line the event was logged on, the merged messages' lines together |
+| `srcuuids` | every line the event's session event was logged on, the merged observations' lines together; a copy another session event delivered at the event's instant with its content is folded into it, and only its bronze row names its line |
 | `recdunix` | the earliest the event was recorded; empty on an expiry, which no line recorded |
 | `creaunix`, `exprunix`, `state` | the creation, deadline and [state](../tables/states.md) the chain folded forward |
 | `curruuid` | the event's identity, re-settled where the walk dated it: a silver key need not be its bronze twin's |
@@ -124,17 +130,6 @@ The walk holds the messages of the hours it has not yet walked -- two of
 them for a read in order -- so its memory grows with the busiest two hours,
 not with the window. [The table page](../tables/silver/fix_messages.md) lists every column and
 [its samples](../samples/silver/fix_messages.md) show two walked chains.
-
-## Repeat deliveries
-
-A bridge logs one message at every hop it passes, and bronze keeps each copy
-as a row of its own, placed apart at its instant. The walk folds a repeated
-delivery into the event it repeats, but over rows read back from a table not
-yet every one: PyIceberg stores a copy's null list of structs as an empty
-one, and the walk then tells two copies apart. Over the capture's day silver
-holds three such rows -- two deliveries of 12:46:39.743 and one of
-21:59:46.479 -- beside the events they repeat; a walk over the parse's own
-rows folds all three.
 
 ## Write
 

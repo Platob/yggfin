@@ -100,10 +100,11 @@ The deleted Rekep FIX and market implementation is not a compatibility target.
   capture's bridge prints a Central European clock, two hours ahead of its
   frames' UTC in summer, so read in its zone a line lands in the hour of the
   message it carries. A capture read in another zone dates each line hours
-  away from its message: one delivery's observations stop folding and hourly
-  silver windows drop the messages dated across the offset. The suites read
-  the capture at the default and pin its explicit `timezone="UTC"` reading
-  beside it.
+  away from its message: the whole walk still dates every copy by its
+  transaction time and folds them, but an hourly silver window holds a
+  copy's bronze row or the instant the walk dates it at, never both, leaves
+  it out, and merges only the copies it holds. The suites read the capture
+  at the default and pin its explicit `timezone="UTC"` reading beside it.
 - Streams open one leaf at a time with bounded transport read-ahead and
   row-bounded batches. One record is unbounded until Yggdryl provides an
   error-on-overflow byte limit that preserves exact bodies.
@@ -300,21 +301,29 @@ parse -> bronze.record_keeping.fix_messages, lifecycle -> silver.record_keeping.
 ```
 
 `parse_fix_messages_raw` reads the stored lines of the window off `currunix`,
-with the epoch-pinned lines beside them, in the table's `SORT_COLUMNS` order --
-the order they were printed in, so the place the parse gives a message among
-the messages of its instant, which reaches its identity, never depends on file
-layout -- hands the parse `PARSE_COLUMNS`, the seven it consumes, and parses
-them, and only that: a bronze row is what the message implied about itself,
-`prevuuid` and `prevunix` are empty on every one because nothing has walked
-yet, and `seqnum` is its place in its run -- the messages the parse handed over
-at one instant, one after another -- null at place zero. The parse dates a
-message by the transaction clock standing within `official_time_delay_ms` of
-the `SendingTime` it states, else by that `SendingTime`; a message stating
-none, by the transaction clock standing within that delay of the line it was
-read off, else by that line; a frame read off no line takes the codec's
-`default_sending_time`, which the tasks pin at `UNDATED`. A message logged
-again at every hop is a copy placed apart at its instant, so every copy is a
-bronze row under an identity of its own, and the walk folds them.
+with the epoch-pinned lines beside them, in the table's `SORT_COLUMNS` order
+-- the order they were printed in, so the place the parse gives a message
+among the messages of its instant, which reaches its identity, never depends
+on file layout -- hands the parse `PARSE_COLUMNS`, the seven it consumes, and
+parses them, and only that. The place counts the messages the window's lines
+handed over at that instant, so it depends on the window's bounds: a bound
+between the lines of one instant's messages restarts the part after it at
+place zero, and a later run over other bounds lands those messages again under
+identities of their own. Bronze FIX is rerun over the bounds it first ran, or
+over bounds that split no instant's messages. A bronze row is what the message
+implied about itself, `prevuuid` and `prevunix` are empty on every one because
+nothing has walked yet, and `seqnum` is its place in its run -- the messages
+the parse handed over at one instant, one after another -- null at place zero.
+The parse dates a message by the transaction clock standing within
+`official_time_delay_ms` of the `SendingTime` it states, else by that
+`SendingTime`; a message stating none, by the transaction clock standing
+within that delay of the line it was read off, else by that line; a frame read
+off no line takes the codec's `default_sending_time`, which the tasks pin at
+`UNDATED`. A message logged again at every hop is a copy placed apart at its
+instant, so every copy is a bronze row under an identity of its own, and the
+walk folds them -- except that an identity keeps only the millisecond of its
+instant, so copies of one content dated apart within one millisecond, each
+place zero of its own instant, share one and the key folds them.
 `parse_fix_messages_refined` reads `[start - HISTORY, end)` of bronze --
 `HISTORY` is one hour -- with `fix_window_filter`, which adds the `UNDATED`
 rows whose `TransactTime` the window holds, in `SORT_COLUMNS` order, walks the
@@ -340,26 +349,38 @@ FIX model. Parse, storage, reconstruction and lifecycle all use that one row.
 `msgthreadid`, `loglevel` and `body` remain only in `log_messages`;
 `msgsessionid`, `msgctxid`, `msgseqnum` and `msgpluginid` are FIX fields a
 line fills, under one spelling; `srcuuids` joins a FIX row to the `curruuid`
-of the lines its event was logged on, and an execution split out of a report
-to that report's `curruuid` beside them. `exprunix` (65007) is the deadline a
-chain folds forward. `state` (65029) is an `int32` code of the intrinsic
-`statecodeset`, which `rekep.State` enumerates -- code = rank * 100 + place,
-`UNKNOWN` 0 -- set by the first of tags 39, 150, 1036, 939, 297, 87, 665, 940,
-1375 and 531 a message states, else by what its message type asks for, else
-`UNKNOWN`. The parse splits a report of a fill into the report and the
-execution it reports, one per side for a trade report -- `UNKN` for a side
-stating no `Side(54)` -- each execution `FILLED`, and a quote stating both
-sides into one quote per side. `crosscode` takes the first non-empty
-`OrderID`, `ClOrdID`, `OrigClOrdID`, `QuoteID`, `QuoteReqID` or `MDReqID` --
-the `ExecID` for a split execution -- and an order's, a quote's or an
-execution's is prefixed with the four-letter code of the side it states
-(`BUYS:`, `SELL:`), every other kind's, and one stating no side, bare;
-`msgsesseventid`
-joins the message type, the capture session, context and sequence. Default
-absence spellings are empty text, `null`, `<null>`, `none`, `n/a` and
-`[n/a]`, trimmed and compared case-insensitively. `fixentries` is residual and does
-not duplicate successfully lifted scalars or complete groups; a reconstructed
-row promises canonical message semantics, not arrival pair order or bytes.
+of the lines its event was logged on -- on silver, the lines of the
+observations of its session event, `msgsesseventid`, which the walk merges; a
+copy another session event delivered at its instant with its content is folded
+into it and named only by its bronze row -- and an execution split out of a
+report to that report's `curruuid` beside them. PyIceberg reads a null list of
+structs back as an empty one, so `rekep.fix` reads a stored group that came
+back empty beside a counter stating nothing as absent before the walk or the
+book fold reads the row, and one beside a stated zero as the empty group it
+states. `exprunix` (65007) is the deadline a chain folds forward. `state`
+(65029) is an `int32` code of the intrinsic `statecodeset`, which
+`rekep.State` enumerates -- code = rank * 100 + place, `UNKNOWN` 0 -- set by
+the first of tags 39, 150, 1036, 939, 297, 87, 665, 940, 1375 and 531 a
+message states, else by what its message type asks for, else `UNKNOWN`. The
+parse splits a report of a fill into the report and the execution it reports,
+one per side for a trade report, each execution `FILLED`, and a quote stating
+both sides into one quote per side. A trade side stating no `Side(54)` leaves
+the FIX row's `side` null, and the market rows state it `UNKN` (0).
+`crosscode` takes the first non-empty `OrderID`, `ClOrdID`, `OrigClOrdID`,
+`QuoteID`, `QuoteReqID` or `MDReqID`; an execution split out of a fill report
+takes its `ExecID`, else `TradeID=` and its `TradeID`, else the report's bare
+code, `|Execution=` and its content code in hex; one split out of a trade
+takes its side of the trade, `{len}:{own}|{tag}:{len}:{id}` -- `own` the
+side's first `OrderID`, `ClOrdID` or `OrigClOrdID`, else the trade's code, and
+`id` its first `SideExecID`, `SideTradeID`, `SideTradeReportID`, `OrderID` or
+`ClOrdID`. An order's, a quote's or an execution's is prefixed with the
+four-letter code of the side it states (`BUYS:`, `SELL:`), every other kind's,
+and one stating no side, bare; `msgsesseventid` joins the message type, the
+capture session, context and sequence. Default absence spellings are empty
+text, `null`, `<null>`, `none`, `n/a` and `[n/a]`, trimmed and compared
+case-insensitively. `fixentries` is residual and does not duplicate
+successfully lifted scalars or complete groups; a reconstructed row promises
+canonical message semantics, not arrival pair order or bytes.
 
 The FIX registry is the process default: importing `rekep.fix` installs the
 bundled dictionary under `rekep/_data/fix` with `FixRegistry.install_env`,
@@ -370,9 +391,12 @@ default is resolved once per process. `parse_fix_messages_raw`,
 `parse_fix_messages_refined` and `parse_books` take the `codec` a caller
 pinned, `FixCodec.from_env(default_sending_time=UNDATED)` when None, and it is
 one codec for all three, because each task after the parse reads a row back
-as the message the same dictionary wrote. Parsing and local enrichment are
-independent per event and may use `threads`; only lifecycle enrichment owns
-cross-event state and order. Native construction validates every pin.
+as the message the same dictionary wrote. The parse reads each frame on its
+own and may use `threads`, and neither they nor the batch sizes change an
+answer; its one piece of stream state is the place it gives each message
+among the messages of its instant, in the order it is handed them, so the
+input's order does. Every other cross-event state and order belongs to
+lifecycle enrichment. Native construction validates every pin.
 
 The refined and the books scans read the hour partitions in ascending
 order, finishing one before opening the next, merge at most 16 overlapping

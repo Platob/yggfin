@@ -585,7 +585,7 @@ def test_the_walk_restates_every_chain_alive_on_each_whole_hour(landing: Landing
     events, views = split(silver.to_pylist())
     refined = landing.landed["parse_fix_messages_refined"]
     print(f"\n{len(events)} events and {len(views)} views: {refined}")
-    assert (len(events), len(views)) == (22, 12)
+    assert (len(events), len(views)) == (20, 12)
     assert refined.written == silver.num_rows and refined.skipped == 0
     assert all(view[EVENT_CLOCK] == view["snapunix"] for view in views)
     ticks = sorted({view["snapunix"] for view in views})
@@ -642,7 +642,7 @@ def test_the_rows_at_start_are_the_chains_the_hour_before_left_alive(
     plain = parse_fix_messages_refined(
         storages, WINDOW, snapshot_millis=0, target="silver.record_keeping.plain_fix_messages"
     )
-    assert plain == Landed(read=120, written=22)
+    assert plain == Landed(read=120, written=20)
     events, _ = split(held.to_pylist())
     assert read(storages, "silver.record_keeping.plain_fix_messages").to_pylist() == events
 
@@ -650,7 +650,7 @@ def test_the_rows_at_start_are_the_chains_the_hour_before_left_alive(
     pinned = parse_fix_messages_refined(
         storages, WINDOW, codec=minute, target="silver.record_keeping.pinned_fix_messages"
     )
-    assert pinned == Landed(read=120, written=34)
+    assert pinned == Landed(read=120, written=32)
     assert read(storages, "silver.record_keeping.pinned_fix_messages").equals(held)
 
 
@@ -680,7 +680,7 @@ def test_a_sorted_walk_answers_what_the_whole_walk_does(landing: Landing) -> Non
     hourly = walked(True)
     whole = walked(False)
     print(f"\nthe hourly walk answers {hourly.num_rows} rows, the whole walk {whole.num_rows}")
-    assert hourly.num_rows == whole.num_rows == 34
+    assert hourly.num_rows == whole.num_rows == 32
     assert hourly.equals(whole)
 
 
