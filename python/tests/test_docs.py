@@ -38,8 +38,7 @@ JSON_FENCE = re.compile(r"^```json\n(.*?)^```", re.MULTILINE | re.DOTALL)
 #: imports `rekep`, and the package re-exports what they need.
 NATIVE = re.compile(r"yggdryl", re.IGNORECASE)
 
-#: The pages whose bash fences name the native serving binary: the XMLA
-#: endpoint's and the market server's command lines.
+#: The serving pages: their bash fences alone name the native serving binary.
 SERVING_PAGES = (DOCS / "storages" / "xmla.md", DOCS / "storages" / "market-server.md")
 
 #: A command of a `rekep` console script, which the package does not install.
@@ -130,8 +129,8 @@ def fenced_lines(text: str, language: str) -> set[int]:
 
 
 def test_no_documentation_names_the_native_dependency() -> None:
-    """The one exception is the serving pages' command lines, which name the
-    serving binary inside their bash fences."""
+    """The one exception, AGENTS.md's: the bash fences of `SERVING_PAGES`,
+    each stating the serving command line."""
     named = []
     for path in PUBLISHED:
         text = path.read_text(encoding="utf-8", errors="replace")

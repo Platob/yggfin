@@ -80,12 +80,15 @@ with storages:
         )
         folded = book_arrow_reader(codec, scanned, snapshot_millis=SNAPSHOT_MILLIS)
         books = market_window_reader(folded, window)
+        # Written beside the served file and moved onto it, never half written.
+        staged = root / "books.arrows.part"
         with (
-            pa.OSFile(str(root / "books.arrows"), "wb") as sink,
+            pa.OSFile(str(staged), "wb") as sink,
             pa.ipc.new_stream(sink, books.schema) as writer,
         ):
             for batch in books:
                 writer.write_batch(batch)
+        staged.replace(root / "books.arrows")
     finally:
         events.close()
 
@@ -127,32 +130,40 @@ yggdryl market serve books=<root>/books.arrows --bind 127.0.0.1:8080
 
 The first line the server prints is its endpoint, `http://127.0.0.1:8080/`,
 where the page is; `--bind 127.0.0.1:0` takes a free port and prints the one
-it took. The server reads the file at every request, so an export rerun after
-`parse_fix_messages_refined` lands a window shows on the next request, with
-no restart.
+it took. The page opens on the first ticker listed, 1605, over its whole span:
+its one order states no price, so its chart reads "No bid or ask in this
+range"; the view link below opens HOLN, where the prices are. The server reads
+the file at every request, so the fold rerun into the same
+`root / "books.arrows"` after `parse_fix_messages_refined` lands a window
+shows on the next request, with no restart; the example stages the export
+beside that file and moves it onto it, so no request reads it half written.
 
 ## What the page shows
 
 The page is the endpoint's `index.html`, and its view -- table, ticker, range,
 zone, interval and selected bucket -- is the URL's hash, so a view is a link.
-Both views below are HOLN over the afternoon, hourly on the Zurich clock, with
-the 14:00 bucket selected:
+The shots below are one view, HOLN over the afternoon, hourly on the Zurich
+clock, with the 14:00 bucket selected:
 
 ```text
 http://127.0.0.1:8080/index.html#table=books&ticker=HOLN&from=2026-08-14T12:00:00Z&to=2026-08-14T17:00:00Z&tz=Europe%2FZurich&interval=1h&at=2026-08-14T12:00:00Z
 ```
 
-![HOLN's hourly bid candles on the Zurich clock, the 14:00 bucket selected](../assets/market-server/chart-light.png#only-light)
-![HOLN's hourly bid candles on the Zurich clock, the 14:00 bucket selected](../assets/market-server/chart-dark.png#only-dark)
+![The header's selectors on HOLN, hourly, from 14:00 to 19:00 Zurich](../assets/market-server/header-light.png#only-light)
+![The header's selectors on HOLN, hourly, from 14:00 to 19:00 Zurich](../assets/market-server/header-dark.png#only-dark)
 
 The header selects the table, the ticker -- each labelled with its number of
 books -- the range as a wall clock in the zone, the zone and the candle
-interval. The chart draws each bucket's bid candle on its left and its ask
-candle on its right, the mid close as a line and the spread as a band
-beneath; hovering or the arrow keys read a bucket, and a click or Enter
-selects it. HOLN's bid from 14:46 on is one buy order resting at 72.3 for 50,
-and nothing was offered, so each hour is a flat bid candle with no mid or
-spread.
+interval.
+
+![HOLN's hourly bid candles on the Zurich clock, the 14:00 bucket selected](../assets/market-server/chart-light.png#only-light)
+![HOLN's hourly bid candles on the Zurich clock, the 14:00 bucket selected](../assets/market-server/chart-dark.png#only-dark)
+
+The chart draws each bucket's bid candle on its left and its ask candle on its
+right, the mid close as a line and the spread as a band beneath; hovering or
+the arrow keys read a bucket, and a click or Enter selects it. HOLN's bid from
+14:46 on is one new buy order of 50 at 72.3, still pending, and nothing was
+offered, so each hour is a flat bid candle with no mid or spread.
 
 ![HOLN's book before 15:00 and the bid and ask events of the 14:00 bucket](../assets/market-server/point-light.png#only-light)
 ![HOLN's book before 15:00 and the bid and ask events of the 14:00 bucket](../assets/market-server/point-dark.png#only-dark)
@@ -160,9 +171,12 @@ spread.
 Point is the last book before the selected bucket ends: its best bid and ask,
 spread, mid and imbalance, the counts of its alive entries, deltas and
 executions, and each side's top limits. Audit lists the bucket's bid and ask
-events -- here an order's fill of 300 at 72.28, as its delta and its
-execution, then the order resting at 72.3, as its alive entry and its delta
--- and downloads the whole range as CSV, gzip or zstd.
+events -- here a buy order of 300 completed by a last fill of 235 at 72.28,
+as its delta and its execution, then the new buy order of 50 at 72.3,
+pending, as its alive entry and its delta -- and downloads the whole range as
+CSV, gzip or zstd. An event's `price` and `quantity` are what it states, the
+order's 300 on both rows of the fill; what the fill traded is its `lastpx` and
+`lastqty`, which the download carries beside them.
 
 ## Routes
 
@@ -181,6 +195,15 @@ The tables served, each with the location it reads.
 curl -s http://127.0.0.1:8080/api/tables
 ```
 
+### /api/timezones
+
+The zones `tz` reads, by name: `UTC`, then every zone the server has rules
+for, which the page offers.
+
+```bash
+curl -s http://127.0.0.1:8080/api/timezones
+```
+
 ### /api/tickers
 
 Every ticker a table holds, with its number of books and the whole seconds
@@ -192,9 +215,10 @@ curl -s 'http://127.0.0.1:8080/api/tickers?table=books'
 
 ### /api/candles
 
-A ticker's books in `[from, to)`, folded into candles of `interval` aligned
-to `tz`: the bid, the ask, the mid and the spread, each an open, high, low and
-close, beside each bucket's books, executions and volume.
+A ticker's books in `[from, to)`, folded into candles of `interval` -- `1m`
+unless stated -- aligned to `tz`: the bid, the ask, the mid and the spread,
+each an open, high, low and close, beside each bucket's books, executions and
+volume, the sum of the `quantity` its executions state.
 
 ```bash
 curl -s 'http://127.0.0.1:8080/api/candles?table=books&ticker=HOLN&from=2026-08-14T14:00:00&to=2026-08-14T19:00:00&tz=Europe/Zurich&interval=1h'
@@ -212,8 +236,9 @@ curl -s 'http://127.0.0.1:8080/api/book?table=books&ticker=HOLN&at=2026-08-14T15
 ### /api/events
 
 One row per alive entry, delta and execution of every book in `[from, to)`,
-at most `limit` of them, `truncated` saying whether more were held back;
-`side=bid` or `side=ask` keeps one side.
+at most `limit` of them -- 5000 unless stated, and never more --
+`truncated` saying whether more were held back; `side=bid` or `side=ask`
+keeps one side.
 
 ```bash
 curl -s 'http://127.0.0.1:8080/api/events?table=books&ticker=HOLN&from=2026-08-14T14:00:00&to=2026-08-14T15:00:00&tz=Europe/Zurich&side=bid'
