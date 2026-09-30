@@ -1287,7 +1287,7 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "exceptiongroup", marker = "python_full_version < '3.11'", specifier = ">=1.2" },
-    { name = "pyarrow", specifier = ">=17.0" },
+    { name = "pyarrow", specifier = ">=18.0" },
     { name = "pyiceberg", extras = ["glue"], marker = "extra == 'glue'", specifier = ">=0.12" },
     { name = "pyiceberg", extras = ["pyiceberg-core", "sql-sqlite"], marker = "extra == 'iceberg'", specifier = ">=0.12" },
     { name = "pyiceberg", extras = ["rest-sigv4"], marker = "extra == 's3tables'", specifier = ">=0.12" },

@@ -41,23 +41,25 @@ def main() -> None:
         def columnar(kind=kind):
             return book_event_arrow_reader(corpus.to_reader(), kind).read_all()
 
-        schema = columnar().schema
-
-        def reference(kind=kind, schema=schema):
-            events = [
+        # Arrow builds no `uuid` nested in a list from Python values, so the
+        # reference answers the rows themselves.
+        def reference(kind=kind):
+            return [
                 event
                 for book in corpus.to_pylist()
                 for event in book[FLATTENED_COLUMNS[kind]]
                 if event["marketdatakind"] == EVENT_KINDS[kind]
             ]
-            return pa.Table.from_pylist(events, schema=schema)
 
         expected = reference()
-        ordering = [("curruuid", "ascending"), ("side", "ascending")]
-        assert expected.sort_by(ordering).equals(columnar().sort_by(ordering))
+
+        def ordering(event):
+            return event["curruuid"], event["side"]
+
+        assert sorted(expected, key=ordering) == sorted(columnar().to_pylist(), key=ordering)
         baseline = best_of(reference, repeat)
-        report(f"{kind}: Python rows", baseline, expected.num_rows)
-        report(f"{kind}: Arrow flatten", best_of(columnar, repeat), expected.num_rows, baseline)
+        report(f"{kind}: Python rows", baseline, len(expected))
+        report(f"{kind}: Arrow flatten", best_of(columnar, repeat), len(expected), baseline)
 
 
 if __name__ == "__main__":

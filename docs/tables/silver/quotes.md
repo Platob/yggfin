@@ -25,14 +25,14 @@ The quote deltas of the books, one row per quote event.
 | `exprunix` | `timestamptz` |  | When the event stops being good, where it does; the latest its chain knows once followed. |
 | `prevunix` | `timestamptz` |  | When the event this one follows happened, where it follows one. |
 | `snapunix` | `timestamptz` |  | The grid instant a walk read this event as the snapshot of; empty on every row no snapshot was taken of. |
-| `curruuid` | `fixed[16]` | yes | The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash. |
-| `crossuuid` | `fixed[16]` | yes | The identity every event of one chain shares, derived from the code they share; the event's own where it names none. |
+| `curruuid` | `uuid` | yes | The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash. |
+| `crossuuid` | `uuid` | yes | The identity every event of one chain shares, derived from the code they share; the event's own where it names none. |
 | `crosscode` | `string` |  | The code every event of one chain shares, as the event spells it; empty where none. |
 | `currhashcode` | `long` | yes | The XXH3-64 of what the event states. |
 | `crosshashcode` | `long` | yes | The XXH3-64 of the cross code; zero where the event names none. |
-| `prevuuid` | `fixed[16]` |  | The identity of the event this one follows, where it follows one. |
+| `prevuuid` | `uuid` |  | The identity of the event this one follows, where it follows one. |
 | `seqnum` | `long` |  | The event's place in its chain: how many came before it. |
-| `srcuuids` | `list<fixed[16]>` |  | The sorted unique identities of the elements this event was read from: provenance, never its chain - no walk moves it. |
+| `srcuuids` | `list<uuid>` |  | The sorted unique identities of the elements this event was read from: provenance, never its chain - no walk moves it. |
 | `state` | `int` |  | The state the event reached, as the code of a lifecycle-sorted enum; UNKNOWN where nothing states one, the furthest its chain knows once followed. |
 | `price` | `decimal(38, 18)` |  |  |
 | `currency` | `string` | yes |  |

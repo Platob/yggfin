@@ -6,6 +6,7 @@ import datetime
 import os
 import subprocess
 import sys
+import uuid
 from collections import defaultdict
 from pathlib import Path
 
@@ -209,14 +210,14 @@ def _chains(rows: pyarrow.Table) -> dict[str, tuple[int, int, int]]:
     return {code: (count, len(seen), step) for code, (count, seen, step) in held.items()}
 
 
-def _sources(rows: pyarrow.Table) -> list[bytes]:
+def _sources(rows: pyarrow.Table) -> list[uuid.UUID]:
     """Every source the rows name: the lines, and the reports an execution
     was split out of."""
     return [source for held in rows.column(SOURCES).to_pylist() for source in held]
 
 
-def _lines(rows: pyarrow.Table) -> list[bytes]:
-    """The one line each row of a parse names, as the bytes `log_messages`
+def _lines(rows: pyarrow.Table) -> list[uuid.UUID]:
+    """The one line each row of a parse names, as the identity `log_messages`
     keys it by: its one source that is no message of the parse, because an
     execution split out of a report names that report beside the line."""
     messages = set(rows.column(MESSAGE_KEY).to_pylist())
@@ -365,15 +366,17 @@ def test_the_retired_columns_are_gone_rather_than_kept_beside_the_new_ones() -> 
 
 
 def test_the_storage_boundary_narrows_what_a_row_filter_cannot_be_lowered_to() -> None:
-    """Sixteen ordered bytes, microsecond instants, signed codes, no name."""
+    """Identities as `uuid`, microsecond instants, signed codes, no name."""
     schema = fix_message_field().into_arrow_schema()
 
     for name in ("curruuid", "crossuuid", "prevuuid"):
-        assert schema.field(name).type == pyarrow.binary(16), name
-    assert schema.field(SOURCES).type.field(0).type == pyarrow.binary(16)
-    assert not [
+        assert schema.field(name).type == pyarrow.uuid(), name
+    assert schema.field(SOURCES).type.field(0).type == pyarrow.uuid()
+    # The identity is the one extension a table keeps: Iceberg stores it as
+    # its own `uuid`.
+    assert [
         member.name for member in schema if isinstance(member.type, pyarrow.BaseExtensionType)
-    ]
+    ] == ["curruuid", "crossuuid", "prevuuid"]
     # A semantic datatype crosses on the column's own metadata rather than as
     # an Arrow extension type, and a table stores neither.
     assert not [
@@ -421,7 +424,8 @@ def test_the_stored_row_holds_none_of_the_text_it_was_read_from(raw) -> None:
 
 
 def test_the_narrowing_walks_into_a_nested_type() -> None:
-    """An identity inside a group is narrowed where it sits."""
+    """A member inside a group is narrowed where it sits, and an identity
+    there keeps its `uuid`."""
     nested = pyarrow.schema(
         [
             pyarrow.field(
@@ -429,7 +433,12 @@ def test_the_narrowing_walks_into_a_nested_type() -> None:
                 pyarrow.list_(
                     pyarrow.field(
                         "party",
-                        pyarrow.struct([pyarrow.field("partyuuid", pyarrow.uuid())]),
+                        pyarrow.struct(
+                            [
+                                pyarrow.field("partyuuid", pyarrow.uuid()),
+                                pyarrow.field("partyunix", pyarrow.timestamp("ns", tz="UTC")),
+                            ]
+                        ),
                         nullable=False,
                     )
                 ),
@@ -439,8 +448,9 @@ def test_the_narrowing_walks_into_a_nested_type() -> None:
 
     narrowed = iceberg_event_field(nested, "Nested").into_arrow_schema()
 
-    member = narrowed.field("parties").type.field(0).type.field(0)
-    assert member.type == pyarrow.binary(16)
+    party = narrowed.field("parties").type.field(0).type
+    assert party.field("partyuuid").type == pyarrow.uuid()
+    assert party.field("partyunix").type == pyarrow.timestamp("us", tz="UTC")
 
 
 def test_the_key_is_required_whatever_the_row_states() -> None:
@@ -630,10 +640,10 @@ def test_the_parse_places_no_message_in_a_chain(raw) -> None:
 def test_a_message_names_the_stored_line_it_was_parsed_out_of(lines, raw) -> None:
     """Provenance, never lineage.
 
-    `log_messages` states the line's own `curruuid` on every row, and the
-    batch door reads it back -- viewed from the sixteen bytes a table keys on
-    to the identity the read states -- as each message's one source. That
-    view is what makes the join exact: a carrier stating no identity leaves
+    `log_messages` stores the line's own `curruuid` on every row as the
+    `uuid` the read states, and the batch door reads it back as each
+    message's one source. That is what makes the join exact: a carrier
+    stating no identity leaves
     the parse to recompute one from the line's clock and body alone, which is
     never the one the read derived over the line's place and the object it
     was read from.
@@ -664,7 +674,9 @@ def test_a_message_names_the_stored_line_it_was_parsed_out_of(lines, raw) -> Non
         if held != source
     ]
     assert len(recomputed) == len(sources), "no recomputed identity is the stored one"
-    assert all(held[:6] == source[:6] for held, source in recomputed), "the line's millisecond"
+    assert all(held.bytes[:6] == source.bytes[:6] for held, source in recomputed), (
+        "the line's millisecond"
+    )
     assert set(held for held, _ in recomputed).isdisjoint(named)
     # And a table half of whose rows predate the column: each message names
     # the identity its own line stated, and a recomputed one where it stated
@@ -677,7 +689,7 @@ def test_a_message_names_the_stored_line_it_was_parsed_out_of(lines, raw) -> Non
                 held if index % 2 else None
                 for index, held in enumerate(lines.column("curruuid").to_pylist())
             ],
-            pyarrow.binary(16),
+            pyarrow.uuid(),
         ),
     )
     partly = stored_arrow_reader(
@@ -692,7 +704,7 @@ def test_every_restatement_of_an_event_settles_on_one_identity(raw) -> None:
     """The gap between a chain's messages and its events, row by row: the same
     message logged at a second hop answers the identity the first one did, and
     the rows it was read from are different lines."""
-    held: dict[bytes, set[bytes]] = defaultdict(set)
+    held: dict[uuid.UUID, set[uuid.UUID]] = defaultdict(set)
     for identity, source in zip(raw.column(MESSAGE_KEY).to_pylist(), _lines(raw), strict=True):
         held[identity].add(source)
     restated = {identity: lines for identity, lines in held.items() if len(lines) > 1}

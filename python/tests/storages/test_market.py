@@ -20,6 +20,7 @@ import pyarrow
 import pytest
 
 from rekep import Side, State, Storages, pipeline
+from rekep.dataset import sorted_rows
 from rekep.fields import stored_arrow_reader
 from rekep.fix import EVENT_CLOCK, FixCodec, fix_message_field, fix_parse_field
 from rekep.iceberg import IcebergDataset
@@ -71,9 +72,9 @@ FRAMES_WINDOW = window_of("2026-09-21T10:00:00Z", "2026-09-21T10:00:10Z")
 COUNTS = {"orders": 1, "quotes": 3, "executions": 3}
 
 
-def short(identity: bytes | None) -> str:
+def short(identity: uuid.UUID | None) -> str:
     """An identity as its last six hex digits: a UUIDv7 opens with its millisecond."""
-    return "-" if identity is None else uuid.UUID(bytes=identity).hex[-6:]
+    return "-" if identity is None else identity.hex[-6:]
 
 
 def refined(storages: Storages, frames: tuple[bytes, ...]) -> None:
@@ -588,11 +589,11 @@ def test_order_and_quote_tasks_read_only_the_nested_deltas(
     monkeypatch.setattr(IcebergDataset, "read_arrow_reader", observed)
     for kind in ("orders", "quotes"):
         with book_event_arrow_reader(depth.to_reader(), kind) as reader:
-            reference = reader.read_all().sort_by("curruuid")
+            reference = sorted_rows(reader.read_all(), ["curruuid"])
         landed = FLATTENERS[kind](storages, FRAMES_WINDOW, snapshot_id=committed.snapshot_id)
         assert landed.written == COUNTS[kind]
         assert landed.snapshot_id == committed.snapshot_id
-        stored = read(storages, EVENTS[kind]).sort_by("curruuid")
+        stored = sorted_rows(read(storages, EVENTS[kind]), ["curruuid"])
         assert stored.equals(reference, check_metadata=False)
 
     assert len(scans) == 2

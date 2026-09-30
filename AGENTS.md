@@ -398,8 +398,9 @@ each child's own facts.
 
 `book_field()` derives from the native empty book reader's schema;
 `market_event_field()` derives from its execution child. `iceberg_event_field`
-narrows every shape recursively: timestamp ns to us, UUID to fixed bytes,
-semantic extensions to storage, uint64 to signed bit views; and declares the
+narrows every shape recursively: timestamp ns to us, semantic extensions to
+storage, uint64 to signed bit views, while a UUID stays `arrow.uuid` and is
+stored as Iceberg `uuid`; and declares the
 layout once: key `curruuid`, partition `hour(currunix)`, sort
 `currunix, seqnum, curruuid`. The four fields -- the text read's row, the
 fixed FIX row, the book, the market event -- make the seven tables.

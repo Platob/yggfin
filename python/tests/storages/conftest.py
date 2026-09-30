@@ -26,6 +26,7 @@ import pyarrow
 import pytest
 
 from rekep import Storages
+from rekep.dataset import sorted_rows
 from rekep.pipeline import (
     EVENTS,
     FLATTENERS,
@@ -109,7 +110,7 @@ def read(storages: Storages, table: str, **options: Any) -> pyarrow.Table:
     """One stored table, read whole in its sort order."""
     dataset = storages.dataset(table)
     try:
-        return dataset.read_arrow_table(**options).sort_by([(name, "ascending") for name in ORDER])
+        return sorted_rows(dataset.read_arrow_table(**options), ORDER)
     finally:
         dataset.close()
 

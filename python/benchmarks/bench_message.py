@@ -7,6 +7,7 @@ import gzip
 import pathlib
 import sys
 import tempfile
+import uuid
 import zoneinfo
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
@@ -168,7 +169,7 @@ def verify(case: Case, rows: int) -> pyarrow.Table:
             assert isinstance(row.pop(name), int)
         for name in ("curruuid", "crossuuid"):
             identity = row.pop(name)
-            assert isinstance(identity, bytes) and len(identity) == 16
+            assert isinstance(identity, uuid.UUID)
         # The body is the line past its row header, so it is the payload
         # written for the row and nothing else.
         assert row == expected(index)

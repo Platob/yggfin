@@ -297,7 +297,7 @@ batch = pyarrow.RecordBatch.from_pylist(
     [
         {
             "currunix": EPOCH,
-            "curruuid": seqnum.to_bytes(16, "big"),
+            "curruuid": uuid.UUID(int=seqnum),
             "body": body,
             "msgpluginid": "OMS",
         }
@@ -326,8 +326,8 @@ The input is the stored `log_messages` row projected to
 fixed row, which holds neither `body`, `msgthreadid` nor `loglevel`; its
 `crosscode` and `seqnum` are the message's chain and its step in it, not the
 line's object and row number. The line's `curruuid` becomes the row's one
-`srcuuids` entry: the parse reads the stored sixteen bytes back as the
-identity the read stated over the line, so the join back is exact.
+`srcuuids` entry: the table stores it as the `uuid` the read stated over
+the line, and the parse reads it as it is, so the join back is exact.
 
 ## Two doors onto the same messages
 

@@ -1751,8 +1751,33 @@ class IcebergDataset(Dataset):
     # -- maintenance --------------------------------------------------------
 
     def data_files(self) -> pyarrow.Table:
-        """Every data file the current snapshot holds, as Iceberg's own metadata."""
-        return self.iceberg_table.inspect.data_files()
+        """Every data file the current snapshot holds, as Iceberg's own metadata.
+
+        PyIceberg decodes each column's bounds into `readable_metrics`, typed
+        by the table's schema, and Arrow builds no `uuid` from a Python value
+        inside a struct -- not even a null `list<uuid>` -- so a table holding
+        one is inspected through a view whose schema states every `uuid` as
+        the `fixed[16]` its bounds are stored as: a UUID bound reads as its
+        sixteen bytes, and every other column is Iceberg's own.
+        """
+        from pyiceberg.table import Table
+        from pyiceberg.table.inspect import InspectTable
+
+        table = self.iceberg_table
+        schema = table.schema()
+        fixed = _uuids_as_fixed(schema)
+        if fixed == schema:
+            return table.inspect.data_files()
+        metadata = table.metadata.model_copy(
+            update={
+                "schemas": [
+                    fixed if held.schema_id == schema.schema_id else held
+                    for held in table.metadata.schemas
+                ]
+            }
+        )
+        view = Table(table.name(), metadata, table.metadata_location, table.io, table.catalog)
+        return InspectTable(view).data_files()
 
     def scan_plan(
         self,
@@ -2230,6 +2255,38 @@ class IcebergDataset(Dataset):
 
 
 # -- helpers ----------------------------------------------------------------
+
+
+def _uuids_as_fixed(schema: Any) -> Any:
+    """`schema` with every `uuid`, at any depth, stated as the `fixed[16]` it is stored as."""
+    from pyiceberg.schema import Schema
+    from pyiceberg.types import FixedType, ListType, MapType, NestedField, StructType, UUIDType
+
+    def typed(kind: Any) -> Any:
+        if isinstance(kind, UUIDType):
+            return FixedType(16)
+        if isinstance(kind, StructType):
+            return StructType(*[member(field) for field in kind.fields])
+        if isinstance(kind, ListType):
+            return ListType(kind.element_id, typed(kind.element_type), kind.element_required)
+        if isinstance(kind, MapType):
+            return MapType(
+                kind.key_id,
+                typed(kind.key_type),
+                kind.value_id,
+                typed(kind.value_type),
+                kind.value_required,
+            )
+        return kind
+
+    def member(field: NestedField) -> NestedField:
+        return field.model_copy(update={"field_type": typed(field.field_type)})
+
+    return Schema(
+        *[member(field) for field in schema.fields],
+        schema_id=schema.schema_id,
+        identifier_field_ids=schema.identifier_field_ids,
+    )
 
 
 def _ordered_reader(

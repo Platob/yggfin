@@ -60,14 +60,14 @@
       {
         "id": 9,
         "name": "curruuid",
-        "type": "fixed[16]",
+        "type": "uuid",
         "required": true,
         "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
       },
       {
         "id": 10,
         "name": "crossuuid",
-        "type": "fixed[16]",
+        "type": "uuid",
         "required": false,
         "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
       },
@@ -95,7 +95,7 @@
       {
         "id": 14,
         "name": "prevuuid",
-        "type": "fixed[16]",
+        "type": "uuid",
         "required": false,
         "doc": "The identity of the event this one follows, where it follows one."
       },
@@ -112,7 +112,7 @@
         "type": {
           "type": "list",
           "element-id": 54,
-          "element": "fixed[16]",
+          "element": "uuid",
           "element-required": true
         },
         "required": false,
@@ -406,14 +406,14 @@
               {
                 "id": 72,
                 "name": "curruuid",
-                "type": "fixed[16]",
+                "type": "uuid",
                 "required": true,
                 "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
               },
               {
                 "id": 73,
                 "name": "crossuuid",
-                "type": "fixed[16]",
+                "type": "uuid",
                 "required": true,
                 "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
               },
@@ -441,7 +441,7 @@
               {
                 "id": 77,
                 "name": "prevuuid",
-                "type": "fixed[16]",
+                "type": "uuid",
                 "required": false,
                 "doc": "The identity of the event this one follows, where it follows one."
               },
@@ -458,7 +458,7 @@
                 "type": {
                   "type": "list",
                   "element-id": 112,
-                  "element": "fixed[16]",
+                  "element": "uuid",
                   "element-required": true
                 },
                 "required": false,
@@ -758,14 +758,14 @@
               {
                 "id": 130,
                 "name": "curruuid",
-                "type": "fixed[16]",
+                "type": "uuid",
                 "required": true,
                 "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
               },
               {
                 "id": 131,
                 "name": "crossuuid",
-                "type": "fixed[16]",
+                "type": "uuid",
                 "required": true,
                 "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
               },
@@ -793,7 +793,7 @@
               {
                 "id": 135,
                 "name": "prevuuid",
-                "type": "fixed[16]",
+                "type": "uuid",
                 "required": false,
                 "doc": "The identity of the event this one follows, where it follows one."
               },
@@ -810,7 +810,7 @@
                 "type": {
                   "type": "list",
                   "element-id": 170,
-                  "element": "fixed[16]",
+                  "element": "uuid",
                   "element-required": true
                 },
                 "required": false,
@@ -1110,14 +1110,14 @@
               {
                 "id": 188,
                 "name": "curruuid",
-                "type": "fixed[16]",
+                "type": "uuid",
                 "required": true,
                 "doc": "The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash."
               },
               {
                 "id": 189,
                 "name": "crossuuid",
-                "type": "fixed[16]",
+                "type": "uuid",
                 "required": true,
                 "doc": "The identity every event of one chain shares, derived from the code they share; the event's own where it names none."
               },
@@ -1145,7 +1145,7 @@
               {
                 "id": 193,
                 "name": "prevuuid",
-                "type": "fixed[16]",
+                "type": "uuid",
                 "required": false,
                 "doc": "The identity of the event this one follows, where it follows one."
               },
@@ -1162,7 +1162,7 @@
                 "type": {
                   "type": "list",
                   "element-id": 228,
-                  "element": "fixed[16]",
+                  "element": "uuid",
                   "element-required": true
                 },
                 "required": false,
@@ -1422,7 +1422,7 @@
                 "type": {
                   "type": "list",
                   "element-id": 242,
-                  "element": "fixed[16]",
+                  "element": "uuid",
                   "element-required": true
                 },
                 "required": true
@@ -1466,7 +1466,7 @@
                 "type": {
                   "type": "list",
                   "element-id": 248,
-                  "element": "fixed[16]",
+                  "element": "uuid",
                   "element-required": true
                 },
                 "required": true

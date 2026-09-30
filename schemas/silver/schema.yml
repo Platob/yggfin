@@ -83,14 +83,14 @@ sources:
         of the local market date. The time at which the order expires is determined by the local market's
         business practices
     - name: curruuid
-      data_type: fixed[16]
+      data_type: uuid
       description: 'The event''s identity: UUIDv7 ordered by millisecond and sequence, with a content
         payload seeded by its cross hash.'
       data_tests:
       - not_null
       - unique
     - name: crossuuid
-      data_type: fixed[16]
+      data_type: uuid
       description: The identity every event of one chain shares, derived from the code they share; the
         event's own where it names none.
       data_tests:
@@ -110,13 +110,13 @@ sources:
       data_tests:
       - not_null
     - name: prevuuid
-      data_type: fixed[16]
+      data_type: uuid
       description: The identity of the event this one follows, where it follows one.
     - name: seqnum
       data_type: long
       description: 'The event''s place in its chain: how many came before it.'
     - name: srcuuids
-      data_type: list<fixed[16]>
+      data_type: list<uuid>
       description: 'The identities of the elements this message was read from: the text line it was parsed
         out of, and none for one parsed from raw bytes. Provenance, never lineage: no walk moves it.'
     - name: beginstring
@@ -689,14 +689,14 @@ sources:
       description: The grid instant a walk read this event as the snapshot of; empty on every row no snapshot
         was taken of.
     - name: curruuid
-      data_type: fixed[16]
+      data_type: uuid
       description: 'The event''s identity: UUIDv7 ordered by millisecond and sequence, with a content
         payload seeded by its cross hash.'
       data_tests:
       - not_null
       - unique
     - name: crossuuid
-      data_type: fixed[16]
+      data_type: uuid
       description: The identity every event of one chain shares, derived from the code they share; the
         event's own where it names none.
     - name: crosscode
@@ -709,13 +709,13 @@ sources:
       data_type: long
       description: The XXH3-64 of the cross code; zero where the event names none.
     - name: prevuuid
-      data_type: fixed[16]
+      data_type: uuid
       description: The identity of the event this one follows, where it follows one.
     - name: seqnum
       data_type: long
       description: 'The event''s place in its chain: how many came before it.'
     - name: srcuuids
-      data_type: list<fixed[16]>
+      data_type: list<uuid>
       description: 'The sorted unique identities of the elements this event was read from: provenance,
         never its chain - no walk moves it.'
     - name: state
@@ -879,48 +879,45 @@ sources:
     - name: alive
       data_type: 'list<struct<marketdatakind: int, currunix: timestamptz, creaunix: timestamptz, execunix:
         timestamptz, recdunix: timestamptz, exprunix: timestamptz, prevunix: timestamptz, snapunix: timestamptz,
-        curruuid: fixed[16], crossuuid: fixed[16], crosscode: string, currhashcode: long, crosshashcode:
-        long, prevuuid: fixed[16], seqnum: long, srcuuids: list<fixed[16]>, state: int, price: decimal(38,
-        18), currency: string, quantity: decimal(38, 18), unit: string, side: int, securityids: map<string,
-        string>, isincode: string, cficode: string, miccode: string, lastpx: decimal(38, 18), lastqty:
-        decimal(38, 18), avgpx: decimal(38, 18), cumqty: decimal(38, 18), leavesqty: decimal(38, 18),
-        prevpx: decimal(38, 18), prevqty: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
-        18), bidpx: decimal(38, 18), bidqty: decimal(38, 18), bidccy: string, askpx: decimal(38, 18),
-        askqty: decimal(38, 18), askccy: string, fxrates: map<string, decimal(38, 18)>, ticker: string,
-        metadata: map<string, string>, tif: string, tradable: boolean, altids: map<string, string>, bookscope:
-        string>>'
+        curruuid: uuid, crossuuid: uuid, crosscode: string, currhashcode: long, crosshashcode: long, prevuuid:
+        uuid, seqnum: long, srcuuids: list<uuid>, state: int, price: decimal(38, 18), currency: string,
+        quantity: decimal(38, 18), unit: string, side: int, securityids: map<string, string>, isincode:
+        string, cficode: string, miccode: string, lastpx: decimal(38, 18), lastqty: decimal(38, 18), avgpx:
+        decimal(38, 18), cumqty: decimal(38, 18), leavesqty: decimal(38, 18), prevpx: decimal(38, 18),
+        prevqty: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), bidpx: decimal(38,
+        18), bidqty: decimal(38, 18), bidccy: string, askpx: decimal(38, 18), askqty: decimal(38, 18),
+        askccy: string, fxrates: map<string, decimal(38, 18)>, ticker: string, metadata: map<string, string>,
+        tif: string, tradable: boolean, altids: map<string, string>, bookscope: string>>'
     - name: deltas
       data_type: 'list<struct<marketdatakind: int, currunix: timestamptz, creaunix: timestamptz, execunix:
         timestamptz, recdunix: timestamptz, exprunix: timestamptz, prevunix: timestamptz, snapunix: timestamptz,
-        curruuid: fixed[16], crossuuid: fixed[16], crosscode: string, currhashcode: long, crosshashcode:
-        long, prevuuid: fixed[16], seqnum: long, srcuuids: list<fixed[16]>, state: int, price: decimal(38,
-        18), currency: string, quantity: decimal(38, 18), unit: string, side: int, securityids: map<string,
-        string>, isincode: string, cficode: string, miccode: string, lastpx: decimal(38, 18), lastqty:
-        decimal(38, 18), avgpx: decimal(38, 18), cumqty: decimal(38, 18), leavesqty: decimal(38, 18),
-        prevpx: decimal(38, 18), prevqty: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
-        18), bidpx: decimal(38, 18), bidqty: decimal(38, 18), bidccy: string, askpx: decimal(38, 18),
-        askqty: decimal(38, 18), askccy: string, fxrates: map<string, decimal(38, 18)>, ticker: string,
-        metadata: map<string, string>, tif: string, tradable: boolean, altids: map<string, string>, bookscope:
-        string>>'
+        curruuid: uuid, crossuuid: uuid, crosscode: string, currhashcode: long, crosshashcode: long, prevuuid:
+        uuid, seqnum: long, srcuuids: list<uuid>, state: int, price: decimal(38, 18), currency: string,
+        quantity: decimal(38, 18), unit: string, side: int, securityids: map<string, string>, isincode:
+        string, cficode: string, miccode: string, lastpx: decimal(38, 18), lastqty: decimal(38, 18), avgpx:
+        decimal(38, 18), cumqty: decimal(38, 18), leavesqty: decimal(38, 18), prevpx: decimal(38, 18),
+        prevqty: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), bidpx: decimal(38,
+        18), bidqty: decimal(38, 18), bidccy: string, askpx: decimal(38, 18), askqty: decimal(38, 18),
+        askccy: string, fxrates: map<string, decimal(38, 18)>, ticker: string, metadata: map<string, string>,
+        tif: string, tradable: boolean, altids: map<string, string>, bookscope: string>>'
     - name: executions
       data_type: 'list<struct<marketdatakind: int, currunix: timestamptz, creaunix: timestamptz, execunix:
         timestamptz, recdunix: timestamptz, exprunix: timestamptz, prevunix: timestamptz, snapunix: timestamptz,
-        curruuid: fixed[16], crossuuid: fixed[16], crosscode: string, currhashcode: long, crosshashcode:
-        long, prevuuid: fixed[16], seqnum: long, srcuuids: list<fixed[16]>, state: int, price: decimal(38,
-        18), currency: string, quantity: decimal(38, 18), unit: string, side: int, securityids: map<string,
-        string>, isincode: string, cficode: string, miccode: string, lastpx: decimal(38, 18), lastqty:
-        decimal(38, 18), avgpx: decimal(38, 18), cumqty: decimal(38, 18), leavesqty: decimal(38, 18),
-        prevpx: decimal(38, 18), prevqty: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38,
-        18), bidpx: decimal(38, 18), bidqty: decimal(38, 18), bidccy: string, askpx: decimal(38, 18),
-        askqty: decimal(38, 18), askccy: string, fxrates: map<string, decimal(38, 18)>, ticker: string,
-        metadata: map<string, string>, tif: string, tradable: boolean, altids: map<string, string>, bookscope:
-        string>>'
+        curruuid: uuid, crossuuid: uuid, crosscode: string, currhashcode: long, crosshashcode: long, prevuuid:
+        uuid, seqnum: long, srcuuids: list<uuid>, state: int, price: decimal(38, 18), currency: string,
+        quantity: decimal(38, 18), unit: string, side: int, securityids: map<string, string>, isincode:
+        string, cficode: string, miccode: string, lastpx: decimal(38, 18), lastqty: decimal(38, 18), avgpx:
+        decimal(38, 18), cumqty: decimal(38, 18), leavesqty: decimal(38, 18), prevpx: decimal(38, 18),
+        prevqty: decimal(38, 18), spotrate: decimal(38, 18), forwardpoints: decimal(38, 18), bidpx: decimal(38,
+        18), bidqty: decimal(38, 18), bidccy: string, askpx: decimal(38, 18), askqty: decimal(38, 18),
+        askccy: string, fxrates: map<string, decimal(38, 18)>, ticker: string, metadata: map<string, string>,
+        tif: string, tradable: boolean, altids: map<string, string>, bookscope: string>>'
     - name: bidlimits
-      data_type: 'list<struct<price: decimal(38, 18), quantity: decimal(38, 18), uuids: list<fixed[16]>,
-        tradable: boolean>>'
+      data_type: 'list<struct<price: decimal(38, 18), quantity: decimal(38, 18), uuids: list<uuid>, tradable:
+        boolean>>'
     - name: asklimits
-      data_type: 'list<struct<price: decimal(38, 18), quantity: decimal(38, 18), uuids: list<fixed[16]>,
-        tradable: boolean>>'
+      data_type: 'list<struct<price: decimal(38, 18), quantity: decimal(38, 18), uuids: list<uuid>, tradable:
+        boolean>>'
   - name: orders
     description: The order deltas of the books, one row per order event.
     meta:
@@ -989,14 +986,14 @@ sources:
       description: The grid instant a walk read this event as the snapshot of; empty on every row no snapshot
         was taken of.
     - name: curruuid
-      data_type: fixed[16]
+      data_type: uuid
       description: 'The event''s identity: UUIDv7 ordered by millisecond and sequence, with a content
         payload seeded by its cross hash.'
       data_tests:
       - not_null
       - unique
     - name: crossuuid
-      data_type: fixed[16]
+      data_type: uuid
       description: The identity every event of one chain shares, derived from the code they share; the
         event's own where it names none.
       data_tests:
@@ -1015,13 +1012,13 @@ sources:
       data_tests:
       - not_null
     - name: prevuuid
-      data_type: fixed[16]
+      data_type: uuid
       description: The identity of the event this one follows, where it follows one.
     - name: seqnum
       data_type: long
       description: 'The event''s place in its chain: how many came before it.'
     - name: srcuuids
-      data_type: list<fixed[16]>
+      data_type: list<uuid>
       description: 'The sorted unique identities of the elements this event was read from: provenance,
         never its chain - no walk moves it.'
     - name: state
@@ -1250,14 +1247,14 @@ sources:
       description: The grid instant a walk read this event as the snapshot of; empty on every row no snapshot
         was taken of.
     - name: curruuid
-      data_type: fixed[16]
+      data_type: uuid
       description: 'The event''s identity: UUIDv7 ordered by millisecond and sequence, with a content
         payload seeded by its cross hash.'
       data_tests:
       - not_null
       - unique
     - name: crossuuid
-      data_type: fixed[16]
+      data_type: uuid
       description: The identity every event of one chain shares, derived from the code they share; the
         event's own where it names none.
       data_tests:
@@ -1276,13 +1273,13 @@ sources:
       data_tests:
       - not_null
     - name: prevuuid
-      data_type: fixed[16]
+      data_type: uuid
       description: The identity of the event this one follows, where it follows one.
     - name: seqnum
       data_type: long
       description: 'The event''s place in its chain: how many came before it.'
     - name: srcuuids
-      data_type: list<fixed[16]>
+      data_type: list<uuid>
       description: 'The sorted unique identities of the elements this event was read from: provenance,
         never its chain - no walk moves it.'
     - name: state
@@ -1511,14 +1508,14 @@ sources:
       description: The grid instant a walk read this event as the snapshot of; empty on every row no snapshot
         was taken of.
     - name: curruuid
-      data_type: fixed[16]
+      data_type: uuid
       description: 'The event''s identity: UUIDv7 ordered by millisecond and sequence, with a content
         payload seeded by its cross hash.'
       data_tests:
       - not_null
       - unique
     - name: crossuuid
-      data_type: fixed[16]
+      data_type: uuid
       description: The identity every event of one chain shares, derived from the code they share; the
         event's own where it names none.
       data_tests:
@@ -1537,13 +1534,13 @@ sources:
       data_tests:
       - not_null
     - name: prevuuid
-      data_type: fixed[16]
+      data_type: uuid
       description: The identity of the event this one follows, where it follows one.
     - name: seqnum
       data_type: long
       description: 'The event''s place in its chain: how many came before it.'
     - name: srcuuids
-      data_type: list<fixed[16]>
+      data_type: list<uuid>
       description: 'The sorted unique identities of the elements this event was read from: provenance,
         never its chain - no walk moves it.'
     - name: state
