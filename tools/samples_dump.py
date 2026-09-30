@@ -37,6 +37,7 @@ from collections.abc import Iterator, Sequence
 from typing import Any
 
 from rekep import MarketDataKind, Side, State, Storages
+from rekep.dataset import sorted_rows
 from rekep.fix import (
     EVENT_CLOCK,
     PARSE_COLUMNS,
@@ -145,7 +146,7 @@ def read(storages: Storages, table: str) -> list[dict[str, Any]]:
         held = dataset.read_arrow_table()
     finally:
         dataset.close()
-    return held.sort_by([(name, "ascending") for name in ORDER]).to_pylist()
+    return sorted_rows(held, ORDER).to_pylist()
 
 
 def parsed(storages: Storages) -> list[dict[str, Any]]:
@@ -173,23 +174,13 @@ def parsed(storages: Storages) -> list[dict[str, Any]]:
 
 def line_of(by_line: dict[uuid.UUID | None, dict[str, Any]], row: dict[str, Any]) -> dict[str, Any]:
     """The one line a parsed message names, whatever report it names beside it."""
-    (line,) = [
-        by_line[identity(source)] for source in row["srcuuids"] if identity(source) in by_line
-    ]
+    (line,) = [by_line[source] for source in row["srcuuids"] if source in by_line]
     return line
 
 
-def identity(value: Any) -> uuid.UUID | None:
-    """An identity as a table holds it (sixteen bytes) or as a read states it."""
-    if value is None or isinstance(value, uuid.UUID):
-        return value
-    return uuid.UUID(bytes=bytes(value))
-
-
-def short(value: Any) -> str:
+def short(value: uuid.UUID | None) -> str:
     """An identity by the last six hex digits of it, which is what tells two apart here."""
-    held = identity(value)
-    return "" if held is None else f"`…{held.hex[-6:]}`"
+    return "" if value is None else f"`…{value.hex[-6:]}`"
 
 
 def instant(value: Any) -> str:
@@ -501,7 +492,7 @@ def raw_page(
     raw: list[dict[str, Any]],
     answered: list[dict[str, Any]],
 ) -> str:
-    by_line = {identity(line["curruuid"]): line for line in lines}
+    by_line = {line["curruuid"]: line for line in lines}
     execution = [row for row in raw if row["execid"] == EXECID]
     if not execution:
         raise ValueError(f"the capture carries no bronze row of execution {EXECID}")
@@ -510,14 +501,14 @@ def raw_page(
     frames: dict[int, list[uuid.UUID | None]] = collections.defaultdict(list)
     for message in answered:
         for source in message["srcuuids"]:
-            if identity(source) in by_line:
-                frames[by_line[identity(source)]["seqnum"]].append(identity(message["curruuid"]))
-    held = {identity(row["curruuid"]) for row in execution}
+            if source in by_line:
+                frames[by_line[source]["seqnum"]].append(message["curruuid"])
+    held = {row["curruuid"] for row in execution}
     carrying = [seqnum for seqnum, messages in frames.items() if held & set(messages)]
     first, last = min(carrying), max(carrying)
     stored_from: dict[int, set[uuid.UUID | None]] = collections.defaultdict(set)
     for row in raw:
-        stored_from[line_of(by_line, row)["seqnum"]].add(identity(row["curruuid"]))
+        stored_from[line_of(by_line, row)["seqnum"]].add(row["curruuid"])
     around = [line for line in sorted(lines, key=lambda line: line["seqnum"])]
     around = [line for line in around if first <= line["seqnum"] <= last]
     walked = []
@@ -618,7 +609,7 @@ def raw_page(
 
 
 def refined_page(lines: list[dict[str, Any]], refined: list[dict[str, Any]]) -> str:
-    by_line = {identity(line["curruuid"]): line for line in lines}
+    by_line = {line["curruuid"]: line for line in lines}
     events = [row for row in refined if row["snapunix"] is None]
     views = [row for row in refined if row["snapunix"] is not None]
 
@@ -636,9 +627,7 @@ def refined_page(lines: list[dict[str, Any]], refined: list[dict[str, Any]]) -> 
 
     def named(row: dict[str, Any]) -> list[int]:
         return sorted(
-            by_line[identity(source)]["seqnum"]
-            for source in row["srcuuids"] or []
-            if identity(source) in by_line
+            by_line[source]["seqnum"] for source in row["srcuuids"] or [] if source in by_line
         )
 
     chains = []
@@ -679,9 +668,7 @@ def refined_page(lines: list[dict[str, Any]], refined: list[dict[str, Any]]) -> 
         for row in events
         if row["execid"] == EXECID and row["msgcat"] == int(MarketDataKind.EXEC)
     ]
-    sources = [
-        by_line[identity(source)] for source in event["srcuuids"] if identity(source) in by_line
-    ]
+    sources = [by_line[source] for source in event["srcuuids"] if source in by_line]
     states = collections.Counter(row["state"] for row in refined)
     return page(
         "silver.record_keeping.fix_messages",
@@ -723,8 +710,8 @@ def refined_page(lines: list[dict[str, Any]], refined: list[dict[str, Any]]) -> 
                         instant(row["snapunix"]),
                         code(row["crosscode"]),
                         state(row["state"]),
-                        f"`{identity(row['curruuid'])}`",
-                        f"`{identity(restated(row)['curruuid'])}`",
+                        f"`{row['curruuid']}`",
+                        f"`{restated(row)['curruuid']}`",
                     ]
                     for row in views
                 ],
@@ -771,13 +758,13 @@ def walked(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """One chain's rows in the order it was walked: each head, then what follows it."""
     following = collections.defaultdict(list)
     for row in rows:
-        following[identity(row["prevuuid"])].append(row)
+        following[row["prevuuid"]].append(row)
     ordered: list[dict[str, Any]] = []
     stack = sorted(following[None], key=lambda row: (row["currunix"], row["curruuid"]))[::-1]
     while stack:
         row = stack.pop()
         ordered.append(row)
-        after = following[identity(row["curruuid"])]
+        after = following[row["curruuid"]]
         stack += sorted(after, key=lambda row: (row["currunix"], row["curruuid"]))[::-1]
     return ordered
 
@@ -896,7 +883,7 @@ def events_page(
     events: list[dict[str, Any]],
     told: str,
 ) -> str:
-    by_line = {identity(line["curruuid"]): line for line in lines}
+    by_line = {line["curruuid"]: line for line in lines}
     kind = next(kind for kind, name in EVENTS.items() if name == table_name)
     if events:
         rows = table(
@@ -928,9 +915,9 @@ def events_page(
                     ", ".join(
                         str(seqnum)
                         for seqnum in sorted(
-                            by_line[identity(source)]["seqnum"]
+                            by_line[source]["seqnum"]
                             for source in row["srcuuids"] or []
-                            if identity(source) in by_line
+                            if source in by_line
                         )
                     ),
                 ]

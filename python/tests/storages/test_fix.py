@@ -18,6 +18,7 @@ import pyarrow.compute
 import pytest
 
 from rekep import Field, FixRegistry, State, Storages, pipeline
+from rekep.dataset import storage_of
 from rekep.fix import (
     EVENT_CLOCK,
     MESSAGE_KEY,
@@ -352,30 +353,33 @@ def test_the_published_contract_streams_a_mock_row_through_iceberg(storages: Sto
     # The published contract carries the partition spec, so a table built from
     # the document alone is laid out the way both FIX tasks lay theirs out.
     assert partition_keys(field) == {EVENT_CLOCK: "hour"}
-    schema = field.into_arrow_schema()
-    batch = pyarrow.RecordBatch.from_pylist(
-        [
-            {
-                "beginstring": "FIX.4.4",
-                EVENT_CLOCK: UNDATED,
-                "creaunix": UNDATED,
-                "currhashcode": 1,
-                "crosshashcode": 2,
-                "curruuid": uuid.UUID(int=1).bytes,
-                "crossuuid": uuid.UUID(int=2).bytes,
-            }
-        ],
-        schema=schema,
+    # The row states its required columns and the field's apply fills every
+    # nullable one it leaves absent: Arrow converts no Python value into a
+    # `uuid` nested in a list, and `srcuuids` is one.
+    batch = pyarrow.RecordBatch.from_pydict(
+        {
+            "beginstring": ["FIX.4.4"],
+            EVENT_CLOCK: [UNDATED],
+            "creaunix": [UNDATED],
+            "currhashcode": [1],
+            "crosshashcode": [2],
+            "curruuid": pyarrow.array([uuid.UUID(int=1)], pyarrow.uuid()),
+            "crossuuid": pyarrow.array([uuid.UUID(int=2)], pyarrow.uuid()),
+        }
     )
     fixes = storages.dataset(FIX_MESSAGES_RAW, field=field)
     try:
-        source = pyarrow.RecordBatchReader.from_batches(schema, [batch])
+        source = field.apply_arrow_reader(
+            pyarrow.RecordBatchReader.from_batches(batch.schema, [batch])
+        )
+        assert source.schema.equals(field.into_arrow_schema())
         assert fixes.merge_arrow_reader(source, field) == 1
         stored = fixes.read_arrow_table(field)
     finally:
         fixes.close()
     assert stored.num_rows == 1
     assert stored.num_columns == COLUMNS
+    assert stored.column("curruuid").to_pylist() == [uuid.UUID(int=1)]
     assert {"currhashcode", SOURCES} <= set(stored.column_names)
     assert not {"body", "loglevel", "msgthreadid"} & set(stored.column_names)
 
@@ -398,22 +402,24 @@ def test_a_table_written_before_the_row_grew_gains_the_columns_and_keeps_its_row
         "fix_messages",
     )
     assert len(before) == len(full) - len(grew)
-    held = before.into_arrow_schema()
-    settled = {
-        "beginstring": "FIX.4.4",
-        EVENT_CLOCK: UNDATED,
-        "creaunix": UNDATED,
-        MESSAGE_KEY: bytes(15) + b"\x01",
-        "crossuuid": bytes(15) + b"\x02",
-        "currhashcode": 1,
-        "crosshashcode": 2,
-    }
-    landed = pyarrow.RecordBatch.from_pylist(
-        [{**{member.name: None for member in held}, **settled}], schema=held
+    identity = uuid.UUID(int=1)
+    # The field's apply fills every nullable column the row leaves absent.
+    landed = pyarrow.RecordBatch.from_pydict(
+        {
+            "beginstring": ["FIX.4.4"],
+            EVENT_CLOCK: [UNDATED],
+            "creaunix": [UNDATED],
+            MESSAGE_KEY: pyarrow.array([identity], pyarrow.uuid()),
+            "crossuuid": pyarrow.array([uuid.UUID(int=2)], pyarrow.uuid()),
+            "currhashcode": [1],
+            "crosshashcode": [2],
+        }
     )
     dataset = storages.dataset(FIX_MESSAGES_RAW, field=before)
     try:
-        source = pyarrow.RecordBatchReader.from_batches(held, [landed])
+        source = before.apply_arrow_reader(
+            pyarrow.RecordBatchReader.from_batches(landed.schema, [landed])
+        )
         assert dataset.append_arrow_reader(source, before) == 1
     finally:
         dataset.close()
@@ -425,7 +431,11 @@ def test_a_table_written_before_the_row_grew_gains_the_columns_and_keeps_its_row
     assert result == LANDED["parse_fix_messages_raw"]
     assert raw.num_columns == len(full)
     assert raw.num_rows == result.written + 1, "the row it already held is still there"
-    kept = raw.filter(pyarrow.compute.equal(raw.column(MESSAGE_KEY), settled[MESSAGE_KEY]))
+    kept = raw.filter(
+        pyarrow.compute.equal(
+            storage_of(raw.column(MESSAGE_KEY)), pyarrow.scalar(identity.bytes, pyarrow.binary(16))
+        )
+    )
     assert kept.num_rows == 1
     for column in grew:
         assert kept.column(column).to_pylist() in ([None], [[]]), column

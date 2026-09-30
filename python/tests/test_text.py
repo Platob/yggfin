@@ -417,7 +417,7 @@ def test_the_row_is_keyed_partitioned_and_sorted_by_the_line_s_event() -> None:
 
 
 def test_the_row_narrows_the_read_to_what_iceberg_stores() -> None:
-    """Microsecond instants, sixteen ordered bytes, signed codes, and no
+    """Microsecond instants, identities as `uuid`, signed codes, and no
     extension name: the same columns the read states, at the types a table
     holds."""
     read = text_options().source_field().into_arrow_schema()
@@ -426,9 +426,8 @@ def test_the_row_narrows_the_read_to_what_iceberg_stores() -> None:
     assert read.field("currunix").type == pyarrow.timestamp("ns", tz="UTC")
     assert stored.field("currunix").type == pyarrow.timestamp("us", tz="UTC")
     for identity in ("curruuid", "crossuuid", "prevuuid"):
-        assert read.field(identity).type == pyarrow.uuid(), identity
-        assert stored.field(identity).type == pyarrow.binary(16), identity
-    assert stored.field("srcuuids").type.value_type == pyarrow.binary(16)
+        assert read.field(identity).type == stored.field(identity).type == pyarrow.uuid()
+    assert stored.field("srcuuids").type.value_type == pyarrow.uuid()
     for code in ("currhashcode", "crosshashcode", "seqnum"):
         assert read.field(code).type == pyarrow.uint64(), code
         assert stored.field(code).type == pyarrow.int64(), code
@@ -468,7 +467,7 @@ def test_a_stored_line_is_the_read_past_the_storage_boundary(tmp_path) -> None:
         handle.close()
 
     assert stored.schema.equals(log_message_field().into_arrow_schema(), check_metadata=True)
-    assert stored.column("curruuid")[0].as_py() == read.column("curruuid")[0].as_py().bytes
+    assert stored.column("curruuid")[0].as_py() == read.column("curruuid")[0].as_py()
     assert stored.column("currhashcode").to_pylist() == [
         code - 2**64 if code >= 2**63 else code for code in read.column("currhashcode").to_pylist()
     ]

@@ -202,9 +202,9 @@ def added(storages: Storages, table: str) -> list[tuple[str, int]]:
     ]
 
 
-def short(identity: bytes | None) -> str:
+def short(identity: uuid.UUID | None) -> str:
     """An identity as its last six hex digits: a UUIDv7 opens with its millisecond."""
-    return "-" if identity is None else uuid.UUID(bytes=identity).hex[-6:]
+    return "-" if identity is None else identity.hex[-6:]
 
 
 def in_window(table: pyarrow.Table, window: tuple[datetime.datetime, datetime.datetime]) -> list:
@@ -433,7 +433,7 @@ def test_a_message_logged_at_every_hop_is_one_silver_row(landing: Landing) -> No
         parsed = fix_parse_arrow_reader(codec, scan).read_all()
     finally:
         dataset.close()
-    identities = {held.bytes for held in parsed.column("curruuid").to_pylist()}
+    identities = set(parsed.column("curruuid").to_pylist())
     keys = collections.defaultdict(list)
     for identity, instant, sources in zip(
         parsed.column("curruuid").to_pylist(),
@@ -442,8 +442,8 @@ def test_a_message_logged_at_every_hop_is_one_silver_row(landing: Landing) -> No
         strict=True,
     ):
         hour = instant.replace(minute=0, second=0, microsecond=0)
-        (line,) = [held.bytes for held in sources if held.bytes not in identities]
-        keys[(identity.bytes, hour)].append(line)
+        (line,) = [held for held in sources if held not in identities]
+        keys[(identity, hour)].append(line)
     raw = landing.landed["parse_fix_messages_raw"]
     assert parsed.num_rows == raw.written + raw.skipped
     assert len(keys) == raw.written

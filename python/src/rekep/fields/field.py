@@ -199,9 +199,8 @@ def stored_arrow_reader(
     integers widen through the ordinary cast.
 
     The field apply runs after it, in its native order, so the cast -- a
-    nanosecond instant to the microsecond a table holds, a `uuid` to the
-    sixteen bytes it keys on -- the derived partitions and the digests still
-    happen where they always did.
+    nanosecond instant to the microsecond a table holds -- the derived
+    partitions and the digests still happen where they always did.
     """
     stored = field.into_arrow_schema()
     projected = {

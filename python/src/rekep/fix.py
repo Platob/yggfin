@@ -17,7 +17,6 @@ and publishes its window's rows.
 from __future__ import annotations
 
 import datetime
-import functools
 import json
 import os
 from collections.abc import Iterable, Iterator
@@ -26,7 +25,7 @@ from typing import Any
 
 import pyarrow
 import pyarrow.compute
-from yggdryl import TextLine, TextOptions
+from yggdryl import TextLine
 from yggdryl.fix import (
     FixCodec,
     FixMessages,
@@ -89,9 +88,8 @@ TRANSACTION_CLOCK = "transacttime"
 SOURCES = "srcuuids"
 
 #: The stored line's column a parse reads its identity off, and puts in
-#: `srcuuids`. `log_messages` stores it as the sixteen ordered bytes Arrow
-#: can key, sort and merge on, so the parse is handed it back at the type the
-#: read states before it is asked to read it.
+#: `srcuuids`. `log_messages` stores it as the `uuid` the read states, so
+#: the parse names the line that landed.
 CAPTURE_KEY = "curruuid"
 
 #: What the lifecycle walk filled for a message's place in its chain. A chain
@@ -202,7 +200,7 @@ def fix_parse_arrow_reader(
     that is the whole of what this door narrows: a source read projected to
     what the parse consumes (`PARSE_COLUMNS`) carries nothing else.
     """
-    parsed = codec.parse_text_arrow_reader(_carried_rows(source))
+    parsed = codec.parse_text_arrow_reader(source)
     row = fix_schema(codec.registry, FIXMSG).into_arrow_schema()
     if parsed.schema.names == row.names:
         return parsed
@@ -266,9 +264,8 @@ def _dictionary_rows(
     cannot express: the content codes stored as the signed integers Iceberg
     has are viewed as the unsigned ones they are -- the same eight bytes, no
     row pass, where a cast would refuse half of them -- and the dictionary's
-    field then widens the rest in its native order, an identity from the
-    sixteen bytes a table keeps to the UUID the row states and an instant
-    from the microsecond stored to the nanosecond read. The read itself is
+    field then widens the rest in its native order, an instant from the
+    microsecond stored to the nanosecond read. The read itself is
     handed the table's field, so what arrives here is the row's own columns
     and nothing to narrow; a source already at the dictionary's types passes
     through untouched.
@@ -307,45 +304,6 @@ def _dictionary_rows(
     return fix_schema(codec.registry, FIXMSG).apply_arrow_reader(
         pyarrow.RecordBatchReader.from_batches(viewed, _viewed()), safe=False
     )
-
-
-def _carried_rows(source: pyarrow.RecordBatchReader) -> pyarrow.RecordBatchReader:
-    """`source` with the line's identity viewed back to the type the read states.
-
-    The reverse of the narrowing `log_messages` holds an identity at, and
-    the reason that narrowing is safe: a stored `curruuid` is the sixteen
-    ordered bytes Iceberg keys and sorts on, and a parse handed those bytes
-    reads no identity off them -- it derives one of its own from the line's
-    clock and content, which names no line that landed. Viewed back, the
-    parse names the line that landed, so `srcuuids` is a join and not a
-    coincidence. The bytes are the same bytes; nothing is copied or cast.
-    """
-    held = source.schema
-    if CAPTURE_KEY not in held.names:
-        return source
-    stated = _capture_key_type()
-    carried = held.field(CAPTURE_KEY)
-    # The view is the stored narrowing read back and nothing else: a column
-    # the read already states, or one holding anything but those sixteen
-    # bytes, is the parse's to read as it finds it.
-    if carried.type != stated.storage_type:
-        return source
-    place = held.get_field_index(CAPTURE_KEY)
-    viewed = held.set(place, carried.with_type(stated))
-
-    def _viewed() -> Iterator[pyarrow.RecordBatch]:
-        for batch in source:
-            columns = list(batch.columns)
-            columns[place] = pyarrow.ExtensionArray.from_storage(stated, columns[place])
-            yield pyarrow.RecordBatch.from_arrays(columns, schema=viewed)
-
-    return pyarrow.RecordBatchReader.from_batches(viewed, _viewed())
-
-
-@functools.cache
-def _capture_key_type() -> pyarrow.DataType:
-    """The type the native text read states a line's own identity at."""
-    return TextOptions().source_field().into_arrow_schema().field(CAPTURE_KEY).type
 
 
 def fix_window_filter(window: tuple[datetime.datetime, datetime.datetime]) -> Any:
@@ -436,11 +394,11 @@ def iceberg_event_field(
     the same eight bytes and half of them read back negative, so the cast is
     stated here rather than met as a metrics overflow at the first commit.
 
-    An identity is sixteen ordered bytes here and not the `uuid` Iceberg would
-    otherwise store, for the same reason: Arrow sorts, compares and hashes
-    `fixed_size_binary[16]` and refuses the extension over it, so a table
-    keyed, ordered and merged on an identity needs the bytes it can lower a
-    predicate to. The value is the same value either way.
+    An identity -- `curruuid`, `crossuuid`, `prevuuid`, every `srcuuids`
+    element and every nested one -- stays the `arrow.uuid` the row states, so
+    the table stores Iceberg's `uuid` and not `fixed[16]`. Arrow has no kernel
+    over the extension, so the dataset keys, sorts, merges and bounds a
+    predicate on its sixteen-byte storage, which orders as the UUID does.
     """
     members = [_declared(_plain(member)) for member in schema]
     sorted_by = json.dumps([[column, "asc"] for column in SORT_COLUMNS], separators=(",", ":"))
@@ -482,6 +440,8 @@ def _plain(member: pyarrow.Field) -> pyarrow.Field:
 
 def _stored(dtype: pyarrow.DataType) -> pyarrow.DataType:
     """Recursively narrow a parsed type to the one Iceberg v2 stores."""
+    if isinstance(dtype, pyarrow.UuidType):
+        return dtype
     if isinstance(dtype, pyarrow.BaseExtensionType):
         return _stored(dtype.storage_type)
     if pyarrow.types.is_timestamp(dtype) and dtype.unit == "ns":

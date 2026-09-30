@@ -47,14 +47,14 @@ sources:
       description: The grid instant a walk read this event as the snapshot of; empty on every row no snapshot
         was taken of.
     - name: curruuid
-      data_type: fixed[16]
+      data_type: uuid
       description: 'The event''s identity: UUIDv7 ordered by millisecond and sequence, with a content
         payload seeded by its cross hash.'
       data_tests:
       - not_null
       - unique
     - name: crossuuid
-      data_type: fixed[16]
+      data_type: uuid
       description: The identity every event of one chain shares, derived from the code they share; the
         event's own where it names none.
       data_tests:
@@ -73,13 +73,13 @@ sources:
       data_tests:
       - not_null
     - name: prevuuid
-      data_type: fixed[16]
+      data_type: uuid
       description: The identity of the event this one follows, where it follows one.
     - name: seqnum
       data_type: long
       description: 'The event''s place in its chain: how many came before it.'
     - name: srcuuids
-      data_type: list<fixed[16]>
+      data_type: list<uuid>
       description: 'The sorted unique identities of the elements this event was read from: provenance,
         never its chain - no walk moves it.'
     - name: state
@@ -259,14 +259,14 @@ sources:
         of the local market date. The time at which the order expires is determined by the local market's
         business practices
     - name: curruuid
-      data_type: fixed[16]
+      data_type: uuid
       description: 'The event''s identity: UUIDv7 ordered by millisecond and sequence, with a content
         payload seeded by its cross hash.'
       data_tests:
       - not_null
       - unique
     - name: crossuuid
-      data_type: fixed[16]
+      data_type: uuid
       description: The identity every event of one chain shares, derived from the code they share; the
         event's own where it names none.
       data_tests:
@@ -286,13 +286,13 @@ sources:
       data_tests:
       - not_null
     - name: prevuuid
-      data_type: fixed[16]
+      data_type: uuid
       description: The identity of the event this one follows, where it follows one.
     - name: seqnum
       data_type: long
       description: 'The event''s place in its chain: how many came before it.'
     - name: srcuuids
-      data_type: list<fixed[16]>
+      data_type: list<uuid>
       description: 'The identities of the elements this message was read from: the text line it was parsed
         out of, and none for one parsed from raw bytes. Provenance, never lineage: no walk moves it.'
     - name: beginstring

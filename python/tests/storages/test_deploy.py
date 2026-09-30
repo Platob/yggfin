@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pyarrow
 import pytest
+from pyiceberg.schema import index_by_name
+from pyiceberg.types import FixedType, UUIDType
 
 from rekep import Field, FixRegistry, Storages
 from rekep.deploy import TABLES, deploy
@@ -24,6 +26,9 @@ LAYOUT = {
     "spec": [(EVENT_CLOCK, "hour")],
     "sort": [(EVENT_CLOCK, "identity"), ("seqnum", "identity"), ("curruuid", "identity")],
 }
+
+#: The identities every table the graph writes holds at its top level.
+IDENTITIES = {"curruuid", "crossuuid", "prevuuid", "srcuuids.element"}
 
 
 def narrow_registry(root: Path) -> Path:
@@ -79,6 +84,22 @@ def test_a_deployment_creates_every_table_once_in_its_layer(storages: Storages) 
         assert layout(storages, shape.table) == LAYOUT, shape.table
     assert storages.gold.tables() == []
     assert deploy(storages) == {shape.table: "present" for shape in TABLES}
+
+
+def test_every_identity_a_deployment_creates_is_an_iceberg_uuid(storages: Storages) -> None:
+    """The key, the chain's and the predecessor's identity, every source and
+    every identity nested in a book are created as Iceberg's `uuid`, and no
+    column is created as the `fixed[16]` beneath it."""
+    deploy(storages)
+    for shape in TABLES:
+        schema = storages.catalog(shape.layer).load_table(shape.name).schema()
+        kinds = {name: schema.find_type(name) for name in index_by_name(schema)}
+        identities = {name for name, kind in kinds.items() if isinstance(kind, UUIDType)}
+        assert IDENTITIES <= identities, shape.table
+        assert not [name for name, kind in kinds.items() if isinstance(kind, FixedType)]
+    books = storages.silver.load_table("record_keeping.books").schema()
+    assert isinstance(books.find_type("deltas.element.srcuuids.element"), UUIDType)
+    assert isinstance(books.find_type("bidlimits.element.uuids.element"), UUIDType)
 
 
 def test_a_deployment_creates_only_the_tables_it_names(storages: Storages) -> None:

@@ -32,14 +32,14 @@ One row per FIX message parsed out of a stored line, nothing walked: a message l
 | `expiretime` | `timestamptz` |  | Time/Date of order expiration (always expressed in UTC (Universal Time Coordinated, also known as "GMT") |
 | `validuntiltime` | `timestamptz` |  | Indicates expiration time of indication message (always expressed in UTC (Universal Time Coordinated, also known as "GMT") |
 | `expiredate` | `timestamp` |  | Date of order expiration (last day the order can trade), always expressed in terms of the local market date. The time at which the order expires is determined by the local market's business practices |
-| `curruuid` | `fixed[16]` | yes | The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash. |
-| `crossuuid` | `fixed[16]` | yes | The identity every event of one chain shares, derived from the code they share; the event's own where it names none. |
+| `curruuid` | `uuid` | yes | The event's identity: UUIDv7 ordered by millisecond and sequence, with a content payload seeded by its cross hash. |
+| `crossuuid` | `uuid` | yes | The identity every event of one chain shares, derived from the code they share; the event's own where it names none. |
 | `crosscode` | `string` |  | The identifier every message of one lifecycle shares: OrderID, else ClOrdID, OrigClOrdID, QuoteID, QuoteReqID or MDReqID, the first stated. |
 | `currhashcode` | `long` | yes | The XXH3-64 of what the event states and the named FIX content behind it. |
 | `crosshashcode` | `long` | yes | The XXH3-64 of the cross code; zero where the event names none. |
-| `prevuuid` | `fixed[16]` |  | The identity of the event this one follows, where it follows one. |
+| `prevuuid` | `uuid` |  | The identity of the event this one follows, where it follows one. |
 | `seqnum` | `long` |  | The event's place in its chain: how many came before it. |
-| `srcuuids` | `list<fixed[16]>` |  | The identities of the elements this message was read from: the text line it was parsed out of, and none for one parsed from raw bytes. Provenance, never lineage: no walk moves it. |
+| `srcuuids` | `list<uuid>` |  | The identities of the elements this message was read from: the text line it was parsed out of, and none for one parsed from raw bytes. Provenance, never lineage: no walk moves it. |
 | `beginstring` | `string` | yes | Identifies beginning of new message and session protocol version by means of a session profile identifier (see FIX Session Layer for details). ALWAYS FIRST FIELD IN MESSAGE. (Always unencrypted). |
 | `msgtype` | `string` |  | Defines message type ALWAYS THIRD FIELD IN MESSAGE. (Always unencrypted) |
 | `msgcat` | `int` |  | The business category of the message type, as the member of the marketdatakind enum: the dictionary's FIX:msgcat for the type, UNKN where it files none; a row stating one is the row's word. |

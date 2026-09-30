@@ -1367,6 +1367,47 @@ def test_an_extension_typed_key_is_replaced_by_the_bytes_it_holds(tmp_path: Path
     assert set(stored.column("size").to_pylist()) == {2}
 
 
+def test_a_table_holding_uuids_lists_its_data_files(tmp_path: Path) -> None:
+    """PyIceberg types each column's readable bounds by the table's schema, and
+    Arrow builds no `uuid` from a Python value inside a struct, so the listing
+    reads a UUID bound -- a nested one's too -- as its sixteen bytes, and the
+    table itself keeps its `uuid`."""
+    import uuid as uuidlib
+
+    from pyiceberg.types import UUIDType
+
+    schema = pyarrow.schema(
+        [
+            pyarrow.field(
+                "id", pyarrow.uuid(), nullable=False, metadata={"ICEBERG:primary_key": "true"}
+            ),
+            pyarrow.field(
+                "sources", pyarrow.list_(pyarrow.field("source", pyarrow.uuid(), nullable=False))
+            ),
+        ]
+    )
+    field = Field.from_arrow_schema(schema, name="Sourced")
+    rows = IcebergCatalog(name="test", properties=catalog_properties(tmp_path)).dataset(
+        "trading.sourced", field=field
+    )
+    ids = pyarrow.array([uuidlib.UUID(int=1), uuidlib.UUID(int=2)], pyarrow.uuid())
+    sources = pyarrow.ListArray.from_arrays(
+        pyarrow.array([0, 1, 1], pyarrow.int32()),
+        pyarrow.array([uuidlib.UUID(int=3)], pyarrow.uuid()),
+        type=schema.field("sources").type,
+    )
+
+    rows.append_arrow_table(pyarrow.Table.from_arrays([ids, sources], schema=schema))
+    files = rows.refresh().data_files()
+
+    assert files.num_rows == 1
+    (metrics,) = files.column("readable_metrics").to_pylist()
+    assert metrics["id"]["lower_bound"] == uuidlib.UUID(int=1).bytes
+    assert metrics["id"]["upper_bound"] == uuidlib.UUID(int=2).bytes
+    assert rows.iceberg_table.schema().find_type("id") == UUIDType()
+    assert rows.iceberg_table.schema().find_type("sources.element") == UUIDType()
+
+
 @pytest.mark.parametrize("kind", ["string", "int64", "uuid"])
 def test_a_blind_append_and_a_partition_scoped_merge_use_any_declared_identifier(
     tmp_path: Path, kind: str
