@@ -387,3 +387,7 @@ on it.
   FIX tables hold more rows than frames.
 - A task never closes the catalogs. Close `Storages` yourself: on Windows an
   open SQLite catalog is a file its caller cannot delete.
+- `silver.record_keeping.books` is keyed by `MIC:CFI` category, every
+  `ticker` null. A display keyed by ticker folds the silver events itself --
+  `parse_books`'s stages without `categorized_symbol_reader` -- as
+  `docs/storages/market-server.md` does.

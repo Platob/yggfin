@@ -142,6 +142,7 @@ closes at 16:30.
 | --- | --- |
 | to configure the three catalogs | [Storages](storages/index.md) |
 | to query the landed tables from Excel or another XMLA client | [XMLA endpoint](storages/xmla.md) |
+| to browse books by ticker as candles, a book and its audit | [Market server](storages/market-server.md) |
 | what one task reads, writes and answers | [Tasks](tasks/index.md) |
 | to schedule the graph, with Airflow or without | [DAGs](dags/index.md) |
 | what a column means | [Tables](tables/index.md) |

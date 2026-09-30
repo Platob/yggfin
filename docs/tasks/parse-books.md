@@ -296,7 +296,9 @@ side, the `deltas` applied since the book before, the `executions` it traded,
 and `bidlimits` and `asklimits`, the price levels `alive` aggregates to, best
 first, each saying whether it is `tradable`. [The table page](../tables/silver/books.md) lists
 every column and [its samples](../samples/silver/books.md) show a book with
-depth.
+depth. [The market server](../storages/market-server.md) displays books by
+ticker, so it serves the same fold with each message's `symbol` kept, not
+this table, whose books state none.
 
 `snapshot_millis` is the fold's epoch-aligned grid in milliseconds,
 `rekep.pipeline.SNAPSHOT_MILLIS` -- one hour -- unless stated, and zero for

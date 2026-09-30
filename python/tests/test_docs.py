@@ -38,8 +38,9 @@ JSON_FENCE = re.compile(r"^```json\n(.*?)^```", re.MULTILINE | re.DOTALL)
 #: imports `rekep`, and the package re-exports what they need.
 NATIVE = re.compile(r"yggdryl", re.IGNORECASE)
 
-#: The one page whose bash fences name the native serving binary.
-XMLA_PAGE = DOCS / "storages" / "xmla.md"
+#: The pages whose bash fences name the native serving binary: the XMLA
+#: endpoint's and the market server's command lines.
+SERVING_PAGES = (DOCS / "storages" / "xmla.md", DOCS / "storages" / "market-server.md")
 
 #: A command of a `rekep` console script, which the package does not install.
 COMMAND = re.compile(r"\brekep\s+(?:tasks|fields)\b")
@@ -129,23 +130,26 @@ def fenced_lines(text: str, language: str) -> set[int]:
 
 
 def test_no_documentation_names_the_native_dependency() -> None:
-    """The one exception is the XMLA page's command line, which names the
-    serving binary inside its bash fences."""
+    """The one exception is the serving pages' command lines, which name the
+    serving binary inside their bash fences."""
     named = []
     for path in PUBLISHED:
         text = path.read_text(encoding="utf-8", errors="replace")
-        exempt = fenced_lines(text, "bash") if path == XMLA_PAGE else set()
+        exempt = fenced_lines(text, "bash") if path in SERVING_PAGES else set()
         named += [
             f"{path.relative_to(ROOT)}:{number}"
             for number, line in enumerate(text.splitlines(), 1)
             if NATIVE.search(line) and number not in exempt
         ]
     assert not named, named
-    xmla = XMLA_PAGE.read_text(encoding="utf-8")
-    serving = fenced_lines(xmla, "bash")
-    assert any(
-        NATIVE.search(line) for number, line in enumerate(xmla.splitlines(), 1) if number in serving
-    ), "the XMLA page states the serving command line"
+    for page in SERVING_PAGES:
+        text = page.read_text(encoding="utf-8")
+        serving = fenced_lines(text, "bash")
+        assert any(
+            NATIVE.search(line)
+            for number, line in enumerate(text.splitlines(), 1)
+            if number in serving
+        ), f"{page.relative_to(ROOT)} states the serving command line"
 
 
 def test_every_table_has_its_column_page_and_its_samples() -> None:

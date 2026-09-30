@@ -57,6 +57,7 @@ nav:
       - Catalog types: storages/catalogs.md
       - Iceberg datasets: storages/iceberg.md
       - XMLA endpoint: storages/xmla.md
+      - Market server: storages/market-server.md
       - Benchmarks: storages/benchmarks.md
   - Tasks:
       - Overview: tasks/index.md
